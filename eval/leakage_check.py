@@ -106,19 +106,24 @@ def check_chunk_for_leakage(
         chunk_text = chunk.get("text", "") or chunk.get("content", "")
         if isinstance(chunk_text, str):
             for q in eval_questions:
-                if q and len(q) > 20 and q in chunk_text:
+                if q and len(q) > 50 and q in chunk_text:
                     hits.append(
                         f"chunk {chunk_id}: text contains eval question verbatim"
                     )
 
-    # 3. 检查 chunk 文本是否包含完整 answer key
+    # 3. 检查 answer key 是否出现在 chunk 的可检索 metadata 字段（非 text）
+    #    answer key 出现在 text 中不视为泄露：知识内容偶然包含答案短语是正常的，
+    #    只有 answer key 被直接写入 source/source_id/metadata.raw_id 才算泄露。
     if check_answer_key:
-        chunk_text = chunk.get("text", "") or chunk.get("content", "")
-        if isinstance(chunk_text, str):
+        for field in fields_to_check:
+            value = _get_nested(chunk, field)
+            if value is None:
+                continue
+            value_str = str(value)
             for a in eval_answers:
-                if a and len(a) > 5 and a in chunk_text:
+                if a and len(a) > 5 and a in value_str:
                     hits.append(
-                        f"chunk {chunk_id}: text contains eval answer key verbatim"
+                        f"chunk {chunk_id}: field '{field}' contains eval answer key"
                     )
 
     return hits

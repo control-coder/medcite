@@ -135,7 +135,7 @@ def test_leakage_error_spec() -> None:
 
 # ===== state_machine 模块测试 =====
 
-def test_case_state_count_is_13() -> None:
+def test_case_state_count_is_14() -> None:
     """PLAN.md 定义 14 个状态。"""
     states = list(CaseState)
     assert len(states) == 14, f"expected 14 states, got {len(states)}: {[s.value for s in states]}"

@@ -60,6 +60,9 @@ reports/raw/*.jsonl
 traces/raw/*.jsonl
 traces/summary/*.json
 
+# 原始下载数据（太大，不进 git；可由 scripts/ 重新下载）
+eval/datasets/raw/
+
 # ===== Build / docs =====
 site/
 htmlcov/
