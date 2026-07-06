@@ -1,0 +1,205 @@
+# =============================================================================
+# MediDiag-Agent EvidenceFlow 评测配置
+# =============================================================================
+# 这是可复现性的核心文件。任何字段变更都意味着需要重跑：
+#   1. baseline (A 组)
+#   2. 单变量消融 (B-E 组)
+#   3. 全量组合 (F 组)
+#   4. 最终报告 (reports/final_eval.md)
+#
+# 换模型前请先备份当前 config 并归档 reports/raw/ 旧结果。
+# =============================================================================
+
+# ----- 锁定的模型与生成参数 -----
+generation:
+  model: "deepseek-v4-flash-free"
+  provider: "deepseek"
+  base_url: "https://api.deepseek.com/v1"
+  temperature: 0
+  seed: 42
+  max_tokens: 2048
+  timeout_seconds: 60
+
+embedding:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  dimension: 384
+  batch_size: 32
+  normalize: true
+
+rerank:
+  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  top_k: 10
+
+judge:
+  # NLI 模型用于 Citation Precision 判定，避免纯 LLM judge
+  model: "microsoft/deberta-v3-base-mnli"
+  verdict_labels: ["SUPPORTED", "PARTIAL", "UNSUPPORTED"]
+
+# ----- 数据集版本 -----
+dataset:
+  version: "v1"
+  # 公开题占比必须 >= 40%（PLAN.md 要求）
+  public_ratio_min: 0.40
+  sources:
+    - name: "MedQA"
+      subset: "train"
+      license: "MIT"
+    - name: "PubMedQA"
+      subset: "pqa_labeled"
+      license: "CC BY 4.0"
+  # 评测集路径（阶段 1 填充）
+  eval_set_path: "eval/datasets/eval_set.jsonl"
+  knowledge_base_path: "eval/datasets/knowledge_chunks.jsonl"
+  # 标注一致性
+  annotation:
+    double_check_ratio: 0.20
+    kappa_below_threshold: 0.60   # 低于则剔除或重标
+    kappa_discuss_range: [0.60, 0.80]  # 进入分歧讨论
+    kappa_stable_threshold: 0.80  # 高于则视为稳定标注
+
+# ----- 检索排序公式权重 -----
+# final_score = w1*bm25 + w2*embedding + w3*evidence_level + w4*term_overlap
+# 权重参与消融实验，不得只在代码中硬编码
+retrieval:
+  top_k: 5
+  weights:
+    w1_bm25: 0.25
+    w2_embedding: 0.45
+    w3_evidence_level: 0.20
+    w4_term_overlap: 0.10
+  evidence_levels:
+    # 证据等级加权（用于消融组 C）
+    level_1_guideline: 1.0
+    level_2_review: 0.8
+    level_3_primary_study: 0.9
+    level_4_case_report: 0.5
+    level_5_other: 0.3
+
+# ----- 消融实验组别 -----
+ablation:
+  groups:
+    A:
+      description: "纯 embedding 检索（基线）"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_citation_verifier: false
+    B:
+      description: "A + BM25（单变量：混合检索收益）"
+      config:
+        use_bm25: true
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_citation_verifier: false
+    C:
+      description: "A + evidence level weighting（单变量：证据等级收益）"
+      config:
+        use_bm25: false
+        use_evidence_weighting: true
+        use_term_normalization: false
+        use_citation_verifier: false
+    D:
+      description: "A + terminology normalization（单变量：术语归一化收益）"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: true
+        use_citation_verifier: false
+    E:
+      description: "A + citation verifier（单变量：引用审核对 unsupported claim 的影响）"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_citation_verifier: true
+    F:
+      description: "A + B + C + D + E 全量组合（不用于单独归因）"
+      config:
+        use_bm25: true
+        use_evidence_weighting: true
+        use_term_normalization: true
+        use_citation_verifier: true
+
+# ----- 工作流运行时参数 -----
+workflow:
+  lease:
+    lease_seconds: 60
+    heartbeat_seconds: 20
+    scan_interval_seconds: 30
+  optimistic_lock:
+    max_retries: 3
+    backoff_ms: [50, 100, 200]
+  review:
+    max_review_rounds: 3
+    unsupported_claim_threshold: 0.20  # 超过则驳回
+
+# ----- Agent 配置 -----
+agents:
+  specialist_parallel: true
+  specialist_pair: ["cardiology", "respiratory"]
+  arbitration_enabled: true
+  single_agent_baseline: true  # 必须做单 Agent 对比
+
+# ----- 合规配置 -----
+compliance:
+  block_absolute_terms:
+    - "确诊"
+    - "保证治愈"
+    - "无需就医"
+    - "根治"
+    - "百分之百"
+  out_of_scope_reject_template: "该问题超出本系统的模拟范围，无法提供诊断建议。请咨询专业医生。"
+  mandatory_disclaimer: "仅供学习和工程演示，不构成医疗建议。"
+
+# ----- 数据泄露校验 -----
+leakage_check:
+  # 检查测试样本 ID 是否出现在知识库 chunk 的以下字段
+  chunk_fields_to_check:
+    - "source"
+    - "source_id"
+    - "metadata.raw_id"
+  # 同时检查问题原文和 answer key 不作为可检索 metadata
+  check_question_text: true
+  check_answer_key: true
+
+# ----- 评测指标 -----
+metrics:
+  - name: "evidence_recall_at_5"
+    formula: "至少命中 1 条 gold_evidence 的样本数 / 总样本数"
+    ground_truth_source: "eval_set.gold_evidence_ids"
+  - name: "citation_precision"
+    formula: "SUPPORTED citation 数 / 系统输出 citation 总数"
+    ground_truth_source: "judge_model (deberta-v3-base-mnli) + 人工抽样"
+  - name: "judge_agreement"
+    formula: "judge 判定与人工抽样复核一致样本数 / 抽样复核样本数"
+    ground_truth_source: "人工双标注 + Cohen's Kappa"
+  - name: "unsupported_claim_rate"
+    formula: "UNSUPPORTED claims / total claims"
+    ground_truth_source: "judge_model"
+  - name: "terminology_normalization_gain"
+    formula: "Recall@5(with normalization) - Recall@5(without normalization)"
+    ground_truth_source: "ablation group A vs D"
+  - name: "workflow_success_rate"
+    formula: "CLOSED_SUCCESS case 数 / 总 case 数"
+    ground_truth_source: "case_event_log 终态统计"
+  - name: "p95_latency_ms"
+    formula: "端到端 P95 延迟"
+    ground_truth_source: "分阶段 latency 埋点"
+  - name: "stage_latency_ms"
+    formula: "normalize/retrieval/rerank/generation/judge/review/state_transition 分阶段延迟"
+    ground_truth_source: "event_log 分阶段埋点"
+
+# ----- 告警阈值 -----
+alerts:
+  p95_latency_consecutive_exceed: 3
+  llm_json_invalid_ratio_max: 0.05
+  state_conflict_ratio_max: 0.02
+  workflow_retry_exceeded_any_batch: true
+
+# ----- 运行命令（可复现） -----
+reproduction:
+  eval_command: "python -m eval.runner --config eval/config.yaml --group all --output reports/raw/"
+  baseline_command: "python -m eval.runner --config eval/config.yaml --group A --output reports/raw/"
+  ablation_command: "python -m eval.runner --config eval/config.yaml --group {A,B,C,D,E,F} --output reports/raw/"
+  leakage_check_command: "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set.jsonl --kb eval/datasets/knowledge_chunks.jsonl"
