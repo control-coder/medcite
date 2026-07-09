@@ -86,6 +86,7 @@ class LLMClient:
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
+                "stream": False,
             },
             timeout=self.timeout,
         )

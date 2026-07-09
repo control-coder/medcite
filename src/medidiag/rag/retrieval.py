@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -209,13 +210,38 @@ class Retriever:
 
         term_overlaps = None
         if config["use_term_normalization"] and self.normalizer:
-            term_overlaps = np.array(
-                [
-                    self.normalizer.get_term_overlap(query, text)
-                    for text in self._texts
-                ],
-                dtype=np.float32,
+            # 优化: query 只归一化一次，不为每个 chunk 重复归一化
+            if nq is None:
+                nq = self.normalizer.normalize(query)
+            unique_preferred = list(
+                {m.preferred.lower() for m in nq.matched_terms}
             )
+            if unique_preferred:
+                # 构建 preferred -> variants 映射（一次）
+                pref_variants: dict[str, list[str]] = {}
+                for syn, pref in self.normalizer._synonym_map.items():
+                    pl = pref.lower()
+                    if pl not in pref_variants:
+                        pref_variants[pl] = [pl]
+                    pref_variants[pl].append(syn)
+
+                term_overlaps = np.zeros(len(self._texts), dtype=np.float32)
+                for i, text in enumerate(self._texts):
+                    text_lower = text.lower()
+                    hits = 0
+                    for term in unique_preferred:
+                        variants = pref_variants.get(term, [term])
+                        for v in variants:
+                            if re.search(
+                                r"\b" + re.escape(v) + r"\b", text_lower
+                            ):
+                                hits += 1
+                                break
+                    term_overlaps[i] = hits / len(unique_preferred)
+            else:
+                term_overlaps = np.zeros(
+                    len(self._texts), dtype=np.float32
+                )
 
         # 检索排序公式: final_score = w1*bm25 + w2*embedding + w3*evidence + w4*term_overlap
         w = self.weights

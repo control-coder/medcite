@@ -1,0 +1,123 @@
+{
+  "group": "F",
+  "sample_count": 5,
+  "metrics": {
+    "recall_at_5": 0.6,
+    "citation_precision": 1.0,
+    "unsupported_claim_rate": 0.0,
+    "workflow_success_rate": 0.0,
+    "p95_latency_ms": 120252.15,
+    "routing_coverage": 0.0
+  },
+  "cache_stats": {
+    "hits": 0,
+    "misses": 15,
+    "hit_rate": 0.0
+  },
+  "samples": [
+    {
+      "sample_id": "pubmedqa_21645374",
+      "group": "F",
+      "recall_hit": true,
+      "citation_verdicts": [
+        "SUPPORTED",
+        "SUPPORTED",
+        "SUPPORTED"
+      ],
+      "total_claims": 3,
+      "unsupported_claims": 0,
+      "workflow_success": false,
+      "latency_ms": 42434.74006652832,
+      "routing_fallback": true,
+      "routing_confidence": 0.0,
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "arbitration_verdict": "ESCALATED",
+      "compliance_blocked": false,
+      "agent_abstained": true,
+      "cache_hit": false
+    },
+    {
+      "sample_id": "pubmedqa_16418930",
+      "group": "F",
+      "recall_hit": true,
+      "citation_verdicts": [],
+      "total_claims": 0,
+      "unsupported_claims": 0,
+      "workflow_success": false,
+      "latency_ms": 120971.94528579712,
+      "routing_fallback": true,
+      "routing_confidence": 0.0,
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "arbitration_verdict": "ESCALATED",
+      "compliance_blocked": false,
+      "agent_abstained": true,
+      "cache_hit": false
+    },
+    {
+      "sample_id": "pubmedqa_9488747",
+      "group": "F",
+      "recall_hit": false,
+      "citation_verdicts": [],
+      "total_claims": 0,
+      "unsupported_claims": 0,
+      "workflow_success": false,
+      "latency_ms": 39018.93615722656,
+      "routing_fallback": true,
+      "routing_confidence": 0.02742857142857143,
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "arbitration_verdict": "ESCALATED",
+      "compliance_blocked": false,
+      "agent_abstained": true,
+      "cache_hit": false
+    },
+    {
+      "sample_id": "pubmedqa_17208539",
+      "group": "F",
+      "recall_hit": false,
+      "citation_verdicts": [],
+      "total_claims": 0,
+      "unsupported_claims": 0,
+      "workflow_success": false,
+      "latency_ms": 88476.87482833862,
+      "routing_fallback": true,
+      "routing_confidence": 0.0,
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "arbitration_verdict": "ESCALATED",
+      "compliance_blocked": false,
+      "agent_abstained": true,
+      "cache_hit": false
+    },
+    {
+      "sample_id": "pubmedqa_10808977",
+      "group": "F",
+      "recall_hit": true,
+      "citation_verdicts": [],
+      "total_claims": 0,
+      "unsupported_claims": 0,
+      "workflow_success": false,
+      "latency_ms": 117372.98464775085,
+      "routing_fallback": true,
+      "routing_confidence": 0.0,
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "arbitration_verdict": "ESCALATED",
+      "compliance_blocked": false,
+      "agent_abstained": true,
+      "cache_hit": false
+    }
+  ]
+}
