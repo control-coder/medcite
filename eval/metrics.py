@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -14,38 +14,75 @@ import numpy as np
 def compute_recall_at_k(hit_results: Sequence[bool]) -> float:
     """Evidence Recall@k。
 
-    公式: 至少命中 1 条 gold_evidence 的样本数 / 总样本数
+    公式: 至少命中 1 条 gold_evidence 的 eligible 样本数 / eligible 样本数
     ground truth: eval_set.gold_evidence_ids
+
+    调用方必须只传入 ``gold_evidence_ids`` 非空的样本。
     """
     if not hit_results:
         return 0.0
     return sum(1 for h in hit_results if h) / len(hit_results)
 
 
-def compute_citation_precision(citation_verdicts: Sequence[str]) -> float:
+def compute_gold_evidence_coverage(eligible_count: int, total_count: int) -> float:
+    """Gold Evidence Coverage = eligible samples / all samples."""
+    if total_count == 0:
+        return 0.0
+    return eligible_count / total_count
+
+
+def compute_citation_precision(citation_results: Sequence[Any]) -> float:
     """Citation Precision。
 
-    公式: SUPPORTED citation 数 / 系统输出 citation 总数
+    公式: SUPPORTED claim-citation pairs / emitted claim-citation pairs
     ground truth: judge_model (deberta-v3-base-mnli) + 人工抽样
     """
-    if not citation_verdicts:
+    emitted_pairs = [
+        result for result in citation_results if _citation_chunk_id(result)
+    ]
+    if not emitted_pairs:
         return 0.0
-    supported = sum(1 for v in citation_verdicts if v == "SUPPORTED")
-    return supported / len(citation_verdicts)
+    supported = sum(1 for result in emitted_pairs if _verdict(result) == "SUPPORTED")
+    return supported / len(emitted_pairs)
 
 
-def compute_unsupported_claim_rate(
-    citation_verdicts: Sequence[str],
-) -> float:
+def compute_unsupported_claim_rate(citation_results: Sequence[Any]) -> float:
     """Unsupported Claim Rate。
 
     公式: UNSUPPORTED claims / total claims
     ground truth: judge_model
     """
-    if not citation_verdicts:
+    if not citation_results:
         return 0.0
-    unsupported = sum(1 for v in citation_verdicts if v == "UNSUPPORTED")
-    return unsupported / len(citation_verdicts)
+    best_by_claim: dict[str, int] = {}
+    rank = {"UNSUPPORTED": 0, "PARTIAL": 1, "SUPPORTED": 2}
+    for index, result in enumerate(citation_results):
+        claim_id = _claim_id(result) or f"legacy_claim_{index}"
+        best_by_claim[claim_id] = max(
+            best_by_claim.get(claim_id, -1), rank.get(_verdict(result), 0)
+        )
+    unsupported = sum(1 for best_rank in best_by_claim.values() if best_rank == 0)
+    return unsupported / len(best_by_claim)
+
+
+def _value(result: Any, field: str, default: str = "") -> str:
+    if isinstance(result, dict):
+        value = result.get(field, default)
+    else:
+        value = getattr(result, field, default)
+    return value.value if hasattr(value, "value") else str(value)
+
+
+def _verdict(result: Any) -> str:
+    return _value(result, "verdict")
+
+
+def _claim_id(result: Any) -> str:
+    return _value(result, "claim_id")
+
+
+def _citation_chunk_id(result: Any) -> str:
+    return _value(result, "evidence_chunk_id")
 
 
 def compute_workflow_success_rate(
@@ -68,7 +105,7 @@ def compute_terminology_normalization_gain(
     """Terminology Normalization Gain。
 
     公式: Recall@5(with normalization) - Recall@5(without normalization)
-    ground truth: ablation group A vs D
+    ground truth: rag_embedding vs rag_term_norm
     """
     return recall_with_norm - recall_without_norm
 

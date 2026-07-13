@@ -2,13 +2,14 @@
 
 覆盖:
 1. 术语归一化（三层加载、同义词替换、覆盖率、term_overlap）—— 不需要重依赖
-2. 检索器（BM25 + embedding + 消融配置 + Recall@k）—— 需要 sentence-transformers/faiss/rank-bm25
+2. 检索器（BM25 + embedding + 配置驱动实验 + Recall@k）—— 需要 sentence-transformers/faiss/rank-bm25
 """
 
 from __future__ import annotations
 
 import pytest
 
+from eval.configuration import load_config
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
@@ -118,92 +119,86 @@ def test_chunks() -> list[KnowledgeChunk]:
 
 
 @pytest.fixture(scope="module")
-def retriever(test_chunks, normalizer):
+def eval_config() -> dict:
+    return load_config("eval/config.yaml")
+
+
+@pytest.fixture(scope="module")
+def retriever(test_chunks, normalizer, eval_config):
     """构建检索器（首次会下载模型，较慢）。"""
     from medidiag.rag.retrieval import Retriever
 
-    r = Retriever(test_chunks, normalizer=normalizer)
+    r = Retriever(
+        test_chunks,
+        weights=eval_config["retrieval"]["weights"],
+        evidence_level_scores=eval_config["retrieval"]["evidence_levels"],
+        embedding_model=eval_config["embedding"]["model"],
+        rerank_model=eval_config["rerank"]["model"],
+        normalizer=normalizer,
+    )
     r.build_index(use_bm25=True, use_embedding=True)
     return r
 
 
 class TestRetriever:
-    def test_search_group_a_returns_results(self, retriever) -> None:
-        """A 组（纯 embedding）返回结果。"""
-        results = retriever.search("myocardial infarction", top_k=3, ablation_group="A")
+    def test_search_embedding_returns_results(self, retriever, eval_config) -> None:
+        config = eval_config["experiments"]["rag"]["rag_embedding"]["config"]
+        results = retriever.search("myocardial infarction", top_k=3, experiment_config=config)
         assert len(results) == 3
         assert results[0].final_score > 0
         assert results[0].embedding_score > 0
 
-    def test_search_group_b_bm25_active(self, retriever) -> None:
-        """B 组（A + BM25）bm25_score 非零。"""
-        results = retriever.search("heart attack", top_k=3, ablation_group="B")
+    def test_search_bm25_active(self, retriever, eval_config) -> None:
+        config = eval_config["experiments"]["rag"]["rag_bm25"]["config"]
+        results = retriever.search("heart attack", top_k=3, experiment_config=config)
         assert any(r.bm25_score > 0 for r in results)
 
-    def test_search_group_c_evidence_active(self, retriever) -> None:
-        """C 组（A + evidence）evidence_level_score 非零。"""
-        results = retriever.search("aspirin", top_k=3, ablation_group="C")
+    def test_search_evidence_active(self, retriever, eval_config) -> None:
+        config = eval_config["experiments"]["rag"]["rag_evidence_weight"]["config"]
+        results = retriever.search("aspirin", top_k=3, experiment_config=config)
         assert any(r.evidence_level_score > 0 for r in results)
 
-    def test_search_group_d_term_overlap_active(self, retriever) -> None:
-        """D 组（A + 术语归一化）term_overlap 可能有值。"""
-        results = retriever.search("MI ECG", top_k=3, ablation_group="D")
+    def test_search_term_overlap_active(self, retriever, eval_config) -> None:
+        config = eval_config["experiments"]["rag"]["rag_term_norm"]["config"]
+        results = retriever.search("MI ECG", top_k=3, experiment_config=config)
         # term_overlap 可能为 0（取决于查询术语是否在 chunk 中命中）
         # 但至少验证不报错
         assert len(results) == 3
 
-    def test_search_group_f_all_active(self, retriever) -> None:
-        """F 组（全量组合）所有维度可能有值。"""
-        results = retriever.search("myocardial infarction", top_k=3, ablation_group="F")
+    def test_search_full_active(self, retriever, eval_config) -> None:
+        config = eval_config["experiments"]["rag"]["rag_full"]["config"]
+        results = retriever.search("myocardial infarction", top_k=3, experiment_config=config)
         assert len(results) == 3
         assert results[0].embedding_score > 0
 
-    def test_recall_at_k_hit(self, retriever) -> None:
+    def test_recall_at_k_hit(self, retriever, eval_config) -> None:
         """Recall@k 命中。"""
         hit = retriever.compute_recall_at_k(
-            "myocardial infarction", ["c1"], top_k=3, ablation_group="A"
+            "myocardial infarction", ["c1"], top_k=3,
+            experiment_config=eval_config["experiments"]["rag"]["rag_embedding"]["config"],
         )
         assert hit is True
 
-    def test_recall_at_k_miss(self, retriever) -> None:
+    def test_recall_at_k_miss(self, retriever, eval_config) -> None:
         """Recall@k 未命中（gold 不在知识库中）。"""
         hit = retriever.compute_recall_at_k(
-            "myocardial infarction", ["nonexistent_id"], top_k=3, ablation_group="A"
+            "myocardial infarction", ["nonexistent_id"], top_k=3,
+            experiment_config=eval_config["experiments"]["rag"]["rag_embedding"]["config"],
         )
         assert hit is False
 
-    def test_recall_empty_gold(self, retriever) -> None:
+    def test_recall_empty_gold(self, retriever, eval_config) -> None:
         """空 gold_evidence 返回 False。"""
         hit = retriever.compute_recall_at_k(
-            "query", [], top_k=3, ablation_group="A"
+            "query", [], top_k=3,
+            experiment_config=eval_config["experiments"]["rag"]["rag_embedding"]["config"],
         )
         assert hit is False
 
-    def test_ablation_configs_defined(self) -> None:
-        """消融组别 A-F 都有配置。"""
-        from medidiag.rag.retrieval import ABLATION_CONFIGS
+    def test_experiment_config_is_required(self, retriever) -> None:
+        with pytest.raises(ValueError, match="source of truth"):
+            retriever.search("query", top_k=3)
 
-        for group in ["A", "B", "C", "D", "E", "F"]:
-            assert group in ABLATION_CONFIGS
-            cfg = ABLATION_CONFIGS[group]
-            assert "use_bm25" in cfg
-            assert "use_evidence_weighting" in cfg
-            assert "use_term_normalization" in cfg
-
-    def test_default_weights(self) -> None:
-        """默认权重与 config.yaml 一致。"""
-        from medidiag.rag.retrieval import DEFAULT_WEIGHTS
-
-        assert DEFAULT_WEIGHTS["w1_bm25"] == 0.25
-        assert DEFAULT_WEIGHTS["w2_embedding"] == 0.45
-        assert DEFAULT_WEIGHTS["w3_evidence_level"] == 0.20
-        assert DEFAULT_WEIGHTS["w4_term_overlap"] == 0.10
-
-    def test_evidence_level_scores(self) -> None:
-        """证据等级分数映射。"""
-        from medidiag.rag.retrieval import EVIDENCE_LEVEL_SCORES
-
-        assert EVIDENCE_LEVEL_SCORES["level_1_guideline"] == 1.0
-        assert EVIDENCE_LEVEL_SCORES["level_2_review"] == 0.8
-        assert EVIDENCE_LEVEL_SCORES["level_3_primary_study"] == 0.9
-        assert EVIDENCE_LEVEL_SCORES["level_5_other"] == 0.3
+    def test_weights_come_from_yaml(self, retriever, eval_config) -> None:
+        assert retriever.weights == eval_config["retrieval"]["weights"]
+        assert retriever.evidence_level_scores == eval_config["retrieval"]["evidence_levels"]

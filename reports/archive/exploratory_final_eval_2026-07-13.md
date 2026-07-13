@@ -1,4 +1,6 @@
-# Final Evaluation Report
+# Final Evaluation Report (Exploratory Archive)
+
+> 已归档：该报告不满足 `SUPPLEMENT_PLAN.md` 正式门禁，不得用于简历或正式指标。
 
 > 自动生成，请勿手动编辑。
 

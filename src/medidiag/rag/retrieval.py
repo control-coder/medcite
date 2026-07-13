@@ -1,17 +1,9 @@
-"""检索模块：BM25 + embedding + rerank + 证据等级加权 + 消融配置。
+"""检索模块：BM25 + embedding + rerank + 证据等级加权。
 
 检索排序公式（PLAN.md）：
     final_score = w1*bm25 + w2*embedding + w3*evidence_level + w4*term_overlap
 
-权重从 eval/config.yaml 读取，参与消融实验。
-
-消融组别：
-    A: 纯 embedding（基线）
-    B: A + BM25
-    C: A + evidence level weighting
-    D: A + terminology normalization
-    E: A + citation verifier（阶段 5 实现，阶段 4 降级为 A）
-    F: A + B + C + D 全量组合
+权重、模型和实验开关必须由调用方从 eval/config.yaml 显式传入。
 
 注意: sentence-transformers / faiss / rank-bm25 在方法内部延迟导入，
 模块本身可被 import（调用方法时才需要依赖）。
@@ -19,72 +11,12 @@
 
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
 
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
-
-
-# 证据等级 -> 分数映射（PLAN.md evidence_levels）
-EVIDENCE_LEVEL_SCORES: dict[str, float] = {
-    "level_1_guideline": 1.0,
-    "level_2_review": 0.8,
-    "level_3_primary_study": 0.9,
-    "level_4_case_report": 0.5,
-    "level_5_other": 0.3,
-}
-
-# 消融组别配置（对应 eval/config.yaml 的 ablation.groups）
-ABLATION_CONFIGS: dict[str, dict[str, bool]] = {
-    "A": {
-        "use_bm25": False,
-        "use_evidence_weighting": False,
-        "use_term_normalization": False,
-        "use_citation_verifier": False,
-    },
-    "B": {
-        "use_bm25": True,
-        "use_evidence_weighting": False,
-        "use_term_normalization": False,
-        "use_citation_verifier": False,
-    },
-    "C": {
-        "use_bm25": False,
-        "use_evidence_weighting": True,
-        "use_term_normalization": False,
-        "use_citation_verifier": False,
-    },
-    "D": {
-        "use_bm25": False,
-        "use_evidence_weighting": False,
-        "use_term_normalization": True,
-        "use_citation_verifier": False,
-    },
-    "E": {
-        # citation verifier 在阶段 5 实现，阶段 4 降级为 A
-        "use_bm25": False,
-        "use_evidence_weighting": False,
-        "use_term_normalization": False,
-        "use_citation_verifier": True,
-    },
-    "F": {
-        "use_bm25": True,
-        "use_evidence_weighting": True,
-        "use_term_normalization": True,
-        "use_citation_verifier": True,
-    },
-}
-
-# 默认权重（对应 eval/config.yaml retrieval.weights）
-DEFAULT_WEIGHTS: dict[str, float] = {
-    "w1_bm25": 0.25,
-    "w2_embedding": 0.45,
-    "w3_evidence_level": 0.20,
-    "w4_term_overlap": 0.10,
-}
 
 
 @dataclass
@@ -104,28 +36,25 @@ class Retriever:
     """检索器。
 
     支持 BM25 + embedding + rerank + 证据等级加权 + 术语归一化。
-    消融配置 A-F 可切换。
-
     用法:
-        retriever = Retriever(chunks, weights=...)
+        retriever = Retriever(chunks, weights=..., evidence_level_scores=...,
+                              embedding_model=..., rerank_model=...)
         retriever.build_index()
-        results = retriever.search(query, top_k=5, ablation_group="F")
+        results = retriever.search(query, top_k=5, experiment_config=...)
     """
 
     def __init__(
         self,
         chunks: list[KnowledgeChunk],
-        weights: dict[str, float] | None = None,
-        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
-        rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        weights: dict[str, float],
+        evidence_level_scores: dict[str, float],
+        embedding_model: str,
+        rerank_model: str,
         normalizer: TerminologyNormalizer | None = None,
     ) -> None:
-        # 优先使用本地模型路径（避免 HuggingFace 缓存问题）
-        local_model = os.path.join(os.getcwd(), ".cache", "model_all_MiniLM")
-        if embedding_model == "sentence-transformers/all-MiniLM-L6-v2" and os.path.isdir(local_model):
-            embedding_model = local_model
         self.chunks = chunks
-        self.weights = weights or dict(DEFAULT_WEIGHTS)
+        self.weights = dict(weights)
+        self.evidence_level_scores = dict(evidence_level_scores)
         self.embedding_model_name = embedding_model
         self.rerank_model_name = rerank_model
         self.normalizer = normalizer
@@ -173,7 +102,7 @@ class Retriever:
         self,
         query: str,
         top_k: int = 5,
-        ablation_group: str = "F",
+        experiment_config: dict[str, bool] | None = None,
     ) -> list[SearchResult]:
         """检索 top-k 相关 chunks。
 
@@ -182,14 +111,16 @@ class Retriever:
         Args:
             query: 查询文本。
             top_k: 返回结果数。
-            ablation_group: 消融组别 A-F。
+            experiment_config: 从 eval/config.yaml 读取的 RAG 开关。
 
         Returns:
             SearchResult 列表（按 final_score 降序）。
         """
         import numpy as np
 
-        config = ABLATION_CONFIGS.get(ablation_group, ABLATION_CONFIGS["F"])
+        if experiment_config is None:
+            raise ValueError("experiment_config is required; eval/config.yaml is the source of truth")
+        config = experiment_config
 
         # 术语归一化（D/F 组）
         normalized_query = query
@@ -307,7 +238,7 @@ class Retriever:
 
         return np.array(
             [
-                EVIDENCE_LEVEL_SCORES.get(c.evidence_level, 0.3)
+                self.evidence_level_scores.get(c.evidence_level, 0.0)
                 for c in self.chunks
             ],
             dtype=np.float32,
@@ -348,7 +279,7 @@ class Retriever:
         query: str,
         gold_evidence_ids: list[str],
         top_k: int = 5,
-        ablation_group: str = "F",
+        experiment_config: dict[str, bool] | None = None,
     ) -> bool:
         """计算单个查询的 Recall@k 是否命中。
 
@@ -358,14 +289,16 @@ class Retriever:
             query: 查询文本。
             gold_evidence_ids: 标准证据 chunk_id 列表。
             top_k: top-k。
-            ablation_group: 消融组别。
+            experiment_config: 从 eval/config.yaml 读取的 RAG 开关。
 
         Returns:
             True 如果至少命中 1 条 gold_evidence。
         """
         if not gold_evidence_ids:
             return False
-        results = self.search(query, top_k=top_k, ablation_group=ablation_group)
+        results = self.search(
+            query, top_k=top_k, experiment_config=experiment_config
+        )
         result_ids = {r.chunk_id for r in results}
         gold_set = set(gold_evidence_ids)
         return len(result_ids & gold_set) > 0

@@ -1,145 +1,74 @@
-"""评测 runner（完整实现）。
+"""Configuration-driven MediDiag evaluation runner.
 
-API 调用优化:
-1. AgentOutputCache: 基于 input_hash 缓存，避免重复 LLM 调用
-2. 批量 embedding: 检索索引构建一次，所有组复用
-3. 检索结果复用: embedding_scores 跨消融组复用（只权重不同）
-4. --dry-run: 只计算检索指标，不调 LLM
-5. --limit: 限制样本数（调试用）
-
-用法:
-    python -m eval.runner --help
-    python -m eval.runner --config eval/config.yaml --show-config
-    python -m eval.runner --config eval/config.yaml --dry-run --group all
-    python -m eval.runner --config eval/config.yaml --group F --limit 10
+RAG and Agent experiments use separate namespaces. Development runs are
+explicitly non-reportable when they use a limit, dry-run, unpinned models, or
+the rule fallback judge.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import click
-import yaml
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
+from eval import metrics
+from eval.configuration import (
+    AGENT_EXPERIMENTS,
+    EXPERIMENTS,
+    RAG_EXPERIMENTS,
+    all_experiment_names,
+    get_experiment,
+    load_config,
+    validate_config,
+)
+from eval.leakage_check import LEAKAGE_FLAG, run_leakage_check
 from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput
 from medidiag.agents.diagnosis import DiagnosisAgent
 from medidiag.agents.llm_client import LLMClient
 from medidiag.agents.router import SpecialistRouter
 from medidiag.agents.specialist import SpecialistAgent
-from medidiag.agents.specialty_data import BASELINE_PAIR
 from medidiag.compliance.guard import ComplianceGuard
 from medidiag.rag.normalizer import TerminologyNormalizer
-from medidiag.rag.retrieval import ABLATION_CONFIGS, Retriever
-from medidiag.review.citation import CitationVerifier
+from medidiag.rag.retrieval import Retriever
+from medidiag.review.citation import CitationResult, CitationVerifier
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.schemas import KnowledgeChunk, read_jsonl
 
-import eval.metrics as metrics
-
-VALID_GROUPS = ("A", "B", "C", "D", "E", "F", "all")
-
-
-# ===== 配置加载与校验（保留阶段 0 接口）=====
-
-
-def load_config(config_path: str | Path) -> dict[str, Any]:
-    """加载评测配置 YAML。"""
-    path = Path(config_path)
-    if not path.exists():
-        raise click.FileError(str(path), hint="eval config not found")
-    with path.open("r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    if not isinstance(cfg, dict):
-        raise click.UsageError(f"eval config must be a mapping, got {type(cfg)}")
-    return cfg
-
-
-def validate_config(cfg: dict[str, Any]) -> list[str]:
-    """校验配置完整性，返回缺失字段列表。"""
-    issues: list[str] = []
-    for key in ("generation", "embedding", "rerank", "judge", "dataset", "retrieval", "ablation", "workflow", "metrics", "reproduction"):
-        if key not in cfg:
-            issues.append(f"missing top-level key: {key}")
-    if "generation" in cfg and not cfg["generation"].get("model"):
-        issues.append("generation.model must be locked")
-    if "embedding" in cfg and not cfg["embedding"].get("model"):
-        issues.append("embedding.model must be locked")
-    if "rerank" in cfg and not cfg["rerank"].get("model"):
-        issues.append("rerank.model must be locked")
-    if "judge" in cfg and not cfg["judge"].get("model"):
-        issues.append("judge.model must be locked")
-    if "ablation" in cfg and "groups" in cfg["ablation"]:
-        for g in ("A", "B", "C", "D", "E", "F"):
-            if g not in cfg["ablation"]["groups"]:
-                issues.append(f"missing ablation group: {g}")
-    return issues
-
-
-def show_config_summary(cfg: dict[str, Any]) -> None:
-    """打印配置摘要。"""
-    click.echo("=" * 70)
-    click.echo("MediDiag Eval Configuration Summary")
-    click.echo("=" * 70)
-    click.echo(f"  generation_model : {cfg['generation']['model']}")
-    click.echo(f"  embedding_model  : {cfg['embedding']['model']}")
-    click.echo(f"  rerank_model     : {cfg['rerank']['model']}")
-    click.echo(f"  judge_model      : {cfg['judge']['model']}")
-    click.echo(f"  temperature      : {cfg['generation']['temperature']}")
-    click.echo(f"  seed             : {cfg['generation']['seed']}")
-    click.echo(f"  dataset_version  : {cfg['dataset']['version']}")
-    w = cfg["retrieval"]["weights"]
-    click.echo(f"  retrieval weights: w1={w['w1_bm25']} w2={w['w2_embedding']} w3={w['w3_evidence_level']} w4={w['w4_term_overlap']}")
-    click.echo(f"  ablation groups  : {', '.join(cfg['ablation']['groups'].keys())}")
-    click.echo(f"  metrics count    : {len(cfg['metrics'])}")
-    click.echo("=" * 70)
-
-
-# ===== Agent 输出缓存（API 调用优化核心）=====
+VALID_SELECTIONS = (*EXPERIMENTS, "rag_all", "agent_all", "all")
 
 
 @dataclass
 class AgentOutputCache:
-    """Agent 输出缓存，基于 input_hash 避免重复 LLM 调用。
-
-    缓存策略:
-        - key: input_hash（question + evidence_ids + specialty + routing_note 的 sha256）
-        - value: AgentOutput
-        - 过期: 不过期（temperature=0，相同输入产生相同输出）
-    """
-
     _cache: dict[str, AgentOutput] = field(default_factory=dict)
     hits: int = 0
     misses: int = 0
 
     def compute_hash(
-        self,
-        question: str,
-        evidence_ids: list[str],
-        specialty: str,
-        routing_note: str = "",
+        self, question: str, evidence_ids: list[str], specialty: str
     ) -> str:
-        """计算 Agent 输入的哈希。"""
-        data = f"{question}|{'-'.join(sorted(evidence_ids))}|{specialty}|{routing_note}"
-        return hashlib.sha256(data.encode("utf-8")).hexdigest()
+        payload = f"{question}|{'-'.join(sorted(evidence_ids))}|{specialty}"
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def get(self, input_hash: str) -> AgentOutput | None:
-        result = self._cache.get(input_hash)
-        if result is not None:
-            self.hits += 1
-        else:
+        value = self._cache.get(input_hash)
+        if value is None:
             self.misses += 1
-        return result
+        else:
+            self.hits += 1
+        return value
 
     def set(self, input_hash: str, output: AgentOutput) -> None:
         self._cache[input_hash] = output
@@ -147,24 +76,21 @@ class AgentOutputCache:
     @property
     def hit_rate(self) -> float:
         total = self.hits + self.misses
-        return self.hits / total if total > 0 else 0.0
-
-
-# ===== 评测结果数据结构 =====
+        return self.hits / total if total else 0.0
 
 
 @dataclass
 class SampleResult:
-    """单个样本的评测结果。"""
-
     sample_id: str
-    group: str
-    recall_hit: bool = False
-    citation_verdicts: list[str] = field(default_factory=list)
+    experiment: str
+    family: str
+    evidence_eligible: bool
+    recall_hit: bool | None = None
+    citation_results: list[dict[str, Any]] = field(default_factory=list)
     total_claims: int = 0
-    unsupported_claims: int = 0
-    workflow_success: bool = False
+    pipeline_approved: bool | None = None
     latency_ms: float = 0.0
+    stage_latency_ms: dict[str, float] = field(default_factory=dict)
     routing_fallback: bool = False
     routing_confidence: float = 0.0
     specialty_pair: list[str] = field(default_factory=list)
@@ -175,158 +101,277 @@ class SampleResult:
 
 
 @dataclass
-class GroupResult:
-    """单个消融组的结果。"""
-
-    group: str
+class ExperimentResult:
+    experiment: str
+    family: str
     sample_results: list[SampleResult] = field(default_factory=list)
-    cache_stats: dict = field(default_factory=dict)
+    cache_stats: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def recall_at_5(self) -> float:
-        hits = [r for r in self.sample_results if r.recall_hit]
-        return len(hits) / len(self.sample_results) if self.sample_results else 0.0
+    def evidence_recall_at_5(self) -> float:
+        eligible = [
+            result.recall_hit
+            for result in self.sample_results
+            if result.evidence_eligible and result.recall_hit is not None
+        ]
+        return metrics.compute_recall_at_k(eligible)
+
+    @property
+    def gold_evidence_coverage(self) -> float:
+        eligible = sum(result.evidence_eligible for result in self.sample_results)
+        return metrics.compute_gold_evidence_coverage(eligible, len(self.sample_results))
 
     @property
     def citation_precision(self) -> float:
-        all_v = [v for r in self.sample_results for v in r.citation_verdicts]
-        return metrics.compute_citation_precision(all_v)
+        records = [
+            record for result in self.sample_results for record in result.citation_results
+        ]
+        return metrics.compute_citation_precision(records)
 
     @property
     def unsupported_claim_rate(self) -> float:
-        all_v = [v for r in self.sample_results for v in r.citation_verdicts]
-        return metrics.compute_unsupported_claim_rate(all_v)
+        records = [
+            record for result in self.sample_results for record in result.citation_results
+        ]
+        return metrics.compute_unsupported_claim_rate(records)
 
     @property
-    def workflow_success_rate(self) -> float:
-        return metrics.compute_workflow_success_rate(
-            [r.workflow_success for r in self.sample_results]
-        )
+    def pipeline_approval_rate(self) -> float | None:
+        values = [
+            result.pipeline_approved
+            for result in self.sample_results
+            if result.pipeline_approved is not None
+        ]
+        return metrics.compute_workflow_success_rate(values) if values else None
 
     @property
-    def p95_latency(self) -> float:
+    def p95_latency_ms(self) -> float:
         return metrics.compute_p95_latency(
-            [r.latency_ms for r in self.sample_results]
+            [result.latency_ms for result in self.sample_results]
         )
 
-    @property
-    def routing_coverage(self) -> float:
-        non_fb = [r for r in self.sample_results if not r.routing_fallback]
-        return len(non_fb) / len(self.sample_results) if self.sample_results else 0.0
-
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
-            "group": self.group,
+            "experiment": self.experiment,
+            "family": self.family,
             "sample_count": len(self.sample_results),
             "metrics": {
-                "recall_at_5": round(self.recall_at_5, 4),
+                "evidence_recall_at_5": round(self.evidence_recall_at_5, 4),
+                "gold_evidence_coverage": round(self.gold_evidence_coverage, 4),
                 "citation_precision": round(self.citation_precision, 4),
                 "unsupported_claim_rate": round(self.unsupported_claim_rate, 4),
-                "workflow_success_rate": round(self.workflow_success_rate, 4),
-                "p95_latency_ms": round(self.p95_latency, 2),
-                "routing_coverage": round(self.routing_coverage, 4),
+                # This is a reviewer-pipeline metric, not CLOSED_SUCCESS.
+                "pipeline_approval_rate": (
+                    round(self.pipeline_approval_rate, 4)
+                    if self.pipeline_approval_rate is not None
+                    else None
+                ),
+                "workflow_success_rate": None,
+                "p95_latency_ms": round(self.p95_latency_ms, 2),
             },
             "cache_stats": self.cache_stats,
-            "samples": [asdict(r) for r in self.sample_results],
+            "samples": [asdict(result) for result in self.sample_results],
         }
 
 
-# ===== 评测流程 =====
+def show_config_summary(config: dict[str, Any]) -> None:
+    click.echo("MediDiag Eval Configuration")
+    click.echo(f"  mode             : {config['evaluation']['mode']}")
+    for section in ("generation", "embedding", "rerank", "judge"):
+        value = config[section]
+        click.echo(f"  {section:<17}: {value['model']}@{value['revision']}")
+    click.echo(f"  judge_method     : {config['judge']['method']}")
+    click.echo(f"  experiments      : {', '.join(all_experiment_names(config))}")
+
+
+def select_experiments(config: dict[str, Any], selection: str) -> list[str]:
+    if selection == "rag_all":
+        return list(config["experiments"]["rag"])
+    if selection == "agent_all":
+        return list(config["experiments"]["agent"])
+    if selection == "all":
+        return all_experiment_names(config)
+    return [selection]
 
 
 def run_evaluation(
-    cfg: dict[str, Any],
-    groups: list[str],
+    config: dict[str, Any],
+    experiment_names: list[str],
     output_dir: Path,
     limit: int | None = None,
     dry_run: bool = False,
-) -> dict[str, GroupResult]:
-    """运行评测。
+) -> tuple[str, dict[str, ExperimentResult]]:
+    started_at = datetime.now(UTC)
+    mode = config["evaluation"]["mode"]
+    if mode == "formal" and (limit is not None or dry_run):
+        raise click.UsageError("formal evaluation forbids --limit and --dry-run")
 
-    API 调用优化:
-        1. 检索索引构建一次，所有组复用
-        2. AgentOutputCache 避免重复 LLM 调用
-        3. embedding_scores 跨组复用
-    """
-    # 1. 加载数据
-    eval_set = read_jsonl(cfg["dataset"]["eval_set_path"])
-    kb_chunks = read_jsonl(cfg["dataset"]["knowledge_base_path"])
-
-    if limit:
-        eval_set = eval_set[:limit]
-
-    click.echo(f"评测集: {len(eval_set)} 样本")
-    click.echo(f"知识库: {len(kb_chunks)} chunks")
-
-    # 2. 构建检索索引（一次，所有组复用）
-    chunks = [KnowledgeChunk(**c) for c in kb_chunks]
+    _run_leakage_gates(config, experiment_names)
+    kb_path = _resolve(config["dataset"]["knowledge_base_path"])
+    chunks = [KnowledgeChunk(**record) for record in read_jsonl(kb_path)]
     normalizer = TerminologyNormalizer()
-    click.echo("构建检索索引（embedding + BM25）...")
-    retriever = Retriever(chunks, normalizer=normalizer)
+    retriever = Retriever(
+        chunks,
+        weights=config["retrieval"]["weights"],
+        evidence_level_scores=config["retrieval"]["evidence_levels"],
+        embedding_model=config["embedding"]["model"],
+        rerank_model=config["rerank"]["model"],
+        normalizer=normalizer,
+    )
     retriever.build_index(use_bm25=True, use_embedding=True)
 
-    # 3. 初始化组件
-    router = SpecialistRouter(normalizer=normalizer)
-    verifier = CitationVerifier(use_nli=False)
-    reviewer = ClinicalLogicReviewer()
-    guard = ComplianceGuard()
-    arb = ArbitrationAgent()
-    llm = LLMClient() if not dry_run else None
-    cache = AgentOutputCache()
-
-    # 4. 对每个消融组运行评测
-    all_results: dict[str, GroupResult] = {}
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    for group in groups:
-        click.echo(f"\n--- 消融组 {group} ---")
-        group_result = _run_group(
-            group, eval_set, retriever, normalizer, router,
-            verifier, reviewer, guard, arb, llm, cache, dry_run,
+    verifier: CitationVerifier | None = None
+    llm: LLMClient | None = None
+    if not dry_run:
+        verifier = CitationVerifier(
+            model_name=config["judge"]["model"],
+            model_revision=config["judge"]["revision"],
+            method=config["judge"]["method"],
         )
-        all_results[group] = group_result
+        verifier.initialize()
+        generation = config["generation"]
+        llm = LLMClient(
+            base_url=generation["base_url"],
+            model=generation["model"],
+            timeout=int(generation["timeout_seconds"]),
+            temperature=float(generation["temperature"]),
+            max_tokens=int(generation["max_tokens"]),
+            seed=int(generation["seed"]),
+        )
 
-        # 输出原始结果
-        output_path = output_dir / f"group_{group}.json"
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(group_result.to_dict(), f, ensure_ascii=False, indent=2)
-        click.echo(f"  样本数: {len(group_result.sample_results)}")
-        click.echo(f"  Recall@5: {group_result.recall_at_5:.4f}")
-        if not dry_run:
-            click.echo(f"  Citation Precision: {group_result.citation_precision:.4f}")
-            click.echo(f"  Workflow Success: {group_result.workflow_success_rate:.4f}")
-        click.echo(f"  缓存命中率: {cache.hit_rate:.2%} (hits={cache.hits}, misses={cache.misses})")
-        click.echo(f"  输出: {output_path}")
+    cache = AgentOutputCache()
+    git_commit = _git_output(["git", "rev-parse", "HEAD"])
+    dirty_diff_hash = _git_diff_hash()
+    run_id = _new_run_id(config)
+    run_dir = output_dir / run_id
+    run_dir.mkdir(parents=True, exist_ok=False)
+    (run_dir / "config.snapshot.json").write_text(
+        json.dumps(config, ensure_ascii=False, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+    results: dict[str, ExperimentResult] = {}
+    for name in experiment_names:
+        family, experiment = get_experiment(config, name)
+        records = _load_experiment_records(config, family, limit)
+        result = _run_experiment(
+            name,
+            family,
+            experiment,
+            records,
+            config,
+            retriever,
+            normalizer,
+            verifier,
+            llm,
+            cache,
+            dry_run,
+        )
+        results[name] = result
+        (run_dir / f"{name}.json").write_text(
+            json.dumps(result.to_dict(), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        click.echo(
+            f"{name}: Recall@5={result.evidence_recall_at_5:.4f}, "
+            f"GoldCoverage={result.gold_evidence_coverage:.4f}"
+        )
 
-    return all_results
+    manifest = _build_manifest(
+        run_id,
+        config,
+        experiment_names,
+        started_at,
+        datetime.now(UTC),
+        limit,
+        dry_run,
+        cache,
+        git_commit,
+        dirty_diff_hash,
+    )
+    (run_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return run_id, results
 
 
-def _run_group(
-    group: str,
-    eval_set: list[dict],
+def _run_leakage_gates(config: dict[str, Any], names: list[str]) -> None:
+    families = {get_experiment(config, name)[0] for name in names}
+    dataset = config["dataset"]
+    for family in families:
+        eval_path = _resolve(
+            dataset["rag_eval_set_path"]
+            if family == "rag"
+            else dataset["agent_eval_set_path"]
+        )
+        kb_path = _resolve(dataset["knowledge_base_path"])
+        hits = run_leakage_check(eval_path, kb_path, config["leakage_check"])
+        if hits:
+            detail = "\n".join(f"  - {hit}" for hit in hits[:20])
+            raise click.ClickException(f"{LEAKAGE_FLAG}\n{detail}")
+
+
+def _load_experiment_records(
+    config: dict[str, Any], family: str, limit: int | None
+) -> list[dict[str, Any]]:
+    field = "rag_eval_set_path" if family == "rag" else "agent_eval_set_path"
+    records = read_jsonl(_resolve(config["dataset"][field]))
+    if family == "agent":
+        by_id = {str(record["sample_id"]): record for record in records}
+        manifest = read_jsonl(
+            _resolve(config["dataset"]["agent_sample_manifest_path"])
+        )
+        missing = [
+            str(item["sample_id"])
+            for item in manifest
+            if str(item["sample_id"]) not in by_id
+        ]
+        if missing:
+            raise click.ClickException(
+                "agent sample manifest references missing samples: "
+                + ", ".join(missing[:10])
+            )
+        records = [by_id[str(item["sample_id"])] for item in manifest]
+    return records[:limit] if limit is not None else records
+
+
+def _run_experiment(
+    name: str,
+    family: str,
+    experiment: dict[str, Any],
+    records: list[dict[str, Any]],
+    config: dict[str, Any],
     retriever: Retriever,
     normalizer: TerminologyNormalizer,
-    router: SpecialistRouter,
-    verifier: CitationVerifier,
-    reviewer: ClinicalLogicReviewer,
-    guard: ComplianceGuard,
-    arb: ArbitrationAgent,
+    verifier: CitationVerifier | None,
     llm: LLMClient | None,
     cache: AgentOutputCache,
     dry_run: bool,
-) -> GroupResult:
-    """运行单个消融组。"""
-    result = GroupResult(group=group)
-
-    for i, sample in enumerate(eval_set):
-        if (i + 1) % 50 == 0:
-            click.echo(f"  进度: {i + 1}/{len(eval_set)}")
-        sr = _run_sample(
-            group, sample, retriever, normalizer, router,
-            verifier, reviewer, guard, arb, llm, cache, dry_run,
+) -> ExperimentResult:
+    result = ExperimentResult(experiment=name, family=family)
+    rag_config = (
+        experiment["config"]
+        if family == "rag"
+        else config["experiments"]["rag"][experiment["retrieval_profile"]]["config"]
+    )
+    topology = "single" if family == "rag" else experiment["topology"]
+    for record in records:
+        result.sample_results.append(
+            _run_sample(
+                name,
+                family,
+                topology,
+                experiment,
+                rag_config,
+                record,
+                config,
+                retriever,
+                normalizer,
+                verifier,
+                llm,
+                cache,
+                dry_run,
+            )
         )
-        result.sample_results.append(sr)
-
     result.cache_stats = {
         "hits": cache.hits,
         "misses": cache.misses,
@@ -336,239 +381,338 @@ def _run_group(
 
 
 def _run_sample(
-    group: str,
-    sample: dict,
+    name: str,
+    family: str,
+    topology: str,
+    experiment: dict[str, Any],
+    rag_config: dict[str, bool],
+    sample: dict[str, Any],
+    config: dict[str, Any],
     retriever: Retriever,
     normalizer: TerminologyNormalizer,
-    router: SpecialistRouter,
-    verifier: CitationVerifier,
-    reviewer: ClinicalLogicReviewer,
-    guard: ComplianceGuard,
-    arb: ArbitrationAgent,
+    verifier: CitationVerifier | None,
     llm: LLMClient | None,
     cache: AgentOutputCache,
     dry_run: bool,
 ) -> SampleResult:
-    """运行单个样本评测。"""
-    start = time.time()
-    sample_id = sample["sample_id"]
-    question = sample["question"]
-    gold_ids = sample.get("gold_evidence_ids", [])
-    options = sample.get("options")
+    started = time.perf_counter()
+    gold_ids = [str(value) for value in sample.get("gold_evidence_ids", [])]
+    result = SampleResult(
+        sample_id=str(sample["sample_id"]),
+        experiment=name,
+        family=family,
+        evidence_eligible=bool(gold_ids),
+    )
+    question = str(sample["question"])
+    top_k = int(config["retrieval"]["top_k"])
+    candidate_k = int(config["retrieval"]["candidate_k"])
 
-    sr = SampleResult(sample_id=sample_id, group=group)
+    retrieval_query = question
+    if rag_config["use_term_normalization"]:
+        normalize_started = time.perf_counter()
+        retrieval_query = normalizer.normalize(question).normalized
+        result.stage_latency_ms["normalize"] = _elapsed_ms(normalize_started)
+    retrieval_started = time.perf_counter()
+    search_results = retriever.search(
+        retrieval_query,
+        top_k=candidate_k if rag_config["use_rerank"] else top_k,
+        experiment_config=rag_config,
+    )
+    result.stage_latency_ms["retrieval"] = _elapsed_ms(retrieval_started)
+    if rag_config["use_rerank"]:
+        rerank_started = time.perf_counter()
+        search_results = retriever.rerank(retrieval_query, search_results, top_k=top_k)
+        result.stage_latency_ms["rerank"] = _elapsed_ms(rerank_started)
 
-    # 1. 术语归一化（D/F 组）
-    use_norm = ABLATION_CONFIGS.get(group, {}).get("use_term_normalization", False)
-    search_query = normalizer.normalize(question).normalized if use_norm else question
-
-    # 2. 检索（复用 embedding_scores）
-    search_results = retriever.search(search_query, top_k=5, ablation_group=group)
-    evidence_chunks = [r.chunk for r in search_results if r.chunk]
-    evidence_ids = [r.chunk_id for r in search_results]
-
-    # 3. Recall@5
-    if gold_ids:
-        sr.recall_hit = len(set(evidence_ids) & set(gold_ids)) > 0
-
-    # 4. dry-run: 只计算检索指标
+    evidence_ids = [item.chunk_id for item in search_results]
+    evidence = [item.chunk for item in search_results if item.chunk is not None]
+    result.recall_hit = bool(set(evidence_ids) & set(gold_ids)) if gold_ids else None
     if dry_run:
-        sr.workflow_success = sr.recall_hit
-        sr.latency_ms = (time.time() - start) * 1000
-        return sr
+        result.latency_ms = _elapsed_ms(started)
+        return result
 
-    # 5. 诊断生成
-    if group == "A":
-        # 单 Agent baseline
-        sr.specialty_pair = ["general_diagnosis"]
-        sr = _run_single_agent(
-            sr, question, evidence_chunks, evidence_ids, options,
-            llm, cache, reviewer, verifier, guard,
-        )
-    else:
-        # 双专科
-        if group == "B":
-            sr.specialty_pair = list(BASELINE_PAIR)
-            sr.routing_fallback = False
-            sr.routing_confidence = 1.0
-        else:
-            routing = router.route(question, evidence_chunks, "")
-            sr.specialty_pair = list(routing.specialty_pair)
-            sr.routing_fallback = routing.is_fallback
-            sr.routing_confidence = routing.confidence
+    generation_started = time.perf_counter()
+    outputs = _generate_outputs(
+        topology,
+        experiment,
+        question,
+        evidence,
+        evidence_ids,
+        sample.get("options"),
+        normalizer,
+        config["retrieval"]["evidence_levels"],
+        llm,
+        cache,
+        result,
+    )
+    result.stage_latency_ms["generation"] = _elapsed_ms(generation_started)
+    result.agent_abstained = any(output.abstain for output in outputs)
 
-        sr = _run_dual_specialist(
-            sr, question, evidence_chunks, evidence_ids, options,
-            llm, cache, arb, verifier, guard,
-        )
+    review_started = time.perf_counter()
+    reviewer = ClinicalLogicReviewer()
+    review_approved = all(reviewer.check(output).is_approved for output in outputs)
+    result.stage_latency_ms["review"] = _elapsed_ms(review_started)
 
-    sr.latency_ms = (time.time() - start) * 1000
-    return sr
+    claims: list[dict[str, Any]] = []
+    for output_index, output in enumerate(outputs):
+        for claim_index, claim in enumerate(output.claims):
+            claims.append(
+                {
+                    "claim_id": (
+                        f"{result.sample_id}:{output_index:02d}_{claim_index:04d}"
+                    ),
+                    "text": claim.text,
+                    "citation_chunk_ids": claim.citation_chunk_ids,
+                }
+            )
+    judge_started = time.perf_counter()
+    citation_results = verifier.verify_batch(claims, evidence) if verifier else []
+    result.stage_latency_ms["judge"] = _elapsed_ms(judge_started)
+    result.citation_results = [item.to_dict() for item in citation_results]
+    result.total_claims = len(claims)
+
+    guard = ComplianceGuard()
+    result.compliance_blocked = any(
+        guard.check_output(output.to_dict()).blocked for output in outputs
+    )
+    unsupported_rate = metrics.compute_unsupported_claim_rate(citation_results)
+    citation_gate = (
+        not rag_config["use_citation_review"]
+        or unsupported_rate <= config["workflow"]["review"]["unsupported_claim_threshold"]
+    )
+    result.pipeline_approved = (
+        review_approved
+        and citation_gate
+        and not result.agent_abstained
+        and not result.compliance_blocked
+    )
+    result.latency_ms = _elapsed_ms(started)
+    return result
 
 
-def _run_single_agent(
-    sr: SampleResult,
+def _generate_outputs(
+    topology: str,
+    experiment: dict[str, Any],
     question: str,
-    evidence: list,
+    evidence: list[KnowledgeChunk],
     evidence_ids: list[str],
-    options: dict | None,
+    options: dict[str, str] | None,
+    normalizer: TerminologyNormalizer,
+    evidence_level_scores: dict[str, float],
     llm: LLMClient | None,
     cache: AgentOutputCache,
-    reviewer: ClinicalLogicReviewer,
-    verifier: CitationVerifier,
-    guard: ComplianceGuard,
-) -> SampleResult:
-    """单 Agent 流程（A 组 baseline）。"""
-    agent = DiagnosisAgent(llm)
-    ih = cache.compute_hash(question, evidence_ids, "general_diagnosis", "")
-    cached = cache.get(ih)
-    if cached:
-        output = cached
-        sr.cache_hit = True
+    sample_result: SampleResult,
+) -> list[AgentOutput]:
+    if topology == "single":
+        specialties = ["general_diagnosis"]
+    elif topology == "fixed_pair":
+        specialties = list(experiment["specialist_pair"])
+        sample_result.routing_confidence = 1.0
     else:
-        output = agent.generate(question, evidence, "", options)
-        cache.set(ih, output)
+        routing = SpecialistRouter(
+            normalizer=normalizer,
+            evidence_level_scores=evidence_level_scores,
+        ).route(question, evidence, "")
+        specialties = list(routing.specialty_pair)
+        sample_result.routing_fallback = routing.is_fallback
+        sample_result.routing_confidence = routing.confidence
+    sample_result.specialty_pair = specialties
 
-    sr.agent_abstained = output.abstain
-    review = reviewer.check(output)
-    sr.workflow_success = review.is_approved and not output.abstain
-
-    # 引用校验
-    claims = [{"text": c.text, "citation_chunk_ids": c.citation_chunk_ids} for c in output.claims]
-    cit_results = verifier.verify_batch(claims, evidence)
-    sr.citation_verdicts = [cr.verdict.value for cr in cit_results]
-    sr.total_claims = len(claims)
-    sr.unsupported_claims = sum(1 for v in sr.citation_verdicts if v == "UNSUPPORTED")
-
-    # 合规
-    sr.compliance_blocked = guard.check_output(output.to_dict()).blocked
-    return sr
-
-
-def _run_dual_specialist(
-    sr: SampleResult,
-    question: str,
-    evidence: list,
-    evidence_ids: list[str],
-    options: dict | None,
-    llm: LLMClient | None,
-    cache: AgentOutputCache,
-    arb: ArbitrationAgent,
-    verifier: CitationVerifier,
-    guard: ComplianceGuard,
-) -> SampleResult:
-    """双专科流程（B/C 组）。"""
-    outputs = []
-    for specialty in sr.specialty_pair:
-        agent = SpecialistAgent(specialty, llm)
-        ih = cache.compute_hash(question, evidence_ids, specialty, "")
-        cached = cache.get(ih)
-        if cached:
+    outputs: list[AgentOutput] = []
+    for specialty in specialties:
+        input_hash = cache.compute_hash(question, evidence_ids, specialty)
+        cached = cache.get(input_hash)
+        if cached is not None:
             outputs.append(cached)
-            sr.cache_hit = True
-        else:
-            output = agent.generate(question, evidence, "", options)
-            cache.set(ih, output)
-            outputs.append(output)
+            sample_result.cache_hit = True
+            continue
+        agent = (
+            DiagnosisAgent(llm)
+            if specialty == "general_diagnosis"
+            else SpecialistAgent(specialty, llm)
+        )
+        output = agent.generate(question, evidence, "", options)
+        cache.set(input_hash, output)
+        outputs.append(output)
 
-    sr.agent_abstained = any(o.abstain for o in outputs)
-
-    # 仲裁
-    if len(outputs) == 2 and not outputs[0].abstain and not outputs[1].abstain:
-        arb_result = arb.arbitrate(outputs[0], outputs[1])
-        sr.arbitration_verdict = arb_result.verdict
-        sr.workflow_success = arb_result.verdict == "APPROVED"
-    else:
-        sr.arbitration_verdict = "ESCALATED"
-        sr.workflow_success = False
-
-    # 引用校验（合并两方 claims）
-    all_claims = []
-    for output in outputs:
-        for claim in output.claims:
-            all_claims.append({"text": claim.text, "citation_chunk_ids": claim.citation_chunk_ids})
-    cit_results = verifier.verify_batch(all_claims, evidence)
-    sr.citation_verdicts = [cr.verdict.value for cr in cit_results]
-    sr.total_claims = len(all_claims)
-    sr.unsupported_claims = sum(1 for v in sr.citation_verdicts if v == "UNSUPPORTED")
-
-    # 合规
-    for output in outputs:
-        if guard.check_output(output.to_dict()).blocked:
-            sr.compliance_blocked = True
-            break
-    return sr
+    if len(outputs) == 2 and not any(output.abstain for output in outputs):
+        sample_result.arbitration_verdict = ArbitrationAgent().arbitrate(
+            outputs[0], outputs[1]
+        ).verdict
+    elif len(outputs) == 2:
+        sample_result.arbitration_verdict = "ESCALATED"
+    return outputs
 
 
-# ===== CLI =====
+def _build_manifest(
+    run_id: str,
+    config: dict[str, Any],
+    experiments: list[str],
+    started_at: datetime,
+    finished_at: datetime,
+    limit: int | None,
+    dry_run: bool,
+    cache: AgentOutputCache,
+    git_commit: str,
+    dirty_diff_hash: str,
+) -> dict[str, Any]:
+    dataset = config["dataset"]
+    formal_eligible = (
+        config["evaluation"]["mode"] == "formal"
+        and limit is None
+        and not dry_run
+        and config["judge"]["method"] == "nli"
+    )
+    return {
+        "run_id": run_id,
+        "started_at": started_at.isoformat(),
+        "finished_at": finished_at.isoformat(),
+        "command": " ".join(sys.argv),
+        "report_eligible": formal_eligible,
+        "non_reportable_reasons": [] if formal_eligible else _non_reportable_reasons(config, limit, dry_run),
+        "experiments": experiments,
+        "git_commit": git_commit,
+        "dirty_diff_hash": dirty_diff_hash,
+        "config_hash": hashlib.sha256(
+            json.dumps(config, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        ).hexdigest(),
+        "dataset_hashes": {
+            key: _hash_file(_resolve(dataset[key]))
+            for key in (
+                "rag_eval_set_path",
+                "agent_eval_set_path",
+                "agent_sample_manifest_path",
+                "knowledge_base_path",
+            )
+        },
+        "python_version": sys.version,
+        "dependency_lock_hash": _hash_file(_PROJECT_ROOT / "requirements.txt"),
+        "models": {
+            section: {
+                "model": config[section]["model"],
+                "revision": config[section]["revision"],
+            }
+            for section in ("generation", "embedding", "rerank", "judge")
+        },
+        "generation": {
+            "temperature": config["generation"]["temperature"],
+            "seed": config["generation"]["seed"],
+            "timeout_seconds": config["generation"]["timeout_seconds"],
+        },
+        "retrieval": config["retrieval"],
+        "judge_method": config["judge"]["method"],
+        "limit": limit,
+        "dry_run": dry_run,
+        "cache": {"hits": cache.hits, "misses": cache.misses},
+    }
+
+
+def _non_reportable_reasons(
+    config: dict[str, Any], limit: int | None, dry_run: bool
+) -> list[str]:
+    reasons: list[str] = []
+    if config["evaluation"]["mode"] != "formal":
+        reasons.append("evaluation_mode_is_development")
+    if config["judge"]["method"] != "nli":
+        reasons.append("judge_method_is_not_nli")
+    if limit is not None:
+        reasons.append("sample_limit_used")
+    if dry_run:
+        reasons.append("dry_run_has_no_generation_or_workflow_result")
+    return reasons
+
+
+def _new_run_id(config: dict[str, Any]) -> str:
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    config_hash = hashlib.sha256(
+        json.dumps(config, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:12]
+    return f"{timestamp}_{config_hash}"
+
+
+def _resolve(configured_path: str) -> Path:
+    path = Path(configured_path)
+    return path if path.is_absolute() else _PROJECT_ROOT / path
+
+
+def _hash_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _git_output(args: list[str]) -> str:
+    completed = subprocess.run(
+        args, cwd=_PROJECT_ROOT, capture_output=True, text=True, check=False
+    )
+    return completed.stdout.strip() if completed.returncode == 0 else "unavailable"
+
+
+def _git_diff_hash() -> str:
+    completed = subprocess.run(
+        ["git", "diff", "--binary", "HEAD"],
+        cwd=_PROJECT_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    digest = hashlib.sha256(completed.stdout)
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=_PROJECT_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    for relative in sorted(path for path in untracked.stdout.split(b"\0") if path):
+        digest.update(relative)
+        path = _PROJECT_ROOT / relative.decode("utf-8")
+        if path.is_file():
+            digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def _elapsed_ms(started: float) -> float:
+    return round((time.perf_counter() - started) * 1000, 3)
 
 
 @click.command()
-@click.option("--config", "config_path", type=click.Path(exists=False), default="eval/config.yaml", show_default=True)
-@click.option("--group", type=click.Choice(VALID_GROUPS, case_sensitive=False), default="all", show_default=True)
-@click.option("--output", "output_dir", type=click.Path(exists=False), default="reports/raw/", show_default=True)
-@click.option("--show-config", is_flag=True, help="仅打印配置摘要并退出。")
-@click.option("--validate", is_flag=True, help="仅校验配置完整性并退出。")
-@click.option("--dry-run", is_flag=True, help="只计算检索指标，不调 LLM。")
-@click.option("--limit", type=int, default=None, help="限制样本数（调试用）。")
+@click.option("--config", "config_path", default="eval/config.yaml", show_default=True)
+@click.option(
+    "--experiment",
+    type=click.Choice(VALID_SELECTIONS, case_sensitive=False),
+    default="all",
+    show_default=True,
+)
+@click.option("--output", "output_dir", default="reports/raw/", show_default=True)
+@click.option("--show-config", is_flag=True)
+@click.option("--validate", is_flag=True)
+@click.option("--dry-run", is_flag=True, help="Development retrieval-only run.")
+@click.option("--limit", type=click.IntRange(min=1), default=None)
 def cli(
     config_path: str,
-    group: str,
+    experiment: str,
     output_dir: str,
     show_config: bool,
     validate: bool,
     dry_run: bool,
     limit: int | None,
 ) -> None:
-    """MediDiag 评测 runner。
-
-    API 调用优化: input_hash 缓存 + 批量 embedding + 检索结果跨组复用。
-    """
-    cfg = load_config(config_path)
-
-    if show_config:
-        show_config_summary(cfg)
-        return
-
-    issues = validate_config(cfg)
+    config = load_config(config_path)
+    issues = validate_config(config, _PROJECT_ROOT)
     if issues:
-        click.echo("Configuration validation FAILED:", err=True)
-        for issue in issues:
-            click.echo(f"  - {issue}", err=True)
-        sys.exit(2)
-
+        raise click.UsageError("invalid evaluation config:\n" + "\n".join(f"- {issue}" for issue in issues))
+    if show_config:
+        show_config_summary(config)
+        return
     if validate:
         click.echo("Configuration validation: OK")
         return
-
-    # 确定消融组别
-    groups = list("ABCDEF") if group.lower() == "all" else [group.upper()]
-
-    click.echo("=" * 70)
-    click.echo("MediDiag Eval Runner")
-    click.echo("=" * 70)
-    click.echo(f"  config  : {config_path}")
-    click.echo(f"  groups  : {groups}")
-    click.echo(f"  output  : {output_dir}")
-    click.echo(f"  dry_run : {dry_run}")
-    click.echo(f"  limit   : {limit}")
-    click.echo("")
-
-    results = run_evaluation(
-        cfg, groups, Path(output_dir), limit=limit, dry_run=dry_run,
+    names = select_experiments(config, experiment.lower())
+    run_id, _ = run_evaluation(
+        config, names, Path(output_dir), limit=limit, dry_run=dry_run
     )
-
-    # 打印汇总
-    click.echo("\n" + "=" * 70)
-    click.echo("评测汇总")
-    click.echo("=" * 70)
-    click.echo(f"{'组':>4s}  {'Recall@5':>10s}  {'Citation':>10s}  {'Unsupp':>10s}  {'Success':>10s}  {'P95(ms)':>10s}")
-    for g, gr in results.items():
-        click.echo(
-            f"{g:>4s}  {gr.recall_at_5:>10.4f}  {gr.citation_precision:>10.4f}  "
-            f"{gr.unsupported_claim_rate:>10.4f}  {gr.workflow_success_rate:>10.4f}  {gr.p95_latency:>10.1f}"
-        )
-    click.echo("=" * 70)
+    click.echo(f"run_id: {run_id}")
 
 
 if __name__ == "__main__":

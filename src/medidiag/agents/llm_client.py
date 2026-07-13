@@ -29,6 +29,9 @@ class LLMClient:
         base_url: str | None = None,
         model: str = "deepseek-v4-flash-free",
         timeout: int = 60,
+        temperature: float = 0.0,
+        max_tokens: int = 2048,
+        seed: int = 42,
     ) -> None:
         self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
         self.base_url = (
@@ -37,6 +40,9 @@ class LLMClient:
         )
         self.model = model
         self.timeout = timeout
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.seed = seed
 
     @property
     def is_configured(self) -> bool:
@@ -47,8 +53,8 @@ class LLMClient:
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 2048,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
     ) -> str:
         """调用 LLM 生成回复。
 
@@ -84,8 +90,9 @@ class LLMClient:
             json={
                 "model": self.model,
                 "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
+                "temperature": self.temperature if temperature is None else temperature,
+                "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
+                "seed": self.seed,
                 "stream": False,
             },
             timeout=self.timeout,

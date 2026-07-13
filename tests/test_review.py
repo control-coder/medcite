@@ -12,7 +12,12 @@ import pytest
 
 from medidiag.agents.base import AgentOutput, Claim, DiagnosisItem
 from medidiag.compliance.guard import ComplianceGuard, ComplianceResult
-from medidiag.review.citation import CitationResult, CitationVerdict, CitationVerifier
+from medidiag.review.citation import (
+    CitationResult,
+    CitationVerdict,
+    CitationVerifier,
+    JudgeInferenceError,
+)
 from medidiag.review.logic import ClinicalLogicReviewer, ReviewResult
 
 
@@ -22,8 +27,11 @@ from medidiag.review.logic import ClinicalLogicReviewer, ReviewResult
 class TestCitationVerifier:
     @pytest.fixture
     def verifier(self) -> CitationVerifier:
-        # use_nli=False 强制规则判定（不依赖模型下载）
-        return CitationVerifier(use_nli=False)
+        return CitationVerifier(
+            model_name="test-judge",
+            model_revision="test-revision",
+            method="rule_fallback",
+        )
 
     def test_rule_supported(self, verifier: CitationVerifier) -> None:
         """高重叠 → SUPPORTED。"""
@@ -32,7 +40,7 @@ class TestCitationVerifier:
             "The patient has chest pain and myocardial infarction requiring treatment.",
         )
         assert result.verdict == CitationVerdict.SUPPORTED
-        assert result.method == "rule"
+        assert result.method == "rule_fallback"
 
     def test_rule_unsupported(self, verifier: CitationVerifier) -> None:
         """低重叠 → UNSUPPORTED。"""
@@ -82,6 +90,34 @@ class TestCitationVerifier:
         result = verifier.verify("test claim", "test evidence")
         assert isinstance(result, CitationResult)
         assert isinstance(result.verdict, CitationVerdict)
+        assert result.to_dict()["verdict"] in {"SUPPORTED", "PARTIAL", "UNSUPPORTED"}
+
+    def test_batch_preserves_each_claim_citation_pair(
+        self, verifier: CitationVerifier
+    ) -> None:
+        claims = [{
+            "claim_id": "claim-1",
+            "text": "cardiac chest pain",
+            "citation_chunk_ids": ["c1", "c2"],
+        }]
+        chunks = [
+            {"chunk_id": "c1", "text": "cardiac chest pain"},
+            {"chunk_id": "c2", "text": "unrelated abdominal finding"},
+        ]
+        results = verifier.verify_batch(claims, chunks)
+        assert len(results) == 2
+        assert {result.evidence_chunk_id for result in results} == {"c1", "c2"}
+        assert {result.claim_id for result in results} == {"claim-1"}
+
+    def test_nli_inference_failure_does_not_fallback(self) -> None:
+        verifier = CitationVerifier(
+            model_name="test-judge",
+            model_revision="immutable-revision",
+            method="nli",
+        )
+        verifier._nli_pipeline = lambda _: (_ for _ in ()).throw(RuntimeError("boom"))
+        with pytest.raises(JudgeInferenceError, match="judge inference failed"):
+            verifier.verify("claim", "evidence", "c1", "claim-1")
 
 
 # ===== ClinicalLogicReviewer 测试 =====

@@ -1,254 +1,227 @@
-"""引用校验模块：判定 claim 与 evidence 的支撑关系。
-
-使用 NLI 模型（microsoft/deberta-v3-base-mnli）判定 SUPPORTED/PARTIAL/UNSUPPORTED。
-NLI 模型不可用时降级为规则判定（关键词重叠）。
-LLM judge 只作为辅助解释，不作为唯一真值。
-"""
+"""Claim-citation verification with explicit formal/development behavior."""
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum
 
 from medidiag.schemas import KnowledgeChunk
 
 
 class CitationVerdict(str, Enum):
-    """引用校验判定结果。"""
-
     SUPPORTED = "SUPPORTED"
     PARTIAL = "PARTIAL"
     UNSUPPORTED = "UNSUPPORTED"
 
 
+class JudgeInitializationError(RuntimeError):
+    """Raised when the configured formal judge cannot be loaded."""
+
+
+class JudgeInferenceError(RuntimeError):
+    """Raised when formal judge inference fails."""
+
+
 @dataclass
 class CitationResult:
-    """单个 claim 的校验结果。"""
+    """Auditable verdict for one claim-citation pair (or an uncited claim)."""
 
+    claim_id: str
     claim_text: str
     evidence_chunk_id: str
     verdict: CitationVerdict
     confidence: float = 0.0
-    method: str = "rule"  # "nli" | "rule"
+    method: str = "rule_fallback"
+    model_name: str = ""
+    model_revision: str = ""
     detail: str = ""
+    error: str = ""
+
+    def to_dict(self) -> dict:
+        data = asdict(self)
+        data["verdict"] = self.verdict.value
+        return data
 
 
 class CitationVerifier:
-    """引用校验器。
+    """Verify citations using a fixed NLI judge or an explicit dev fallback.
 
-    优先使用 NLI 模型判定，不可用时降级为规则判定。
-    规则判定基于关键词重叠率，不是真值，标注 method="rule"。
-
-    PLAN.md 要求:
-        - SUPPORTED/PARTIAL/UNSUPPORTED 不得只靠 LLM judge
-        - 必须使用固定 NLI / cross-encoder / judge 模型
-        - 抽样人工复核 + Cohen's Kappa 一致性统计
+    ``method=nli`` is fail-closed: loading or inference errors raise and abort
+    the run. ``method=rule_fallback`` never claims to be NLI and is allowed
+    only by the evaluation configuration's development mode.
     """
 
     def __init__(
         self,
-        model_name: str = "microsoft/deberta-v3-base-mnli",
-        use_nli: bool = True,
+        model_name: str,
+        model_revision: str,
+        method: str = "nli",
     ) -> None:
+        if method not in {"nli", "rule_fallback"}:
+            raise ValueError("method must be 'nli' or 'rule_fallback'")
         self.model_name = model_name
-        self.use_nli = use_nli
+        self.model_revision = model_revision
+        self.method = method
         self._nli_pipeline = None
-        self._nli_available: bool | None = None
 
-    def _load_nli_model(self) -> bool:
-        """尝试加载 NLI 模型，返回是否成功。"""
-        if not self.use_nli:
-            self._nli_available = False
-            return False
-        if self._nli_available is not None:
-            return self._nli_available
+    def initialize(self) -> None:
+        """Eagerly load the formal judge so a run fails before producing output."""
+        if self.method == "rule_fallback" or self._nli_pipeline is not None:
+            return
         try:
             from transformers import pipeline
 
             self._nli_pipeline = pipeline(
-                "text-classification", model=self.model_name
+                "text-classification",
+                model=self.model_name,
+                revision=self.model_revision,
             )
-            self._nli_available = True
-            return True
-        except Exception:
-            self._nli_available = False
-            return False
+        except Exception as exc:
+            raise JudgeInitializationError(
+                f"failed to load judge {self.model_name}@{self.model_revision}: {exc}"
+            ) from exc
 
     def verify(
         self,
         claim_text: str,
         evidence_text: str,
         evidence_chunk_id: str = "",
+        claim_id: str = "",
     ) -> CitationResult:
-        """校验单个 claim 与 evidence 的支撑关系。"""
-        # 优先用 NLI 模型
-        if self._nli_available is None:
-            self._load_nli_model()
-
-        if self._nli_available and self._nli_pipeline:
-            return self._verify_nli(
-                claim_text, evidence_text, evidence_chunk_id
-            )
-        else:
-            return self._verify_rule(
-                claim_text, evidence_text, evidence_chunk_id
-            )
+        if self.method == "nli":
+            self.initialize()
+            return self._verify_nli(claim_id, claim_text, evidence_text, evidence_chunk_id)
+        return self._verify_rule(claim_id, claim_text, evidence_text, evidence_chunk_id)
 
     def verify_batch(
         self,
         claims: list[dict],
         evidence_chunks: list[KnowledgeChunk] | list[dict],
     ) -> list[CitationResult]:
-        """批量校验 claims。
+        """Return one result per emitted claim-citation pair.
 
-        Args:
-            claims: [{"text": ..., "citation_chunk_ids": [...]}]
-            evidence_chunks: 知识库 chunks
+        An uncited claim produces one ``UNSUPPORTED`` record with an empty
+        ``evidence_chunk_id`` so claim-level metrics retain the claim.
         """
-        # 构建 chunk_id -> text 映射
         chunk_map: dict[str, str] = {}
         for chunk in evidence_chunks:
             if isinstance(chunk, dict):
-                chunk_map[chunk.get("chunk_id", "")] = chunk.get("text", "")
+                chunk_map[str(chunk.get("chunk_id", ""))] = str(chunk.get("text", ""))
             else:
                 chunk_map[chunk.chunk_id] = chunk.text
 
         results: list[CitationResult] = []
-        for claim in claims:
-            text = claim.get("text", "")
-            citation_ids = claim.get("citation_chunk_ids", [])
+        for index, claim in enumerate(claims):
+            claim_id = str(claim.get("claim_id") or f"claim_{index:04d}")
+            text = str(claim.get("text", ""))
+            citation_ids = [str(value) for value in claim.get("citation_chunk_ids", [])]
             if not citation_ids:
                 results.append(
                     CitationResult(
+                        claim_id=claim_id,
                         claim_text=text,
                         evidence_chunk_id="",
                         verdict=CitationVerdict.UNSUPPORTED,
-                        method="rule",
+                        method=self.method,
+                        model_name=self.model_name if self.method == "nli" else "",
+                        model_revision=self.model_revision if self.method == "nli" else "",
                         detail="no citation",
                     )
                 )
                 continue
 
-            # 对每个 citation 分别校验，取最佳结果
-            best_verdict = CitationVerdict.UNSUPPORTED
-            best_confidence = 0.0
-            best_chunk_id = citation_ids[0]
-            best_detail = ""
-
-            for cid in citation_ids:
-                ev_text = chunk_map.get(cid, "")
-                if not ev_text:
+            for chunk_id in citation_ids:
+                evidence_text = chunk_map.get(chunk_id)
+                if not evidence_text:
+                    results.append(
+                        CitationResult(
+                            claim_id=claim_id,
+                            claim_text=text,
+                            evidence_chunk_id=chunk_id,
+                            verdict=CitationVerdict.UNSUPPORTED,
+                            method=self.method,
+                            model_name=self.model_name if self.method == "nli" else "",
+                            model_revision=self.model_revision if self.method == "nli" else "",
+                            detail="citation chunk not found",
+                            error="CITATION_CHUNK_NOT_FOUND",
+                        )
+                    )
                     continue
-                result = self.verify(text, ev_text, cid)
-                if result.verdict == CitationVerdict.SUPPORTED:
-                    best_verdict = CitationVerdict.SUPPORTED
-                    best_confidence = result.confidence
-                    best_chunk_id = cid
-                    best_detail = result.detail
-                    break
-                elif result.verdict == CitationVerdict.PARTIAL:
-                    if best_verdict == CitationVerdict.UNSUPPORTED:
-                        best_verdict = CitationVerdict.PARTIAL
-                        best_confidence = result.confidence
-                        best_chunk_id = cid
-                        best_detail = result.detail
-
-            results.append(
-                CitationResult(
-                    claim_text=text,
-                    evidence_chunk_id=best_chunk_id,
-                    verdict=best_verdict,
-                    confidence=best_confidence,
-                    method="nli" if self._nli_available else "rule",
-                    detail=best_detail,
-                )
-            )
-
+                results.append(self.verify(text, evidence_text, chunk_id, claim_id))
         return results
 
     def _verify_nli(
-        self,
-        claim: str,
-        evidence: str,
-        chunk_id: str,
+        self, claim_id: str, claim: str, evidence: str, chunk_id: str
     ) -> CitationResult:
-        """NLI 模型判定。"""
         try:
-            result = self._nli_pipeline(
-                f"{evidence} [SEP] {claim}"
-            )
-            label = result[0]["label"].upper()
-            score = result[0]["score"]
+            output = self._nli_pipeline({"text": evidence, "text_pair": claim})
+            result = output[0] if isinstance(output, list) else output
+            label = str(result["label"]).upper()
+            score = float(result["score"])
+        except Exception as exc:
+            raise JudgeInferenceError(
+                f"judge inference failed for claim={claim_id}, chunk={chunk_id}: {exc}"
+            ) from exc
 
-            if "ENTAIL" in label:
-                verdict = CitationVerdict.SUPPORTED
-            elif "NEUTRAL" in label:
-                verdict = CitationVerdict.PARTIAL
-            else:
-                verdict = CitationVerdict.UNSUPPORTED
-
-            return CitationResult(
-                claim_text=claim,
-                evidence_chunk_id=chunk_id,
-                verdict=verdict,
-                confidence=score,
-                method="nli",
-                detail=f"label={label}, score={score:.4f}",
-            )
-        except Exception as e:
-            return self._verify_rule(claim, evidence, chunk_id)
+        if "ENTAIL" in label:
+            verdict = CitationVerdict.SUPPORTED
+        elif "NEUTRAL" in label:
+            verdict = CitationVerdict.PARTIAL
+        else:
+            verdict = CitationVerdict.UNSUPPORTED
+        return CitationResult(
+            claim_id=claim_id,
+            claim_text=claim,
+            evidence_chunk_id=chunk_id,
+            verdict=verdict,
+            confidence=score,
+            method="nli",
+            model_name=self.model_name,
+            model_revision=self.model_revision,
+            detail=f"label={label}, score={score:.4f}",
+        )
 
     def _verify_rule(
-        self,
-        claim: str,
-        evidence: str,
-        chunk_id: str,
+        self, claim_id: str, claim: str, evidence: str, chunk_id: str
     ) -> CitationResult:
-        """规则判定：关键词重叠率（降级方案）。
-
-        不是真值，标注 method="rule"。
-        """
-        # 提取关键词（去掉停用词）
         stop_words = {
             "the", "and", "for", "with", "has", "have", "was", "were",
             "are", "not", "but", "from", "this", "that", "patient",
-            "shows", "showed", "presented", "been", "were", "will",
-            "would", "could", "should", "may", "might", "can",
+            "shows", "showed", "presented", "been", "will", "would",
+            "could", "should", "may", "might", "can",
         }
-        claim_words = set(
-            w.lower()
-            for w in re.findall(r"\b\w{3,}\b", claim)
-        ) - stop_words
-        evidence_words = set(
-            w.lower()
-            for w in re.findall(r"\b\w{3,}\b", evidence)
-        ) - stop_words
-
+        claim_words = {
+            word.lower() for word in re.findall(r"\b\w{3,}\b", claim)
+        } - stop_words
+        evidence_words = {
+            word.lower() for word in re.findall(r"\b\w{3,}\b", evidence)
+        } - stop_words
         if not claim_words:
             return CitationResult(
+                claim_id=claim_id,
                 claim_text=claim,
                 evidence_chunk_id=chunk_id,
                 verdict=CitationVerdict.UNSUPPORTED,
-                method="rule",
+                method="rule_fallback",
                 detail="no keywords in claim",
             )
 
         overlap = len(claim_words & evidence_words)
         ratio = overlap / len(claim_words)
-
-        if ratio >= 0.6:
-            verdict = CitationVerdict.SUPPORTED
-        elif ratio >= 0.3:
-            verdict = CitationVerdict.PARTIAL
-        else:
-            verdict = CitationVerdict.UNSUPPORTED
-
+        verdict = (
+            CitationVerdict.SUPPORTED
+            if ratio >= 0.6
+            else CitationVerdict.PARTIAL
+            if ratio >= 0.3
+            else CitationVerdict.UNSUPPORTED
+        )
         return CitationResult(
+            claim_id=claim_id,
             claim_text=claim,
             evidence_chunk_id=chunk_id,
             verdict=verdict,
             confidence=ratio,
-            method="rule",
+            method="rule_fallback",
             detail=f"overlap_ratio={ratio:.4f} ({overlap}/{len(claim_words)})",
         )

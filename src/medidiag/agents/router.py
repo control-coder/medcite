@@ -21,7 +21,6 @@ import re
 from dataclasses import dataclass, field
 
 from medidiag.rag.normalizer import NormalizedQuery, TerminologyNormalizer
-from medidiag.rag.retrieval import EVIDENCE_LEVEL_SCORES
 from medidiag.schemas import KnowledgeChunk
 
 from medidiag.agents.specialty_data import (
@@ -113,8 +112,15 @@ class SpecialistRouter:
         # result.specialty_pair = ("cardiology", "respiratory")
     """
 
-    def __init__(self, normalizer: TerminologyNormalizer | None = None) -> None:
+    def __init__(
+        self,
+        normalizer: TerminologyNormalizer | None = None,
+        evidence_level_scores: dict[str, float] | None = None,
+    ) -> None:
         self.normalizer = normalizer
+        # Evaluation callers pass the locked YAML mapping. The neutral default
+        # keeps this runtime component usable without importing eval config.
+        self.evidence_level_scores = evidence_level_scores or {}
 
     def route(
         self,
@@ -319,7 +325,7 @@ class SpecialistRouter:
                     )
                 else:
                     level = chunk.evidence_level
-                ev_score = EVIDENCE_LEVEL_SCORES.get(level, 0.3)
+                ev_score = self.evidence_level_scores.get(level, 1.0)
             else:
                 ev_score = 0.3
 

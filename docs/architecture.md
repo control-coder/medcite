@@ -1,31 +1,82 @@
 # Architecture
 
-> 阶段 0 占位文档。完整架构说明将在阶段 6 补充。
+> 更新日期：2026-07-13。本文区分当前已实现组件和一期目标链路。
 
-## 高层组件
+## 当前实现边界
 
-- **API 层**（FastAPI）：病例创建、工作流启动、状态查询、人工干预入口。
-- **状态机执行器**（`workflow/state_machine.py`）：14 状态 + 合法跳转表 + 触发主体。
-- **任务执行器**（worker + 租约）：本地任务表 + lease + 幂等键 + 乐观锁。
-- **医学 RAG**（`rag/`）：术语归一化 + BM25 + embedding + rerank + 证据等级加权。
-- **Agent 编排**（`agents/`）：病例归一化 / 证据检索 / 诊断生成 / 双专科并行 / 仲裁。
-- **审核模块**（`review/` + `compliance/`）：CitationVerifier / ClinicalLogicReviewer / ComplianceGuard / ArbitrationAgent。
-- **评测**（`eval/`）：config.yaml 锁定变量 + runner + leakage_check + 报告生成。
-- **可观测性**：错误码分级 + 分阶段 latency 埋点 + event log。
+当前仓库包含：
+
+- 状态机与执行器原型：14 状态、触发主体、非法跳转、状态+事件事务接口。
+- 数据层原型：cases、workflow_tasks、case_event_log、agent_runs、citations、reviews。
+- 并发机制原型：幂等服务、乐观锁重试、租约 acquire/renew/reclaim 与迟到写入检查。
+- RAG/Agent 组件：术语归一化、BM25、embedding、evidence weighting、rerank、单/双 Agent 和仲裁。
+- 审核组件：citation、clinical logic、compliance 规则。
+- 评测链路：配置验证、实验隔离、leakage gate、raw provenance 和指标聚合。
+
+当前不存在可运行 FastAPI app、真实单机 worker/lease scanner、case_reports 持久化、完整 trace exporter 或演示页。以下目标图不能解释为已经交付。
+
+## 一期目标链路
+
+```text
+FastAPI/CLI
+  -> case service (idempotency + optimistic CAS)
+  -> workflow_tasks (one active task per case)
+  -> single-machine worker acquires lease
+  -> external stages outside transaction
+       normalize -> retrieve -> rerank -> generate -> judge -> review
+  -> atomic result CAS (owner + attempt + RUNNING + lease_until)
+  -> stage artifacts + state transition + append-only event
+  -> report generation or ESCALATED human wait state
+```
 
 ## 事务边界
 
-- 数据库事务只负责 `cases` / `workflow_tasks` / `case_event_log` 的状态推进与事件追加。
-- 外部 IO（RAG / LLM / judge）在事务外执行，结果通过二次事务写入。
-- 状态变更与事件日志写入必须在同一事务内完成。
+1. 短事务创建/领取任务，提交状态与 event。
+2. 事务外执行 RAG/LLM/judge；所有调用设置 timeout、错误码与有限重试。
+3. 单条条件 UPDATE 校验 task ID、owner、attempt、RUNNING 和有效 lease。
+4. 命中后在同一事务写阶段产物、推进 case version/status 并追加 event。
+5. 未命中则丢弃旧结果，并在独立事务追加 `TASK_LEASE_LOST`。
 
-## 数据流
+步骤 3-5 的数据库原子 CAS 是下一阶段 P0-B 门禁；当前代码仍需补强，不能仅凭“二次检查”判定完成。
 
+## 评测数据流
+
+```text
+eval/config.yaml
+  -> schema/semantic validation
+  -> leakage gate
+  -> select rag_* or agent_* experiment family
+  -> explicit Retriever/LLM/Judge construction
+  -> per-sample raw records
+  -> run manifest + config snapshot + hashes
+  -> report eligibility gate
+  -> formal report (only when all gates pass)
 ```
-API -> [事务: 写 cases + workflow_tasks + event_log]
-    -> worker 领取任务 [事务: PENDING -> RUNNING + lease]
-    -> 外部 IO (RAG / LLM / judge)
-    -> [事务: 二次校验 lease + 写结果 + 推进状态 + 追加 event]
-```
 
-详细设计见 `design-decisions.md`（阶段 6 补充）。
+RAG 和 Agent 实验不能复用同一标识：
+
+- `rag_*` 只评估检索/审核组件，生成 topology 固定为 single。
+- `agent_*` 固定 `rag_full`，只比较 single/fixed_pair/dynamic_pair。
+
+## 当前 raw 语义
+
+- `pipeline_approval_rate`：规则/审核流水线是否通过，仅用于组件实验。
+- `workflow_success_rate`：必须来自数据库终态 `CLOSED_SUCCESS`；当前 eval runner 输出 `null`。
+- development run：允许快速验证，但 manifest 明确不可报告。
+- formal run：固定 NLI 和不可变版本，禁止 fallback、limit 与 dry-run。
+
+## 一期持久化目标
+
+- normalize artifact：归一化输入与词表版本。
+- retrieval artifact：query、top-k、各分数、模型和配置 hash。
+- agent_runs：输入 hash、attempt group、结构化输出与 provider request ID。
+- citations：claim-citation pair 和 judge metadata。
+- reviews：轮次、问题、判定与升级原因。
+- case_reports：结构化报告、风险提示、合规状态和生成版本。
+- case_event_log：append-only 事件，不作为业务结果的唯一存储。
+
+## 部署与隐私边界
+
+- 一期单机、SQLite、本地 worker；不证明多 worker 生产扩展。
+- 只处理公开或脱敏模拟数据，不接入医院系统和真实患者档案。
+- API key、未脱敏文本和个人身份信息不得进入 raw result、event 或 trace。

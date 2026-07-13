@@ -1,189 +1,119 @@
 # MediDiag-Agent EvidenceFlow
 
-> 医疗循证诊断多 Agent 工作流平台（模拟，仅用于工程演示与公开数据评测，**不用于真实医疗诊断**）。
-
 ## Scope 声明
 
-**第一阶段（MVP）只承诺：**
+本项目是医疗循证诊断工作流的工程原型，只用于公开数据评测、脱敏模拟输入和软件工程演示，不用于真实医疗诊断、治疗决策或患者服务。
 
-- 单机 worker、SQLite 单库、本地 RAG 检索
-- 公开数据集（MedQA / PubMedQA）改造病例 + 模拟病例
-- 面向医疗诊断场景的状态机执行器（14 状态 + 合法跳转 + 触发主体）
-- 任务租约、幂等键、乐观锁冲突重试、worker 崩溃恢复
-- 证据前置检索 + 医学 RAG 消融实验（A-F 组单变量）
-- 引用校验 + 诊断逻辑审核 + 合规输出管控
-- 双专科并行诊断 + 仲裁实验（含单 Agent baseline 对比）
-- 可复现评测：`eval/config.yaml` 锁定模型 / 温度 / seed / 数据集版本 / 检索权重 / 运行命令
-- 数据泄露校验 + Cohen's Kappa 标注一致性
-- 结构化日志 + event log + 分阶段 latency 埋点
+第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-**二期预留（第一阶段不承诺）：**
+当前状态：**核心机制原型已存在，正在按 `SUPPLEMENT_PLAN.md` 补齐产品与评测闭环，不能表述为“第一阶段完成”。** 截至 2026-07-13，本轮已开始 P0-A 评测真实性改造；真实 API/worker 闭环、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
 
-- 多 worker 横向扩展、Celery / 分布式任务队列
-- 生产级告警平台、Prometheus + Grafana
-- 真实医疗合规认证、真实患者数据接入
-- 容器级隔离、seccomp、进程级资源隔离
-- 全量公开基准跑分（如 MMLU-clinical 全集）
-- 前端 Dashboard、WebSocket 实时推送
+## Current Status
 
-**免责声明：** 本系统只用于 Agent 工程实验和公开数据评测，不构成医疗建议，不用于真实医疗诊断。技术层面已加入超范围拒答、绝对化措辞拦截和强制风险提示，而非仅靠 README 免责。
+| 范围 | 当前证据 | 状态 |
+|---|---|---|
+| 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | 原型已有，P0-B 仍需补数据库唯一约束与原子 CAS |
+| RAG/Agent 实验拆分 | `eval/config.yaml` 中 `rag_*` 与 `agent_*` | 本轮已实现，待 Conda 全量测试复验 |
+| 配置唯一事实源 | Retriever 必须显式接收 YAML 权重、模型和实验开关 | 本轮已实现，待复验 |
+| judge 行为 | development 明示 `rule_fallback`；formal 强制固定 NLI 且 fail-closed | 本轮已实现门禁；尚无正式 NLI raw result |
+| 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现，待复验 |
+| raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
+| Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成，待运行时复验 |
+| API、单机 worker、扫描器、人工升级闭环 | 尚无可运行入口 | 未完成 |
+| 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
+| 最小演示页与结构化 trace | 目录/模型基础存在，未形成可运行展示 | 未完成 |
 
----
+历史 `reports/raw/real/group_*.json` 及归档报告仅是 exploratory artifacts。它们使用旧 A-F 耦合实验和规则 judge，不得用于简历或正式指标。
 
 ## Upstream Reference
 
-本项目参考但不复用以下来源的代码与架构思想：
-
-- **edict**（`../edict/`）：参考其事件驱动 Agent 工程模式——FastAPI + 事件日志 + thoughts/todo 结构化 + 可回放 trace。**未复用其代码**，仅借鉴工程组织方式。edict 的"朝堂议政"多 Agent 角色设计与本项目的医疗诊断场景无关。
-- **MedQA**：公开医学考试题数据集，用于评测集公开题改造（占比 ≥ 40%）。
-- **PubMedQA**：公开生物医学问答数据集，用于评测集公开题改造与知识库 chunk 构建。
-- **MeSH descriptor**：NLM 公开医学主题词表，用于术语归一化的外部标准映射层。
+- `../edict/`：只参考事件驱动工作流、事件日志和可回放 trace 的工程组织思想，未把其代码或已有能力列为个人贡献。
+- MedQA / PubMedQA：公开评测数据来源。PubMedQA 用于 evidence retrieval/citation；没有 gold evidence 的 MedQA 样本不进入 Evidence Recall 分母。
+- MeSH：公开医学术语来源。当前词表包含轻量词典和数据集派生条目，不宣称具备 UMLS 级覆盖。
 
 ## Third-party Components
 
-以下为第三方组件，**只算集成，不计为个人核心创新**：
-
-| 类别 | 组件 | 用途 |
+| 类别 | 组件 | 边界 |
 |---|---|---|
-| LLM | DeepSeek API（`deepseek-v4-flash-free`，OpenAI 兼容） | 诊断生成、Agent 推理 |
-| Embedding | `sentence-transformers/all-MiniLM-L6-v2` | 文本向量化 |
-| Rerank | `cross-encoder/ms-marco-MiniLM-L-6-v2` | 检索结果重排 |
-| Judge (NLI) | `microsoft/deberta-v3-base-mnli` | Citation Precision 判定（SUPPORTED / PARTIAL / UNSUPPORTED） |
-| 向量库 | FAISS (`faiss-cpu`) | embedding 检索 |
-| 稀疏检索 | `rank-bm25` | BM25 检索 |
-| Web 框架 | FastAPI + Uvicorn | API 层 |
-| ORM | SQLAlchemy 2.0 + Alembic | 数据模型与迁移 |
-| 配置 | Pydantic Settings + PyYAML | 环境变量与评测配置 |
-| 术语词表 | MeSH descriptor XML | 术语归一化第三层 |
+| Generation | DeepSeek OpenAI-compatible API | 第三方模型调用与集成 |
+| Embedding | `sentence-transformers/all-MiniLM-L6-v2` | 第三方向量模型 |
+| Rerank | `cross-encoder/ms-marco-MiniLM-L-6-v2` | 第三方 cross-encoder |
+| Judge | `microsoft/deberta-v3-base-mnli` | 正式模式计划使用的固定 NLI；当前没有正式结果 |
+| Retrieval | FAISS、`rank-bm25` | 第三方索引和检索库 |
+| Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架；API 尚未实现 |
+| Test/config | pytest、PyYAML | 测试与配置工具 |
+
+第三方模型、框架和数据集只算集成，不算核心创新。
 
 ## My Contributions
 
-以下为本人新增或重写的模块，每一项均可被源码、测试或评测报告验证：
+以下内容有当前源码或测试文件支撑，但完成度以本 README 的 Current Status 为准：
 
-1. **面向医疗诊断场景的状态机执行器**（`src/medidiag/workflow/state_machine.py`）
-   - 14 状态枚举 + 合法跳转表 + 触发主体标注
-   - `ESCALATED` 中间等待态、`CLOSED_*` 终态语义
-   - 非法跳转拦截、自动/人工触发权限边界
+- 面向医疗诊断场景的 14 状态执行器、触发主体与非法跳转校验。
+- SQLAlchemy 数据模型、状态与事件同事务的执行器原型、幂等服务、乐观锁重试和任务租约原型。
+- 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
+- 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
+- CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。
+- 本轮新增的配置驱动评测门禁：实验族隔离、正式 judge fail-closed、eligible 指标分母、leakage 前置检查、run provenance 与探索性结果隔离。
 
-2. **任务执行与一致性**（`src/medidiag/workflow/` + `src/medidiag/db/`）
-   - worker 租约（lease_owner / lease_until / heartbeat / attempt）
-   - 幂等键（创建病例 / 启动工作流 / Agent 执行三层）
-   - 乐观锁冲突自动重试（3 次退避 50/100/200ms）
-   - `RUNNING` 重复请求处理 + 旧 worker 迟到写入防护（`TASK_LEASE_LOST`）
-   - 事务边界：外部 IO 不进事务、状态+事件同事务
+不把尚未接入真实 worker 的组件描述为完整多 Agent 协作系统；在独立实验支持收益前，只称为“流水线式 Agent 编排 + 双专科仲裁实验”。
 
-3. **医学 RAG 与术语归一化**（`src/medidiag/rag/`）
-   - 三层术语归一化：轻量词典 + 数据集派生 synonym map + MeSH descriptor 映射
-   - 检索排序公式：`final_score = w1*bm25 + w2*embedding + w3*evidence_level + w4*term_overlap`
-   - 权重写入 `eval/config.yaml`，参与消融实验
+## Evaluation Contract
 
-4. **审核与合规**（`src/medidiag/review/` + `src/medidiag/compliance/`）
-   - `CitationVerifier`：NLI/cross-encoder 判定，LLM judge 仅辅助解释
-   - `ClinicalLogicReviewer`：证据/风险提示/检查建议/不确定性检查
-   - `ComplianceGuard`：超范围拒答、绝对化措辞拦截、强制风险提示
-   - `ArbitrationAgent`：双专科意见冲突仲裁
-   - 审核驳回闭环 + 连续失败人工升级（不进死状态）
+实验分为两个互不耦合的族：
 
-5. **评测体系**（`eval/`）
-   - `eval/config.yaml` 锁定全部变量
-   - `eval/runner.py`：CLI + 配置加载 + 消融分组 + 报告生成
-   - `eval/leakage_check.py`：数据泄露校验（输出 `EVAL_DATA_LEAKAGE_DETECTED`）
-   - Cohen's Kappa 标注一致性统计
-   - 单变量消融（A-F 组）+ 全量组合
+- RAG：`rag_embedding`、`rag_bm25`、`rag_evidence_weight`、`rag_term_norm`、`rag_citation_review`、`rag_full`。前四个单变量组相对 pure embedding baseline 只改变一个开关；`rag_full` 只报告组合效果。
+- Agent：`agent_single`、`agent_fixed_pair`、`agent_dynamic_pair`。三组固定使用 `rag_full`，只改变 Agent topology。
 
-6. **Agent 编排**（`src/medidiag/agents/`）
-   - 病例归一化 / 证据检索 / 诊断生成 worker
-   - 双专科并行 Agent + 仲裁 Agent
-   - 单 Agent baseline 对比实验
+当前 `eval/config.yaml` 默认为 `evaluation.mode: development`，模型 revision 明示为 `development-unpinned`，judge 为 `rule_fallback`。该配置可用于开发，但 raw manifest 会写入 `report_eligible: false`。正式模式必须满足：
 
-7. **可观测性**（`src/medidiag/errors.py` + event log）
-   - 错误码五级分类（4xx/42x/52x/53x/55x）
-   - 分阶段 latency 埋点
-   - 错误码告警阈值
+- 所有模型 revision 为不可变版本；
+- `judge.method: nli`，模型加载或推理失败立即终止；
+- 不使用 `--limit` 或 `--dry-run`；
+- 固定 100 样本 Agent manifest 存在且通过 schema/唯一性校验；
+- leakage gate 通过；
+- 后续双人标注、裁决和 Kappa 门禁通过。
 
----
+核心指标口径：
 
-## 状态机概览
-
-```
-CREATED -> NORMALIZED -> EVIDENCE_RETRIEVED -> PLAN_GENERATED
-  -> SPECIALIST_REVIEWING -> ARBITRATION_REVIEWING
-  -> APPROVED -> REPORT_GENERATED -> CLOSED_SUCCESS
-
-分支：
-  - 任意阶段 -> ESCALATED（中间等待态，人工回流）
-  - ESCALATED -> REVISION_REQUIRED / APPROVED / CLOSED_ESCALATED
-  - REVISION_REQUIRED -> PLAN_GENERATED（重试）/ CLOSED_FAILED
-  - CREATED -> CLOSED_CANCELLED（用户取消）
-```
-
-完整状态转移表见 `docs/architecture.md`。
-
-## 评测概览
-
-| 指标 | 公式 |
+| 指标 | 口径 |
 |---|---|
-| Evidence Recall@5 | 至少命中 1 条 gold_evidence 的样本数 / 总样本数 |
-| Citation Precision | SUPPORTED citation 数 / 系统输出 citation 总数 |
-| Judge Agreement | judge 判定与人工抽样复核一致样本数 / 抽样复核样本数 |
-| Unsupported Claim Rate | UNSUPPORTED claims / total claims |
-| Terminology Normalization Gain | Recall@5(with norm) - Recall@5(without norm) |
-| Workflow Success Rate | CLOSED_SUCCESS case 数 / 总 case 数 |
+| Evidence Recall@5 | eligible 样本中 top-5 至少命中一条 gold evidence 的样本数 / `gold_evidence_ids` 非空样本数 |
+| Gold Evidence Coverage | `gold_evidence_ids` 非空样本数 / 全部样本数 |
+| Citation Precision | `SUPPORTED` claim-citation pair 数 / 所有实际输出的 claim-citation pair 数 |
+| Unsupported Claim Rate | 最佳有效 citation 仍为 `UNSUPPORTED` 的 claim 数 / 全部 claim 数 |
+| Workflow Success Rate | 持久化终态为 `CLOSED_SUCCESS` 的病例数 / 全部工作流病例数；当前 eval runner 不生成该值 |
 
-消融组别（A-F）见 `reports/baseline.md`。
+## Development Commands
 
-## 快速开始
-
-```bash
-# 1. 安装依赖
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+```powershell
+conda activate medidiag
 pip install -e ".[dev]"
 
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 填入 DEEPSEEK_API_KEY
+python -m pytest -q
+python -m eval.runner --config eval/config.yaml --validate
+python -m eval.runner --config eval/config.yaml --show-config
 
-# 3. 运行测试
-pytest
+# 开发态检索检查：结果明确不可用于正式报告
+python -m eval.runner --config eval/config.yaml --experiment rag_all --dry-run --limit 20
 
-# 4. 评测 CLI（阶段 0 仅骨架）
-python -m eval.runner --help
-python -m eval.leakage_check --help
+# 独立 leakage gate
+python -m eval.leakage_check `
+  --config eval/config.yaml `
+  --eval-set eval/datasets/eval_set_pubmedqa.jsonl `
+  --kb eval/datasets/knowledge_chunks.jsonl
 ```
 
-## 目录结构
+评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果；`eval/report.py` 会拒绝从 `report_eligible: false` 的 run 生成正式报告。
 
-```
-medidiag/
-  README.md
-  docs/
-    architecture.md
-    design-decisions.md
-  src/medidiag/
-    workflow/        # 状态机执行器、任务租约
-    db/              # SQLAlchemy 模型、迁移
-    rag/             # 术语归一化、BM25、embedding、rerank
-    agents/          # 诊断生成、双专科、仲裁
-    review/          # CitationVerifier、ClinicalLogicReviewer
-    compliance/      # ComplianceGuard
-    errors.py        # 错误码分级
-    config.py        # 配置加载
-  tests/
-  eval/
-    config.yaml      # 锁定模型/温度/seed/数据集/权重/命令
-    runner.py        # 评测 CLI
-    leakage_check.py # 数据泄露校验
-  reports/
-    baseline.md
-    final_eval.md
-    raw/
-  traces/
-    raw/
-    summary/
-  examples/
-  scripts/
-```
+## Documents
+
+- `SUPPLEMENT_PLAN.md`：当前直接实施与验收依据。
+- `overview.md`：本轮实施记录、验证状态和下一步。
+- `docs/architecture.md`：当前实现边界与目标数据流。
+- `docs/design-decisions.md`：评测模式、实验隔离、judge 与结果资格决策。
+- `docs/archive/overview_historical_2026-07-06.md`：历史阶段记录，不代表当前验收结论。
+- `reports/archive/`：旧探索性报告，不得用于简历。
 
 ## License
 

@@ -222,13 +222,21 @@ def test_eval_config_public_ratio(eval_config: dict) -> None:
     assert eval_config["dataset"]["public_ratio_min"] >= 0.40
 
 
-def test_eval_config_ablation_groups_complete(eval_config: dict) -> None:
-    """消融组别 A-F 必须齐全。"""
-    groups = eval_config["ablation"]["groups"]
-    for g in ("A", "B", "C", "D", "E", "F"):
-        assert g in groups, f"missing ablation group {g}"
-        assert "description" in groups[g]
-        assert "config" in groups[g]
+def test_eval_config_experiment_namespaces_complete(eval_config: dict) -> None:
+    """RAG 与 Agent 实验必须使用互不耦合的命名空间。"""
+    assert set(eval_config["experiments"]["rag"]) == {
+        "rag_embedding",
+        "rag_bm25",
+        "rag_evidence_weight",
+        "rag_term_norm",
+        "rag_citation_review",
+        "rag_full",
+    }
+    assert set(eval_config["experiments"]["agent"]) == {
+        "agent_single",
+        "agent_fixed_pair",
+        "agent_dynamic_pair",
+    }
 
 
 def test_eval_config_retrieval_weights_locked(eval_config: dict) -> None:
@@ -244,6 +252,7 @@ def test_eval_config_metrics_defined(eval_config: dict) -> None:
     metric_names = {m["name"] for m in eval_config["metrics"]}
     required = {
         "evidence_recall_at_5",
+        "gold_evidence_coverage",
         "citation_precision",
         "judge_agreement",
         "unsupported_claim_rate",
@@ -275,6 +284,7 @@ def test_eval_config_compliance_rules(eval_config: dict) -> None:
 def test_eval_config_reproduction_commands(eval_config: dict) -> None:
     """可复现命令必须定义。"""
     repro = eval_config["reproduction"]
-    assert "eval_command" in repro
-    assert "baseline_command" in repro
+    assert "validate_command" in repro
+    assert "rag_command" in repro
+    assert "agent_command" in repro
     assert "leakage_check_command" in repro

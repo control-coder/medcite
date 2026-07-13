@@ -55,8 +55,8 @@ medidiag.db
 
 # ===== Evaluation artifacts =====
 # Keep directory structure via .gitkeep, but ignore raw outputs
-reports/raw/*.json
-reports/raw/*.jsonl
+reports/raw/**
+!reports/raw/.gitkeep
 traces/raw/*.jsonl
 traces/summary/*.json
 

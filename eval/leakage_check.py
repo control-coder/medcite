@@ -9,8 +9,7 @@ PLAN.md 要求：
 - 公开数据转 chunk 时，允许保留文献来源 ID，但不得保留评测样本 ID
 - 映射关系只能保存在 eval label 文件中，不进入检索索引
 
-阶段 0：实现 CLI + 文件读取骨架 + 校验逻辑框架。
-阶段 1：接入真实数据后真正执行校验。
+文件缺失和泄露命中都必须失败；正式 runner 在加载模型前调用本模块。
 """
 
 from __future__ import annotations
@@ -150,6 +149,40 @@ def load_leakage_config(config_path: str | Path) -> dict[str, Any]:
     return cfg.get("leakage_check", {})
 
 
+def run_leakage_check(
+    eval_set_path: str | Path,
+    kb_path: str | Path,
+    leak_config: dict[str, Any],
+) -> list[str]:
+    """Run the leakage gate and return all hits.
+
+    Missing inputs are errors rather than a successful no-op.
+    """
+    eval_records = load_jsonl(eval_set_path)
+    kb_records = load_jsonl(kb_path)
+    eval_sample_ids = extract_eval_sample_ids(eval_records)
+    eval_questions = extract_eval_questions(eval_records)
+    eval_answers = extract_eval_answer_keys(eval_records)
+    fields_to_check = leak_config.get(
+        "chunk_fields_to_check", ["source", "source_id", "metadata.raw_id"]
+    )
+
+    hits: list[str] = []
+    for chunk in kb_records:
+        hits.extend(
+            check_chunk_for_leakage(
+                chunk,
+                eval_sample_ids,
+                eval_questions,
+                eval_answers,
+                fields_to_check,
+                leak_config.get("check_question_text", True),
+                leak_config.get("check_answer_key", True),
+            )
+        )
+    return hits
+
+
 @click.command()
 @click.option(
     "--config", "config_path",
@@ -199,12 +232,10 @@ def cli(
     click.echo(f"  check_answer  : {check_answer_key}")
     click.echo("")
 
-    # 阶段 0：如果数据文件不存在，仅打印说明并退出（不视为失败）
     if not Path(eval_set_path).exists() or not Path(kb_path).exists():
-        click.echo("NOTE: 评测集或知识库文件尚未就绪（阶段 1 生成）。")
-        click.echo("      阶段 0 仅验证 CLI 与配置加载可用性。")
-        click.echo("      阶段 1 数据就绪后，此命令将真正执行泄露校验。")
-        return
+        click.echo(f"!!! {LEAKAGE_FLAG} !!!", err=True)
+        click.echo("评测集或知识库文件不存在；泄露门禁无法执行。", err=True)
+        raise click.exceptions.Exit(2)
 
     eval_records = load_jsonl(eval_set_path)
     kb_records = load_jsonl(kb_path)
@@ -218,18 +249,7 @@ def cli(
     click.echo(f"  kb chunks     : {len(kb_records)}")
     click.echo("")
 
-    all_hits: list[str] = []
-    for chunk in kb_records:
-        hits = check_chunk_for_leakage(
-            chunk,
-            eval_sample_ids,
-            eval_questions,
-            eval_answers,
-            fields_to_check,
-            check_question_text,
-            check_answer_key,
-        )
-        all_hits.extend(hits)
+    all_hits = run_leakage_check(eval_set_path, kb_path, leak_cfg)
 
     if all_hits:
         click.echo(f"!!! {LEAKAGE_FLAG} !!!")

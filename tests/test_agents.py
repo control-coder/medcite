@@ -300,7 +300,7 @@ class TestAgents:
 
 class TestAblationConfigs:
     def test_baseline_pair(self) -> None:
-        """B组消融基线: 固定心内科+呼吸科。"""
+        """固定双专科实验基线: 心内科+呼吸科。"""
         assert BASELINE_PAIR == ("cardiology", "respiratory")
 
     def test_fallback_pair(self) -> None:
