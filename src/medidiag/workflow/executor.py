@@ -19,6 +19,7 @@ import time
 import uuid
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
@@ -43,7 +44,7 @@ class WorkflowExecutor:
     - 幂等创建病例（Idempotency-Key + user_scope）
     - 幂等启动工作流（处理 RUNNING 重复请求）
     - 状态推进（乐观锁重试 + 状态+事件同事务）
-    - 外部结果写入（二次校验租约，防脑裂双写）
+    - 外部结果写入（原子 lease/result CAS，防脑裂双写）
     """
 
     def __init__(self, lease_manager: LeaseManager | None = None) -> None:
@@ -104,8 +105,22 @@ class WorkflowExecutor:
                 detail={"idempotency_key": idempotency_key},
             )
         )
-        session.commit()
-        return case
+        try:
+            session.commit()
+            return case
+        except IntegrityError:
+            # The database constraint is the final arbiter for concurrent
+            # requests that both missed the initial read.
+            session.rollback()
+            existing = session.execute(
+                select(Case).where(
+                    Case.idempotency_key == idempotency_key,
+                    Case.idempotency_user_scope == user_scope,
+                )
+            ).scalar_one_or_none()
+            if existing is not None:
+                return existing
+            raise
 
     # ===== 启动工作流（幂等 + RUNNING 重复请求处理）=====
 
@@ -139,45 +154,130 @@ class WorkflowExecutor:
         Raises:
             MediDiagError: WORKFLOW_ALREADY_RUNNING（不同幂等键冲突）。
         """
-        # 1. 查找同幂等键的现有任务
+        case = session.execute(
+            select(Case).where(Case.case_id == case_id)
+        ).scalar_one_or_none()
+        if case is None:
+            raise MediDiagError("CASE_NOT_FOUND", detail=f"case {case_id} not found")
+
+        # 1. 查找同一病例/任务类型/幂等键的逻辑任务
         existing = session.execute(
             select(WorkflowTask).where(
-                WorkflowTask.idempotency_key == idempotency_key
+                WorkflowTask.case_id == case_id,
+                WorkflowTask.task_type == task_type,
+                WorkflowTask.idempotency_key == idempotency_key,
             )
         ).scalar_one_or_none()
 
         if existing:
             if existing.status in ("SUCCEEDED", "RUNNING", "PENDING"):
                 return existing  # 返回已有任务（幂等）
-            # FAILED/STALE 可以重新启动，继续往下
 
-        # 2. 检查同 case 是否有其他 RUNNING 任务（不同幂等键）
-        running = session.execute(
-            select(WorkflowTask).where(
-                WorkflowTask.case_id == case_id,
-                WorkflowTask.status == "RUNNING",
-            )
-        ).scalar_one_or_none()
+        # active_task_id covers both PENDING and RUNNING tasks.
+        expected_active_task_id: str | None = None
+        if case.active_task_id:
+            active = session.execute(
+                select(WorkflowTask).where(
+                    WorkflowTask.task_id == case.active_task_id
+                )
+            ).scalar_one_or_none()
+            if active and active.idempotency_key == idempotency_key:
+                if active.status in ("SUCCEEDED", "RUNNING", "PENDING"):
+                    return active
+                expected_active_task_id = active.task_id
+            else:
+                raise MediDiagError(
+                    "WORKFLOW_ALREADY_RUNNING",
+                    detail=f"case {case_id} already has active task {case.active_task_id}",
+                    context={"existing_task_id": case.active_task_id},
+                )
 
-        if running and running.idempotency_key != idempotency_key:
+        active_predicate = (
+            Case.active_task_id.is_(None)
+            if expected_active_task_id is None
+            else Case.active_task_id == expected_active_task_id
+        )
+        if expected_active_task_id and (
+            existing is None or existing.task_id != expected_active_task_id
+        ):
             raise MediDiagError(
                 "WORKFLOW_ALREADY_RUNNING",
-                detail=f"case {case_id} already has RUNNING task {running.task_id}",
-                context={"existing_task_id": running.task_id},
+                detail=f"case {case_id} active task identity mismatch",
+                context={"existing_task_id": expected_active_task_id},
             )
 
-        # 3. 创建新任务
-        task = WorkflowTask(
-            task_id=f"task_{uuid.uuid4().hex[:12]}",
-            case_id=case_id,
-            task_type=task_type,
-            status="PENDING",
-            input_hash=input_hash,
-            idempotency_key=idempotency_key,
+        task_id = existing.task_id if existing else f"task_{uuid.uuid4().hex[:12]}"
+        claimed = session.execute(
+            update(Case)
+            .where(
+                Case.case_id == case_id,
+                Case.version == case.version,
+                active_predicate,
+            )
+            .values(active_task_id=task_id, version=case.version + 1)
         )
-        session.add(task)
-        session.commit()
-        return task
+        if claimed.rowcount != 1:
+            session.rollback()
+            refreshed = session.execute(
+                select(Case).where(Case.case_id == case_id)
+            ).scalar_one()
+            active = (
+                session.execute(
+                    select(WorkflowTask).where(
+                        WorkflowTask.task_id == refreshed.active_task_id
+                    )
+                ).scalar_one_or_none()
+                if refreshed.active_task_id
+                else None
+            )
+            if (
+                active
+                and active.task_type == task_type
+                and active.idempotency_key == idempotency_key
+            ):
+                return active
+            raise MediDiagError(
+                "WORKFLOW_ALREADY_RUNNING",
+                detail=f"case {case_id} active task CAS conflict",
+                context={"existing_task_id": refreshed.active_task_id},
+            )
+
+        if existing:
+            existing.status = "PENDING"
+            existing.input_hash = input_hash
+            existing.attempt += 1
+            existing.lease_owner = None
+            existing.lease_until = None
+            existing.heartbeat_at = None
+            existing.result = None
+            existing.error_code = None
+            existing.error_message = None
+            task = existing
+        else:
+            task = WorkflowTask(
+                task_id=task_id,
+                case_id=case_id,
+                task_type=task_type,
+                status="PENDING",
+                input_hash=input_hash,
+                idempotency_key=idempotency_key,
+            )
+            session.add(task)
+        try:
+            session.commit()
+            return task
+        except IntegrityError:
+            session.rollback()
+            winner = session.execute(
+                select(WorkflowTask).where(
+                    WorkflowTask.case_id == case_id,
+                    WorkflowTask.task_type == task_type,
+                    WorkflowTask.idempotency_key == idempotency_key,
+                )
+            ).scalar_one_or_none()
+            if winner is not None:
+                return winner
+            raise
 
     # ===== 状态推进（乐观锁重试 + 状态+事件同事务）=====
 
@@ -277,7 +377,7 @@ class WorkflowExecutor:
             detail=f"optimistic lock retry exhausted for case {case_id}",
         )
 
-    # ===== 外部结果写入（二次校验租约）=====
+    # ===== 外部结果写入（原子 lease/result CAS）=====
 
     def write_external_result(
         self,
@@ -289,7 +389,7 @@ class WorkflowExecutor:
     ) -> bool:
         """写入外部 IO 结果。
 
-        写入前必须二次校验租约仍有效（防脑裂双写）。
+        结果写入与 lease 校验合并为单条条件 UPDATE（防脑裂双写）。
         如果租约已失效，丢弃写入并抛 TASK_LEASE_LOST。
 
         Args:
@@ -305,38 +405,56 @@ class WorkflowExecutor:
         Raises:
             MediDiagError: TASK_LEASE_LOST（租约已失效，写入被丢弃）。
         """
-        # 二次校验租约
-        if self.lease.check_lease_lost(session, task_id, worker_id, attempt):
-            # 租约丢失，记录事件（不写入结果）
-            task = session.execute(
-                select(WorkflowTask).where(WorkflowTask.task_id == task_id)
-            ).scalar_one_or_none()
-            if task:
-                session.add(
-                    CaseEventLog(
-                        case_id=task.case_id,
-                        event_type="lease_lost",
-                        trigger_subject=TriggerSubject.SYSTEM.value,
-                        trigger_entity=worker_id,
-                        detail={
-                            "task_id": task_id,
-                            "attempt": attempt,
-                            "reason": "TASK_LEASE_LOST",
-                        },
-                    )
-                )
-                session.commit()
-            raise MediDiagError(
-                "TASK_LEASE_LOST",
-                detail=f"worker {worker_id} lost lease on task {task_id}",
-                context={"task_id": task_id, "attempt": attempt},
-            )
-
-        # 租约有效，写入结果
-        session.execute(
+        now = self.lease.now()
+        write = session.execute(
             update(WorkflowTask)
-            .where(WorkflowTask.task_id == task_id)
+            .where(
+                WorkflowTask.task_id == task_id,
+                WorkflowTask.lease_owner == worker_id,
+                WorkflowTask.attempt == attempt,
+                WorkflowTask.status == "RUNNING",
+                WorkflowTask.lease_until > now,
+            )
             .values(status="SUCCEEDED", result=result)
         )
-        session.commit()
-        return True
+        if write.rowcount == 1:
+            task = session.execute(
+                select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+            ).scalar_one()
+            cleared = session.execute(
+                update(Case)
+                .where(
+                    Case.case_id == task.case_id,
+                    Case.active_task_id == task_id,
+                )
+                .values(active_task_id=None, version=Case.version + 1)
+            )
+            if cleared.rowcount == 1:
+                session.commit()
+                return True
+
+        session.rollback()
+        # Record the rejected stale write in a separate transaction.
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one_or_none()
+        if task:
+            session.add(
+                CaseEventLog(
+                    case_id=task.case_id,
+                    event_type="lease_lost",
+                    trigger_subject=TriggerSubject.SYSTEM.value,
+                    trigger_entity=worker_id,
+                    detail={
+                        "task_id": task_id,
+                        "attempt": attempt,
+                        "reason": "TASK_LEASE_LOST",
+                    },
+                )
+            )
+            session.commit()
+        raise MediDiagError(
+            "TASK_LEASE_LOST",
+            detail=f"worker {worker_id} lost lease on task {task_id}",
+            context={"task_id": task_id, "attempt": attempt},
+        )

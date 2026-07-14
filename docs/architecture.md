@@ -37,7 +37,7 @@ FastAPI/CLI
 4. 命中后在同一事务写阶段产物、推进 case version/status 并追加 event。
 5. 未命中则丢弃旧结果，并在独立事务追加 `TASK_LEASE_LOST`。
 
-步骤 3-5 的数据库原子 CAS 是下一阶段 P0-B 门禁；当前代码仍需补强，不能仅凭“二次检查”判定完成。
+步骤 3-5 的数据库原子 CAS 已在 P0-B 落盘并由模型、executor、lease 与迁移测试覆盖。它只证明单机 SQLite 条件更新语义，不代表多 worker 生产部署能力。
 
 ## 评测数据流
 

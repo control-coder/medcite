@@ -12,7 +12,7 @@
 
 | 范围 | 当前证据 | 状态 |
 |---|---|---|
-| 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | 原型已有，P0-B 仍需补数据库唯一约束与原子 CAS |
+| 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | P0-B 已补复合唯一约束、active task CAS、lease/result 条件 UPDATE；真实 worker 仍未实现 |
 | RAG/Agent 实验拆分 | `eval/config.yaml` 中 `rag_*` 与 `agent_*` | 本轮已实现；Conda 全量测试通过 |
 | 配置唯一事实源 | Retriever 必须显式接收 YAML 权重、模型和实验开关 | 本轮已实现；Conda 全量测试通过 |
 | judge 行为 | development 明示 `rule_fallback`；formal 强制固定 NLI 且 fail-closed | 本轮已实现门禁；尚无正式 NLI raw result |
@@ -20,7 +20,15 @@
 | raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
 | Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
 
-当前测试基线：2026-07-14 在 Conda `medidiag` 环境执行 `python -m pytest -q`，结果为 **223 passed in 24.39s**。这只证明当前自动化测试通过，不代表正式 NLI、人工标注或第一阶段完成。
+当前验证基线（Conda `medidiag`，2026-07-14）：
+
+- P0-A 提交后全量测试：`223 passed in 24.39s`。
+- P0-B 代码与迁移加入后全量测试：`235 passed in 27.95s`。
+- 最后两条 active-task mismatch/旧 worker 恢复测试加入后，executor 定向测试：`36 passed in 1.15s`。
+- 配置 CLI：`Configuration validation: OK`。
+- 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
+
+这些结果只证明当前自动化开发门禁通过，不代表正式 NLI、人工标注、真实 worker 端到端或第一阶段完成。
 | API、单机 worker、扫描器、人工升级闭环 | 尚无可运行入口 | 未完成 |
 | 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
 | 最小演示页与结构化 trace | 目录/模型基础存在，未形成可运行展示 | 未完成 |
@@ -53,6 +61,7 @@
 
 - 面向医疗诊断场景的 14 状态执行器、触发主体与非法跳转校验。
 - SQLAlchemy 数据模型、状态与事件同事务的执行器原型、幂等服务、乐观锁重试和任务租约原型。
+- P0-B 数据库一致性补强：三组复合唯一约束、`active_task_id + version` 启动 CAS、不可复活的 lease renew、原子 reclaim/result CAS 与 `TASK_LEASE_LOST` 独立事件事务。
 - 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
 - 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
 - CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。

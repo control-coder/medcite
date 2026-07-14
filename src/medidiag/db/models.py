@@ -28,6 +28,7 @@ from sqlalchemy import (
     JSON,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -54,6 +55,13 @@ class Case(Base):
     """
 
     __tablename__ = "cases"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_user_scope",
+            "idempotency_key",
+            name="uq_cases_scope_idempotency",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     case_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
@@ -62,6 +70,12 @@ class Case(Base):
     question: Mapped[str] = mapped_column(Text)
     gold_answer: Mapped[str | None] = mapped_column(String(64), nullable=True)
     normalized_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Logical reference to workflow_tasks.task_id. It intentionally has no FK
+    # because workflow_tasks already references cases, and SQLite cannot add
+    # the resulting circular FK without rebuilding both tables.
+    active_task_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     idempotency_key: Mapped[str] = mapped_column(String(128), index=True)
     idempotency_user_scope: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
@@ -84,6 +98,14 @@ class WorkflowTask(Base):
     """
 
     __tablename__ = "workflow_tasks"
+    __table_args__ = (
+        UniqueConstraint(
+            "case_id",
+            "task_type",
+            "idempotency_key",
+            name="uq_workflow_tasks_case_type_idempotency",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     task_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
@@ -154,6 +176,15 @@ class AgentRun(Base):
     """
 
     __tablename__ = "agent_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "case_id",
+            "agent_name",
+            "input_hash",
+            "attempt_group",
+            name="uq_agent_runs_execution_identity",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)

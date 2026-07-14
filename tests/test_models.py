@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import inspect, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from medidiag.db.models import (
@@ -84,6 +85,19 @@ class TestTableCreation:
         tables = set(inspector.get_table_names())
         assert "evidence_chunks" not in tables
 
+    def test_p0b_unique_constraints_exist(self, engine) -> None:
+        inspector = inspect(engine)
+        assert "uq_cases_scope_idempotency" in {
+            item["name"] for item in inspector.get_unique_constraints("cases")
+        }
+        assert "uq_workflow_tasks_case_type_idempotency" in {
+            item["name"]
+            for item in inspector.get_unique_constraints("workflow_tasks")
+        }
+        assert "uq_agent_runs_execution_identity" in {
+            item["name"] for item in inspector.get_unique_constraints("agent_runs")
+        }
+
 
 # ===== Case 模型测试 =====
 
@@ -103,8 +117,6 @@ class TestCase:
 
     def test_case_id_unique(self, session, case) -> None:
         """case_id 唯一约束。"""
-        from sqlalchemy.exc import IntegrityError
-
         c2 = Case(
             case_id="c1", status="CREATED", version=1,
             question="q2", idempotency_key="k2", idempotency_user_scope="u2",
@@ -113,6 +125,23 @@ class TestCase:
         with pytest.raises(IntegrityError):
             session.commit()
         session.rollback()
+
+    def test_scope_and_idempotency_key_unique(self, session, case) -> None:
+        duplicate = Case(
+            case_id="c2", status="CREATED", version=1,
+            question="other", idempotency_key="ik1",
+            idempotency_user_scope="user1",
+        )
+        session.add(duplicate)
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
+
+    def test_active_task_id_is_persisted(self, session, case) -> None:
+        case.active_task_id = "task-1"
+        session.commit()
+        session.refresh(case)
+        assert case.active_task_id == "task-1"
 
     def test_optimistic_lock_success(self, session, case) -> None:
         """乐观锁：version 匹配时更新成功。"""
@@ -191,6 +220,16 @@ class TestWorkflowTask:
         assert t.result["chunks"] == ["kb_001", "kb_002"]
         assert t.result["scores"] == [0.9, 0.8]
 
+    def test_workflow_execution_identity_unique(self, session, case) -> None:
+        for task_id in ("t1", "t2"):
+            session.add(WorkflowTask(
+                task_id=task_id, case_id="c1", task_type="normalize",
+                status="PENDING", input_hash="h1", idempotency_key="ik1",
+            ))
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
+
 
 # ===== CaseEventLog 模型测试 =====
 
@@ -264,6 +303,16 @@ class TestAgentRun:
         ).first()
         assert existing is not None
         assert existing.run_id == "r1"
+
+    def test_agent_execution_identity_unique(self, session, case) -> None:
+        for run_id in ("r1", "r2"):
+            session.add(AgentRun(
+                run_id=run_id, case_id="c1", agent_name="diagnosis",
+                input_hash="h1", attempt_group="g1", status="PENDING",
+            ))
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
 
 
 # ===== Citation 模型测试 =====

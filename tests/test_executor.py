@@ -123,6 +123,19 @@ class TestStartWorkflowIdempotency:
             )
         assert exc.value.code == "WORKFLOW_ALREADY_RUNNING"
 
+    def test_different_key_pending_also_conflicts(
+        self, executor, session, case
+    ) -> None:
+        executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
+        )
+        with pytest.raises(MediDiagError) as exc:
+            executor.start_workflow(
+                session, case.case_id, "normalize", "wk2", "h2"
+            )
+        assert exc.value.code == "WORKFLOW_ALREADY_RUNNING"
+        assert session.query(WorkflowTask).count() == 1
+
     def test_succeeded_returns_existing(self, executor, session, case) -> None:
         t1 = executor.start_workflow(
             session, case.case_id, "normalize", "wk1", "h1"
@@ -149,11 +162,69 @@ class TestStartWorkflowIdempotency:
             .values(status="FAILED")
         )
         session.commit()
-        # 同幂等键，FAILED 状态应创建新任务
+        # 同一逻辑任务复用 task_id，并递增 attempt。
         t2 = executor.start_workflow(
             session, case.case_id, "normalize", "wk1", "h1"
         )
-        assert t2.task_id != t1.task_id
+        assert t2.task_id == t1.task_id
+        assert t2.status == "PENDING"
+        assert t2.attempt == 1
+
+    def test_stale_versions_only_one_can_claim_active_task(
+        self, tmp_path
+    ) -> None:
+        database_path = tmp_path / "active-task-cas.db"
+        engine = create_db_engine(f"sqlite:///{database_path.as_posix()}")
+        init_db(engine)
+        factory = get_session_factory(engine)
+        creator = factory()
+        case = WorkflowExecutor().create_case(
+            creator, "question", "case-key", "scope"
+        )
+        case_id = case.case_id
+        creator.close()
+
+        session_a = factory()
+        session_b = factory()
+        stale_a = session_a.execute(
+            select(Case).where(Case.case_id == case_id)
+        ).scalar_one()
+        stale_b = session_b.execute(
+            select(Case).where(Case.case_id == case_id)
+        ).scalar_one()
+        assert stale_a.version == stale_b.version == 1
+
+        winner = session_a.execute(
+            update(Case)
+            .where(
+                Case.case_id == case_id,
+                Case.version == stale_a.version,
+                Case.active_task_id.is_(None),
+            )
+            .values(active_task_id="task-a", version=2)
+        )
+        session_a.commit()
+        loser = session_b.execute(
+            update(Case)
+            .where(
+                Case.case_id == case_id,
+                Case.version == stale_b.version,
+                Case.active_task_id.is_(None),
+            )
+            .values(active_task_id="task-b", version=2)
+        )
+        session_b.commit()
+
+        assert winner.rowcount == 1
+        assert loser.rowcount == 0
+        persisted = session_b.execute(
+            select(Case).where(Case.case_id == case_id)
+        ).scalar_one()
+        session_b.refresh(persisted)
+        assert persisted.active_task_id == "task-a"
+        session_a.close()
+        session_b.close()
+        engine.dispose()
 
 
 # ===== 状态推进 + 乐观锁重试 =====
@@ -268,13 +339,31 @@ class TestLeaseManager:
         self._create_pending_task(session, case)
         lm = LeaseManager()
         lm.acquire(session, "t1", "worker-1")
-        assert lm.renew(session, "t1", "worker-1") is True
+        assert lm.renew(session, "t1", "worker-1", 0) is True
 
     def test_renew_wrong_owner_fails(self, session, case) -> None:
         self._create_pending_task(session, case)
         lm = LeaseManager()
         lm.acquire(session, "t1", "worker-1")
-        assert lm.renew(session, "t1", "worker-2") is False
+        assert lm.renew(session, "t1", "worker-2", 0) is False
+
+    def test_renew_wrong_attempt_fails(self, session, case) -> None:
+        self._create_pending_task(session, case)
+        lm = LeaseManager()
+        lm.acquire(session, "t1", "worker-1")
+        assert lm.renew(session, "t1", "worker-1", 1) is False
+
+    def test_expired_lease_cannot_be_revived(self, session, case) -> None:
+        self._create_pending_task(session, case)
+        lm = LeaseManager()
+        lm.acquire(session, "t1", "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == "t1")
+            .values(lease_until=_utcnow() - timedelta(seconds=1))
+        )
+        session.commit()
+        assert lm.renew(session, "t1", "worker-1", 0) is False
 
     def test_find_expired(self, session, case) -> None:
         now = _utcnow()
@@ -316,6 +405,8 @@ class TestLeaseLostProtection:
         assert result is True
         session.refresh(task)
         assert task.status == "SUCCEEDED"
+        session.refresh(case)
+        assert case.active_task_id is None
 
     def test_write_with_lost_lease_raises(
         self, executor, session, case
@@ -349,55 +440,142 @@ class TestLeaseLostProtection:
         )
         assert len(events) == 1
 
+    def test_expired_worker_result_is_atomically_rejected(
+        self, executor, session, case
+    ) -> None:
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
+        )
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task.task_id)
+            .values(lease_until=_utcnow() - timedelta(seconds=1))
+        )
+        session.commit()
+        with pytest.raises(MediDiagError) as exc:
+            executor.write_external_result(
+                session, task.task_id, "worker-1", 0, {"stale": True}
+            )
+        assert exc.value.code == "TASK_LEASE_LOST"
+        session.refresh(task)
+        assert task.status == "RUNNING"
+        assert task.result is None
+
+    def test_result_rolls_back_when_case_no_longer_points_to_task(
+        self, executor, session, case
+    ) -> None:
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
+        )
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(Case)
+            .where(Case.case_id == case.case_id)
+            .values(active_task_id="other-task", version=Case.version + 1)
+        )
+        session.commit()
+
+        with pytest.raises(MediDiagError) as exc:
+            executor.write_external_result(
+                session, task.task_id, "worker-1", 0, {"should": "rollback"}
+            )
+        assert exc.value.code == "TASK_LEASE_LOST"
+        session.refresh(task)
+        assert task.status == "RUNNING"
+        assert task.result is None
+
 
 # ===== 租约接管 =====
 
 
 class TestLeaseReclaim:
-    def test_reclaim_expired_task(self, session, case) -> None:
-        now = _utcnow()
-        task = WorkflowTask(
-            task_id="t1", case_id=case.case_id, task_type="normalize",
-            status="RUNNING", lease_owner="worker-1",
-            lease_until=now - timedelta(seconds=10),
-            attempt=1, input_hash="h1", idempotency_key="ik1",
+    def test_reclaim_expired_task(self, executor, session, case) -> None:
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
         )
-        session.add(task)
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task.task_id)
+            .values(lease_until=_utcnow() - timedelta(seconds=10))
+        )
         session.commit()
         lm = LeaseManager()
-        assert lm.reclaim(session, "t1", "worker-2") is True
+        assert lm.reclaim(session, task.task_id, "worker-2") is True
         session.refresh(task)
-        assert task.status == "STALE"
-        # 新任务创建
-        new_tasks = (
-            session.query(WorkflowTask)
-            .filter(WorkflowTask.task_id != "t1")
-            .all()
+        assert task.status == "RUNNING"
+        assert task.lease_owner == "worker-2"
+        assert task.attempt == 1
+        assert session.query(WorkflowTask).count() == 1
+
+    def test_only_one_reclaim_wins(self, executor, session, case) -> None:
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
         )
-        assert len(new_tasks) == 1
-        assert new_tasks[0].lease_owner == "worker-2"
-        assert new_tasks[0].attempt == 2
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task.task_id)
+            .values(lease_until=_utcnow() - timedelta(seconds=10))
+        )
+        session.commit()
+        lm = LeaseManager()
+        assert lm.reclaim(session, task.task_id, "worker-2") is True
+        assert lm.reclaim(session, task.task_id, "worker-3") is False
+        session.refresh(task)
+        assert task.lease_owner == "worker-2"
+        assert task.attempt == 1
+
+    def test_old_worker_result_is_rejected_after_reclaim(
+        self, executor, session, case
+    ) -> None:
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
+        )
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task.task_id)
+            .values(lease_until=_utcnow() - timedelta(seconds=10))
+        )
+        session.commit()
+        assert executor.lease.reclaim(session, task.task_id, "worker-2") is True
+
+        with pytest.raises(MediDiagError) as exc:
+            executor.write_external_result(
+                session, task.task_id, "worker-1", 0, {"stale": True}
+            )
+        assert exc.value.code == "TASK_LEASE_LOST"
+        session.refresh(task)
+        assert task.status == "RUNNING"
+        assert task.lease_owner == "worker-2"
+        assert task.attempt == 1
+        assert task.result is None
 
     def test_reclaim_terminal_case_not_reclaimed(
         self, executor, session, case
     ) -> None:
         """case 已终态时，过期任务标 STALE 但不接管。"""
+        task = executor.start_workflow(
+            session, case.case_id, "normalize", "wk1", "h1"
+        )
+        executor.lease.acquire(session, task.task_id, "worker-1")
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task.task_id)
+            .values(lease_until=_utcnow() - timedelta(seconds=10))
+        )
+        session.commit()
         executor.advance_state(
             session, case.case_id, CaseState.CLOSED_CANCELLED, TriggerSubject.API
         )
-        now = _utcnow()
-        task = WorkflowTask(
-            task_id="t1", case_id=case.case_id, task_type="normalize",
-            status="RUNNING", lease_owner="worker-1",
-            lease_until=now - timedelta(seconds=10),
-            attempt=1, input_hash="h1", idempotency_key="ik1",
-        )
-        session.add(task)
-        session.commit()
         lm = LeaseManager()
-        assert lm.reclaim(session, "t1", "worker-2") is False
+        assert lm.reclaim(session, task.task_id, "worker-2") is False
         session.refresh(task)
         assert task.status == "STALE"
+        session.refresh(case)
+        assert case.active_task_id is None
 
 
 # ===== 幂等键工具 =====

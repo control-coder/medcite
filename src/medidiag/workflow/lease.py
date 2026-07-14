@@ -4,7 +4,7 @@ PLAN.md 租约策略:
 - 默认租约 60s，worker 每 20s 续期一次
 - 扫描器每 30s 查找 RUNNING 且 lease_until < now() 的任务
 - 接管前校验任务对应 case 当前状态仍允许重入（非终态）
-- worker 写入外部结果前必须二次校验租约
+- worker 写入外部结果时必须把 lease 条件合并进同一条 UPDATE
 - 旧 worker 迟到写入被丢弃并记录 TASK_LEASE_LOST（防脑裂双写）
 
 租约参数沿用 eval/config.yaml:
@@ -45,6 +45,10 @@ class LeaseManager:
         self.heartbeat_seconds = heartbeat_seconds
         self.scan_interval_seconds = scan_interval_seconds
 
+    def now(self) -> datetime:
+        """Return the database-comparable UTC timestamp used by CAS predicates."""
+        return _utcnow()
+
     def acquire(
         self, session: Session, task_id: str, worker_id: str
     ) -> bool:
@@ -53,7 +57,7 @@ class LeaseManager:
         Returns:
             True 如果领取成功（任务从 PENDING 变为 RUNNING）。
         """
-        now = _utcnow()
+        now = self.now()
         result = session.execute(
             update(WorkflowTask)
             .where(
@@ -71,22 +75,28 @@ class LeaseManager:
         return result.rowcount == 1
 
     def renew(
-        self, session: Session, task_id: str, worker_id: str
+        self,
+        session: Session,
+        task_id: str,
+        worker_id: str,
+        attempt: int,
     ) -> bool:
         """续期租约：更新 lease_until 和 heartbeat_at。
 
-        只有 lease_owner 匹配且任务仍 RUNNING 才能续期。
+        只有 task/owner/attempt 匹配、任务仍 RUNNING 且原租约未过期才能续期。
 
         Returns:
             True 如果续期成功。
         """
-        now = _utcnow()
+        now = self.now()
         result = session.execute(
             update(WorkflowTask)
             .where(
                 WorkflowTask.task_id == task_id,
                 WorkflowTask.lease_owner == worker_id,
+                WorkflowTask.attempt == attempt,
                 WorkflowTask.status == "RUNNING",
+                WorkflowTask.lease_until > now,
             )
             .values(
                 lease_until=now + timedelta(seconds=self.lease_seconds),
@@ -98,7 +108,7 @@ class LeaseManager:
 
     def find_expired(self, session: Session) -> list[WorkflowTask]:
         """查找过期任务：RUNNING 且 lease_until < now()。"""
-        now = _utcnow()
+        now = self.now()
         result = session.execute(
             select(WorkflowTask).where(
                 WorkflowTask.status == "RUNNING",
@@ -112,8 +122,9 @@ class LeaseManager:
     ) -> bool:
         """接管过期任务。
 
-        接管前校验 case 状态仍允许重入（非终态）。
-        旧任务标记为 STALE，创建新任务（attempt + 1）。
+        接管前校验 case 状态仍允许重入（非终态），然后用一条条件
+        UPDATE 原子更新 owner/lease 并递增 attempt。并发扫描器只有一个
+        能命中旧 attempt。
 
         Returns:
             True 如果接管成功。False 如果 case 已终态或任务不存在。
@@ -130,41 +141,54 @@ class LeaseManager:
         ).scalar_one_or_none()
         if case is None:
             return False
+        now = self.now()
         if is_terminal(CaseState(case.status)):
-            # case 已终态，旧任务标 STALE，不接管
-            session.execute(
+            stale = session.execute(
                 update(WorkflowTask)
-                .where(WorkflowTask.task_id == task_id)
+                .where(
+                    WorkflowTask.task_id == task_id,
+                    WorkflowTask.status == "RUNNING",
+                    WorkflowTask.attempt == task.attempt,
+                    WorkflowTask.lease_until <= now,
+                )
                 .values(status="STALE")
             )
+            if stale.rowcount == 1:
+                session.execute(
+                    update(Case)
+                    .where(
+                        Case.case_id == case.case_id,
+                        Case.active_task_id == task_id,
+                    )
+                    .values(active_task_id=None, version=Case.version + 1)
+                )
             session.commit()
             return False
 
-        # 标记旧任务为 STALE
-        old_attempt = task.attempt
-        session.execute(
+        eligible_case = select(Case.case_id).where(
+            Case.case_id == task.case_id,
+            Case.version == case.version,
+            Case.active_task_id == task_id,
+            Case.status.not_in([state.value for state in CaseState if is_terminal(state)]),
+        )
+        reclaimed = session.execute(
             update(WorkflowTask)
-            .where(WorkflowTask.task_id == task_id)
-            .values(status="STALE")
+            .where(
+                WorkflowTask.task_id == task_id,
+                WorkflowTask.case_id.in_(eligible_case),
+                WorkflowTask.status == "RUNNING",
+                WorkflowTask.attempt == task.attempt,
+                WorkflowTask.lease_until <= now,
+            )
+            .values(
+                lease_owner=new_worker_id,
+                lease_until=now + timedelta(seconds=self.lease_seconds),
+                heartbeat_at=now,
+                attempt=task.attempt + 1,
+            )
         )
-
-        # 创建新任务（attempt + 1）
-        now = _utcnow()
-        new_task = WorkflowTask(
-            task_id=f"{task_id}_retry{old_attempt + 1}",
-            case_id=task.case_id,
-            task_type=task.task_type,
-            status="RUNNING",
-            lease_owner=new_worker_id,
-            lease_until=now + timedelta(seconds=self.lease_seconds),
-            heartbeat_at=now,
-            attempt=old_attempt + 1,
-            input_hash=task.input_hash,
-            idempotency_key=f"{task.idempotency_key}_retry{old_attempt + 1}",
-        )
-        session.add(new_task)
         session.commit()
-        return True
+        return reclaimed.rowcount == 1
 
     def validate_lease(
         self,
@@ -173,15 +197,15 @@ class LeaseManager:
         worker_id: str,
         attempt: int,
     ) -> bool:
-        """二次校验租约是否仍有效。
+        """只读检查租约是否仍有效（诊断/监控用途）。
 
-        worker 写入外部结果前必须调用此方法。
+        结果写入不能依赖该先查后写方法，必须使用原子条件 UPDATE。
         条件: task_id + lease_owner + status=RUNNING + lease_until > now() + attempt 匹配。
 
         Returns:
             True 如果租约有效。
         """
-        now = _utcnow()
+        now = self.now()
         result = session.execute(
             select(WorkflowTask).where(
                 WorkflowTask.task_id == task_id,
