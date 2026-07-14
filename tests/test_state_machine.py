@@ -66,7 +66,7 @@ class TestLegalMainPath:
     def test_full_happy_path(self) -> None:
         """主链路: CREATED -> ... -> CLOSED_SUCCESS。"""
         steps = [
-            (CaseState.CREATED, CaseState.NORMALIZED, TriggerSubject.API),
+            (CaseState.CREATED, CaseState.NORMALIZED, TriggerSubject.WORKER),
             (CaseState.NORMALIZED, CaseState.EVIDENCE_RETRIEVED, TriggerSubject.WORKER),
             (CaseState.EVIDENCE_RETRIEVED, CaseState.PLAN_GENERATED, TriggerSubject.WORKER),
             (CaseState.PLAN_GENERATED, CaseState.SPECIALIST_REVIEWING, TriggerSubject.AGENT_WORKER),
@@ -81,6 +81,11 @@ class TestLegalMainPath:
     def test_created_to_cancelled(self) -> None:
         validate_transition(
             CaseState.CREATED, CaseState.CLOSED_CANCELLED, TriggerSubject.API
+        )
+
+    def test_worker_performs_normalization(self) -> None:
+        validate_transition(
+            CaseState.CREATED, CaseState.NORMALIZED, TriggerSubject.WORKER
         )
 
     def test_escalation_at_each_stage(self) -> None:

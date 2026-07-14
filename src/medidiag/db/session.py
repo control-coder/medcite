@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.db.models import Base
@@ -25,7 +25,16 @@ def create_db_engine(
     connect_args = {}
     if database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
-    return create_engine(database_url, echo=echo, connect_args=connect_args)
+    engine = create_engine(database_url, echo=echo, connect_args=connect_args)
+    if database_url.startswith("sqlite"):
+        event.listen(engine, "connect", _enable_sqlite_foreign_keys)
+    return engine
+
+
+def _enable_sqlite_foreign_keys(dbapi_connection, connection_record) -> None:
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 def init_db(engine: Engine) -> None:

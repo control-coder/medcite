@@ -1,7 +1,7 @@
 """数据库模型测试。
 
 覆盖:
-1. 6 张表创建
+1. 8 张表创建
 2. Case CRUD + version 乐观锁机制
 3. WorkflowTask lease 字段
 4. CaseEventLog 事件记录（状态推进 + 事件同事务）
@@ -25,8 +25,10 @@ from medidiag.db.models import (
     Base,
     Case,
     CaseEventLog,
+    CaseReport,
     Citation,
     Review,
+    StageArtifact,
     WorkflowTask,
 )
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
@@ -70,13 +72,17 @@ class TestTableCreation:
     def test_all_six_tables_created(self, engine) -> None:
         inspector = inspect(engine)
         tables = set(inspector.get_table_names())
-        expected = {"cases", "workflow_tasks", "case_event_log", "agent_runs", "citations", "reviews"}
+        expected = {
+            "cases", "workflow_tasks", "case_event_log", "agent_runs",
+            "citations", "reviews", "stage_artifacts", "case_reports",
+        }
         assert expected.issubset(tables), f"missing tables: {expected - tables}"
 
     def test_all_tables_constant(self) -> None:
         assert ALL_TABLES == (
             "cases", "workflow_tasks", "case_event_log",
-            "agent_runs", "citations", "reviews",
+            "agent_runs", "citations", "reviews", "stage_artifacts",
+            "case_reports",
         )
 
     def test_no_evidence_chunks_table(self, engine) -> None:
@@ -370,3 +376,39 @@ class TestReview:
         session.commit()
         reviews = session.query(Review).filter_by(case_id="c1").order_by(Review.round).all()
         assert [r.round for r in reviews] == [1, 2, 3]
+
+
+class TestWorkflowArtifacts:
+    def test_stage_artifact_and_report(self, session, case) -> None:
+        task = WorkflowTask(
+            task_id="t-artifact", case_id="c1", task_type="case_workflow",
+            status="RUNNING", input_hash="input", idempotency_key="workflow-1",
+        )
+        session.add(task)
+        session.flush()
+        session.add(StageArtifact(
+            artifact_id="artifact-1", case_id="c1", task_id=task.task_id,
+            stage="normalize", attempt=0, payload={"normalized_query": "q"},
+            input_hash="in", output_hash="out", component_version="test-v1",
+            latency_ms=1,
+        ))
+        session.add(CaseReport(
+            report_id="report-1", case_id="c1", version=1,
+            structured_report={"summary": "draft"},
+            risk_warnings=["review_required"], compliance_status="PASSED",
+            generation_version="test-v1",
+        ))
+        session.commit()
+        assert session.query(StageArtifact).count() == 1
+        assert session.query(CaseReport).one().structured_report["summary"] == "draft"
+
+    def test_orphan_stage_artifact_rejected(self, session) -> None:
+        session.add(StageArtifact(
+            artifact_id="artifact-orphan", case_id="missing-case",
+            task_id="missing-task", stage="normalize", attempt=0,
+            payload={}, input_hash="in", output_hash="out",
+            component_version="test-v1", latency_ms=1,
+        ))
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()

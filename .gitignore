@@ -76,3 +76,4 @@ pytest-output.txt
 eval-validate-output.txt
 leakage-output.txt
 p0b-test-output.txt
+p0c-test-output.txt

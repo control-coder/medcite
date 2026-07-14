@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from medidiag.db.models import Case, WorkflowTask
+from medidiag.db.models import Case, CaseEventLog, WorkflowTask
 from medidiag.workflow.state_machine import CaseState, is_terminal
 
 
@@ -71,6 +71,19 @@ class LeaseManager:
                 heartbeat_at=now,
             )
         )
+        if result.rowcount == 1:
+            task = session.execute(
+                select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+            ).scalar_one()
+            session.add(
+                CaseEventLog(
+                    case_id=task.case_id,
+                    event_type="lease_acquired",
+                    trigger_subject="worker",
+                    trigger_entity=worker_id,
+                    detail={"task_id": task_id, "attempt": task.attempt},
+                )
+            )
         session.commit()
         return result.rowcount == 1
 
@@ -165,6 +178,8 @@ class LeaseManager:
             session.commit()
             return False
 
+        old_owner = task.lease_owner
+        old_attempt = task.attempt
         eligible_case = select(Case.case_id).where(
             Case.case_id == task.case_id,
             Case.version == case.version,
@@ -177,16 +192,32 @@ class LeaseManager:
                 WorkflowTask.task_id == task_id,
                 WorkflowTask.case_id.in_(eligible_case),
                 WorkflowTask.status == "RUNNING",
-                WorkflowTask.attempt == task.attempt,
+                WorkflowTask.attempt == old_attempt,
                 WorkflowTask.lease_until <= now,
             )
             .values(
                 lease_owner=new_worker_id,
                 lease_until=now + timedelta(seconds=self.lease_seconds),
                 heartbeat_at=now,
-                attempt=task.attempt + 1,
+                attempt=old_attempt + 1,
             )
         )
+        if reclaimed.rowcount == 1:
+            session.add(
+                CaseEventLog(
+                    case_id=task.case_id,
+                    event_type="lease_reclaimed",
+                    trigger_subject="system",
+                    trigger_entity=new_worker_id,
+                    detail={
+                        "task_id": task_id,
+                        "old_owner": old_owner,
+                        "new_owner": new_worker_id,
+                        "old_attempt": old_attempt,
+                        "new_attempt": old_attempt + 1,
+                    },
+                )
+            )
         session.commit()
         return reclaimed.rowcount == 1
 

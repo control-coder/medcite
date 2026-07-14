@@ -1,19 +1,20 @@
 # Architecture
 
-> 更新日期：2026-07-13。本文区分当前已实现组件和一期目标链路。
+> 更新日期：2026-07-14。本文区分当前已实现组件和一期目标链路。
 
 ## 当前实现边界
 
 当前仓库包含：
 
 - 状态机与执行器原型：14 状态、触发主体、非法跳转、状态+事件事务接口。
-- 数据层原型：cases、workflow_tasks、case_event_log、agent_runs、citations、reviews。
+- 数据层：cases、workflow_tasks、case_event_log、agent_runs、citations、reviews、stage_artifacts、case_reports。
 - 并发机制原型：幂等服务、乐观锁重试、租约 acquire/renew/reclaim 与迟到写入检查。
 - RAG/Agent 组件：术语归一化、BM25、embedding、evidence weighting、rerank、单/双 Agent 和仲裁。
 - 审核组件：citation、clinical logic、compliance 规则。
 - 评测链路：配置验证、实验隔离、leakage gate、raw provenance 和指标聚合。
+- P0-C 单机闭环：六个 FastAPI API、单机 worker、lease scanner、人工回流和结构化报告。
 
-当前不存在可运行 FastAPI app、真实单机 worker/lease scanner、case_reports 持久化、完整 trace exporter 或演示页。以下目标图不能解释为已经交付。
+当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。真实 RAG/LLM/judge provider、完整 trace exporter 和演示页尚未交付。以下链路中的真实外部模型部分仍是目标能力。
 
 ## 一期目标链路
 
@@ -65,7 +66,7 @@ RAG 和 Agent 实验不能复用同一标识：
 - development run：允许快速验证，但 manifest 明确不可报告。
 - formal run：固定 NLI 和不可变版本，禁止 fallback、limit 与 dry-run。
 
-## 一期持久化目标
+## 当前持久化产物
 
 - normalize artifact：归一化输入与词表版本。
 - retrieval artifact：query、top-k、各分数、模型和配置 hash。
@@ -74,6 +75,8 @@ RAG 和 Agent 实验不能复用同一标识：
 - reviews：轮次、问题、判定与升级原因。
 - case_reports：结构化报告、风险提示、合规状态和生成版本。
 - case_event_log：append-only 事件，不作为业务结果的唯一存储。
+
+每个 stage artifact 使用 `(case_id, task_id, stage, attempt)` 唯一约束，并保存 input/output hash、component version 和 latency。provider 调用发生在事务外；写入由 `commit_stage()` 将 lease fence、case CAS、artifact 和 event 合并进同一事务。
 
 ## 部署与隐私边界
 

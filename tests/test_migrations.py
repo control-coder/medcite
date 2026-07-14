@@ -39,6 +39,12 @@ def test_p0b_migration_upgrade_downgrade_round_trip(
     assert "uq_agent_runs_execution_identity" in {
         item["name"] for item in inspector.get_unique_constraints("agent_runs")
     }
+    assert {"stage_artifacts", "case_reports"}.issubset(
+        set(inspector.get_table_names())
+    )
+    assert {"input_kind", "source_ref", "trace_id", "review_round"}.issubset(
+        {column["name"] for column in inspector.get_columns("cases")}
+    )
     engine.dispose()
 
     command.downgrade(config, "a146135f3dc0")
@@ -47,6 +53,8 @@ def test_p0b_migration_upgrade_downgrade_round_trip(
     assert "active_task_id" not in {
         column["name"] for column in inspector.get_columns("cases")
     }
+    assert "stage_artifacts" not in inspector.get_table_names()
+    assert "case_reports" not in inspector.get_table_names()
     engine.dispose()
 
     command.upgrade(config, "head")

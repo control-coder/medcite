@@ -1,4 +1,4 @@
-"""SQLAlchemy 2.0 数据模型：6 张核心表。
+"""SQLAlchemy 2.0 数据模型。
 
 PLAN.md 规定的最小字段集，不新增额外字段。
 
@@ -13,10 +13,13 @@ PLAN.md 规定的最小字段集，不新增额外字段。
     agent_runs       - Agent 执行记录（含 input_hash 幂等）
     citations        - claim 与 evidence 绑定
     reviews          - 审核记录
+    stage_artifacts  - worker 阶段结构化产物
+    case_reports     - 最终结构化报告
 """
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
@@ -70,6 +73,15 @@ class Case(Base):
     question: Mapped[str] = mapped_column(Text)
     gold_answer: Mapped[str | None] = mapped_column(String(64), nullable=True)
     normalized_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_kind: Mapped[str] = mapped_column(
+        String(32), default="deidentified_simulation"
+    )
+    source_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    trace_id: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True,
+        default=lambda: f"trace_{uuid.uuid4().hex}",
+    )
+    review_round: Mapped[int] = mapped_column(Integer, default=0)
     # Logical reference to workflow_tasks.task_id. It intentionally has no FK
     # because workflow_tasks already references cases, and SQLite cannot add
     # the resulting circular FK without rebuilding both tables.
@@ -260,6 +272,56 @@ class Review(Base):
         )
 
 
+class StageArtifact(Base):
+    """Persisted output for a single worker stage."""
+
+    __tablename__ = "stage_artifacts"
+    __table_args__ = (
+        UniqueConstraint(
+            "case_id", "task_id", "stage", "attempt",
+            name="uq_stage_artifacts_execution_stage",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    artifact_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.case_id"), index=True
+    )
+    task_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("workflow_tasks.task_id"), index=True
+    )
+    stage: Mapped[str] = mapped_column(String(32), index=True)
+    attempt: Mapped[int] = mapped_column(Integer)
+    payload: Mapped[dict] = mapped_column(JSON)
+    input_hash: Mapped[str] = mapped_column(String(64))
+    output_hash: Mapped[str] = mapped_column(String(64))
+    component_version: Mapped[str] = mapped_column(String(128))
+    latency_ms: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
+class CaseReport(Base):
+    """Versioned structured report generated after approval."""
+
+    __tablename__ = "case_reports"
+    __table_args__ = (
+        UniqueConstraint("case_id", "version", name="uq_case_reports_version"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    report_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    case_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("cases.case_id"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    structured_report: Mapped[dict] = mapped_column(JSON)
+    risk_warnings: Mapped[list] = mapped_column(JSON)
+    compliance_status: Mapped[str] = mapped_column(String(32))
+    generation_version: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 # 表清单常量（便于测试与文档引用）
 ALL_TABLES: tuple[str, ...] = (
     "cases",
@@ -268,4 +330,6 @@ ALL_TABLES: tuple[str, ...] = (
     "agent_runs",
     "citations",
     "reviews",
+    "stage_artifacts",
+    "case_reports",
 )

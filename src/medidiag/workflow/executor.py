@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
@@ -59,6 +60,8 @@ class WorkflowExecutor:
         idempotency_key: str,
         user_scope: str,
         gold_answer: str | None = None,
+        input_kind: str = "deidentified_simulation",
+        source_ref: str | None = None,
     ) -> Case:
         """幂等创建病例。
 
@@ -92,6 +95,8 @@ class WorkflowExecutor:
             version=1,
             question=question,
             gold_answer=gold_answer,
+            input_kind=input_kind,
+            source_ref=source_ref,
             idempotency_key=idempotency_key,
             idempotency_user_scope=user_scope,
         )
@@ -263,6 +268,21 @@ class WorkflowExecutor:
                 idempotency_key=idempotency_key,
             )
             session.add(task)
+        session.add(
+            CaseEventLog(
+                case_id=case_id,
+                event_type="workflow_started",
+                from_status=case.status,
+                to_status=case.status,
+                trigger_subject=TriggerSubject.API.value,
+                detail={
+                    "task_id": task_id,
+                    "task_type": task_type,
+                    "attempt": task.attempt,
+                    "idempotency_key": idempotency_key,
+                },
+            )
+        )
         try:
             session.commit()
             return task
@@ -458,3 +478,135 @@ class WorkflowExecutor:
             detail=f"worker {worker_id} lost lease on task {task_id}",
             context={"task_id": task_id, "attempt": attempt},
         )
+
+    def commit_stage(
+        self,
+        session: Session,
+        *,
+        task_id: str,
+        worker_id: str,
+        attempt: int,
+        to_state: CaseState,
+        subject: TriggerSubject,
+        stage: str,
+        records: list[Any] | None = None,
+        case_values: dict[str, Any] | None = None,
+        detail: dict[str, Any] | None = None,
+        complete_task: bool = False,
+        task_result: dict[str, Any] | None = None,
+    ) -> None:
+        """Atomically fence a worker and persist one workflow stage.
+
+        The task lease predicate, case optimistic-lock predicate, stage records,
+        state transition, and event append share one transaction. External IO
+        must complete before this method is called.
+        """
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one_or_none()
+        if task is None:
+            raise MediDiagError("TASK_LEASE_LOST", detail=f"task {task_id} not found")
+
+        now = self.lease.now()
+        task_updates: dict[str, Any] = {"heartbeat_at": now}
+        if complete_task:
+            task_updates.update(status="SUCCEEDED", result=task_result or {})
+        fenced = session.execute(
+            update(WorkflowTask)
+            .where(
+                WorkflowTask.task_id == task_id,
+                WorkflowTask.lease_owner == worker_id,
+                WorkflowTask.attempt == attempt,
+                WorkflowTask.status == "RUNNING",
+                WorkflowTask.lease_until > now,
+            )
+            .values(**task_updates)
+        )
+        if fenced.rowcount != 1:
+            session.rollback()
+            self._record_lease_lost(session, task, worker_id, attempt, stage)
+            raise MediDiagError(
+                "TASK_LEASE_LOST",
+                detail=f"worker {worker_id} lost lease on task {task_id}",
+                context={"task_id": task_id, "attempt": attempt, "stage": stage},
+            )
+
+        case = session.execute(
+            select(Case).where(Case.case_id == task.case_id)
+        ).scalar_one_or_none()
+        if case is None:
+            session.rollback()
+            raise MediDiagError("CASE_NOT_FOUND", detail=f"case {task.case_id} not found")
+        current_state = CaseState(case.status)
+        try:
+            validate_transition(current_state, to_state, subject)
+        except IllegalTransitionError as exc:
+            session.rollback()
+            raise MediDiagError(
+                "ILLEGAL_STATE_TRANSITION",
+                detail=str(exc),
+                context={"from": current_state.value, "to": to_state.value},
+            ) from exc
+
+        values: dict[str, Any] = {
+            "status": to_state.value,
+            "version": case.version + 1,
+            **(case_values or {}),
+        }
+        if complete_task:
+            values["active_task_id"] = None
+        advanced = session.execute(
+            update(Case)
+            .where(
+                Case.case_id == case.case_id,
+                Case.version == case.version,
+                Case.active_task_id == task_id,
+            )
+            .values(**values)
+        )
+        if advanced.rowcount != 1:
+            session.rollback()
+            raise MediDiagError(
+                "OPTIMISTIC_LOCK_CONFLICT",
+                detail=f"stage {stage} case CAS conflict",
+                context={"case_id": case.case_id, "task_id": task_id},
+            )
+
+        for record in records or []:
+            session.add(record)
+        session.add(
+            CaseEventLog(
+                case_id=case.case_id,
+                event_type="stage_completed",
+                from_status=current_state.value,
+                to_status=to_state.value,
+                trigger_subject=subject.value,
+                trigger_entity=worker_id,
+                detail={"stage": stage, "attempt": attempt, **(detail or {})},
+            )
+        )
+        session.commit()
+
+    @staticmethod
+    def _record_lease_lost(
+        session: Session,
+        task: WorkflowTask,
+        worker_id: str,
+        attempt: int,
+        stage: str,
+    ) -> None:
+        session.add(
+            CaseEventLog(
+                case_id=task.case_id,
+                event_type="lease_lost",
+                trigger_subject=TriggerSubject.SYSTEM.value,
+                trigger_entity=worker_id,
+                detail={
+                    "task_id": task.task_id,
+                    "attempt": attempt,
+                    "stage": stage,
+                    "reason": "TASK_LEASE_LOST",
+                },
+            )
+        )
+        session.commit()

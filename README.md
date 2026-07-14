@@ -6,32 +6,33 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**核心机制原型已存在，正在按 `SUPPLEMENT_PLAN.md` 补齐产品与评测闭环，不能表述为“第一阶段完成”。** 截至 2026-07-13，本轮已开始 P0-A 评测真实性改造；真实 API/worker 闭环、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，但不能表述为“第一阶段完成”。** 真实 RAG/LLM provider、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
 
 ## Current Status
 
 | 范围 | 当前证据 | 状态 |
 |---|---|---|
-| 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | P0-B 已补复合唯一约束、active task CAS、lease/result 条件 UPDATE；真实 worker 仍未实现 |
+| 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | P0-B 条件更新已验证；P0-C worker 已复用同一 CAS 边界 |
 | RAG/Agent 实验拆分 | `eval/config.yaml` 中 `rag_*` 与 `agent_*` | 本轮已实现；Conda 全量测试通过 |
 | 配置唯一事实源 | Retriever 必须显式接收 YAML 权重、模型和实验开关 | 本轮已实现；Conda 全量测试通过 |
 | judge 行为 | development 明示 `rule_fallback`；formal 强制固定 NLI 且 fail-closed | 本轮已实现门禁；尚无正式 NLI raw result |
 | 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现；Conda 全量测试通过 |
 | raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
 | Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
+| API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider 与外部依赖重试仍待补 |
+| 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
+| 最小演示页与结构化 trace | event/trace 基础字段已增加，尚无 exporter 和页面 | 未完成 |
 
 当前验证基线（Conda `medidiag`，2026-07-14）：
 
 - P0-A 提交后全量测试：`223 passed in 24.39s`。
 - P0-B 代码与迁移加入后全量测试：`235 passed in 27.95s`。
 - 最后两条 active-task mismatch/旧 worker 恢复测试加入后，executor 定向测试：`36 passed in 1.15s`。
+- P0-C 最终全量测试：`255 passed in 29.94s`；外部 IO 崩溃恢复 worker 定向测试：`5 passed in 1.98s`。
 - 配置 CLI：`Configuration validation: OK`。
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
 
-这些结果只证明当前自动化开发门禁通过，不代表正式 NLI、人工标注、真实 worker 端到端或第一阶段完成。
-| API、单机 worker、扫描器、人工升级闭环 | 尚无可运行入口 | 未完成 |
-| 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
-| 最小演示页与结构化 trace | 目录/模型基础存在，未形成可运行展示 | 未完成 |
+这些结果只证明当前自动化开发门禁和确定性 provider 工程闭环通过，不代表真实模型工作流、正式 NLI、人工标注或第一阶段完成。
 
 历史 `reports/raw/real/group_*.json` 及归档报告仅是 exploratory artifacts。它们使用旧 A-F 耦合实验和规则 judge，不得用于简历或正式指标。
 
@@ -50,7 +51,7 @@
 | Rerank | `cross-encoder/ms-marco-MiniLM-L-6-v2` | 第三方 cross-encoder |
 | Judge | `microsoft/deberta-v3-base-mnli` | 正式模式计划使用的固定 NLI；当前没有正式结果 |
 | Retrieval | FAISS、`rank-bm25` | 第三方索引和检索库 |
-| Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架；API 尚未实现 |
+| Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架；六个 MVP API 已集成 |
 | Test/config | pytest、PyYAML | 测试与配置工具 |
 
 第三方模型、框架和数据集只算集成，不算核心创新。
@@ -62,12 +63,13 @@
 - 面向医疗诊断场景的 14 状态执行器、触发主体与非法跳转校验。
 - SQLAlchemy 数据模型、状态与事件同事务的执行器原型、幂等服务、乐观锁重试和任务租约原型。
 - P0-B 数据库一致性补强：三组复合唯一约束、`active_task_id + version` 启动 CAS、不可复活的 lease renew、原子 reclaim/result CAS 与 `TASK_LEASE_LOST` 独立事件事务。
+- P0-C 单机闭环：六个 FastAPI API、配置化 worker/lease scanner、阶段产物、人工升级回流、结构化报告和崩溃接管恢复。
 - 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
 - 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
 - CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。
 - 本轮新增的配置驱动评测门禁：实验族隔离、正式 judge fail-closed、eligible 指标分母、leakage 前置检查、run provenance 与探索性结果隔离。
 
-不把尚未接入真实 worker 的组件描述为完整多 Agent 协作系统；在独立实验支持收益前，只称为“流水线式 Agent 编排 + 双专科仲裁实验”。
+不把尚未接入真实 provider 的组件描述为完整多 Agent 协作系统；在独立实验支持收益前，只称为“流水线式 Agent 编排 + 双专科仲裁实验”。
 
 ## Evaluation Contract
 
@@ -113,9 +115,28 @@ python -m eval.leakage_check `
   --config eval/config.yaml `
   --eval-set eval/datasets/eval_set_pubmedqa.jsonl `
   --kb eval/datasets/knowledge_chunks.jsonl
+
+# P0-C 本地工程闭环（当前 worker 使用确定性非诊断 provider）
+alembic upgrade head
+uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8000
+medidiag worker --once
+medidiag lease-scan --once
 ```
 
 评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果；`eval/report.py` 会拒绝从 `report_eligible: false` 的 run 生成正式报告。
+
+## MVP API
+
+| Method | Path | 作用 |
+|---|---|---|
+| POST | `/api/v1/cases` | 使用 `Idempotency-Key` 创建公开/脱敏模拟病例 |
+| POST | `/api/v1/cases/{case_id}/workflow` | 幂等启动或恢复工作流 |
+| GET | `/api/v1/cases/{case_id}` | 查询 version、active task 和人工动作 |
+| GET | `/api/v1/cases/{case_id}/events` | 使用稳定 event ID cursor 分页 |
+| GET | `/api/v1/cases/{case_id}/report` | 获取已生成的结构化报告 |
+| POST | `/api/v1/cases/{case_id}/human-decisions` | 仅从 `ESCALATED` 执行三类人工决策 |
+
+默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。它不能替代真实 RAG/LLM/judge provider，也不产生可用于简历的医学指标。
 
 ## Documents
 

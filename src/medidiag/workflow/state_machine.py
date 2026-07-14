@@ -82,6 +82,7 @@ def is_terminal(state: CaseState) -> bool:
 TRANSITIONS: dict[CaseState, dict[TriggerSubject, list[CaseState]]] = {
     CaseState.CREATED: {
         TriggerSubject.API: [CaseState.NORMALIZED, CaseState.CLOSED_CANCELLED],
+        TriggerSubject.WORKER: [CaseState.NORMALIZED],
     },
     CaseState.NORMALIZED: {
         TriggerSubject.WORKER: [CaseState.EVIDENCE_RETRIEVED, CaseState.ESCALATED],

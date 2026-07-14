@@ -126,6 +126,16 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=False,
         description="创建病例或启动工作流时缺少幂等键。",
     ),
+    "CASE_INPUT_NOT_DEIDENTIFIED": ErrorSpec(
+        code="CASE_INPUT_NOT_DEIDENTIFIED",
+        http_status=400,
+        category=ErrorCategory.USER_INPUT,
+        retryable=False,
+        default_action="拒绝输入，要求移除直接身份标识后重试。",
+        requires_human_escalation=False,
+        alert=False,
+        description="模拟病例包含明显邮箱、电话或身份证格式，未通过脱敏门禁。",
+    ),
 
     # ----- 42x 业务流程错误 -----
     "STATE_CONFLICT": ErrorSpec(
@@ -170,6 +180,16 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         requires_human_escalation=True,
         alert=True,
         description="审核连续驳回超过最大轮次。",
+    ),
+    "REPORT_NOT_READY": ErrorSpec(
+        code="REPORT_NOT_READY",
+        http_status=409,
+        category=ErrorCategory.BUSINESS,
+        retryable=True,
+        default_action="等待工作流生成报告后重试。",
+        requires_human_escalation=False,
+        alert=False,
+        description="病例尚未生成结构化报告。",
     ),
 
     # ----- 52x 外部依赖错误 -----
