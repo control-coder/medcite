@@ -70,3 +70,8 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+# Local command captures used for verification
+pytest-output.txt
+eval-validate-output.txt
+leakage-output.txt

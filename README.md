@@ -13,12 +13,14 @@
 | 范围 | 当前证据 | 状态 |
 |---|---|---|
 | 状态机、数据模型、乐观锁、幂等与租约单元机制 | `src/medidiag/workflow/`、`src/medidiag/db/`、对应测试 | 原型已有，P0-B 仍需补数据库唯一约束与原子 CAS |
-| RAG/Agent 实验拆分 | `eval/config.yaml` 中 `rag_*` 与 `agent_*` | 本轮已实现，待 Conda 全量测试复验 |
-| 配置唯一事实源 | Retriever 必须显式接收 YAML 权重、模型和实验开关 | 本轮已实现，待复验 |
+| RAG/Agent 实验拆分 | `eval/config.yaml` 中 `rag_*` 与 `agent_*` | 本轮已实现；Conda 全量测试通过 |
+| 配置唯一事实源 | Retriever 必须显式接收 YAML 权重、模型和实验开关 | 本轮已实现；Conda 全量测试通过 |
 | judge 行为 | development 明示 `rule_fallback`；formal 强制固定 NLI 且 fail-closed | 本轮已实现门禁；尚无正式 NLI raw result |
-| 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现，待复验 |
+| 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现；Conda 全量测试通过 |
 | raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
-| Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成，待运行时复验 |
+| Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
+
+当前测试基线：2026-07-14 在 Conda `medidiag` 环境执行 `python -m pytest -q`，结果为 **223 passed in 24.39s**。这只证明当前自动化测试通过，不代表正式 NLI、人工标注或第一阶段完成。
 | API、单机 worker、扫描器、人工升级闭环 | 尚无可运行入口 | 未完成 |
 | 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
 | 最小演示页与结构化 trace | 目录/模型基础存在，未形成可运行展示 | 未完成 |
