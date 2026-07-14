@@ -14,6 +14,8 @@ keywords = ["medical", "rag", "agent", "evidence-based", "diagnosis", "workflow"
 
 dependencies = [
     "fastapi>=0.110",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.27",
     "sqlalchemy>=2.0",
     "alembic>=1.13",
@@ -48,6 +50,14 @@ medidiag-eval = "eval.runner:cli"
 [tool.setuptools.packages.find]
 where = ["src", "."]
 include = ["medidiag*", "eval*"]
+
+[tool.setuptools.package-data]
+medidiag = [
+    "api/templates/*.html",
+    "api/templates/partials/*.html",
+    "api/static/*.css",
+    "api/static/*.js",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

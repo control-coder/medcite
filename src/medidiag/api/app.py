@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Generator
+from pathlib import Path
+from typing import Any
 
-from fastapi import Depends, FastAPI, Header, Query, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, Form, Header, Query, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -21,7 +27,15 @@ from medidiag.api.schemas import (
     WorkflowStartResponse,
 )
 from medidiag.config import get_settings
-from medidiag.db.models import Case, CaseEventLog, CaseReport, WorkflowTask
+from medidiag.db.models import (
+    Case,
+    CaseEventLog,
+    CaseReport,
+    Citation,
+    Review,
+    StageArtifact,
+    WorkflowTask,
+)
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.errors import MediDiagError
 from medidiag.workflow.executor import WorkflowExecutor
@@ -31,6 +45,8 @@ from medidiag.workflow.state_machine import CaseState, TriggerSubject, is_termin
 _EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 _PHONE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
 _CN_ID = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
+_API_DIR = Path(__file__).resolve().parent
+_TEMPLATES = Jinja2Templates(directory=str(_API_DIR / "templates"))
 
 
 def _ensure_deidentified(payload: CaseCreateRequest) -> None:
@@ -53,6 +69,11 @@ def create_app(
         version="0.1.0",
         description="Engineering prototype for public/deidentified data; not medical advice.",
     )
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(_API_DIR / "static")),
+        name="static",
+    )
     if session_factory is None:
         engine = create_db_engine(database_url or get_settings().database_url)
         if initialize_schema:
@@ -69,7 +90,14 @@ def create_app(
     @app.exception_handler(MediDiagError)
     async def medidiag_error_handler(
         request: Request, exc: MediDiagError
-    ) -> JSONResponse:
+    ) -> Response:
+        if request.url.path.startswith("/demo"):
+            return _TEMPLATES.TemplateResponse(
+                request=request,
+                name="partials/error.html",
+                context={"error": exc},
+                status_code=exc.spec.http_status,
+            )
         return JSONResponse(
             status_code=exc.spec.http_status,
             content=ErrorResponse(
@@ -229,6 +257,157 @@ def create_app(
         session.expire_all()
         return _case_response(session, _case_or_404(session, case_id))
 
+    @app.get("/demo", response_class=HTMLResponse)
+    def demo_home(
+        request: Request, session: Session = Depends(get_session)
+    ) -> HTMLResponse:
+        recent = list(
+            session.execute(select(Case).order_by(Case.id.desc()).limit(20)).scalars()
+        )
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="demo.html",
+            context={"recent_cases": recent},
+        )
+
+    @app.post("/demo/cases", response_class=HTMLResponse)
+    def demo_create_case(
+        request: Request,
+        question: str = Form(...),
+        input_kind: str = Form(...),
+        source_ref: str | None = Form(default=None),
+        session: Session = Depends(get_session),
+    ) -> Response:
+        try:
+            payload = CaseCreateRequest(
+                question=question,
+                input_kind=input_kind,
+                source_ref=source_ref or None,
+            )
+        except ValidationError as exc:
+            raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
+        _ensure_deidentified(payload)
+        nonce = uuid.uuid4().hex
+        case = app.state.executor.create_case(
+            session,
+            payload.question,
+            f"demo-case-{nonce}",
+            "local-demo",
+            input_kind=payload.input_kind,
+            source_ref=payload.source_ref,
+        )
+        app.state.executor.start_workflow(
+            session,
+            case.case_id,
+            "case_workflow",
+            f"demo-workflow-{nonce}",
+            compute_input_hash(
+                {"case_id": case.case_id, "question": case.question, "version": case.version}
+            ),
+        )
+        location = f"/demo/cases/{case.case_id}"
+        if request.headers.get("HX-Request") == "true":
+            return Response(
+                status_code=status.HTTP_204_NO_CONTENT,
+                headers={"HX-Redirect": location},
+            )
+        return RedirectResponse(location, status_code=status.HTTP_303_SEE_OTHER)
+
+    @app.get("/demo/cases/{case_id}", response_class=HTMLResponse)
+    def demo_case(
+        request: Request,
+        case_id: str,
+        session: Session = Depends(get_session),
+    ) -> HTMLResponse:
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="case.html",
+            context=_demo_case_context(session, case_id),
+        )
+
+    @app.get("/demo/cases/{case_id}/status", response_class=HTMLResponse)
+    def demo_case_status(
+        request: Request,
+        case_id: str,
+        session: Session = Depends(get_session),
+    ) -> HTMLResponse:
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="partials/case_live.html",
+            context=_demo_case_context(session, case_id),
+        )
+
+    @app.post("/demo/cases/{case_id}/human-decisions", response_class=HTMLResponse)
+    def demo_human_decision(
+        request: Request,
+        case_id: str,
+        decision: str = Form(...),
+        reason: str = Form(...),
+        session: Session = Depends(get_session),
+    ) -> Response:
+        try:
+            payload = HumanDecisionRequest(decision=decision, reason=reason)
+        except ValidationError as exc:
+            raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
+        case = _case_or_404(session, case_id)
+        if case.status != CaseState.ESCALATED.value:
+            raise MediDiagError(
+                "ILLEGAL_STATE_TRANSITION",
+                detail="human decisions are only allowed from ESCALATED",
+            )
+        app.state.executor.advance_state(
+            session,
+            case_id,
+            CaseState(payload.decision),
+            TriggerSubject.HUMAN,
+            trigger_entity="demo-human-reviewer",
+            event_type="human_decision",
+            detail={"decision": payload.decision, "reason": payload.reason},
+        )
+        if request.headers.get("HX-Request") != "true":
+            return RedirectResponse(
+                f"/demo/cases/{case_id}", status_code=status.HTTP_303_SEE_OTHER
+            )
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="partials/case_live.html",
+            context=_demo_case_context(session, case_id),
+        )
+
+    @app.post("/demo/cases/{case_id}/workflow", response_class=HTMLResponse)
+    def demo_resume_workflow(
+        request: Request,
+        case_id: str,
+        session: Session = Depends(get_session),
+    ) -> Response:
+        case = _case_or_404(session, case_id)
+        if is_terminal(CaseState(case.status)):
+            raise MediDiagError("CASE_ALREADY_CLOSED")
+        if case.status == CaseState.ESCALATED.value:
+            raise MediDiagError(
+                "ILLEGAL_STATE_TRANSITION",
+                detail="ESCALATED requires a human decision before restart",
+            )
+        nonce = uuid.uuid4().hex
+        app.state.executor.start_workflow(
+            session,
+            case_id,
+            "case_workflow",
+            f"demo-resume-{nonce}",
+            compute_input_hash(
+                {"case_id": case_id, "question": case.question, "version": case.version}
+            ),
+        )
+        if request.headers.get("HX-Request") != "true":
+            return RedirectResponse(
+                f"/demo/cases/{case_id}", status_code=status.HTTP_303_SEE_OTHER
+            )
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="partials/case_live.html",
+            context=_demo_case_context(session, case_id),
+        )
+
     return app
 
 
@@ -274,6 +453,72 @@ def _case_response(session: Session, case: Case) -> CaseResponse:
         active_task=_task_response(active) if active else None,
         available_human_actions=actions,
     )
+
+
+def _demo_case_context(session: Session, case_id: str) -> dict[str, Any]:
+    case = _case_or_404(session, case_id)
+    active = (
+        session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == case.active_task_id)
+        ).scalar_one_or_none()
+        if case.active_task_id
+        else None
+    )
+    events = list(
+        session.execute(
+            select(CaseEventLog)
+            .where(CaseEventLog.case_id == case_id)
+            .order_by(CaseEventLog.id.desc())
+            .limit(100)
+        ).scalars()
+    )
+    artifacts = list(
+        session.execute(
+            select(StageArtifact)
+            .where(StageArtifact.case_id == case_id)
+            .order_by(StageArtifact.id)
+        ).scalars()
+    )
+    latest = {artifact.stage: artifact for artifact in artifacts}
+    retrieval = latest.get("retrieval")
+    generation = latest.get("generation")
+    review_artifact = latest.get("review")
+    report = session.execute(
+        select(CaseReport)
+        .where(CaseReport.case_id == case_id)
+        .order_by(CaseReport.version.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    reviews = list(
+        session.execute(
+            select(Review).where(Review.case_id == case_id).order_by(Review.id.desc())
+        ).scalars()
+    )
+    citations = list(
+        session.execute(
+            select(Citation).where(Citation.case_id == case_id).order_by(Citation.id)
+        ).scalars()
+    )
+    can_resume = (
+        case.active_task_id is None
+        and case.status in {
+            CaseState.APPROVED.value,
+            CaseState.REVISION_REQUIRED.value,
+        }
+    )
+    return {
+        "case": case,
+        "active_task": active,
+        "events": events,
+        "evidence": retrieval.payload.get("chunks", []) if retrieval else [],
+        "claims": generation.payload.get("claims", []) if generation else [],
+        "review_payload": review_artifact.payload if review_artifact else None,
+        "reviews": reviews,
+        "citations": citations,
+        "report": report,
+        "should_poll": active is not None and not is_terminal(CaseState(case.status)),
+        "can_resume": can_resume,
+    }
 
 
 app = create_app()

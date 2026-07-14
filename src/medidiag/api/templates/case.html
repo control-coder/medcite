@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}病例 {{ case.case_id }} | MediDiag EvidenceFlow{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/demo">病例工作台</a><span>/</span><span>{{ case.case_id }}</span></nav>
+{% include "partials/case_live.html" %}
+{% endblock %}

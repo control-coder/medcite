@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MediDiag EvidenceFlow{% endblock %}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{{ url_for('static', path='/demo.css') }}">
+  <script src="{{ url_for('static', path='/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='/demo.js') }}" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/demo">MediDiag EvidenceFlow</a>
+    <span class="scope-note">仅用于公开数据与脱敏模拟，不构成医疗建议</span>
+  </header>
+  <main class="page-shell">{% block content %}{% endblock %}</main>
+</body>
+</html>

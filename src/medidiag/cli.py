@@ -55,12 +55,21 @@ def _session_factory():
 @click.option("--once", is_flag=True, help="Process at most one task.")
 @click.option("--loop", is_flag=True, help="Continuously poll for tasks.")
 @click.option("--worker-id", default="local-worker", show_default=True)
-def worker(once: bool, loop: bool, worker_id: str) -> None:
+@click.option(
+    "--review-verdict",
+    type=click.Choice(["APPROVED", "REVISION_REQUIRED", "ESCALATED"]),
+    default="APPROVED",
+    show_default=True,
+    help="Deterministic development-provider review outcome.",
+)
+def worker(once: bool, loop: bool, worker_id: str, review_verdict: str) -> None:
     """Run the single-machine deterministic development worker."""
     _mode(once, loop)
     engine, factory = _session_factory()
     runner = SingleMachineWorker(
-        factory, DeterministicWorkflowProvider(), worker_id=worker_id
+        factory,
+        DeterministicWorkflowProvider(review_verdict=review_verdict),
+        worker_id=worker_id,
     )
     try:
         while True:

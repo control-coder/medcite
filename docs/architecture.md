@@ -15,8 +15,9 @@
 - P0-C 单机闭环：六个 FastAPI API、单机 worker、lease scanner、人工回流和结构化报告。
 - Provider runtime：阶段 schema、timeout/HTTP 错误映射、有限退避和逐 attempt 事件审计。
 - P1-A observability：统一 trace schema、raw/summary exporter 与三类确定性工程案例。
+- P1-B demo：FastAPI 服务端模板、Jinja2、vendored HTMX、响应式 CSS 和原生表单 fallback。
 
-当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。可靠性边界可包裹后续真实 adapter，但真实 RAG/LLM/judge adapter、成功调用缓存、双专科实验 trace 和演示页尚未交付。
+当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。可靠性边界可包裹后续真实 adapter，但真实 RAG/LLM/judge adapter、成功调用缓存和双专科实验 trace 尚未交付。
 
 ## 一期目标链路
 
@@ -96,6 +97,18 @@ case_event_log + workflow_tasks + stage_artifacts + agent_runs + case_reports
 ```
 
 raw 与 summary 都不保存病例问题；summary 进一步移除 evidence text 和 claim text，只保留 evidence 元数据与 claim hash。敏感键、Bearer token、邮箱、手机号和身份证格式统一脱敏。summary 的 `raw_event_ids` 与 `raw_file` 提供反向关联。运行产物默认不提交 Git。
+
+## 演示页数据流
+
+```text
+Browser
+  -> Jinja2 full page (/demo, /demo/cases/{id})
+  -> HTMX status partial every 2s while active
+  -> existing schema/deidentification/executor boundary for writes
+  -> SQLAlchemy read model for evidence, review, report and timeline
+```
+
+HTMX 以固定本地 2.0.4 文件提供，不依赖外网 CDN。创建、人工处置和恢复表单同时声明原生 `method/action`；禁用 JavaScript 时由 303 返回完整页面。模板不直接执行 UPDATE，状态变化仍通过 `WorkflowExecutor`。该页面是本地工程入口，不是患者端或生产 Dashboard。
 
 ## 部署与隐私边界
 

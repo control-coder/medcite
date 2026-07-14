@@ -80,3 +80,5 @@ p0c-test-output.txt
 p0c-provider-test-output.txt
 p1a-trace-test-output.txt
 p1a-trace-cli-output.txt
+p1b-*-output.txt
+p1b-server-error.txt

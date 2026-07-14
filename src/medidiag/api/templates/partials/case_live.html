@@ -1,0 +1,113 @@
+<section id="case-live" class="case-live"
+  {% if should_poll %}hx-get="/demo/cases/{{ case.case_id }}/status" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <header class="case-header">
+    <div>
+      <p class="eyebrow">Trace {{ case.trace_id }}</p>
+      <h1>{{ case.case_id }}</h1>
+    </div>
+    <div class="case-status-block">
+      <span class="status status-{{ case.status|lower }}">{{ case.status }}</span>
+      <span>版本 v{{ case.version }}</span>
+    </div>
+  </header>
+
+  <div class="meta-strip">
+    <div><span>输入</span><strong>{{ case.input_kind }}</strong></div>
+    <div><span>活动任务</span><strong>{{ active_task.task_id if active_task else '无' }}</strong></div>
+    <div><span>Attempt</span><strong>{{ active_task.attempt if active_task else '-' }}</strong></div>
+    <div><span>更新时间</span><strong>{{ case.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</strong></div>
+  </div>
+
+  {% if case.status == 'ESCALATED' %}
+  <section class="attention-band" aria-labelledby="human-title">
+    <div class="section-heading"><h2 id="human-title">人工处置</h2><span>等待态</span></div>
+    <form class="human-form" method="post" action="/demo/cases/{{ case.case_id }}/human-decisions" hx-post="/demo/cases/{{ case.case_id }}/human-decisions" hx-target="#case-live" hx-swap="outerHTML">
+      <label for="decision">处置结果</label>
+      <select id="decision" name="decision">
+        <option value="APPROVED">批准</option>
+        <option value="REVISION_REQUIRED">要求修订</option>
+        <option value="CLOSED_ESCALATED">人工终止</option>
+      </select>
+      <label for="reason">处置理由</label>
+      <textarea id="reason" name="reason" minlength="3" maxlength="2000" rows="3" required></textarea>
+      <button class="primary-button" type="submit">提交处置</button>
+    </form>
+  </section>
+  {% elif can_resume %}
+  <section class="action-band">
+    <form method="post" action="/demo/cases/{{ case.case_id }}/workflow" hx-post="/demo/cases/{{ case.case_id }}/workflow" hx-target="#case-live" hx-swap="outerHTML">
+      <button class="primary-button" type="submit">启动恢复任务</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <div class="detail-grid">
+    <section class="data-section">
+      <div class="section-heading"><h2>检索证据</h2><span>{{ evidence|length }} 条</span></div>
+      {% if evidence %}
+        <div class="evidence-list">
+        {% for item in evidence %}
+          <article class="evidence-item">
+            <div class="item-meta"><strong>{{ item.source or 'unknown' }}</strong><span>{{ item.evidence_level or 'unranked' }}</span>{% if item.score is not none %}<span>score {{ '%.3f'|format(item.score) }}</span>{% endif %}</div>
+            <p>{{ item.text }}</p>
+            <code>{{ item.chunk_id }}</code>
+          </article>
+        {% endfor %}
+        </div>
+      {% else %}<p class="empty-state">尚无检索产物</p>{% endif %}
+    </section>
+
+    <section class="data-section">
+      <div class="section-heading"><h2>Claim 与引用</h2><span>{{ citations|length }} 条判定</span></div>
+      {% if claims %}
+        <div class="claim-list">
+        {% for claim in claims %}
+          <article class="claim-item">
+            <p>{{ claim.text }}</p>
+            <div class="citation-row">
+              {% for chunk_id in claim.citation_chunk_ids %}
+                {% set matches = citations|selectattr('chunk_id', 'equalto', chunk_id)|list %}
+                <code>{{ chunk_id }}</code>
+                {% if matches %}<span class="verdict verdict-{{ matches[0].verdict|lower }}">{{ matches[0].verdict }}</span><span>{{ matches[0].verifier_model }}</span>{% endif %}
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+        </div>
+      {% else %}<p class="empty-state">尚无生成产物</p>{% endif %}
+    </section>
+  </div>
+
+  <section class="data-section">
+    <div class="section-heading"><h2>审核与合规</h2><span>{{ review_payload.compliance_status if review_payload else 'PENDING' }}</span></div>
+    {% if reviews %}
+      <div class="review-grid">
+      {% for item in reviews %}
+        <div><strong>{{ item.result }}</strong><span>Round {{ item.round }}</span><p>{{ (item.detail.issues if item.detail else [])|join('；') or '无审核问题' }}</p></div>
+      {% endfor %}
+      </div>
+    {% else %}<p class="empty-state">尚无审核记录</p>{% endif %}
+  </section>
+
+  {% if report %}
+  <section class="report-band">
+    <div class="section-heading"><h2>最终结构化报告</h2><span>v{{ report.version }}</span></div>
+    <h3>{{ report.structured_report.title }}</h3>
+    <p>{{ report.structured_report.summary }}</p>
+    <ul>{% for item in report.structured_report.limitations %}<li>{{ item }}</li>{% endfor %}</ul>
+    <p class="disclaimer">{{ report.structured_report.disclaimer }}</p>
+  </section>
+  {% endif %}
+
+  <section class="timeline-section">
+    <div class="section-heading"><h2>状态时间线</h2><span>{{ events|length }} 个事件</span></div>
+    <ol class="timeline">
+    {% for item in events %}
+      <li>
+        <time>{{ item.created_at.strftime('%H:%M:%S') }}</time>
+        <div><strong>{{ item.event_type }}</strong><span>{{ item.from_status or '-' }} → {{ item.to_status or '-' }}</span><small>{{ item.trigger_subject }}{% if item.trigger_entity %} · {{ item.trigger_entity }}{% endif %}</small></div>
+      </li>
+    {% endfor %}
+    </ol>
+  </section>
+</section>

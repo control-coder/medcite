@@ -6,7 +6,7 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A 已交付结构化 trace exporter 和三类工程案例，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa、双专科实验 trace 和演示页仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa 和双专科实验 trace 仍未验收。
 
 ## Current Status
 
@@ -23,7 +23,7 @@
 | Provider 调用可靠性 | Pydantic stage schema、timeout/429/5xx 分类、有限退避、request ID 与逐次调用事件 | 已通过定向和全量测试 |
 | 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
 | 结构化 trace 与工程案例 | JSONL raw + 脱敏 summary、成功/租约恢复/审核升级三类确定性案例 | 首个切片已通过测试；双专科实验 trace 待补 |
-| 最小演示页 | 尚无 Jinja2/HTMX 页面 | 未完成 |
+| 最小演示页 | FastAPI + Jinja2 + 本地 HTMX，含轮询、人工处置、证据/citation/报告视图 | 页面测试与桌面/移动浏览器 QA 通过 |
 
 当前验证基线（Conda `medidiag`，2026-07-14）：
 
@@ -34,6 +34,8 @@
 - Provider runtime + worker 定向测试：`13 passed in 2.63s`；加入该切片后全量测试：`264 passed, 1 warning in 29.64s`。
 - Trace exporter + worker/executor 定向测试：`44 passed in 4.86s`；加入 P1-A 首个切片后全量测试：`266 passed, 1 warning in 30.43s`。
 - `trace-examples` 实际生成 3 组 `CLOSED_SUCCESS` trace；JSONL/summary 解析、event ID 反向关联、stage task ID、租约/人工事件和敏感字面量扫描均通过。
+- P1-B 页面/API/worker 定向测试：`19 passed, 1 warning in 8.13s`；最终全量测试：`270 passed, 1 warning in 35.10s`。
+- 浏览器 QA：1440px/390px 下首页、活动态、`CLOSED_SUCCESS` 和 `ESCALATED` 均无横向溢出；HTMX 本地加载、轮询停止、人工表单、citation verdict、报告和无 JS 303 fallback 通过，控制台 0 error。
 - 配置 CLI：`Configuration validation: OK`。
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
 
@@ -57,6 +59,7 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 | Judge | `microsoft/deberta-v3-base-mnli` | 正式模式计划使用的固定 NLI；当前没有正式结果 |
 | Retrieval | FAISS、`rank-bm25` | 第三方索引和检索库 |
 | Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架；六个 MVP API 已集成 |
+| Demo UI | Jinja2、HTMX 2.0.4 | 服务端模板与局部刷新；HTMX 以固定本地 BSD 2-Clause 资产集成 |
 | Test/config | pytest、PyYAML | 测试与配置工具 |
 
 第三方模型、框架和数据集只算集成，不算核心创新。
@@ -72,6 +75,7 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 - Provider 调用可靠性边界：七类阶段 schema、timeout/429/瞬时 5xx 有限重试、非重试错误拒绝、provider request ID 和 retry decision 事件审计。
 - P1-A trace exporter：统一 trace schema、事件与 artifact/agent run 关联、敏感键与直接标识符脱敏、raw/summary 反向关联和原子文件写入。
 - 三类确定性工程案例：正常成功、租约 reclaim + 旧写入拒绝、审核升级 + 人工批准恢复；不把它们解释为医学效果或多 Agent 收益。
+- P1-B 最小演示页：病例创建/最近列表、状态与时间线、2 秒局部轮询、升级人工处置、恢复任务、证据/citation/审核/报告展示和无 JS POST fallback。
 - 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
 - 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
 - CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。
@@ -130,6 +134,9 @@ uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8000
 medidiag worker --once
 medidiag lease-scan --once
 
+# 人工升级页面的确定性开发场景
+medidiag worker --once --review-verdict ESCALATED
+
 # Provider 可靠性与 worker 审计定向测试
 python -m pytest tests/test_provider_runtime.py tests/test_worker.py -q
 
@@ -153,6 +160,8 @@ medidiag trace-examples --output-root traces
 
 默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。`ProviderCallRunner` 只提供调用可靠性和审计边界，不等于真实 provider adapter；二者都不产生可用于简历的医学指标。
 
+最小演示页位于 `http://127.0.0.1:8000/demo`。页面使用服务端模板和 vendored HTMX 2.0.4；活动任务每 2 秒刷新局部视图，进入 `ESCALATED` 或 `CLOSED_*` 后停止。页面不包含登录、真实患者档案、WebSocket、生产 Dashboard 或医院系统集成。
+
 trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `traces/summary/<trace_id>.json`。摘要只保留 evidence 元数据、claim hash、citation verdict、阶段耗时、恢复与人工事件，不保存病例问题或证据正文；`raw_event_ids` 可反向定位 raw event。生成文件属于本地运行产物，不提交 Git。
 
 ## Documents
@@ -163,6 +172,7 @@ trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `trace
 - `docs/design-decisions.md`：评测模式、实验隔离、judge 与结果资格决策。
 - `docs/archive/overview_historical_2026-07-06.md`：历史阶段记录，不代表当前验收结论。
 - `reports/archive/`：旧探索性报告，不得用于简历。
+- `THIRD_PARTY_NOTICES.md`：vendored 前端资产版本、来源、哈希和许可证。
 
 ## License
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}病例工作台 | MediDiag EvidenceFlow{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">单机工程演示</p>
+    <h1>病例工作台</h1>
+  </div>
+</section>
+
+<div class="home-grid">
+  <section class="tool-panel" aria-labelledby="create-title">
+    <div class="section-heading">
+      <h2 id="create-title">创建脱敏模拟病例</h2>
+    </div>
+    <form class="case-form" method="post" action="/demo/cases" hx-post="/demo/cases" hx-target="#form-error" hx-swap="innerHTML">
+      <label for="question">病例描述</label>
+      <textarea id="question" name="question" rows="8" minlength="10" maxlength="12000" required></textarea>
+
+      <label for="input-kind">输入类型</label>
+      <select id="input-kind" name="input_kind">
+        <option value="deidentified_simulation">脱敏模拟</option>
+        <option value="public_dataset">公开数据集</option>
+      </select>
+
+      <label for="source-ref">来源标识</label>
+      <input id="source-ref" name="source_ref" maxlength="128" placeholder="公开数据集输入时必填">
+
+      <div id="form-error" aria-live="polite"></div>
+      <button class="primary-button" type="submit">创建并启动</button>
+    </form>
+  </section>
+
+  <section class="case-list" aria-labelledby="recent-title">
+    <div class="section-heading">
+      <h2 id="recent-title">最近病例</h2>
+      <span>{{ recent_cases|length }} 条</span>
+    </div>
+    {% if recent_cases %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>病例</th><th>状态</th><th>版本</th><th>创建时间</th></tr></thead>
+          <tbody>
+          {% for item in recent_cases %}
+            <tr>
+              <td><a href="/demo/cases/{{ item.case_id }}">{{ item.case_id }}</a></td>
+              <td><span class="status status-{{ item.status|lower }}">{{ item.status }}</span></td>
+              <td>v{{ item.version }}</td>
+              <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state">暂无演示病例</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
