@@ -6,7 +6,7 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，但不能表述为“第一阶段完成”。** 真实 RAG/LLM provider、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，并已落盘 provider 调用可靠性边界，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
 
 ## Current Status
 
@@ -19,9 +19,10 @@
 | 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现；Conda 全量测试通过 |
 | raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
 | Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
-| API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider 与外部依赖重试仍待补 |
+| API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider adapter 仍待补 |
+| Provider 调用可靠性 | Pydantic stage schema、timeout/429/5xx 分类、有限退避、request ID 与逐次调用事件 | 已通过定向和全量测试 |
 | 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
-| 最小演示页与结构化 trace | event/trace 基础字段已增加，尚无 exporter 和页面 | 未完成 |
+| 最小演示页与结构化 trace | stage event 与 provider attempt 审计已增加，尚无 exporter 和页面 | 未完成 |
 
 当前验证基线（Conda `medidiag`，2026-07-14）：
 
@@ -29,10 +30,11 @@
 - P0-B 代码与迁移加入后全量测试：`235 passed in 27.95s`。
 - 最后两条 active-task mismatch/旧 worker 恢复测试加入后，executor 定向测试：`36 passed in 1.15s`。
 - P0-C 最终全量测试：`255 passed in 29.94s`；外部 IO 崩溃恢复 worker 定向测试：`5 passed in 1.98s`。
+- Provider runtime + worker 定向测试：`13 passed in 2.63s`；加入该切片后全量测试：`264 passed, 1 warning in 29.64s`。
 - 配置 CLI：`Configuration validation: OK`。
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
 
-这些结果只证明当前自动化开发门禁和确定性 provider 工程闭环通过，不代表真实模型工作流、正式 NLI、人工标注或第一阶段完成。
+warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，不是行为失败。这些结果只证明当前自动化开发门禁、确定性 provider 工程闭环和 provider 调用边界通过，不代表真实模型工作流、正式 NLI、人工标注或第一阶段完成。
 
 历史 `reports/raw/real/group_*.json` 及归档报告仅是 exploratory artifacts。它们使用旧 A-F 耦合实验和规则 judge，不得用于简历或正式指标。
 
@@ -64,6 +66,7 @@
 - SQLAlchemy 数据模型、状态与事件同事务的执行器原型、幂等服务、乐观锁重试和任务租约原型。
 - P0-B 数据库一致性补强：三组复合唯一约束、`active_task_id + version` 启动 CAS、不可复活的 lease renew、原子 reclaim/result CAS 与 `TASK_LEASE_LOST` 独立事件事务。
 - P0-C 单机闭环：六个 FastAPI API、配置化 worker/lease scanner、阶段产物、人工升级回流、结构化报告和崩溃接管恢复。
+- Provider 调用可靠性边界：七类阶段 schema、timeout/429/瞬时 5xx 有限重试、非重试错误拒绝、provider request ID 和 retry decision 事件审计。
 - 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
 - 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
 - CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。
@@ -121,6 +124,9 @@ alembic upgrade head
 uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8000
 medidiag worker --once
 medidiag lease-scan --once
+
+# Provider 可靠性与 worker 审计定向测试
+python -m pytest tests/test_provider_runtime.py tests/test_worker.py -q
 ```
 
 评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果；`eval/report.py` 会拒绝从 `report_eligible: false` 的 run 生成正式报告。
@@ -136,7 +142,7 @@ medidiag lease-scan --once
 | GET | `/api/v1/cases/{case_id}/report` | 获取已生成的结构化报告 |
 | POST | `/api/v1/cases/{case_id}/human-decisions` | 仅从 `ESCALATED` 执行三类人工决策 |
 
-默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。它不能替代真实 RAG/LLM/judge provider，也不产生可用于简历的医学指标。
+默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。`ProviderCallRunner` 只提供调用可靠性和审计边界，不等于真实 provider adapter；二者都不产生可用于简历的医学指标。
 
 ## Documents
 

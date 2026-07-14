@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -13,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from medidiag.db.models import (
     AgentRun,
     Case,
+    CaseEventLog,
     CaseReport,
     Citation,
     Review,
@@ -23,11 +23,12 @@ from medidiag.errors import MediDiagError
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.provider import WorkflowProvider
+from medidiag.workflow.provider_runtime import (
+    ProviderAttempt,
+    ProviderCallOutcome,
+    ProviderCallRunner,
+)
 from medidiag.workflow.state_machine import CaseState, TriggerSubject, is_terminal
-
-
-def _latency_ms(started: float) -> int:
-    return max(0, round((time.perf_counter() - started) * 1000))
 
 
 @dataclass
@@ -48,11 +49,13 @@ class SingleMachineWorker:
         *,
         worker_id: str = "local-worker",
         executor: WorkflowExecutor | None = None,
+        call_runner: ProviderCallRunner | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.provider = provider
         self.worker_id = worker_id
         self.executor = executor or WorkflowExecutor()
+        self.call_runner = call_runner or ProviderCallRunner()
 
     def run_once(self) -> WorkerRunResult:
         with self.session_factory() as session:
@@ -105,11 +108,14 @@ class SingleMachineWorker:
             attempt = task.attempt
             if state == CaseState.CREATED:
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.normalize(case.question)
+                outcome = self._invoke(
+                    session, case, task, "normalize",
+                    lambda: self.provider.normalize(case.question),
+                )
+                payload = outcome.payload
                 artifact = self._artifact(
                     case, task, "normalize", {"question": case.question}, payload,
-                    _latency_ms(started),
+                    outcome.elapsed_ms,
                 )
                 self.executor.commit_stage(
                     session,
@@ -121,18 +127,26 @@ class SingleMachineWorker:
                     stage="normalize",
                     records=[artifact],
                     case_values={"normalized_query": payload["normalized_query"]},
-                    detail={"component_version": self.provider.version},
+                    detail={
+                        "component_version": self.provider.version,
+                        **self._provider_detail(outcome),
+                    },
                 )
                 continue
 
             if state == CaseState.NORMALIZED:
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.retrieve(case.normalized_query or case.question)
+                outcome = self._invoke(
+                    session, case, task, "retrieval",
+                    lambda: self.provider.retrieve(
+                        case.normalized_query or case.question
+                    ),
+                )
+                payload = outcome.payload
                 artifact = self._artifact(
                     case, task, "retrieval",
                     {"normalized_query": case.normalized_query}, payload,
-                    _latency_ms(started),
+                    outcome.elapsed_ms,
                 )
                 self.executor.commit_stage(
                     session,
@@ -143,17 +157,25 @@ class SingleMachineWorker:
                     subject=TriggerSubject.WORKER,
                     stage="retrieval",
                     records=[artifact],
-                    detail={"chunk_count": len(payload.get("chunks", []))},
+                    detail={
+                        "chunk_count": len(payload.get("chunks", [])),
+                        **self._provider_detail(outcome),
+                    },
                 )
                 continue
 
             if state == CaseState.EVIDENCE_RETRIEVED:
                 retrieval = artifacts["retrieval"].payload
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.plan(case.normalized_query or case.question, retrieval)
+                outcome = self._invoke(
+                    session, case, task, "plan",
+                    lambda: self.provider.plan(
+                        case.normalized_query or case.question, retrieval
+                    ),
+                )
+                payload = outcome.payload
                 artifact = self._artifact(
-                    case, task, "plan", retrieval, payload, _latency_ms(started)
+                    case, task, "plan", retrieval, payload, outcome.elapsed_ms
                 )
                 self.executor.commit_stage(
                     session,
@@ -164,6 +186,7 @@ class SingleMachineWorker:
                     subject=TriggerSubject.WORKER,
                     stage="plan",
                     records=[artifact],
+                    detail=self._provider_detail(outcome),
                 )
                 continue
 
@@ -182,9 +205,12 @@ class SingleMachineWorker:
                 retrieval = artifacts["retrieval"].payload
                 plan = artifacts["plan"].payload
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.generate(case.question, retrieval, plan)
-                latency = _latency_ms(started)
+                outcome = self._invoke(
+                    session, case, task, "generation",
+                    lambda: self.provider.generate(case.question, retrieval, plan),
+                )
+                payload = outcome.payload
+                latency = outcome.elapsed_ms
                 records: list[Any] = [
                     self._artifact(case, task, "generation", plan, payload, latency)
                 ]
@@ -214,7 +240,10 @@ class SingleMachineWorker:
                     subject=TriggerSubject.AGENT_WORKER,
                     stage="generation",
                     records=records,
-                    detail={"agent_count": len(payload.get("agents", []))},
+                    detail={
+                        "agent_count": len(payload.get("agents", [])),
+                        **self._provider_detail(outcome),
+                    },
                 )
                 continue
 
@@ -222,11 +251,14 @@ class SingleMachineWorker:
                 generation = artifacts["generation"].payload
                 retrieval = artifacts["retrieval"].payload
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.arbitrate(generation, retrieval)
+                outcome = self._invoke(
+                    session, case, task, "arbitration",
+                    lambda: self.provider.arbitrate(generation, retrieval),
+                )
+                payload = outcome.payload
                 artifact = self._artifact(
                     case, task, "arbitration", generation, payload,
-                    _latency_ms(started),
+                    outcome.elapsed_ms,
                 )
                 self.executor.commit_stage(
                     session,
@@ -237,6 +269,7 @@ class SingleMachineWorker:
                     subject=TriggerSubject.AGENT_WORKER,
                     stage="arbitration",
                     records=[artifact],
+                    detail=self._provider_detail(outcome),
                 )
                 continue
 
@@ -244,9 +277,12 @@ class SingleMachineWorker:
                 generation = artifacts["generation"].payload
                 arbitration = artifacts["arbitration"].payload
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.review(generation, arbitration)
-                latency = _latency_ms(started)
+                outcome = self._invoke(
+                    session, case, task, "review",
+                    lambda: self.provider.review(generation, arbitration),
+                )
+                payload = outcome.payload
+                latency = outcome.elapsed_ms
                 verdict = payload["verdict"]
                 target = CaseState(verdict)
                 records = [
@@ -287,7 +323,7 @@ class SingleMachineWorker:
                     stage="review",
                     records=records,
                     case_values={"review_round": case.review_round + 1},
-                    detail={"verdict": verdict},
+                    detail={"verdict": verdict, **self._provider_detail(outcome)},
                     complete_task=complete,
                     task_result={"outcome": verdict} if complete else None,
                 )
@@ -299,9 +335,12 @@ class SingleMachineWorker:
                 generation = artifacts["generation"].payload
                 review = artifacts["review"].payload
                 self._renew(session, task)
-                started = time.perf_counter()
-                payload = self.provider.report(case.case_id, generation, review)
-                latency = _latency_ms(started)
+                outcome = self._invoke(
+                    session, case, task, "report",
+                    lambda: self.provider.report(case.case_id, generation, review),
+                )
+                payload = outcome.payload
+                latency = outcome.elapsed_ms
                 report_version = (
                     session.execute(
                         select(func.count(CaseReport.id)).where(
@@ -331,6 +370,7 @@ class SingleMachineWorker:
                     subject=TriggerSubject.REVIEWER_WORKER,
                     stage="report",
                     records=records,
+                    detail=self._provider_detail(outcome),
                 )
                 continue
 
@@ -360,6 +400,53 @@ class SingleMachineWorker:
                 "TASK_LEASE_LOST",
                 detail=f"cannot renew task lease: {task.task_id}",
             )
+
+    def _invoke(
+        self,
+        session: Session,
+        case: Case,
+        task: WorkflowTask,
+        stage: str,
+        operation,
+    ) -> ProviderCallOutcome:
+        return self.call_runner.call(
+            stage,
+            operation,
+            on_attempt=lambda attempt: self._record_provider_attempt(
+                session, case, task, attempt
+            ),
+        )
+
+    def _record_provider_attempt(
+        self,
+        session: Session,
+        case: Case,
+        task: WorkflowTask,
+        attempt: ProviderAttempt,
+    ) -> None:
+        session.add(
+            CaseEventLog(
+                case_id=case.case_id,
+                event_type="provider_call",
+                trigger_subject=TriggerSubject.SYSTEM.value,
+                trigger_entity=self.worker_id,
+                detail={
+                    "trace_id": case.trace_id,
+                    "task_id": task.task_id,
+                    "task_attempt": task.attempt,
+                    "provider_version": self.provider.version,
+                    **attempt.to_event_detail(),
+                },
+            )
+        )
+        session.commit()
+
+    @staticmethod
+    def _provider_detail(outcome: ProviderCallOutcome) -> dict[str, Any]:
+        return {
+            "provider_request_id": outcome.request_id,
+            "provider_retry_count": outcome.retry_count,
+        }
 
     def _artifacts(
         self, session: Session, case_id: str, task_id: str

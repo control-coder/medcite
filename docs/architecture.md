@@ -13,8 +13,9 @@
 - 审核组件：citation、clinical logic、compliance 规则。
 - 评测链路：配置验证、实验隔离、leakage gate、raw provenance 和指标聚合。
 - P0-C 单机闭环：六个 FastAPI API、单机 worker、lease scanner、人工回流和结构化报告。
+- Provider runtime：阶段 schema、timeout/HTTP 错误映射、有限退避和逐 attempt 事件审计。
 
-当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。真实 RAG/LLM/judge provider、完整 trace exporter 和演示页尚未交付。以下链路中的真实外部模型部分仍是目标能力。
+当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。可靠性边界可包裹后续真实 adapter，但真实 RAG/LLM/judge adapter、成功调用缓存、完整 trace exporter 和演示页尚未交付。
 
 ## 一期目标链路
 
@@ -34,6 +35,9 @@ FastAPI/CLI
 
 1. 短事务创建/领取任务，提交状态与 event。
 2. 事务外执行 RAG/LLM/judge；所有调用设置 timeout、错误码与有限重试。
+   - timeout 按 stage 映射为 RAG/LLM/judge 错误；429 与瞬时 5xx 有限重试。
+   - schema 与其他 4xx 不自动重试；未知异常保留 crash/reclaim 语义。
+   - 每次 attempt 单独追加 request ID、latency、error code 与 retry decision 事件。
 3. 单条条件 UPDATE 校验 task ID、owner、attempt、RUNNING 和有效 lease。
 4. 命中后在同一事务写阶段产物、推进 case version/status 并追加 event。
 5. 未命中则丢弃旧结果，并在独立事务追加 `TASK_LEASE_LOST`。
@@ -70,11 +74,13 @@ RAG 和 Agent 实验不能复用同一标识：
 
 - normalize artifact：归一化输入与词表版本。
 - retrieval artifact：query、top-k、各分数、模型和配置 hash。
-- agent_runs：输入 hash、attempt group、结构化输出与 provider request ID。
+- agent_runs：输入 hash、attempt group 和结构化输出。
 - citations：claim-citation pair 和 judge metadata。
 - reviews：轮次、问题、判定与升级原因。
 - case_reports：结构化报告、风险提示、合规状态和生成版本。
 - case_event_log：append-only 事件，不作为业务结果的唯一存储。
+
+`provider_call` 事件保存 trace/task 关联、provider version、provider attempt、request ID、latency、错误码、retryable、retry decision 和 HTTP status，不保存 API key 或原始病例文本。成功阶段的 `stage_completed` 事件额外保存最终 request ID 与 retry count。
 
 每个 stage artifact 使用 `(case_id, task_id, stage, attempt)` 唯一约束，并保存 input/output hash、component version 和 latency。provider 调用发生在事务外；写入由 `commit_stage()` 将 lease fence、case CAS、artifact 和 event 合并进同一事务。
 

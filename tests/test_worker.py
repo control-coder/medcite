@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import httpx
 import pytest
 from sqlalchemy import select, update
 
@@ -17,6 +18,7 @@ from medidiag.db.models import (
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.provider import DeterministicWorkflowProvider
+from medidiag.workflow.provider_runtime import ProviderCallRunner, ProviderResponse
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 
 
@@ -154,6 +156,70 @@ def test_stage_events_include_worker_and_attempt(runtime) -> None:
         assert len(events) == 8
         assert all(event.trigger_entity == "worker-audit" for event in events)
         assert all("attempt" in event.detail for event in events)
+
+
+def test_worker_audits_provider_retry_and_request_id(runtime) -> None:
+    _, factory = runtime
+    case_id, _ = _create_task(factory, "provider-retry")
+
+    class RateLimitedOnceProvider(DeterministicWorkflowProvider):
+        calls = 0
+
+        def retrieve(self, normalized_query: str):
+            self.calls += 1
+            if self.calls == 1:
+                request = httpx.Request("POST", "https://provider.invalid/retrieve")
+                response = httpx.Response(
+                    429,
+                    request=request,
+                    headers={"x-request-id": "req-rate-limited"},
+                )
+                raise httpx.HTTPStatusError(
+                    "rate limited", request=request, response=response
+                )
+            return ProviderResponse(
+                super().retrieve(normalized_query), request_id="req-retrieval-ok"
+            )
+
+    worker = SingleMachineWorker(
+        factory,
+        RateLimitedOnceProvider(),
+        worker_id="provider-audit-worker",
+        call_runner=ProviderCallRunner(sleep=lambda _: None),
+    )
+    assert worker.run_once().final_state == "CLOSED_SUCCESS"
+
+    with factory() as session:
+        events = session.execute(
+            select(CaseEventLog)
+            .where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "provider_call",
+            )
+            .order_by(CaseEventLog.id)
+        ).scalars().all()
+        retrieval = [
+            event.detail for event in events if event.detail["stage"] == "retrieval"
+        ]
+        assert [item["retry_decision"] for item in retrieval] == [
+            "retry", "not_needed"
+        ]
+        assert [item["provider_request_id"] for item in retrieval] == [
+            "req-rate-limited", "req-retrieval-ok"
+        ]
+        assert all(item["trace_id"] for item in retrieval)
+
+        completed = session.execute(
+            select(CaseEventLog).where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "stage_completed",
+            )
+        ).scalars().all()
+        retrieval_completed = next(
+            event for event in completed if event.detail["stage"] == "retrieval"
+        )
+        assert retrieval_completed.detail["provider_request_id"] == "req-retrieval-ok"
+        assert retrieval_completed.detail["provider_retry_count"] == 1
 
 
 def test_provider_crash_after_normalize_recovers_from_persisted_stage(runtime) -> None:
