@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 import click
 
@@ -93,6 +94,53 @@ def lease_scan(once: bool, loop: bool, worker_id: str) -> None:
             time.sleep(get_settings().medidiag_lease_scan_seconds)
     finally:
         engine.dispose()
+
+
+@main.command("trace-export")
+@click.option("--case-id", required=True, help="Case ID to export.")
+@click.option(
+    "--output-root",
+    type=click.Path(path_type=Path),
+    default=Path("traces"),
+    show_default=True,
+)
+def trace_export(case_id: str, output_root: Path) -> None:
+    """Export one persisted case as raw JSONL and a redacted JSON summary."""
+    from medidiag.observability.trace_exporter import TraceExporter
+
+    engine, factory = _session_factory()
+    try:
+        with factory() as session:
+            result = TraceExporter().export_case(
+                session,
+                case_id,
+                raw_dir=output_root / "raw",
+                summary_dir=output_root / "summary",
+            )
+        click.echo(
+            f"trace_id={result.trace_id} events={result.event_count} "
+            f"raw={result.raw_path} summary={result.summary_path}"
+        )
+    finally:
+        engine.dispose()
+
+
+@main.command("trace-examples")
+@click.option(
+    "--output-root",
+    type=click.Path(path_type=Path),
+    default=Path("traces"),
+    show_default=True,
+)
+def trace_examples(output_root: Path) -> None:
+    """Generate three deterministic P1-A trace scenarios."""
+    from medidiag.observability.scenarios import generate_trace_examples
+
+    for item in generate_trace_examples(output_root):
+        click.echo(
+            f"scenario={item.scenario} state={item.final_state} "
+            f"trace_id={item.export.trace_id}"
+        )
 
 
 if __name__ == "__main__":

@@ -582,7 +582,12 @@ class WorkflowExecutor:
                 to_status=to_state.value,
                 trigger_subject=subject.value,
                 trigger_entity=worker_id,
-                detail={"stage": stage, "attempt": attempt, **(detail or {})},
+                detail={
+                    "task_id": task_id,
+                    "stage": stage,
+                    "attempt": attempt,
+                    **(detail or {}),
+                },
             )
         )
         session.commit()

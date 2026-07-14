@@ -6,7 +6,7 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，并已落盘 provider 调用可靠性边界，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa、完整 trace 和演示页仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A 已交付结构化 trace exporter 和三类工程案例，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa、双专科实验 trace 和演示页仍未验收。
 
 ## Current Status
 
@@ -22,7 +22,8 @@
 | API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider adapter 仍待补 |
 | Provider 调用可靠性 | Pydantic stage schema、timeout/429/5xx 分类、有限退避、request ID 与逐次调用事件 | 已通过定向和全量测试 |
 | 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
-| 最小演示页与结构化 trace | stage event 与 provider attempt 审计已增加，尚无 exporter 和页面 | 未完成 |
+| 结构化 trace 与工程案例 | JSONL raw + 脱敏 summary、成功/租约恢复/审核升级三类确定性案例 | 首个切片已通过测试；双专科实验 trace 待补 |
+| 最小演示页 | 尚无 Jinja2/HTMX 页面 | 未完成 |
 
 当前验证基线（Conda `medidiag`，2026-07-14）：
 
@@ -31,6 +32,8 @@
 - 最后两条 active-task mismatch/旧 worker 恢复测试加入后，executor 定向测试：`36 passed in 1.15s`。
 - P0-C 最终全量测试：`255 passed in 29.94s`；外部 IO 崩溃恢复 worker 定向测试：`5 passed in 1.98s`。
 - Provider runtime + worker 定向测试：`13 passed in 2.63s`；加入该切片后全量测试：`264 passed, 1 warning in 29.64s`。
+- Trace exporter + worker/executor 定向测试：`44 passed in 4.86s`；加入 P1-A 首个切片后全量测试：`266 passed, 1 warning in 30.43s`。
+- `trace-examples` 实际生成 3 组 `CLOSED_SUCCESS` trace；JSONL/summary 解析、event ID 反向关联、stage task ID、租约/人工事件和敏感字面量扫描均通过。
 - 配置 CLI：`Configuration validation: OK`。
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
 
@@ -67,6 +70,8 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 - P0-B 数据库一致性补强：三组复合唯一约束、`active_task_id + version` 启动 CAS、不可复活的 lease renew、原子 reclaim/result CAS 与 `TASK_LEASE_LOST` 独立事件事务。
 - P0-C 单机闭环：六个 FastAPI API、配置化 worker/lease scanner、阶段产物、人工升级回流、结构化报告和崩溃接管恢复。
 - Provider 调用可靠性边界：七类阶段 schema、timeout/429/瞬时 5xx 有限重试、非重试错误拒绝、provider request ID 和 retry decision 事件审计。
+- P1-A trace exporter：统一 trace schema、事件与 artifact/agent run 关联、敏感键与直接标识符脱敏、raw/summary 反向关联和原子文件写入。
+- 三类确定性工程案例：正常成功、租约 reclaim + 旧写入拒绝、审核升级 + 人工批准恢复；不把它们解释为医学效果或多 Agent 收益。
 - 医学术语归一化、BM25/embedding/证据等级组合排序和 cross-encoder rerank 接口。
 - 单 Agent、固定双专科、动态双专科和仲裁的实验组件。
 - CitationVerifier、ClinicalLogicReviewer 与 ComplianceGuard 规则组件。
@@ -127,6 +132,10 @@ medidiag lease-scan --once
 
 # Provider 可靠性与 worker 审计定向测试
 python -m pytest tests/test_provider_runtime.py tests/test_worker.py -q
+
+# P1-A：导出已有病例或生成三类确定性工程案例
+medidiag trace-export --case-id <case_id> --output-root traces
+medidiag trace-examples --output-root traces
 ```
 
 评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果；`eval/report.py` 会拒绝从 `report_eligible: false` 的 run 生成正式报告。
@@ -143,6 +152,8 @@ python -m pytest tests/test_provider_runtime.py tests/test_worker.py -q
 | POST | `/api/v1/cases/{case_id}/human-decisions` | 仅从 `ESCALATED` 执行三类人工决策 |
 
 默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。`ProviderCallRunner` 只提供调用可靠性和审计边界，不等于真实 provider adapter；二者都不产生可用于简历的医学指标。
+
+trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `traces/summary/<trace_id>.json`。摘要只保留 evidence 元数据、claim hash、citation verdict、阶段耗时、恢复与人工事件，不保存病例问题或证据正文；`raw_event_ids` 可反向定位 raw event。生成文件属于本地运行产物，不提交 Git。
 
 ## Documents
 
