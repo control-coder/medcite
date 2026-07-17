@@ -6,7 +6,7 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页，但不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI 评测、双人标注、Kappa 和双专科实验 trace 仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页；P2 已补齐正式 raw run 后的双人 citation 标注、Kappa、裁决与自动报告门禁。项目仍不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI raw result、真实双人标注、稳定 Kappa 和双专科实验 trace 仍未验收。
 
 ## Current Status
 
@@ -21,11 +21,11 @@
 | Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
 | API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider adapter 仍待补 |
 | Provider 调用可靠性 | Pydantic stage schema、timeout/429/5xx 分类、有限退避、request ID 与逐次调用事件 | 已通过定向和全量测试 |
-| 正式人工复核与报告 | 尚无真实双人标注、裁决和稳定 Kappa | 未完成 |
+| 正式人工复核与报告 | `eval.annotation_audit` 提供 20% 分层抽样、双人标注/Kappa/裁决审计及报告阻断 | 工程门禁已实现；尚无真实标注或正式报告 |
 | 结构化 trace 与工程案例 | JSONL raw + 脱敏 summary、成功/租约恢复/审核升级三类确定性案例 | 首个切片已通过测试；双专科实验 trace 待补 |
 | 最小演示页 | FastAPI + Jinja2 + 本地 HTMX，含轮询、人工处置、证据/citation/报告视图 | 页面测试与桌面/移动浏览器 QA 通过 |
 
-当前验证基线（Conda `medidiag`，2026-07-14）：
+当前验证基线（Conda `medidiag`，截至 2026-07-17）：
 
 - P0-A 提交后全量测试：`223 passed in 24.39s`。
 - P0-B 代码与迁移加入后全量测试：`235 passed in 27.95s`。
@@ -38,6 +38,8 @@
 - 浏览器 QA：1440px/390px 下首页、活动态、`CLOSED_SUCCESS` 和 `ESCALATED` 均无横向溢出；HTMX 本地加载、轮询停止、人工表单、citation verdict、报告和无 JS 303 fallback 通过，控制台 0 error。
 - 配置 CLI：`Configuration validation: OK`。
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
+- P2 人工 citation 审计切片（2026-07-17）：`15 passed in 0.94s`；只验证模板、双人标注/Kappa/裁决与报告阻断逻辑，不产生正式医学指标。
+- P2 审计切片纳入后的全量回归（2026-07-17）：`274 passed, 1 warning in 33.27s`。
 
 warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，不是行为失败。这些结果只证明当前自动化开发门禁、确定性 provider 工程闭环和 provider 调用边界通过，不代表真实模型工作流、正式 NLI、人工标注或第一阶段完成。
 
@@ -97,7 +99,7 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 - 不使用 `--limit` 或 `--dry-run`；
 - 固定 100 样本 Agent manifest 存在且通过 schema/唯一性校验；
 - leakage gate 通过；
-- 后续双人标注、裁决和 Kappa 门禁通过。
+- run 后从实际 claim-citation pair 创建不少于 20% 的双人复核样本；审计、裁决和 Kappa 门禁通过。
 
 核心指标口径：
 
@@ -145,7 +147,26 @@ medidiag trace-export --case-id <case_id> --output-root traces
 medidiag trace-examples --output-root traces
 ```
 
-评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果；`eval/report.py` 会拒绝从 `report_eligible: false` 的 run 生成正式报告。
+```powershell
+# P2：正式 NLI run 后的人工 citation 复核与自动报告
+# 详细 schema、人工填写规则与正式配置步骤见 docs/evaluation_protocol.md
+python -m eval.annotation_audit prepare `
+  --run-dir reports/raw/<run_id> `
+  --output eval/annotations/citation_sample_v1.jsonl --ratio 0.20 --seed 42
+python -m eval.annotation_audit audit `
+  --run-dir reports/raw/<run_id> `
+  --sample eval/annotations/citation_sample_v1.jsonl `
+  --annotator-a eval/annotations/citation_labels_a_v1.jsonl `
+  --annotator-b eval/annotations/citation_labels_b_v1.jsonl `
+  --adjudication eval/annotations/citation_adjudication_v1.jsonl `
+  --output reports/raw/<run_id>/citation_annotation_audit.json
+python -m eval.annotation_audit report `
+  --run-dir reports/raw/<run_id> `
+  --audit reports/raw/<run_id>/citation_annotation_audit.json `
+  --output reports/final_eval.md
+```
+
+评测输出写入 `reports/raw/<run_id>/`。每个 run 包含 config snapshot、manifest 和各实验原始结果。即使满足 formal 配置，runner 也只标记 `formal_candidate: true`，不会直接设置 `report_eligible`；只有 `eval.annotation_audit` 验证实际输出的 20% 双人复核、Kappa 与所有分歧裁决后，`eval/report.py` 才允许生成正式报告。
 
 ## MVP API
 
@@ -170,6 +191,7 @@ trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `trace
 - `overview.md`：本轮实施记录、验证状态和下一步。
 - `docs/architecture.md`：当前实现边界与目标数据流。
 - `docs/design-decisions.md`：评测模式、实验隔离、judge 与结果资格决策。
+- `docs/evaluation_protocol.md`：正式 run、20% 双人 citation 复核、Kappa/裁决审计和自动报告步骤。
 - `docs/archive/overview_historical_2026-07-06.md`：历史阶段记录，不代表当前验收结论。
 - `reports/archive/`：旧探索性报告，不得用于简历。
 - `THIRD_PARTY_NOTICES.md`：vendored 前端资产版本、来源、哈希和许可证。

@@ -19,15 +19,9 @@ from typing import Any
 
 import click
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(_PROJECT_ROOT / "src") not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT / "src"))
-
 from eval import metrics
 from eval.configuration import (
-    AGENT_EXPERIMENTS,
     EXPERIMENTS,
-    RAG_EXPERIMENTS,
     all_experiment_names,
     get_experiment,
     load_config,
@@ -43,9 +37,11 @@ from medidiag.agents.specialist import SpecialistAgent
 from medidiag.compliance.guard import ComplianceGuard
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import Retriever
-from medidiag.review.citation import CitationResult, CitationVerifier
+from medidiag.review.citation import CitationVerifier
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.schemas import KnowledgeChunk, read_jsonl
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 VALID_SELECTIONS = (*EXPERIMENTS, "rag_all", "agent_all", "all")
 
@@ -557,7 +553,7 @@ def _build_manifest(
     dirty_diff_hash: str,
 ) -> dict[str, Any]:
     dataset = config["dataset"]
-    formal_eligible = (
+    formal_candidate = (
         config["evaluation"]["mode"] == "formal"
         and limit is None
         and not dry_run
@@ -568,8 +564,14 @@ def _build_manifest(
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "command": " ".join(sys.argv),
-        "report_eligible": formal_eligible,
-        "non_reportable_reasons": [] if formal_eligible else _non_reportable_reasons(config, limit, dry_run),
+        # A completed formal run is only a candidate. It becomes reportable after
+        # eval.annotation_audit validates a 20% independent human-review sample.
+        "formal_candidate": formal_candidate,
+        "report_eligible": False,
+        "non_reportable_reasons": _non_reportable_reasons(config, limit, dry_run),
+        "pending_report_gate": (
+            "CITATION_HUMAN_CALIBRATION_AUDIT_REQUIRED" if formal_candidate else None
+        ),
         "experiments": experiments,
         "git_commit": git_commit,
         "dirty_diff_hash": dirty_diff_hash,
@@ -619,6 +621,13 @@ def _non_reportable_reasons(
         reasons.append("sample_limit_used")
     if dry_run:
         reasons.append("dry_run_has_no_generation_or_workflow_result")
+    if (
+        config["evaluation"]["mode"] == "formal"
+        and limit is None
+        and not dry_run
+        and config["judge"]["method"] == "nli"
+    ):
+        reasons.append("citation_human_calibration_audit_required")
     return reasons
 
 

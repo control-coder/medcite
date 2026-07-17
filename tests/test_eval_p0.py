@@ -56,7 +56,16 @@ def test_formal_mode_rejects_rule_fallback_and_unpinned_models(config: dict) -> 
     issues = validate_config(invalid, Path.cwd())
     assert "formal evaluation requires judge.method=nli" in issues
     assert any("revision must be immutable" in issue for issue in issues)
-    assert any("dataset.annotation" in issue for issue in issues)
+    # Labels are generated from a completed formal raw run. Requiring files here
+    # would make the mandatory 20% sampling step impossible; report generation
+    # instead requires a passing post-run audit.
+    assert not any("existing dataset.annotation" in issue for issue in issues)
+
+    missing_annotation_path = deepcopy(config)
+    missing_annotation_path["evaluation"]["mode"] = "formal"
+    missing_annotation_path["dataset"]["annotation"]["citation_sample_path"] = ""
+    annotation_issues = validate_config(missing_annotation_path, Path.cwd())
+    assert "formal mode requires configured dataset.annotation.citation_sample_path" in annotation_issues
 
 
 def test_agent_manifest_is_fixed_to_100_unique_samples(config: dict) -> None:

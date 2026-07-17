@@ -1,6 +1,6 @@
 # Architecture
 
-> 更新日期：2026-07-14。本文区分当前已实现组件和一期目标链路。
+> 更新日期：2026-07-17。本文区分当前已实现组件和一期目标链路。
 
 ## 当前实现边界
 
@@ -16,6 +16,7 @@
 - Provider runtime：阶段 schema、timeout/HTTP 错误映射、有限退避和逐 attempt 事件审计。
 - P1-A observability：统一 trace schema、raw/summary exporter 与三类确定性工程案例。
 - P1-B demo：FastAPI 服务端模板、Jinja2、vendored HTMX、响应式 CSS 和原生表单 fallback。
+- P2 评测门禁：基于 actual raw run 的 20% citation 模板、双人标注/Kappa/裁决审计和自动报告阻断。
 
 当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。可靠性边界可包裹后续真实 adapter，但真实 RAG/LLM/judge adapter、成功调用缓存和双专科实验 trace 尚未交付。
 
@@ -70,7 +71,7 @@ RAG 和 Agent 实验不能复用同一标识：
 - `pipeline_approval_rate`：规则/审核流水线是否通过，仅用于组件实验。
 - `workflow_success_rate`：必须来自数据库终态 `CLOSED_SUCCESS`；当前 eval runner 输出 `null`。
 - development run：允许快速验证，但 manifest 明确不可报告。
-- formal run：固定 NLI 和不可变版本，禁止 fallback、limit 与 dry-run。
+- formal run：固定 NLI 和不可变版本，禁止 fallback、limit 与 dry-run；raw manifest 仅为 `formal_candidate`，通过匹配的人工 citation audit 后才可报告。
 
 ## 当前持久化产物
 
@@ -115,3 +116,23 @@ HTMX 以固定本地 2.0.4 文件提供，不依赖外网 CDN。创建、人工�
 - 一期单机、SQLite、本地 worker；不证明多 worker 生产扩展。
 - 只处理公开或脱敏模拟数据，不接入医院系统和真实患者档案。
 - API key、未脱敏文本和个人身份信息不得进入 raw result、event 或 trace。
+
+## P2 人工 citation 校准与正式报告门禁
+
+正式评测的 raw result 不是可直接报告的终点。`eval.runner` 先写入独立的 `reports/raw/<run_id>/`，其中包含配置快照、run manifest 与逐实验 JSON；即使 formal 配置通过，也只标记 `formal_candidate`。随后 `eval.annotation_audit` 从实际 emitted claim-citation pairs 中按固定 seed、judge verdict 分层抽取不少于 20% 的样本，并将模板与 run manifest hash 绑定。
+
+```mermaid
+flowchart LR
+  A["formal NLI raw run"] --> B["reports/raw/run_id"]
+  B --> C["prepare: >=20% stratified citation sample"]
+  C --> D["Annotator A independent labels"]
+  C --> E["Annotator B independent labels"]
+  D --> F["Kappa + disagreement adjudication audit"]
+  E --> F
+  F -->|"PASSED, Kappa >= 0.60"| G["formal Markdown report"]
+  F -->|"FAILED / missing evidence"| H["block report"]
+```
+
+审计器校验 sample 内容未脱离 raw run、双人覆盖完全一致且标注者不同、每项包含日期与判定依据、全部分歧具有裁决记录。它输出 Kappa、混淆矩阵、裁决数以及固定 NLI judge 相对于裁决后人工标签的 agreement。此 agreement 是 judge 校准指标，不替代全量 Citation Precision。
+
+完整人工文件 schema 与命令见 `docs/evaluation_protocol.md` 和 `eval/annotations/README.md`。截至 2026-07-17，该链路只完成工程门禁测试，尚无真实人工标签、正式 NLI raw run 或正式报告。

@@ -14,7 +14,6 @@ from typing import Any
 import click
 import yaml
 
-
 RAG_EXPERIMENTS = (
     "rag_embedding",
     "rag_bm25",
@@ -154,6 +153,10 @@ def validate_config(
         annotation = dataset.get("annotation", {})
         if annotation.get("double_check_ratio") != 0.20:
             issues.append("formal mode requires dataset.annotation.double_check_ratio=0.20")
+        # Human labels are created after the formal run from its exact emitted
+        # citation pairs. Paths are still required so the post-run audit has a
+        # declared destination, but requiring files here would make that run
+        # impossible. report.py enforces the completed audit instead.
         for field in (
             "citation_sample_path",
             "annotator_a_path",
@@ -161,8 +164,8 @@ def validate_config(
             "adjudication_path",
         ):
             value = annotation.get(field)
-            if not value or not _resolve(root, value).is_file():
-                issues.append(f"formal mode requires existing dataset.annotation.{field}")
+            if not value:
+                issues.append(f"formal mode requires configured dataset.annotation.{field}")
 
     return issues
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tempfile
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy import update
@@ -11,7 +12,7 @@ from sqlalchemy import update
 from medidiag.db.models import Case, WorkflowTask
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.errors import MediDiagError
-from medidiag.observability.trace_exporter import TraceExportResult, TraceExporter
+from medidiag.observability.trace_exporter import TraceExporter, TraceExportResult
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.provider import DeterministicWorkflowProvider
@@ -99,7 +100,7 @@ def _lease_recovery_scenario(factory) -> str:
         session.execute(
             update(WorkflowTask)
             .where(WorkflowTask.task_id == task_id)
-            .values(lease_until=executor.lease.now())
+            .values(lease_until=executor.lease.now() - timedelta(seconds=1))
         )
         session.commit()
 
