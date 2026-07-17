@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from pathlib import Path
 
 import click
 
 from medidiag.config import get_settings
-from medidiag.db.session import create_db_engine, get_session_factory
-from medidiag.workflow.provider import DeterministicWorkflowProvider
+from medidiag.db.session import create_db_engine, get_session_factory, init_db
+from medidiag.workflow.deepseek_provider import DeepSeekWorkflowProvider
+from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
+
+_PROVIDER_CHOICES = click.Choice(["deepseek", "deterministic"], case_sensitive=False)
 
 
 @click.group()
@@ -51,24 +55,46 @@ def _session_factory():
     return engine, get_session_factory(engine)
 
 
+def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider:
+    if provider_name == "deterministic":
+        return DeterministicWorkflowProvider(review_verdict=review_verdict)
+    provider = DeepSeekWorkflowProvider()
+    if not provider.client.is_configured:
+        raise click.UsageError(
+            "DEEPSEEK_API_KEY is required for --provider deepseek; "
+            "use --provider deterministic for the network-free fixture."
+        )
+    return provider
+
+
 @main.command()
 @click.option("--once", is_flag=True, help="Process at most one task.")
 @click.option("--loop", is_flag=True, help="Continuously poll for tasks.")
 @click.option("--worker-id", default="local-worker", show_default=True)
 @click.option(
+    "--provider",
+    "provider_name",
+    type=_PROVIDER_CHOICES,
+    default="deepseek",
+    show_default=True,
+    help="Live DeepSeek drafts one constrained generation stage; deterministic is fixture-only.",
+)
+@click.option(
     "--review-verdict",
     type=click.Choice(["APPROVED", "REVISION_REQUIRED", "ESCALATED"]),
     default="APPROVED",
     show_default=True,
-    help="Deterministic development-provider review outcome.",
+    help="Only used by the deterministic development provider.",
 )
-def worker(once: bool, loop: bool, worker_id: str, review_verdict: str) -> None:
-    """Run the single-machine deterministic development worker."""
+def worker(
+    once: bool, loop: bool, worker_id: str, provider_name: str, review_verdict: str
+) -> None:
+    """Run one local worker with a live or deterministic provider."""
     _mode(once, loop)
     engine, factory = _session_factory()
     runner = SingleMachineWorker(
         factory,
-        DeterministicWorkflowProvider(review_verdict=review_verdict),
+        _build_provider(provider_name, review_verdict),
         worker_id=worker_id,
     )
     try:
@@ -83,6 +109,64 @@ def worker(once: bool, loop: bool, worker_id: str, review_verdict: str) -> None:
             time.sleep(1.0 if not result.processed else 0.05)
     finally:
         engine.dispose()
+
+
+@main.command("demo")
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=8400, type=click.IntRange(1, 65535), show_default=True)
+@click.option(
+    "--provider",
+    "provider_name",
+    type=_PROVIDER_CHOICES,
+    default="deepseek",
+    show_default=True,
+)
+def demo(host: str, port: int, provider_name: str) -> None:
+    """Run the server-rendered demo and its local worker in one process.
+
+    Open ``/demo``, submit only public/deidentified text, and the page will poll the
+    task until the worker persists its final report. This is a local engineering demo;
+    it does not expose a production worker service or real patient workflow.
+    """
+    import uvicorn
+
+    from medidiag.api.app import create_app
+
+    engine = create_db_engine(get_settings().database_url)
+    init_db(engine)
+    factory = get_session_factory(engine)
+    provider = _build_provider(provider_name, "APPROVED")
+    runner = SingleMachineWorker(factory, provider, worker_id="demo-worker")
+    stop = threading.Event()
+    worker_thread = threading.Thread(
+        target=_demo_worker_loop,
+        args=(stop, runner),
+        name="medidiag-demo-worker",
+        daemon=True,
+    )
+    app = create_app(session_factory=factory)
+    click.echo(
+        f"MediDiag demo provider={provider.version}; open http://{host}:{port}/demo"
+    )
+    worker_thread.start()
+    try:
+        uvicorn.run(app, host=host, port=port, log_level="info")
+    finally:
+        stop.set()
+        worker_thread.join(timeout=2)
+        engine.dispose()
+
+
+def _demo_worker_loop(stop: threading.Event, runner: SingleMachineWorker) -> None:
+    """Bounded polling loop for the single-process presentation command."""
+    while not stop.is_set():
+        try:
+            result = runner.run_once()
+        except Exception as exc:  # demo must stay available for an operator to inspect events
+            click.echo(f"demo-worker error: {exc}", err=True)
+            stop.wait(1.0)
+            continue
+        stop.wait(0.15 if result.processed else 0.5)
 
 
 @main.command("lease-scan")

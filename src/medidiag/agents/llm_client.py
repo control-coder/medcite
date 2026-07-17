@@ -1,87 +1,90 @@
-"""DeepSeek LLM 客户端封装。
+"""OpenAI-compatible DeepSeek client used by the live demo provider.
 
-使用 httpx 直接调用 OpenAI 兼容 API（DeepSeek），
-不依赖 openai 库（减少依赖）。
-
-环境变量:
-    DEEPSEEK_API_KEY: API 密钥
-    DEEPSEEK_BASE_URL: API 地址（默认 https://api.deepseek.com/v1）
+The client intentionally exposes a small synchronous boundary because the single-machine
+worker is synchronous. It sends no case data to a provider until the caller explicitly
+selects the live provider and supplies ``DEEPSEEK_API_KEY``.
 """
 
 from __future__ import annotations
 
-import os
+import json
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import httpx
 
+from medidiag.config import get_settings
+from medidiag.errors import MediDiagError
+
+
+@dataclass(frozen=True)
+class LLMCompletion:
+    """A completion payload plus the provider request identifier for trace correlation."""
+
+    content: str
+    request_id: str | None
+    model: str
+
 
 class LLMClient:
-    """DeepSeek LLM 客户端。
+    """Minimal DeepSeek/OpenAI-compatible chat-completions client.
 
-    用法:
-        client = LLMClient()
-        response = client.chat("What is the diagnosis?")
+    ``post`` is injectable so tests can assert request construction without performing
+    external network calls. The API key is intentionally never included in returned data.
     """
 
     def __init__(
         self,
         api_key: str | None = None,
         base_url: str | None = None,
-        model: str = "deepseek-v4-flash-free",
-        timeout: int = 60,
+        model: str | None = None,
+        timeout: int | None = None,
         temperature: float = 0.0,
-        max_tokens: int = 2048,
+        max_tokens: int = 1200,
         seed: int = 42,
+        post: Callable[..., httpx.Response] | None = None,
     ) -> None:
-        self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        self.base_url = (
-            base_url
-            or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-        )
-        self.model = model
-        self.timeout = timeout
+        settings = get_settings()
+        self.api_key = api_key if api_key is not None else settings.deepseek_api_key
+        self.base_url = (base_url or settings.deepseek_base_url).rstrip("/")
+        self.model = model or settings.deepseek_model
+        self.timeout = timeout if timeout is not None else settings.deepseek_timeout_seconds
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.seed = seed
+        self._post = post or httpx.post
 
     @property
     def is_configured(self) -> bool:
-        """是否已配置 API key。"""
-        return bool(self.api_key)
+        """Whether a non-empty API key is available."""
+        return bool(self.api_key.strip())
 
-    def chat(
+    def complete(
         self,
         prompt: str,
+        *,
         system_prompt: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
-    ) -> str:
-        """调用 LLM 生成回复。
+    ) -> LLMCompletion:
+        """Call ``/chat/completions`` and preserve a safe request identifier.
 
-        Args:
-            prompt: 用户提示词。
-            system_prompt: 系统提示词（可选）。
-            temperature: 温度（默认 0，可复现）。
-            max_tokens: 最大生成 token 数。
-
-        Returns:
-            LLM 生成的文本。
-
-        Raises:
-            ValueError: API key 未配置。
-            httpx.HTTPStatusError: API 调用失败。
+        HTTP and timeout exceptions are deliberately propagated for ``ProviderCallRunner``
+        to classify, retry, and audit. Malformed completion bodies are normalized to the
+        existing ``LLM_JSON_INVALID`` dependency error.
         """
         if not self.is_configured:
-            raise ValueError(
-                "DEEPSEEK_API_KEY not set. Configure in .env or pass api_key."
+            raise MediDiagError(
+                "PROVIDER_REQUEST_REJECTED",
+                detail="DEEPSEEK_API_KEY is required for the live DeepSeek provider",
             )
 
-        messages = []
+        messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-
-        response = httpx.post(
+        response = self._post(
             f"{self.base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {self.api_key}",
@@ -98,5 +101,68 @@ class LLMClient:
             timeout=self.timeout,
         )
         response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+        try:
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+        except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise MediDiagError(
+                "LLM_JSON_INVALID",
+                detail="chat completion response does not contain choices[0].message.content",
+            ) from exc
+        if not isinstance(content, str) or not content.strip():
+            raise MediDiagError(
+                "LLM_JSON_INVALID",
+                detail="chat completion content is empty or not text",
+            )
+        return LLMCompletion(
+            content=content,
+            request_id=_request_id(response),
+            model=self.model,
+        )
+
+    def chat(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> str:
+        """Compatibility helper returning only the generated text."""
+        return self.complete(
+            prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ).content
+
+    @staticmethod
+    def parse_json_object(content: str) -> dict[str, Any]:
+        """Parse a JSON object, tolerating one Markdown code fence from a provider."""
+        candidate = content.strip()
+        if candidate.startswith("```") and candidate.endswith("```"):
+            candidate = candidate.split("\n", 1)[1] if "\n" in candidate else ""
+            candidate = candidate.rsplit("```", 1)[0].strip()
+        try:
+            payload = json.loads(candidate)
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise MediDiagError(
+                "LLM_JSON_INVALID",
+                detail="live DeepSeek output is not a JSON object",
+            ) from exc
+        if not isinstance(payload, dict):
+            raise MediDiagError(
+                "LLM_JSON_INVALID",
+                detail="live DeepSeek output must be a JSON object",
+            )
+        return payload
+
+
+def _request_id(response: httpx.Response) -> str | None:
+    return next(
+        (
+            response.headers[name]
+            for name in ("x-request-id", "request-id", "x-correlation-id")
+            if name in response.headers
+        ),
+        None,
+    )

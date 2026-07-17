@@ -205,10 +205,16 @@ class SingleMachineWorker:
                 retrieval = artifacts["retrieval"].payload
                 plan = artifacts["plan"].payload
                 self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "generation",
-                    lambda: self.provider.generate(case.question, retrieval, plan),
-                )
+                try:
+                    outcome = self._invoke(
+                        session, case, task, "generation",
+                        lambda: self.provider.generate(case.question, retrieval, plan),
+                    )
+                except MediDiagError as exc:
+                    self._fail_generation(session, case, task, attempt, exc)
+                    return WorkerRunResult(
+                        True, task.task_id, case.case_id, CaseState.ESCALATED.value
+                    )
                 payload = outcome.payload
                 latency = outcome.elapsed_ms
                 records: list[Any] = [
@@ -392,6 +398,34 @@ class SingleMachineWorker:
 
         raise RuntimeError(f"workflow exceeded stage safety limit: {task.task_id}")
 
+    def _fail_generation(
+        self,
+        session: Session,
+        case: Case,
+        task: WorkflowTask,
+        attempt: int,
+        exc: MediDiagError,
+    ) -> None:
+        """Stop a live generation failure after ProviderCallRunner has retried."""
+        provider_attempt = exc.context.get("provider_attempt", {})
+        self.executor.fail_stage(
+            session,
+            task_id=task.task_id,
+            worker_id=self.worker_id,
+            attempt=attempt,
+            to_state=CaseState.ESCALATED,
+            subject=TriggerSubject.AGENT_WORKER,
+            stage="generation",
+            error_code=exc.code,
+            error_message="generation provider failed after bounded retries; no report generated",
+            detail={
+                "component_version": self.provider.version,
+                "provider_request_id": provider_attempt.get("provider_request_id"),
+                "provider_retry_count": max(0, provider_attempt.get("provider_attempt", 1) - 1),
+                "retry_decision": provider_attempt.get("retry_decision"),
+                "http_status": provider_attempt.get("http_status"),
+            },
+        )
     def _renew(self, session: Session, task: WorkflowTask) -> None:
         if not self.executor.lease.renew(
             session, task.task_id, self.worker_id, task.attempt

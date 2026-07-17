@@ -479,6 +479,115 @@ class WorkflowExecutor:
             context={"task_id": task_id, "attempt": attempt},
         )
 
+    def fail_stage(
+        self,
+        session: Session,
+        *,
+        task_id: str,
+        worker_id: str,
+        attempt: int,
+        to_state: CaseState,
+        subject: TriggerSubject,
+        stage: str,
+        error_code: str,
+        error_message: str,
+        detail: dict[str, Any] | None = None,
+    ) -> None:
+        """Atomically stop a leased task and preserve a human-reviewable failure.
+
+        This is intentionally a terminal task write, not a retry mechanism. It is
+        used after the provider runtime has exhausted its bounded retries; no
+        external result is persisted.
+        """
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one_or_none()
+        if task is None:
+            raise MediDiagError("TASK_LEASE_LOST", detail=f"task {task_id} not found")
+
+        now = self.lease.now()
+        fenced = session.execute(
+            update(WorkflowTask)
+            .where(
+                WorkflowTask.task_id == task_id,
+                WorkflowTask.lease_owner == worker_id,
+                WorkflowTask.attempt == attempt,
+                WorkflowTask.status == "RUNNING",
+                WorkflowTask.lease_until > now,
+            )
+            .values(
+                status="FAILED",
+                heartbeat_at=now,
+                lease_until=now,
+                error_code=error_code,
+                error_message=error_message,
+            )
+        )
+        if fenced.rowcount != 1:
+            session.rollback()
+            self._record_lease_lost(session, task, worker_id, attempt, stage)
+            raise MediDiagError(
+                "TASK_LEASE_LOST",
+                detail=f"worker {worker_id} lost lease on task {task_id}",
+                context={"task_id": task_id, "attempt": attempt, "stage": stage},
+            )
+
+        case = session.execute(
+            select(Case).where(Case.case_id == task.case_id)
+        ).scalar_one_or_none()
+        if case is None:
+            session.rollback()
+            raise MediDiagError("CASE_NOT_FOUND", detail=f"case {task.case_id} not found")
+        current_state = CaseState(case.status)
+        try:
+            validate_transition(current_state, to_state, subject)
+        except IllegalTransitionError as exc:
+            session.rollback()
+            raise MediDiagError(
+                "ILLEGAL_STATE_TRANSITION",
+                detail=str(exc),
+                context={"from": current_state.value, "to": to_state.value},
+            ) from exc
+
+        advanced = session.execute(
+            update(Case)
+            .where(
+                Case.case_id == case.case_id,
+                Case.version == case.version,
+                Case.active_task_id == task_id,
+            )
+            .values(
+                status=to_state.value,
+                version=case.version + 1,
+                active_task_id=None,
+            )
+        )
+        if advanced.rowcount != 1:
+            session.rollback()
+            raise MediDiagError(
+                "OPTIMISTIC_LOCK_CONFLICT",
+                detail=f"failed stage {stage} case CAS conflict",
+                context={"case_id": case.case_id, "task_id": task_id},
+            )
+
+        session.add(
+            CaseEventLog(
+                case_id=case.case_id,
+                event_type="stage_failed",
+                from_status=current_state.value,
+                to_status=to_state.value,
+                trigger_subject=subject.value,
+                trigger_entity=worker_id,
+                detail={
+                    "task_id": task_id,
+                    "stage": stage,
+                    "attempt": attempt,
+                    "error_code": error_code,
+                    **(detail or {}),
+                },
+            )
+        )
+        session.commit()
     def commit_stage(
         self,
         session: Session,

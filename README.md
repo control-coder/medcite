@@ -6,7 +6,7 @@
 
 第一阶段目标只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送和全量公开基准跑分均属于二期预留或明确不在范围内。
 
-当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页；P2 已补齐正式 raw run 后的双人 citation 标注、Kappa、裁决与自动报告门禁。项目仍不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI raw result、真实双人标注、稳定 Kappa 和双专科实验 trace 仍未验收。
+当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页；P2 已补齐正式 raw run 后的双人 citation 标注、Kappa、裁决与自动报告门禁。项目仍不能表述为“第一阶段完成”。** 已接入仅用于最小演示的实时 DeepSeek 起草 adapter；真实 RAG、正式 NLI raw result、真实双人标注、稳定 Kappa 和双专科实验 trace 仍未验收。
 
 
 本轮新增 formal 模型锁定门禁：Hugging Face embedding/rerank/judge 必须使用完整 commit SHA；generation 必须同时记录 provider release 与可核验 snapshot ID。仓库仅提供会故意校验失败的 `eval/config.formal.template.yaml`，尚未提交或运行任何正式配置、正式 NLI raw result 或人工标签。
@@ -21,11 +21,11 @@
 | 指标口径 | Recall 仅统计 evidence-eligible 样本；另报 Gold Evidence Coverage；citation pair 与 claim 分母分离 | 本轮已实现；Conda 全量测试通过 |
 | raw provenance | run ID、config snapshot/hash、dataset hash、Git/dirty hash、模型 revision、非报告原因 | 本轮已实现；尚未生成正式可报告 run |
 | Agent 固定比较集 | `eval/datasets/agent_eval_manifest_v1.jsonl` 固定 100 个 MedQA v1 样本 | 本轮已生成并通过 schema/引用完整性测试 |
-| API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性 provider 下可运行；真实 provider adapter 仍待补 |
+| API、单机 worker、扫描器、人工升级闭环 | 六个 FastAPI API、`worker`/`lease-scan` CLI、阶段产物和结构化报告 | 确定性闭环已覆盖；实时 DeepSeek 起草 adapter 已接入，正式 RAG/NLI 仍待验收 |
 | Provider 调用可靠性 | Pydantic stage schema、timeout/429/5xx 分类、有限退避、request ID 与逐次调用事件 | 已通过定向和全量测试 |
 | 正式人工复核与报告 | `eval.annotation_audit` 提供 20% 分层抽样、双人标注/Kappa/裁决审计及报告阻断 | 工程门禁已实现；尚无真实标注或正式报告 |
 | 结构化 trace 与工程案例 | JSONL raw + 脱敏 summary、成功/租约恢复/审核升级三类确定性案例 | 首个切片已通过测试；双专科实验 trace 待补 |
-| 最小演示页 | FastAPI + Jinja2 + 本地 HTMX，含轮询、人工处置、证据/citation/报告视图 | 页面测试与桌面/移动浏览器 QA 通过 |
+| 最小演示页 | FastAPI + Jinja2 + 本地 HTMX，含轮询、人工处置、证据/citation/报告视图；`medidiag demo` 同进程启动 worker | DeepSeek/确定性 provider 均可选择；实时路径只使用本地 fixture，不产生评测指标 |
 
 当前验证基线（Conda `medidiag`，截至 2026-07-17）：
 
@@ -42,6 +42,9 @@
 - 实际 leakage gate：300 个 PubMedQA 样本、1927 个 chunks，`OK: no data leakage detected`。
 - P2 人工 citation 审计切片（2026-07-17）：`15 passed in 0.94s`；只验证模板、双人标注/Kappa/裁决与报告阻断逻辑，不产生正式医学指标。
 - P2 审计切片纳入后的全量回归（2026-07-17）：`274 passed, 1 warning in 33.27s`。
+- 实时 DeepSeek adapter 单测（2026-07-17）：`3 passed in 1.00s`；与 provider runtime、worker、演示页的回归为 `17 passed, 1 warning in 4.53s`。
+- 真实接口 smoke（2026-07-17）：以非医疗 JSON 请求验证 `https://www.dogapi.cc/v1/chat/completions`、配置 API key 和 `deepseek-v4-flash-free` 可返回可解析 JSON；未输出或保存 API key、原始回复和病例数据。
+- 本轮完整回归（2026-07-17）：281 passed, 1 warning in 35.76s；RAG fixture 需要访问已声明的 Hugging Face embedding 依赖。
 
 warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，不是行为失败。这些结果只证明当前自动化开发门禁、确定性 provider 工程闭环和 provider 调用边界通过，不代表真实模型工作流、正式 NLI、人工标注或第一阶段完成。
 
@@ -134,7 +137,7 @@ python -m eval.leakage_check `
 
 # P0-C 本地工程闭环（当前 worker 使用确定性非诊断 provider）
 alembic upgrade head
-uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8000
+uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8400
 medidiag worker --once
 medidiag lease-scan --once
 
@@ -181,9 +184,9 @@ python -m eval.annotation_audit report `
 | GET | `/api/v1/cases/{case_id}/report` | 获取已生成的结构化报告 |
 | POST | `/api/v1/cases/{case_id}/human-decisions` | 仅从 `ESCALATED` 执行三类人工决策 |
 
-默认 `DeterministicWorkflowProvider` 只用于测试和本地工程演示，输出明确不提供诊断。`ProviderCallRunner` 只提供调用可靠性和审计边界，不等于真实 provider adapter；二者都不产生可用于简历的医学指标。
+`DeepSeekWorkflowProvider` 已通过 OpenAI-compatible `/chat/completions` 接入实时起草：默认从 `.env` 读取 `DEEPSEEK_BASE_URL=https://www.dogapi.cc/v1`、`DEEPSEEK_MODEL=deepseek-v4-flash-free` 与 `DEEPSEEK_API_KEY`，只在 generation 阶段进行一次实时调用，并把 provider request ID、重试决策与阶段产物持久化。其 retrieval 是明确标注的本地演示 fixture，citation 判定是 `demo_structure_binding_not_nli`，因此不构成医学 RAG、固定 NLI 验证或可写入简历的指标。`DeterministicWorkflowProvider` 继续仅用于无网络测试与工程 fixture。
 
-最小演示页位于 `http://127.0.0.1:8000/demo`。页面使用服务端模板和 vendored HTMX 2.0.4；活动任务每 2 秒刷新局部视图，进入 `ESCALATED` 或 `CLOSED_*` 后停止。页面不包含登录、真实患者档案、WebSocket、生产 Dashboard 或医院系统集成。
+最小演示页位于 `http://127.0.0.1:8400/demo`。`medidiag demo --provider deepseek` 在同一进程启动 FastAPI 与单机 worker；页面创建任务后每 2 秒刷新局部视图，进入 `ESCALATED` 或 `CLOSED_*` 后停止。若 generation 阶段的网关调用在有限重试后仍失败，worker 会在同一事务内将任务标为 `FAILED`、病例转为 `ESCALATED` 并写入 `stage_failed` 事件；页面显示安全错误提示且明确未生成报告或医疗结论，后续只能由人工选择处置。实时草稿会在页面中显示本地 fixture 来源与 `PARTIAL / demo_structure_binding_not_nli` 限制。页面不包含登录、真实患者档案、WebSocket、生产 Dashboard 或医院系统集成。
 
 trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `traces/summary/<trace_id>.json`。摘要只保留 evidence 元数据、claim hash、citation verdict、阶段耗时、恢复与人工事件，不保存病例问题或证据正文；`raw_event_ids` 可反向定位 raw event。生成文件属于本地运行产物，不提交 Git。
 

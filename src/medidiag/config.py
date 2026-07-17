@@ -29,7 +29,10 @@ class Settings(BaseSettings):
 
     # LLM
     deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    # dogapi is the default OpenAI-compatible gateway selected for the local demo.
+    deepseek_base_url: str = "https://www.dogapi.cc/v1"
+    deepseek_model: str = "deepseek-v4-flash-free"
+    deepseek_timeout_seconds: int = 60
 
     # Database
     database_url: str = "sqlite:///./medidiag.db"

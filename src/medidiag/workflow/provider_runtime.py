@@ -148,7 +148,7 @@ class ProviderCallRunner:
                 raw = operation()
                 response = raw if isinstance(raw, ProviderResponse) else ProviderResponse(raw)
                 payload = self._validate(stage, response.payload)
-            except (httpx.TimeoutException, httpx.HTTPStatusError, ValidationError) as exc:
+            except (MediDiagError, httpx.TimeoutException, httpx.HTTPStatusError, ValidationError) as exc:
                 error_code, request_id, http_status = self._classify(stage, exc)
                 spec = get_error_spec(error_code)
                 will_retry = spec.retryable and number < self.max_attempts
@@ -210,8 +210,10 @@ class ProviderCallRunner:
     @staticmethod
     def _classify(
         stage: str,
-        exc: httpx.TimeoutException | httpx.HTTPStatusError | ValidationError,
+        exc: MediDiagError | httpx.TimeoutException | httpx.HTTPStatusError | ValidationError,
     ) -> tuple[str, str | None, int | None]:
+        if isinstance(exc, MediDiagError):
+            return exc.code, None, None
         if isinstance(exc, ValidationError):
             return "PROVIDER_SCHEMA_INVALID", None, None
         if isinstance(exc, httpx.TimeoutException):

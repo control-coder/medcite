@@ -499,6 +499,10 @@ def _demo_case_context(session: Session, case_id: str) -> dict[str, Any]:
             select(Citation).where(Citation.case_id == case_id).order_by(Citation.id)
         ).scalars()
     )
+    failed_stage = next(
+        (event for event in events if event.event_type == "stage_failed"), None
+    )
+    provider_error = failed_stage.detail if failed_stage and failed_stage.detail else None
     can_resume = (
         case.active_task_id is None
         and case.status in {
@@ -512,10 +516,12 @@ def _demo_case_context(session: Session, case_id: str) -> dict[str, Any]:
         "events": events,
         "evidence": retrieval.payload.get("chunks", []) if retrieval else [],
         "claims": generation.payload.get("claims", []) if generation else [],
+        "generation_version": generation.component_version if generation else None,
         "review_payload": review_artifact.payload if review_artifact else None,
         "reviews": reviews,
         "citations": citations,
         "report": report,
+        "provider_error": provider_error,
         "should_poll": active is not None and not is_terminal(CaseState(case.status)),
         "can_resume": can_resume,
     }
