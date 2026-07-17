@@ -593,6 +593,11 @@ def _build_manifest(
             section: {
                 "model": config[section]["model"],
                 "revision": config[section]["revision"],
+                **(
+                    {"snapshot_id": config[section].get("snapshot_id")}
+                    if section == "generation"
+                    else {}
+                ),
             }
             for section in ("generation", "embedding", "rerank", "judge")
         },

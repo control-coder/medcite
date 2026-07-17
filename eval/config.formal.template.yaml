@@ -1,0 +1,210 @@
+# Formal evaluation template. Copy to eval/config.formal.yaml before use.
+# This committed template intentionally fails validation until every REPLACE_* value
+# is replaced with evidence-backed immutable model information. Do not report a
+# formal result if the generation provider cannot supply a verifiable snapshot ID.
+# MediDiag-Agent EvidenceFlow evaluation configuration.
+# Any model, dataset, prompt, weight, or judge change requires a new run ID.
+
+evaluation:
+  # Development may use rule_fallback and --limit. Formal mode forbids both.
+  mode: "formal"
+  seed: 42
+
+generation:
+  provider: "deepseek"
+  model: "deepseek-v4-flash-free"
+  revision: "REPLACE_WITH_PROVIDER_RELEASE"
+  # Must be returned or published by the generation provider; a model alias is insufficient.
+  snapshot_id: "REPLACE_WITH_VERIFIABLE_PROVIDER_SNAPSHOT"
+  base_url: "https://api.deepseek.com/v1"
+  temperature: 0
+  seed: 42
+  max_tokens: 2048
+  timeout_seconds: 60
+  prompt_version: "diagnosis-v1"
+
+embedding:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  revision: "REPLACE_WITH_40_CHAR_HF_COMMIT_SHA"
+  dimension: 384
+  batch_size: 32
+  normalize: true
+  timeout_seconds: 60
+
+rerank:
+  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  revision: "REPLACE_WITH_40_CHAR_HF_COMMIT_SHA"
+  timeout_seconds: 60
+
+judge:
+  model: "microsoft/deberta-v3-base-mnli"
+  revision: "REPLACE_WITH_40_CHAR_HF_COMMIT_SHA"
+  method: "nli"
+  timeout_seconds: 60
+  verdict_labels: ["SUPPORTED", "PARTIAL", "UNSUPPORTED"]
+
+dataset:
+  version: "v1"
+  public_ratio_min: 0.40
+  rag_eval_set_path: "eval/datasets/eval_set_pubmedqa.jsonl"
+  knowledge_base_path: "eval/datasets/knowledge_chunks.jsonl"
+  agent_eval_set_path: "eval/datasets/eval_set_medqa.jsonl"
+  # P0-A formal gate: formal mode fails until this versioned 100-sample file exists.
+  agent_sample_manifest_path: "eval/datasets/agent_eval_manifest_v1.jsonl"
+  sources:
+    - name: "MedQA"
+      subset: "train"
+      license: "MIT"
+    - name: "PubMedQA"
+      subset: "pqa_labeled"
+      license: "CC BY 4.0"
+  annotation:
+    double_check_ratio: 0.20
+    kappa_below_threshold: 0.60
+    kappa_discuss_range: [0.60, 0.80]
+    kappa_stable_threshold: 0.80
+    citation_sample_path: "eval/annotations/citation_sample_v1.jsonl"
+    annotator_a_path: "eval/annotations/citation_labels_a_v1.jsonl"
+    annotator_b_path: "eval/annotations/citation_labels_b_v1.jsonl"
+    adjudication_path: "eval/annotations/citation_adjudication_v1.jsonl"
+
+retrieval:
+  top_k: 5
+  candidate_k: 10
+  weights:
+    w1_bm25: 0.25
+    w2_embedding: 0.45
+    w3_evidence_level: 0.20
+    w4_term_overlap: 0.10
+  evidence_levels:
+    level_1_guideline: 1.0
+    level_2_review: 0.8
+    level_3_primary_study: 0.9
+    level_4_case_report: 0.5
+    level_5_other: 0.3
+
+experiments:
+  # RAG family fixes dataset, generation topology, model settings, and seed.
+  # Each single-variable group differs from rag_embedding by one switch only.
+  rag:
+    rag_embedding:
+      description: "pure embedding baseline"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: false
+    rag_bm25:
+      description: "embedding + BM25"
+      config:
+        use_bm25: true
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: false
+    rag_evidence_weight:
+      description: "embedding + evidence-level weighting"
+      config:
+        use_bm25: false
+        use_evidence_weighting: true
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: false
+    rag_term_norm:
+      description: "embedding + terminology normalization"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: true
+        use_rerank: false
+        use_citation_review: false
+    rag_citation_review:
+      description: "embedding + citation review"
+      config:
+        use_bm25: false
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: true
+    rag_full:
+      description: "combined configuration; not used for single-variable attribution"
+      config:
+        use_bm25: true
+        use_evidence_weighting: true
+        use_term_normalization: true
+        use_rerank: true
+        use_citation_review: true
+
+  # Agent family locks retrieval_profile=rag_full and changes topology only.
+  agent:
+    agent_single:
+      description: "single diagnosis agent baseline"
+      retrieval_profile: "rag_full"
+      topology: "single"
+    agent_fixed_pair:
+      description: "fixed two-specialist arbitration"
+      retrieval_profile: "rag_full"
+      topology: "fixed_pair"
+      specialist_pair: ["cardiology", "respiratory"]
+    agent_dynamic_pair:
+      description: "dynamic two-specialist arbitration"
+      retrieval_profile: "rag_full"
+      topology: "dynamic_pair"
+
+workflow:
+  lease:
+    lease_seconds: 60
+    heartbeat_seconds: 20
+    scan_interval_seconds: 30
+  optimistic_lock:
+    max_retries: 3
+    backoff_ms: [50, 100, 200]
+  review:
+    max_review_rounds: 3
+    unsupported_claim_threshold: 0.20
+
+compliance:
+  block_absolute_terms: ["确诊", "保证治愈", "无需就医", "根治", "百分之百"]
+  out_of_scope_reject_template: "该问题超出本系统的模拟范围，无法提供诊断建议。请咨询专业医生。"
+  mandatory_disclaimer: "仅供学习和工程演示，不构成医疗建议。"
+
+leakage_check:
+  chunk_fields_to_check: ["source", "source_id", "metadata.raw_id"]
+  check_question_text: true
+  check_answer_key: true
+
+metrics:
+  - name: "evidence_recall_at_5"
+    formula: "eligible samples with >=1 gold evidence hit / samples with non-empty gold_evidence_ids"
+    ground_truth_source: "PubMedQA eval_set.gold_evidence_ids"
+  - name: "gold_evidence_coverage"
+    formula: "samples with non-empty gold_evidence_ids / all samples"
+    ground_truth_source: "eval_set.gold_evidence_ids"
+  - name: "citation_precision"
+    formula: "SUPPORTED claim-citation pairs / all emitted claim-citation pairs"
+    ground_truth_source: "configured judge + human calibration sample"
+  - name: "judge_agreement"
+    formula: "judge labels matching adjudicated human labels / adjudicated sample"
+    ground_truth_source: "double annotation + adjudication"
+  - name: "unsupported_claim_rate"
+    formula: "claims whose best citation verdict is UNSUPPORTED / all claims"
+    ground_truth_source: "configured judge"
+  - name: "terminology_normalization_gain"
+    formula: "Recall@5(rag_term_norm) - Recall@5(rag_embedding)"
+    ground_truth_source: "single-variable RAG experiments"
+  - name: "workflow_success_rate"
+    formula: "cases reaching CLOSED_SUCCESS / all workflow cases"
+    ground_truth_source: "persisted case terminal state"
+  - name: "p95_latency_ms"
+    formula: "cold and warm end-to-end P95 latency"
+    ground_truth_source: "stage timing events"
+  - name: "stage_latency_ms"
+    formula: "normalize/retrieval/rerank/generation/judge/review/state_transition latency"
+    ground_truth_source: "stage timing events"
+
+reproduction:
+  validate_command: "python -m eval.runner --config eval/config.yaml --validate"
+  rag_command: "python -m eval.runner --config eval/config.yaml --experiment rag_all --output reports/raw/"
+  agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output reports/raw/"
+  leakage_check_command: "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl"

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,21 @@ _RAG_SWITCHES = (
     "use_citation_review",
 )
 _UNPINNED_REVISIONS = {"", "main", "latest", "development-unpinned", "unpinned"}
+_HF_COMMIT_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+_FORMAL_PLACEHOLDER_MARKERS = ("replace", "placeholder", "todo", "example")
+
+
+def _is_formal_placeholder(value: object) -> bool:
+    """Return whether a formal-lock value is missing or clearly non-verifiable."""
+    normalized = str(value or "").strip().lower()
+    return normalized in _UNPINNED_REVISIONS or any(
+        marker in normalized for marker in _FORMAL_PLACEHOLDER_MARKERS
+    )
+
+
+def _is_full_hf_commit_sha(revision: str) -> bool:
+    """Hugging Face revisions are reproducible only when pinned to a full commit."""
+    return bool(_HF_COMMIT_SHA_PATTERN.fullmatch(revision))
 
 
 def load_config(config_path: str | Path) -> dict[str, Any]:
@@ -84,8 +100,25 @@ def validate_config(
         revision = str(model_config.get("revision", ""))
         if not revision:
             issues.append(f"{section}.revision must be declared")
-        if mode == "formal" and revision.lower() in _UNPINNED_REVISIONS:
-            issues.append(f"{section}.revision must be immutable in formal mode")
+
+        if mode != "formal":
+            continue
+        if section == "generation":
+            # API model labels can be mutable aliases. A provider release plus a
+            # verifiable snapshot identifier is required before formal results
+            # can be treated as reproducible evidence.
+            if _is_formal_placeholder(revision):
+                issues.append(
+                    "generation.revision must be a declared provider release in formal mode"
+                )
+            if _is_formal_placeholder(model_config.get("snapshot_id")):
+                issues.append(
+                    "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+                )
+        elif not _is_full_hf_commit_sha(revision):
+            issues.append(
+                f"{section}.revision must be a full 40-character Hugging Face commit SHA in formal mode"
+            )
 
     generation = config["generation"]
     if not isinstance(generation.get("seed"), int):

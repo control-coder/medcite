@@ -53,6 +53,9 @@ medidiag.db
 .ruff_cache/
 .cache/huggingface/
 
+# Local formal config may contain provider-specific run metadata.
+eval/config.formal.yaml
+
 # ===== Evaluation artifacts =====
 # Keep directory structure via .gitkeep, but ignore raw outputs
 reports/raw/**

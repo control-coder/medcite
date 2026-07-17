@@ -8,6 +8,8 @@
 
 当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页；P2 已补齐正式 raw run 后的双人 citation 标注、Kappa、裁决与自动报告门禁。项目仍不能表述为“第一阶段完成”。** 真实 RAG/LLM/judge adapter、正式 NLI raw result、真实双人标注、稳定 Kappa 和双专科实验 trace 仍未验收。
 
+
+本轮新增 formal 模型锁定门禁：Hugging Face embedding/rerank/judge 必须使用完整 commit SHA；generation 必须同时记录 provider release 与可核验 snapshot ID。仓库仅提供会故意校验失败的 `eval/config.formal.template.yaml`，尚未提交或运行任何正式配置、正式 NLI raw result 或人工标签。
 ## Current Status
 
 | 范围 | 当前证据 | 状态 |

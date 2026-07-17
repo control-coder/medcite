@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -15,7 +16,13 @@ from eval.metrics import (
     compute_gold_evidence_coverage,
     compute_unsupported_claim_rate,
 )
-from eval.runner import ExperimentResult, SampleResult, _non_reportable_reasons
+from eval.runner import (
+    AgentOutputCache,
+    ExperimentResult,
+    SampleResult,
+    _build_manifest,
+    _non_reportable_reasons,
+)
 
 
 @pytest.fixture
@@ -50,12 +57,38 @@ def test_config_rejects_coupled_single_variable_group(config: dict) -> None:
     assert any("rag_bm25 must differ" in issue for issue in issues)
 
 
-def test_formal_mode_rejects_rule_fallback_and_unpinned_models(config: dict) -> None:
+def _valid_formal_config(config: dict) -> dict:
+    formal = deepcopy(config)
+    formal["evaluation"]["mode"] = "formal"
+    formal["generation"].update(
+        {
+            "revision": "deepseek-api-release-2026-07-17",
+            "snapshot_id": "provider-system-fingerprint-20260717-a1b2c3",
+        }
+    )
+    for section in ("embedding", "rerank", "judge"):
+        formal[section]["revision"] = "a" * 40
+    formal["judge"]["method"] = "nli"
+    return formal
+
+
+def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
+    config: dict,
+) -> None:
     invalid = deepcopy(config)
     invalid["evaluation"]["mode"] = "formal"
     issues = validate_config(invalid, Path.cwd())
     assert "formal evaluation requires judge.method=nli" in issues
-    assert any("revision must be immutable" in issue for issue in issues)
+    assert "generation.revision must be a declared provider release in formal mode" in issues
+    assert (
+        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+        in issues
+    )
+    for section in ("embedding", "rerank", "judge"):
+        assert (
+            f"{section}.revision must be a full 40-character Hugging Face commit SHA "
+            "in formal mode"
+        ) in issues
     # Labels are generated from a completed formal raw run. Requiring files here
     # would make the mandatory 20% sampling step impossible; report generation
     # instead requires a passing post-run audit.
@@ -66,6 +99,59 @@ def test_formal_mode_rejects_rule_fallback_and_unpinned_models(config: dict) -> 
     missing_annotation_path["dataset"]["annotation"]["citation_sample_path"] = ""
     annotation_issues = validate_config(missing_annotation_path, Path.cwd())
     assert "formal mode requires configured dataset.annotation.citation_sample_path" in annotation_issues
+
+
+def test_formal_mode_accepts_full_hf_commits_and_provider_snapshot(config: dict) -> None:
+    assert validate_config(_valid_formal_config(config), Path.cwd()) == []
+
+
+def test_formal_mode_rejects_short_sha_and_placeholder_snapshot(config: dict) -> None:
+    invalid = _valid_formal_config(config)
+    invalid["embedding"]["revision"] = "a" * 12
+    invalid["generation"]["snapshot_id"] = "REPLACE_WITH_PROVIDER_SNAPSHOT"
+
+    issues = validate_config(invalid, Path.cwd())
+
+    assert (
+        "embedding.revision must be a full 40-character Hugging Face commit SHA "
+        "in formal mode"
+    ) in issues
+    assert (
+        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+        in issues
+    )
+
+
+def test_formal_template_is_deliberately_not_runnable() -> None:
+    template = load_config("eval/config.formal.template.yaml")
+    issues = validate_config(template, Path.cwd())
+
+    assert issues
+    assert "generation.revision must be a declared provider release in formal mode" in issues
+
+
+def test_formal_manifest_records_generation_snapshot(config: dict) -> None:
+    formal = _valid_formal_config(config)
+    now = datetime.now(UTC)
+
+    manifest = _build_manifest(
+        run_id="run-with-model-lock",
+        config=formal,
+        experiments=["rag_embedding"],
+        started_at=now,
+        finished_at=now,
+        limit=None,
+        dry_run=False,
+        cache=AgentOutputCache(),
+        git_commit="test-commit",
+        dirty_diff_hash="test-diff",
+    )
+
+    assert manifest["models"]["generation"] == {
+        "model": "deepseek-v4-flash-free",
+        "revision": "deepseek-api-release-2026-07-17",
+        "snapshot_id": "provider-system-fingerprint-20260717-a1b2c3",
+    }
 
 
 def test_agent_manifest_is_fixed_to_100_unique_samples(config: dict) -> None:
