@@ -1,4 +1,4 @@
-# MediDiag-Agent EvidenceFlow
+﻿# MediDiag-Agent EvidenceFlow
 
 ## Scope 声明
 
@@ -10,7 +10,7 @@
 
 
 本轮新增 formal 模型锁定门禁：Hugging Face embedding/rerank/judge 必须使用完整 commit SHA；generation 必须同时记录 provider release 与可核验 snapshot ID。仓库仅提供会故意校验失败的 `eval/config.formal.template.yaml`，尚未提交或运行任何正式配置、正式 NLI raw result 或人工标签。
-> See [`docs/current-status.md`](docs/current-status.md) for the current implementation inventory, acceptance gaps, and workspace-cleanup policy.
+> 代码级完成项、验收缺口和工作区清理策略见 [`docs/current-status.md`](docs/current-status.md)。
 
 ## Current Status
 
