@@ -45,6 +45,8 @@ def test_demo_home_and_non_htmx_create_fallback(demo_runtime) -> None:
     assert 'hx-post="/demo/cases"' in home.text
     assert 'method="post" action="/demo/cases"' in home.text
     assert '/static/htmx.min.js' in home.text
+    assert "独立 worker 模式" in home.text
+    assert "不会进入工作流" in home.text
 
     created = client.post(
         "/demo/cases",
@@ -57,6 +59,20 @@ def test_demo_home_and_non_htmx_create_fallback(demo_runtime) -> None:
     )
     assert created.status_code == 303
     assert created.headers["location"].startswith("/demo/cases/")
+
+
+def test_demo_home_shows_attached_runtime_mode(demo_runtime) -> None:
+    client, _ = demo_runtime
+    client.app.state.demo_runtime = {
+        "label": "DeepSeek 实时起草",
+        "detail": "生成阶段仅使用远程提供方。",
+    }
+
+    home = client.get("/demo")
+
+    assert home.status_code == 200
+    assert "DeepSeek 实时起草" in home.text
+    assert "生成阶段仅使用远程提供方" in home.text
 
 
 def test_active_polling_stops_and_final_report_is_rendered(demo_runtime) -> None:
@@ -133,3 +149,22 @@ def test_demo_validation_error_is_html_and_css_is_responsive(demo_runtime) -> No
     htmx = client.get("/static/htmx.min.js")
     assert htmx.status_code == 200
     assert "htmx" in htmx.text[:500].lower()
+
+
+def test_demo_rejects_identifier_input_without_echoing_identifier(demo_runtime) -> None:
+    client, _ = demo_runtime
+    identifier = "patient@example.com"
+
+    rejected = client.post(
+        "/demo/cases",
+        headers={"HX-Request": "true"},
+        data={
+            "question": f"Deidentified simulation contact: {identifier}",
+            "input_kind": "deidentified_simulation",
+            "source_ref": "",
+        },
+    )
+
+    assert rejected.status_code == 400
+    assert "CASE_INPUT_NOT_DEIDENTIFIED" in rejected.text
+    assert identifier not in rejected.text

@@ -145,6 +145,17 @@ def demo(host: str, port: int, provider_name: str) -> None:
         daemon=True,
     )
     app = create_app(session_factory=factory)
+    app.state.demo_runtime = {
+        "label": (
+            "DeepSeek 实时起草"
+            if provider_name == "deepseek"
+            else "确定性本地 fixture"
+        ),
+        "detail": (
+            f"生成阶段使用 {provider.version}；检索仍为本地演示 fixture，"
+            "不构成医学 RAG 或正式评测。"
+        ),
+    }
     click.echo(
         f"MediDiag demo provider={provider.version}; open http://{host}:{port}/demo"
     )

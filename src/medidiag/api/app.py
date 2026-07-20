@@ -82,6 +82,12 @@ def create_app(
         app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.executor = WorkflowExecutor()
+    # ``medidiag demo`` overrides this after attaching its in-process worker.
+    # A plain uvicorn process can still be paired with ``medidiag worker``.
+    app.state.demo_runtime = {
+        "label": "独立 worker 模式",
+        "detail": "当前 Web 进程未附加同进程 worker；请另行启动 medidiag worker。",
+    }
 
     def get_session(request: Request) -> Generator[Session, None, None]:
         with request.app.state.session_factory() as session:
@@ -267,7 +273,10 @@ def create_app(
         return _TEMPLATES.TemplateResponse(
             request=request,
             name="demo.html",
-            context={"recent_cases": recent},
+            context={
+                "recent_cases": recent,
+                "demo_runtime": request.app.state.demo_runtime,
+            },
         )
 
     @app.post("/demo/cases", response_class=HTMLResponse)
