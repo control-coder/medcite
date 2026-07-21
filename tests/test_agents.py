@@ -268,6 +268,26 @@ class TestAgents:
         assert output.abstain is True
         assert output.provider_request_id == "chatcmpl-test-id"
 
+    def test_generation_preserves_request_id_when_schema_parse_raises(self) -> None:
+        """?? JSON ???????????????????? ID?"""
+        class FakeCompletion:
+            content = "[]"
+            request_id = "chatcmpl-schema-error-id"
+
+        class FakeLLMClient:
+            is_configured = True
+
+            def complete(self, prompt: str) -> FakeCompletion:
+                return FakeCompletion()
+
+        output = SpecialistAgent("cardiology", llm_client=FakeLLMClient()).generate(
+            "chest pain", []
+        )
+
+        assert output.abstain is True
+        assert output.abstain_reason.startswith("llm_output_parse_error:")
+        assert output.provider_request_id == "chatcmpl-schema-error-id"
+
     def test_output_to_dict(self) -> None:
         """AgentOutput 序列化。"""
         output = AgentOutput(

@@ -8,6 +8,7 @@ selects the live provider and supplies ``DEEPSEEK_API_KEY``.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -43,7 +44,10 @@ class LLMClient:
         temperature: float = 0.0,
         max_tokens: int = 1200,
         seed: int = 42,
+        max_retries: int = 2,
+        retry_backoff_seconds: float = 1.0,
         post: Callable[..., httpx.Response] | None = None,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         settings = get_settings()
         self.api_key = api_key if api_key is not None else settings.deepseek_api_key
@@ -53,7 +57,10 @@ class LLMClient:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.seed = seed
+        self.max_retries = max(0, max_retries)
+        self.retry_backoff_seconds = max(0.0, retry_backoff_seconds)
         self._post = post or httpx.post
+        self._sleep = sleep
 
     @property
     def is_configured(self) -> bool:
@@ -84,23 +91,40 @@ class LLMClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        response = self._post(
-            f"{self.base_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.model,
-                "messages": messages,
-                "temperature": self.temperature if temperature is None else temperature,
-                "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
-                "seed": self.seed,
-                "stream": False,
-            },
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
+        response: httpx.Response | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = self._post(
+                    f"{self.base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": messages,
+                        "temperature": self.temperature if temperature is None else temperature,
+                        "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
+                        "seed": self.seed,
+                        "stream": False,
+                    },
+                    timeout=self.timeout,
+                )
+                if response.status_code not in {408, 409, 429, 500, 502, 503, 504}:
+                    response.raise_for_status()
+                    break
+                if attempt == self.max_retries:
+                    response.raise_for_status()
+            except httpx.RequestError:
+                if attempt == self.max_retries:
+                    raise
+            # ????????????????????????
+            self._sleep(self.retry_backoff_seconds * (2**attempt))
+        if response is None:
+            raise MediDiagError(
+                "PROVIDER_UNAVAILABLE",
+                detail="live DeepSeek provider did not return a response",
+            )
         try:
             data = response.json()
             content = data["choices"][0]["message"]["content"]

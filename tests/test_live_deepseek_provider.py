@@ -42,6 +42,32 @@ def test_llm_client_uses_dogapi_openai_endpoint_and_preserves_request_id() -> No
     assert completion.request_id == "req-live-1"
 
 
+def test_llm_client_retries_transient_connection_error() -> None:
+    """?????????????????????? ID?"""
+    calls = 0
+    sleeps: list[float] = []
+
+    def fake_post(url: str, **kwargs) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            request = httpx.Request("POST", url)
+            raise httpx.ConnectError("temporary failure", request=request)
+        return _response({"id": "chatcmpl-retry-id", "choices": [{"message": {"content": "hello"}}]})
+
+    completion = LLMClient(
+        api_key="test-key",
+        max_retries=1,
+        retry_backoff_seconds=0.25,
+        post=fake_post,
+        sleep=sleeps.append,
+    ).complete("draft")
+
+    assert calls == 2
+    assert sleeps == [0.25]
+    assert completion.request_id == "req-live-1"
+
+
 def test_llm_client_uses_response_body_id_when_headers_are_absent() -> None:
     """???????????? OpenAI ????? id ?????"""
     def fake_post(url: str, **kwargs) -> httpx.Response:

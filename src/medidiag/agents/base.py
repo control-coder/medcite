@@ -203,9 +203,6 @@ class BaseAgent:
         if self.llm and self.llm.is_configured:
             try:
                 completion = self.llm.complete(prompt)
-                output = self.parse_output(completion.content)
-                output.provider_request_id = completion.request_id
-                return output
             except Exception as e:
                 return AgentOutput(
                     specialty=self.specialty,
@@ -214,6 +211,20 @@ class BaseAgent:
                     abstain_reason=f"llm_error: {e}",
                     raw_response=str(e),
                 )
+            try:
+                output = self.parse_output(completion.content)
+            except Exception as e:
+                # ???????????????????????????? ID?
+                return AgentOutput(
+                    specialty=self.specialty,
+                    uncertainty=f"LLM output parse error: {e}",
+                    abstain=True,
+                    abstain_reason=f"llm_output_parse_error: {e}",
+                    raw_response=completion.content,
+                    provider_request_id=completion.request_id,
+                )
+            output.provider_request_id = completion.request_id
+            return output
         else:
             # 无 LLM 时弃权（测试用）
             return AgentOutput(
