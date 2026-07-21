@@ -329,7 +329,7 @@ class TestCitation:
         cit = Citation(
             case_id="c1", claim_text="Patient has influenza.",
             chunk_id="kb_001", verdict="SUPPORTED",
-            verifier_model="microsoft/deberta-v3-base-mnli",
+            verifier_model="cross-encoder/nli-MiniLM2-L6-H768",
             verifier_score=0.92, human_reviewed=False,
         )
         session.add(cit)

@@ -209,7 +209,7 @@ def test_eval_config_locked_models(eval_config: dict) -> None:
     assert eval_config["generation"]["model"] == "deepseek-v4-flash-free"
     assert eval_config["embedding"]["model"] == "sentence-transformers/all-MiniLM-L6-v2"
     assert eval_config["rerank"]["model"] == "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    assert eval_config["judge"]["model"] == "microsoft/deberta-v3-base-mnli"
+    assert eval_config["judge"]["model"] == "cross-encoder/nli-MiniLM2-L6-H768"
 
 
 def test_eval_config_reproducibility_params(eval_config: dict) -> None:

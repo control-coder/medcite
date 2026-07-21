@@ -9,7 +9,7 @@
 当前状态：**P0-A/P0-B 已完成开发门禁，P0-C 已形成确定性 provider 下的单机 API/worker 工程闭环，P1-A/P1-B 已交付结构化 trace 首个切片和最小演示页；P2 已补齐正式 raw run 后的双人 citation 标注、Kappa、裁决与自动报告门禁。项目仍不能表述为“第一阶段完成”。** 已接入仅用于最小演示的实时 DeepSeek 起草 adapter；真实 RAG、正式 NLI raw result、真实双人标注、稳定 Kappa 和双专科实验 trace 仍未验收。
 
 
-本轮新增 formal 模型锁定门禁：Hugging Face embedding/rerank/judge 必须使用完整 commit SHA；generation 必须同时记录 provider release 与可核验 snapshot ID。仓库仅提供会故意校验失败的 `eval/config.formal.template.yaml`，尚未提交或运行任何正式配置、正式 NLI raw result 或人工标签。
+本轮已将 Hugging Face embedding、rerank 和 judge 锁定到可访问的完整 commit SHA；generation 仍必须同时记录 provider release 与可核验 snapshot ID。仓库仅提供会因 generation provenance 缺失而故意校验失败的 `eval/config.formal.template.yaml`，尚未提交或运行任何正式 NLI raw result 或人工标签。
 > 代码级完成项、验收缺口和工作区清理策略见 [`docs/current-status.md`](docs/current-status.md)。
 
 ## Current Status
@@ -65,7 +65,7 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 | Generation | DeepSeek OpenAI-compatible API | 第三方模型调用与集成 |
 | Embedding | `sentence-transformers/all-MiniLM-L6-v2` | 第三方向量模型 |
 | Rerank | `cross-encoder/ms-marco-MiniLM-L-6-v2` | 第三方 cross-encoder |
-| Judge | `microsoft/deberta-v3-base-mnli` | 正式模式计划使用的固定 NLI；当前没有正式结果 |
+| Judge | `cross-encoder/nli-MiniLM2-L6-H768` | 已锁定的固定 NLI judge；当前没有正式结果 |
 | Retrieval | FAISS、`rank-bm25` | 第三方索引和检索库 |
 | Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架；六个 MVP API 已集成 |
 | Demo UI | Jinja2、HTMX 2.0.4 | 服务端模板与局部刷新；HTMX 以固定本地 BSD 2-Clause 资产集成 |

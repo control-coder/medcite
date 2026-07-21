@@ -1,8 +1,8 @@
-# MediDiag-Agent EvidenceFlow evaluation configuration.
-# Any model, dataset, prompt, weight, or judge change requires a new run ID.
+# MediDiag-Agent EvidenceFlow 评测配置。
+# 任一模型、数据集、提示词、权重或 judge 变更后都必须创建新的 run ID。
 
 evaluation:
-  # Development may use rule_fallback and --limit. Formal mode forbids both.
+  # development 模式可使用 rule_fallback 和 --limit；formal 模式禁止二者。
   mode: "development"
   seed: 42
 
@@ -10,7 +10,7 @@ generation:
   provider: "deepseek"
   model: "deepseek-v4-flash-free"
   revision: "development-unpinned"
-  base_url: "https://api.deepseek.com/v1"
+  base_url: "https://www.dogapi.cc/v1"
   temperature: 0
   seed: 42
   max_tokens: 2048
@@ -31,7 +31,7 @@ rerank:
   timeout_seconds: 60
 
 judge:
-  model: "microsoft/deberta-v3-base-mnli"
+  model: "cross-encoder/nli-MiniLM2-L6-H768"
   revision: "development-unpinned"
   method: "rule_fallback"
   timeout_seconds: 60
@@ -43,7 +43,7 @@ dataset:
   rag_eval_set_path: "eval/datasets/eval_set_pubmedqa.jsonl"
   knowledge_base_path: "eval/datasets/knowledge_chunks.jsonl"
   agent_eval_set_path: "eval/datasets/eval_set_medqa.jsonl"
-  # P0-A formal gate: formal mode fails until this versioned 100-sample file exists.
+  # P0-A 正式门禁：版本化的 100 样本清单缺失时，formal 模式必须失败。
   agent_sample_manifest_path: "eval/datasets/agent_eval_manifest_v1.jsonl"
   sources:
     - name: "MedQA"
@@ -78,8 +78,8 @@ retrieval:
     level_5_other: 0.3
 
 experiments:
-  # RAG family fixes dataset, generation topology, model settings, and seed.
-  # Each single-variable group differs from rag_embedding by one switch only.
+  # RAG 实验族固定数据集、生成拓扑、模型设置和随机种子。
+  # 每个单变量组相对 rag_embedding 只能变更一个开关。
   rag:
     rag_embedding:
       description: "pure embedding baseline"
@@ -130,7 +130,7 @@ experiments:
         use_rerank: true
         use_citation_review: true
 
-  # Agent family locks retrieval_profile=rag_full and changes topology only.
+  # Agent 实验族固定 retrieval_profile=rag_full，只变更拓扑。
   agent:
     agent_single:
       description: "single diagnosis agent baseline"

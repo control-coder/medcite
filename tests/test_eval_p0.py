@@ -126,8 +126,10 @@ def test_formal_template_is_deliberately_not_runnable() -> None:
     template = load_config("eval/config.formal.template.yaml")
     issues = validate_config(template, Path.cwd())
 
-    assert issues
-    assert "generation.revision must be a declared provider release in formal mode" in issues
+    assert set(issues) == {
+        "generation.revision must be a declared provider release in formal mode",
+        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot",
+    }
 
 
 def test_formal_manifest_records_generation_snapshot(config: dict) -> None:
