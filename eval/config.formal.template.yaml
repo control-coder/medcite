@@ -1,7 +1,7 @@
 # 正式评测模板；使用前复制为 eval/config.formal.yaml。
-# 此提交模板会故意校验失败，直到所有 REPLACE_* 值都替换为
-# 有证据支撑的不可变模型信息。若 generation provider 无法提供可核验的
-# snapshot ID，则不得报告正式结果。
+# 当 generation provider 不提供不变 snapshot 时，可使用 provider_response_id 溯源模式。
+# 该模式必须在每条 Agent 样本中保存 response.id，且报告必须明示不具备不变模型快照。
+# MediDiag-Agent EvidenceFlow 评测配置。
 # MediDiag-Agent EvidenceFlow 评测配置。
 # 任一模型、数据集、提示词、权重或 judge 变更后都必须创建新的 run ID。
 
@@ -13,16 +13,16 @@ evaluation:
 generation:
   provider: "deepseek"
   model: "deepseek-v4-flash-free"
-  revision: "REPLACE_WITH_PROVIDER_RELEASE"
-  # 必须由 generation provider 返回或发布；仅有模型别名不足以作为证明。
-  snapshot_id: "REPLACE_WITH_VERIFIABLE_PROVIDER_SNAPSHOT"
+  revision: "deepseek-v4-flash-free"
+  # 供应商未公开不变 snapshot；使用每次响应体 id 作为调用关联溯源。
+  provenance_mode: "provider_response_id"
+  response_id_source: "response.id"
   base_url: "https://www.dogapi.cc/v1"
   temperature: 0
   seed: 42
   max_tokens: 2048
   timeout_seconds: 60
   prompt_version: "diagnosis-v1"
-
 embedding:
   model: "sentence-transformers/all-MiniLM-L6-v2"
   revision: "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"

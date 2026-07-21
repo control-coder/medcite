@@ -116,7 +116,7 @@ class LLMClient:
             )
         return LLMCompletion(
             content=content,
-            request_id=_request_id(response),
+            request_id=_request_id(response, data),
             model=self.model,
         )
 
@@ -157,8 +157,10 @@ class LLMClient:
         return payload
 
 
-def _request_id(response: httpx.Response) -> str | None:
-    return next(
+def _request_id(
+    response: httpx.Response, payload: dict[str, Any] | None = None
+) -> str | None:
+    request_id = next(
         (
             response.headers[name]
             for name in ("x-request-id", "request-id", "x-correlation-id")
@@ -166,3 +168,7 @@ def _request_id(response: httpx.Response) -> str | None:
         ),
         None,
     )
+    if request_id:
+        return request_id
+    body_request_id = payload.get("id") if payload else None
+    return body_request_id.strip() if isinstance(body_request_id, str) else None

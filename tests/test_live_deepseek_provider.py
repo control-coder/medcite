@@ -42,6 +42,25 @@ def test_llm_client_uses_dogapi_openai_endpoint_and_preserves_request_id() -> No
     assert completion.request_id == "req-live-1"
 
 
+def test_llm_client_uses_response_body_id_when_headers_are_absent() -> None:
+    """???????????? OpenAI ????? id ?????"""
+    def fake_post(url: str, **kwargs) -> httpx.Response:
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-body-id",
+                "choices": [{"message": {"content": "hello"}}],
+            },
+            request=request,
+        )
+
+    completion = LLMClient(api_key="test-key", post=fake_post).complete("draft")
+
+    assert completion.request_id == "chatcmpl-body-id"
+
+
+
 def test_live_provider_generates_schema_bound_draft_and_audits_request_id() -> None:
     def fake_post(url: str, **kwargs) -> httpx.Response:
         prompt = kwargs["json"]["messages"][-1]["content"]

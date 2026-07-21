@@ -101,7 +101,8 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 
 当前 `eval/config.yaml` 默认为 `evaluation.mode: development`：embedding、rerank 和本地 NLI judge 使用已下载的固定 Hugging Face commit SHA，generation 保持 `deepseek-v4-flash-free` 且标记为 `development-unpinned`，judge 为 `rule_fallback`。该配置可用于开发，但 raw manifest 会写入 `report_eligible: false`。正式模式必须满足：
 
-- 所有模型 revision 为不可变版本；
+- Hugging Face embedding、rerank 和 NLI judge 使用不变 commit SHA；generation 使用声明的 provider 模型标识。
+- 当 provider 不提供 `system_fingerprint` / snapshot 时，可使用 `provider_response_id` 模式；必须记录每条 Agent 样本的 `response.id`，并在报告中明示不具备不变快照。
 - `judge.method: nli`，模型加载或推理失败立即终止；
 - 不使用 `--limit` 或 `--dry-run`；
 - 固定 100 样本 Agent manifest 存在且通过 schema/唯一性校验；

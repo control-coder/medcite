@@ -89,6 +89,9 @@ class AgentOutput:
     raw_response: str = ""
     """原始 LLM 响应（调试用）。"""
 
+    provider_request_id: str | None = None
+    """供应商返回的非敏感请求关联 ID。"""
+
     def to_dict(self) -> dict:
         """转为字典。"""
         return {
@@ -115,6 +118,7 @@ class AgentOutput:
             "uncertainty": self.uncertainty,
             "abstain": self.abstain,
             "abstain_reason": self.abstain_reason,
+            "provider_request_id": self.provider_request_id,
         }
 
     @classmethod
@@ -146,6 +150,7 @@ class AgentOutput:
             uncertainty=data.get("uncertainty", ""),
             abstain=data.get("abstain", False),
             abstain_reason=data.get("abstain_reason", ""),
+            provider_request_id=data.get("provider_request_id"),
         )
 
 
@@ -197,8 +202,10 @@ class BaseAgent:
 
         if self.llm and self.llm.is_configured:
             try:
-                raw = self.llm.chat(prompt)
-                return self.parse_output(raw)
+                completion = self.llm.complete(prompt)
+                output = self.parse_output(completion.content)
+                output.provider_request_id = completion.request_id
+                return output
             except Exception as e:
                 return AgentOutput(
                     specialty=self.specialty,

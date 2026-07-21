@@ -94,6 +94,7 @@ class SampleResult:
     compliance_blocked: bool = False
     agent_abstained: bool = False
     cache_hit: bool = False
+    provider_request_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -378,6 +379,23 @@ def _run_experiment(
     return result
 
 
+def _assert_formal_response_id_provenance(
+    config: dict[str, Any], result: SampleResult
+) -> None:
+    """???? formal ????????????????? ID?"""
+    generation = config["generation"]
+    if (
+        config["evaluation"]["mode"] == "formal"
+        and generation.get("provenance_mode", "provider_snapshot")
+        == "provider_response_id"
+        and not result.provider_request_ids
+    ):
+        raise click.ClickException(
+            "FORMAL_GENERATION_RESPONSE_ID_MISSING: "
+            "provider_response_id mode requires response.id for every generated sample"
+        )
+
+
 def _run_sample(
     name: str,
     family: str,
@@ -445,6 +463,14 @@ def _run_sample(
     )
     result.stage_latency_ms["generation"] = _elapsed_ms(generation_started)
     result.agent_abstained = any(output.abstain for output in outputs)
+    result.provider_request_ids = sorted(
+        {
+            output.provider_request_id
+            for output in outputs
+            if output.provider_request_id
+        }
+    )
+    _assert_formal_response_id_provenance(config, result)
 
     review_started = time.perf_counter()
     reviewer = ClinicalLogicReviewer()
@@ -596,7 +622,25 @@ def _build_manifest(
                 "model": config[section]["model"],
                 "revision": config[section]["revision"],
                 **(
-                    {"snapshot_id": config[section].get("snapshot_id")}
+                    {
+                        "provenance_mode": config[section].get(
+                            "provenance_mode", "provider_snapshot"
+                        ),
+                        **(
+                            {"snapshot_id": config[section].get("snapshot_id")}
+                            if config[section].get("snapshot_id")
+                            else {}
+                        ),
+                        **(
+                            {
+                                "response_id_source": config[section].get(
+                                    "response_id_source"
+                                )
+                            }
+                            if config[section].get("response_id_source")
+                            else {}
+                        ),
+                    }
                     if section == "generation"
                     else {}
                 ),

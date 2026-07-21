@@ -20,6 +20,7 @@ from eval.runner import (
     AgentOutputCache,
     ExperimentResult,
     SampleResult,
+    _assert_formal_response_id_provenance,
     _build_manifest,
     _non_reportable_reasons,
 )
@@ -58,17 +59,34 @@ def test_config_rejects_coupled_single_variable_group(config: dict) -> None:
 
 
 def _valid_formal_config(config: dict) -> dict:
+    """??????? snapshot ??? formal ???"""
     formal = deepcopy(config)
     formal["evaluation"]["mode"] = "formal"
     formal["generation"].update(
         {
-            "revision": "deepseek-api-release-2026-07-17",
+            "revision": "deepseek-v4-flash-free",
+            "provenance_mode": "provider_snapshot",
             "snapshot_id": "provider-system-fingerprint-20260717-a1b2c3",
         }
     )
+    formal["generation"].pop("response_id_source", None)
     for section in ("embedding", "rerank", "judge"):
         formal[section]["revision"] = "a" * 40
     formal["judge"]["method"] = "nli"
+    return formal
+
+
+def _valid_response_id_formal_config(config: dict) -> dict:
+    """????????? snapshot ?????? formal ???"""
+    formal = _valid_formal_config(config)
+    formal["generation"].update(
+        {
+            "revision": "deepseek-v4-flash-free",
+            "provenance_mode": "provider_response_id",
+            "response_id_source": "response.id",
+        }
+    )
+    formal["generation"].pop("snapshot_id", None)
     return formal
 
 
@@ -79,18 +97,20 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
     invalid["evaluation"]["mode"] = "formal"
     issues = validate_config(invalid, Path.cwd())
     assert "formal evaluation requires judge.method=nli" in issues
-    assert "generation.revision must be a declared provider release in formal mode" in issues
     assert (
-        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+        "generation.revision must be a declared provider model identifier in formal mode"
+        in issues
+    )
+    assert (
+        "formal evaluation requires generation.snapshot_id when "
+        "provenance_mode=provider_snapshot"
         in issues
     )
     for section in ("embedding", "rerank", "judge"):
         assert not any(
             issue.startswith(f"{section}.revision must be") for issue in issues
         )
-    # Labels are generated from a completed formal raw run. Requiring files here
-    # would make the mandatory 20% sampling step impossible; report generation
-    # instead requires a passing post-run audit.
+    # ????????? formal raw run ???????????????? 20% ?????
     assert not any("existing dataset.annotation" in issue for issue in issues)
 
     missing_annotation_path = deepcopy(config)
@@ -102,6 +122,10 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
 
 def test_formal_mode_accepts_full_hf_commits_and_provider_snapshot(config: dict) -> None:
     assert validate_config(_valid_formal_config(config), Path.cwd()) == []
+
+
+def test_formal_mode_accepts_response_id_provenance_without_snapshot(config: dict) -> None:
+    assert validate_config(_valid_response_id_formal_config(config), Path.cwd()) == []
 
 
 def test_formal_mode_rejects_short_sha_and_placeholder_snapshot(config: dict) -> None:
@@ -116,23 +140,46 @@ def test_formal_mode_rejects_short_sha_and_placeholder_snapshot(config: dict) ->
         "in formal mode"
     ) in issues
     assert (
-        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+        "formal evaluation requires generation.snapshot_id when "
+        "provenance_mode=provider_snapshot"
         in issues
     )
 
 
-def test_formal_template_is_deliberately_not_runnable() -> None:
+def test_formal_mode_rejects_invalid_response_id_source(config: dict) -> None:
+    invalid = _valid_response_id_formal_config(config)
+    invalid["generation"]["response_id_source"] = "header.x-request-id"
+
+    assert (
+        "formal evaluation requires generation.response_id_source=response.id "
+        "when provenance_mode=provider_response_id"
+    ) in validate_config(invalid, Path.cwd())
+
+
+def test_formal_template_is_runnable_with_response_id_provenance() -> None:
     template = load_config("eval/config.formal.template.yaml")
-    issues = validate_config(template, Path.cwd())
-
-    assert set(issues) == {
-        "generation.revision must be a declared provider release in formal mode",
-        "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot",
-    }
+    assert validate_config(template, Path.cwd()) == []
 
 
-def test_formal_manifest_records_generation_snapshot(config: dict) -> None:
-    formal = _valid_formal_config(config)
+def test_formal_response_id_provenance_requires_sample_request_id(config: dict) -> None:
+    formal = _valid_response_id_formal_config(config)
+    missing_id = SampleResult("sample-1", "agent_single", "agent", True)
+
+    with pytest.raises(click.ClickException, match="FORMAL_GENERATION_RESPONSE_ID_MISSING"):
+        _assert_formal_response_id_provenance(formal, missing_id)
+
+    recorded_id = SampleResult(
+        "sample-1",
+        "agent_single",
+        "agent",
+        True,
+        provider_request_ids=["chatcmpl-test-id"],
+    )
+    _assert_formal_response_id_provenance(formal, recorded_id)
+
+
+def test_formal_manifest_records_generation_provenance(config: dict) -> None:
+    formal = _valid_response_id_formal_config(config)
     now = datetime.now(UTC)
 
     manifest = _build_manifest(
@@ -150,8 +197,9 @@ def test_formal_manifest_records_generation_snapshot(config: dict) -> None:
 
     assert manifest["models"]["generation"] == {
         "model": "deepseek-v4-flash-free",
-        "revision": "deepseek-api-release-2026-07-17",
-        "snapshot_id": "provider-system-fingerprint-20260717-a1b2c3",
+        "revision": "deepseek-v4-flash-free",
+        "provenance_mode": "provider_response_id",
+        "response_id_source": "response.id",
     }
 
 

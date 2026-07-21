@@ -40,6 +40,7 @@ _RAG_SWITCHES = (
 _UNPINNED_REVISIONS = {"", "main", "latest", "development-unpinned", "unpinned"}
 _HF_COMMIT_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
 _FORMAL_PLACEHOLDER_MARKERS = ("replace", "placeholder", "todo", "example")
+_GENERATION_PROVENANCE_MODES = {"provider_snapshot", "provider_response_id"}
 
 
 def _is_formal_placeholder(value: object) -> bool:
@@ -104,16 +105,32 @@ def validate_config(
         if mode != "formal":
             continue
         if section == "generation":
-            # API model labels can be mutable aliases. A provider release plus a
-            # verifiable snapshot identifier is required before formal results
-            # can be treated as reproducible evidence.
+            provenance_mode = str(
+                model_config.get("provenance_mode", "provider_snapshot")
+            )
+            if provenance_mode not in _GENERATION_PROVENANCE_MODES:
+                issues.append(
+                    "generation.provenance_mode must be 'provider_snapshot' or "
+                    "'provider_response_id' in formal mode"
+                )
             if _is_formal_placeholder(revision):
                 issues.append(
-                    "generation.revision must be a declared provider release in formal mode"
+                    "generation.revision must be a declared provider model identifier in formal mode"
                 )
-            if _is_formal_placeholder(model_config.get("snapshot_id")):
+            if provenance_mode == "provider_snapshot" and _is_formal_placeholder(
+                model_config.get("snapshot_id")
+            ):
                 issues.append(
-                    "formal evaluation requires generation.snapshot_id from a verifiable provider snapshot"
+                    "formal evaluation requires generation.snapshot_id when "
+                    "provenance_mode=provider_snapshot"
+                )
+            if (
+                provenance_mode == "provider_response_id"
+                and model_config.get("response_id_source") != "response.id"
+            ):
+                issues.append(
+                    "formal evaluation requires generation.response_id_source=response.id "
+                    "when provenance_mode=provider_response_id"
                 )
         elif not _is_full_hf_commit_sha(revision):
             issues.append(

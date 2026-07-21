@@ -250,6 +250,24 @@ class TestAgents:
         assert output.abstain is True
         assert output.specialty == "general_diagnosis"
 
+    def test_generation_preserves_provider_response_id(self) -> None:
+        """?????????????????? ID?"""
+        class FakeCompletion:
+            content = "not valid json {{{"
+            request_id = "chatcmpl-test-id"
+
+        class FakeLLMClient:
+            is_configured = True
+
+            def complete(self, prompt: str) -> FakeCompletion:
+                return FakeCompletion()
+
+        agent = SpecialistAgent("cardiology", llm_client=FakeLLMClient())
+        output = agent.generate("chest pain", [])
+
+        assert output.abstain is True
+        assert output.provider_request_id == "chatcmpl-test-id"
+
     def test_output_to_dict(self) -> None:
         """AgentOutput 序列化。"""
         output = AgentOutput(
