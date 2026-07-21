@@ -46,6 +46,7 @@ class LLMClient:
         seed: int = 42,
         max_retries: int = 2,
         retry_backoff_seconds: float = 1.0,
+        require_request_id: bool = False,
         post: Callable[..., httpx.Response] | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
@@ -59,6 +60,8 @@ class LLMClient:
         self.seed = seed
         self.max_retries = max(0, max_retries)
         self.retry_backoff_seconds = max(0.0, retry_backoff_seconds)
+        # 正式评测的 response-id 溯源模式必须拒绝无真实调用标识的成功响应。
+        self.require_request_id = require_request_id
         self._post = post or httpx.post
         self._sleep = sleep
 
@@ -91,7 +94,7 @@ class LLMClient:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        response: httpx.Response | None = None
+        transient_statuses = {408, 409, 429, 500, 502, 503, 504}
         for attempt in range(self.max_retries + 1):
             try:
                 response = self._post(
@@ -110,38 +113,49 @@ class LLMClient:
                     },
                     timeout=self.timeout,
                 )
-                if response.status_code not in {408, 409, 429, 500, 502, 503, 504}:
-                    response.raise_for_status()
-                    break
-                if attempt == self.max_retries:
-                    response.raise_for_status()
             except httpx.RequestError:
                 if attempt == self.max_retries:
                     raise
-            # ????????????????????????
+                self._sleep(self.retry_backoff_seconds * (2**attempt))
+                continue
+
+            if response.status_code in transient_statuses:
+                if attempt == self.max_retries:
+                    response.raise_for_status()
+                self._sleep(self.retry_backoff_seconds * (2**attempt))
+                continue
+            response.raise_for_status()
+            try:
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+            except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                raise MediDiagError(
+                    "LLM_JSON_INVALID",
+                    detail="chat completion response does not contain choices[0].message.content",
+                ) from exc
+            if not isinstance(content, str) or not content.strip():
+                raise MediDiagError(
+                    "LLM_JSON_INVALID",
+                    detail="chat completion content is empty or not text",
+                )
+            request_id = _request_id(response, data)
+            if request_id or not self.require_request_id:
+                return LLMCompletion(
+                    content=content,
+                    request_id=request_id,
+                    model=self.model,
+                )
+            if attempt == self.max_retries:
+                raise MediDiagError(
+                    "PROVIDER_RESPONSE_ID_MISSING",
+                    detail="正式 response-id 溯源要求响应体 response.id 或 provider 请求头中的真实调用标识",
+                )
+            # 成功响应缺少调用标识时不能作为正式评测证据，按有限退避重试。
             self._sleep(self.retry_backoff_seconds * (2**attempt))
-        if response is None:
-            raise MediDiagError(
-                "PROVIDER_UNAVAILABLE",
-                detail="live DeepSeek provider did not return a response",
-            )
-        try:
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-        except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise MediDiagError(
-                "LLM_JSON_INVALID",
-                detail="chat completion response does not contain choices[0].message.content",
-            ) from exc
-        if not isinstance(content, str) or not content.strip():
-            raise MediDiagError(
-                "LLM_JSON_INVALID",
-                detail="chat completion content is empty or not text",
-            )
-        return LLMCompletion(
-            content=content,
-            request_id=_request_id(response, data),
-            model=self.model,
+
+        raise MediDiagError(
+            "PROVIDER_UNAVAILABLE",
+            detail="live DeepSeek provider did not return a usable response",
         )
 
     def chat(

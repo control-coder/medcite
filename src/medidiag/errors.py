@@ -253,6 +253,16 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=True,
         description="外部 provider 返回 429 限流。",
     ),
+    "PROVIDER_RESPONSE_ID_MISSING": ErrorSpec(
+        code="PROVIDER_RESPONSE_ID_MISSING",
+        http_status=502,
+        category=ErrorCategory.DEPENDENCY,
+        retryable=True,
+        default_action="正式 response-id 溯源模式下进行有限退避重试；仍缺失时终止本次正式运行，不生成可报告结果。",
+        requires_human_escalation=False,
+        alert=True,
+        description="provider 成功响应未返回可用于调用关联的 request ID。",
+    ),
     "PROVIDER_UNAVAILABLE": ErrorSpec(
         code="PROVIDER_UNAVAILABLE",
         http_status=503,

@@ -86,6 +86,82 @@ def test_llm_client_uses_response_body_id_when_headers_are_absent() -> None:
     assert completion.request_id == "chatcmpl-body-id"
 
 
+def test_llm_client_accepts_missing_request_id_outside_formal_provenance() -> None:
+    """开发模式可保留成功响应，即使供应商未提供调用标识。"""
+
+    def fake_post(url: str, **kwargs) -> httpx.Response:
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "hello"}}]},
+            request=request,
+        )
+
+    completion = LLMClient(api_key="test-key", post=fake_post).complete("draft")
+
+    assert completion.request_id is None
+
+
+def test_llm_client_retries_missing_request_id_when_formal_provenance_requires_it() -> None:
+    """正式 response-id 模式仅接受具有真实调用标识的成功响应。"""
+
+    calls = 0
+    sleeps: list[float] = []
+
+    def fake_post(url: str, **kwargs) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        request = httpx.Request("POST", url)
+        payload = {"choices": [{"message": {"content": "hello"}}]}
+        if calls == 2:
+            payload["id"] = "chatcmpl-second-response"
+        return httpx.Response(200, json=payload, request=request)
+
+    completion = LLMClient(
+        api_key="test-key",
+        require_request_id=True,
+        max_retries=1,
+        retry_backoff_seconds=0.25,
+        post=fake_post,
+        sleep=sleeps.append,
+    ).complete("draft")
+
+    assert calls == 2
+    assert sleeps == [0.25]
+    assert completion.request_id == "chatcmpl-second-response"
+
+
+def test_llm_client_rejects_missing_request_id_after_formal_retries() -> None:
+    """正式 response-id 模式不能把无调用标识的成功响应写入评测结果。"""
+
+    calls = 0
+
+    def fake_post(url: str, **kwargs) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "hello"}}]},
+            request=request,
+        )
+
+    client = LLMClient(
+        api_key="test-key",
+        require_request_id=True,
+        max_retries=1,
+        retry_backoff_seconds=0,
+        post=fake_post,
+        sleep=lambda _: None,
+    )
+
+    with pytest.raises(MediDiagError, match="PROVIDER_RESPONSE_ID_MISSING") as exc_info:
+        client.complete("draft")
+
+    assert calls == 2
+    assert exc_info.value.code == "PROVIDER_RESPONSE_ID_MISSING"
+
+
 
 def test_live_provider_generates_schema_bound_draft_and_audits_request_id() -> None:
     def fake_post(url: str, **kwargs) -> httpx.Response:

@@ -236,6 +236,10 @@ def run_evaluation(
             temperature=float(generation["temperature"]),
             max_tokens=int(generation["max_tokens"]),
             seed=int(generation["seed"]),
+            require_request_id=(
+                config["evaluation"]["mode"] == "formal"
+                and generation.get("provenance_mode") == "provider_response_id"
+            ),
         )
 
     cache = AgentOutputCache()
