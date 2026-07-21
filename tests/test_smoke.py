@@ -210,6 +210,9 @@ def test_eval_config_locked_models(eval_config: dict) -> None:
     assert eval_config["embedding"]["model"] == "sentence-transformers/all-MiniLM-L6-v2"
     assert eval_config["rerank"]["model"] == "cross-encoder/ms-marco-MiniLM-L-6-v2"
     assert eval_config["judge"]["model"] == "cross-encoder/nli-MiniLM2-L6-H768"
+    assert eval_config["embedding"]["revision"] == "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    assert eval_config["rerank"]["revision"] == "c5ee24cb16019beea0893ab7796b1df96625c6b8"
+    assert eval_config["judge"]["revision"] == "b95119ce93d3e065de6214e38cd4a97b0f2f2c6d"
 
 
 def test_eval_config_reproducibility_params(eval_config: dict) -> None:

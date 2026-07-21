@@ -99,7 +99,7 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 - RAG：`rag_embedding`、`rag_bm25`、`rag_evidence_weight`、`rag_term_norm`、`rag_citation_review`、`rag_full`。前四个单变量组相对 pure embedding baseline 只改变一个开关；`rag_full` 只报告组合效果。
 - Agent：`agent_single`、`agent_fixed_pair`、`agent_dynamic_pair`。三组固定使用 `rag_full`，只改变 Agent topology。
 
-当前 `eval/config.yaml` 默认为 `evaluation.mode: development`，模型 revision 明示为 `development-unpinned`，judge 为 `rule_fallback`。该配置可用于开发，但 raw manifest 会写入 `report_eligible: false`。正式模式必须满足：
+当前 `eval/config.yaml` 默认为 `evaluation.mode: development`：embedding、rerank 和本地 NLI judge 使用已下载的固定 Hugging Face commit SHA，generation 保持 `deepseek-v4-flash-free` 且标记为 `development-unpinned`，judge 为 `rule_fallback`。该配置可用于开发，但 raw manifest 会写入 `report_eligible: false`。正式模式必须满足：
 
 - 所有模型 revision 为不可变版本；
 - `judge.method: nli`，模型加载或推理失败立即终止；

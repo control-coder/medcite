@@ -135,6 +135,8 @@ def retriever(test_chunks, normalizer, eval_config):
         embedding_model=eval_config["embedding"]["model"],
         rerank_model=eval_config["rerank"]["model"],
         normalizer=normalizer,
+        embedding_revision=eval_config["embedding"]["revision"],
+        rerank_revision=eval_config["rerank"]["revision"],
     )
     r.build_index(use_bm25=True, use_embedding=True)
     return r
@@ -202,3 +204,5 @@ class TestRetriever:
     def test_weights_come_from_yaml(self, retriever, eval_config) -> None:
         assert retriever.weights == eval_config["retrieval"]["weights"]
         assert retriever.evidence_level_scores == eval_config["retrieval"]["evidence_levels"]
+        assert retriever.embedding_model_revision == eval_config["embedding"]["revision"]
+        assert retriever.rerank_model_revision == eval_config["rerank"]["revision"]

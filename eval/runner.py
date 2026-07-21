@@ -213,6 +213,8 @@ def run_evaluation(
         embedding_model=config["embedding"]["model"],
         rerank_model=config["rerank"]["model"],
         normalizer=normalizer,
+        embedding_revision=config["embedding"]["revision"],
+        rerank_revision=config["rerank"]["revision"],
     )
     retriever.build_index(use_bm25=True, use_embedding=True)
 

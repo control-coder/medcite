@@ -38,7 +38,8 @@ class Retriever:
     支持 BM25 + embedding + rerank + 证据等级加权 + 术语归一化。
     用法:
         retriever = Retriever(chunks, weights=..., evidence_level_scores=...,
-                              embedding_model=..., rerank_model=...)
+                              embedding_model=..., rerank_model=...,
+                              embedding_revision=..., rerank_revision=...)
         retriever.build_index()
         results = retriever.search(query, top_k=5, experiment_config=...)
     """
@@ -51,12 +52,16 @@ class Retriever:
         embedding_model: str,
         rerank_model: str,
         normalizer: TerminologyNormalizer | None = None,
+        embedding_revision: str | None = None,
+        rerank_revision: str | None = None,
     ) -> None:
         self.chunks = chunks
         self.weights = dict(weights)
         self.evidence_level_scores = dict(evidence_level_scores)
         self.embedding_model_name = embedding_model
         self.rerank_model_name = rerank_model
+        self.embedding_model_revision = embedding_revision
+        self.rerank_model_revision = rerank_revision
         self.normalizer = normalizer
 
         self._texts = [c.text for c in chunks]
@@ -88,7 +93,10 @@ class Retriever:
         import numpy as np
         from sentence_transformers import SentenceTransformer
 
-        self._embedder = SentenceTransformer(self.embedding_model_name)
+        self._embedder = SentenceTransformer(
+            self.embedding_model_name,
+            revision=self.embedding_model_revision,
+        )
         embeddings = self._embedder.encode(
             self._texts, normalize_embeddings=True, show_progress_bar=False
         )
@@ -263,7 +271,10 @@ class Retriever:
         from sentence_transformers import CrossEncoder
 
         if self._reranker is None:
-            self._reranker = CrossEncoder(self.rerank_model_name)
+            self._reranker = CrossEncoder(
+                self.rerank_model_name,
+                revision=self.rerank_model_revision,
+            )
 
         pairs = [(query, c.chunk.text) for c in candidates if c.chunk]
         scores = self._reranker.predict(pairs)

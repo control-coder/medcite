@@ -85,10 +85,9 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
         in issues
     )
     for section in ("embedding", "rerank", "judge"):
-        assert (
-            f"{section}.revision must be a full 40-character Hugging Face commit SHA "
-            "in formal mode"
-        ) in issues
+        assert not any(
+            issue.startswith(f"{section}.revision must be") for issue in issues
+        )
     # Labels are generated from a completed formal raw run. Requiring files here
     # would make the mandatory 20% sampling step impossible; report generation
     # instead requires a passing post-run audit.
