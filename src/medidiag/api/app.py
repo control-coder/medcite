@@ -38,6 +38,7 @@ from medidiag.db.models import (
 )
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.errors import MediDiagError
+from medidiag.observability.logging import get_logger
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.state_machine import CaseState, TriggerSubject, is_terminal
@@ -47,6 +48,7 @@ _PHONE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
 _CN_ID = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
 _API_DIR = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_API_DIR / "templates"))
+_log = get_logger(__name__)
 
 
 def _ensure_deidentified(payload: CaseCreateRequest) -> None:
@@ -97,6 +99,17 @@ def create_app(
     async def medidiag_error_handler(
         request: Request, exc: MediDiagError
     ) -> Response:
+        # 只记录错误码与路由，不记录 exc.detail：CASE_INVALID_INPUT 的 detail
+        # 来自 pydantic ValidationError，会带上被拒绝的输入值。
+        _log.warning(
+            "api.error",
+            error_code=exc.code,
+            http_status=exc.spec.http_status,
+            retryable=exc.spec.retryable,
+            alert=exc.spec.alert,
+            method=request.method,
+            route=request.url.path,
+        )
         if request.url.path.startswith("/demo"):
             return _TEMPLATES.TemplateResponse(
                 request=request,

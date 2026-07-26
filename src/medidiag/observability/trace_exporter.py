@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -23,23 +22,9 @@ from medidiag.db.models import (
     WorkflowTask,
 )
 from medidiag.errors import MediDiagError, get_error_spec
+from medidiag.observability.redaction import sanitize
 
 TRACE_SCHEMA_VERSION = "1.0"
-
-_SENSITIVE_KEYS = {
-    "api_key",
-    "authorization",
-    "idempotency_key",
-    "password",
-    "prompt",
-    "question",
-    "secret",
-    "token",
-}
-_EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
-_PHONE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
-_CN_ID = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
-_BEARER = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
 
 
 @dataclass(frozen=True)
@@ -361,29 +346,8 @@ class TraceExporter:
 
     @classmethod
     def _sanitize(cls, value: Any, key: str | None = None) -> Any:
-        if key and cls._is_sensitive_key(key):
-            return "[REDACTED]"
-        if isinstance(value, dict):
-            return {item_key: cls._sanitize(item, item_key) for item_key, item in value.items()}
-        if isinstance(value, list):
-            return [cls._sanitize(item) for item in value]
-        if isinstance(value, str):
-            value = _BEARER.sub("Bearer [REDACTED]", value)
-            value = _EMAIL.sub("[REDACTED_EMAIL]", value)
-            value = _PHONE.sub("[REDACTED_PHONE]", value)
-            return _CN_ID.sub("[REDACTED_ID]", value)
-        return value
-
-    @staticmethod
-    def _is_sensitive_key(key: str) -> bool:
-        normalized = key.lower().replace("-", "_")
-        return (
-            normalized in _SENSITIVE_KEYS
-            or normalized.endswith(("_api_key", "_password", "_secret", "_token"))
-            or "authorization" in normalized
-            or normalized.endswith("question")
-            or normalized == "prompt"
-        )
+        """Delegate to the shared contract in ``medidiag.observability.redaction``."""
+        return sanitize(value, key)
 
     @staticmethod
     def _hash_text(value: str) -> str:

@@ -20,6 +20,7 @@ from medidiag.db.models import (
     WorkflowTask,
 )
 from medidiag.errors import MediDiagError
+from medidiag.observability.logging import get_logger
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
@@ -58,6 +59,9 @@ _STAGE_BY_STATE: dict[CaseState, tuple[str, TriggerSubject]] = {
 _STAGE_SUBJECTS: dict[str, TriggerSubject] = {
     stage: subject for stage, subject in _STAGE_BY_STATE.values()
 }
+
+
+_log = get_logger(__name__)
 
 
 class _StageFailure(Exception):
@@ -128,6 +132,14 @@ class SingleMachineWorker:
                 ).scalar_one_or_none()
             if task is None:
                 return WorkerRunResult(processed=False)
+            _log.info(
+                "worker.task_claimed",
+                worker_id=self.worker_id,
+                task_id=task.task_id,
+                case_id=task.case_id,
+                task_type=task.task_type,
+                attempt=task.attempt,
+            )
             return self._process(session, task)
 
     def _process(self, session: Session, task: WorkflowTask) -> WorkerRunResult:
@@ -456,6 +468,16 @@ class SingleMachineWorker:
                         True, task.task_id, case.case_id, CaseState.CLOSED_SUCCESS.value
                     )
             except _StageFailure as failure:
+                _log.error(
+                    "worker.stage_failed",
+                    worker_id=self.worker_id,
+                    task_id=task.task_id,
+                    case_id=case.case_id,
+                    attempt=attempt,
+                    stage=failure.stage,
+                    from_state=state.value,
+                    error_code=failure.error.code,
+                )
                 self._fail_stage(session, case, task, attempt, failure)
                 return WorkerRunResult(
                     True, task.task_id, case.case_id, CaseState.ESCALATED.value
@@ -464,6 +486,15 @@ class SingleMachineWorker:
         # Only the review/revision cycle can spin, and WS3's round cap bounds it;
         # every state reachable here has a legal ESCALATED edge.
         stage, _ = _STAGE_BY_STATE[state]
+        _log.error(
+            "worker.stage_limit_exceeded",
+            worker_id=self.worker_id,
+            task_id=task.task_id,
+            case_id=task.case_id,
+            stage=stage,
+            state=state.value,
+            error_code="WORKFLOW_RETRY_EXCEEDED",
+        )
         self._fail_stage(
             session,
             case,
@@ -633,4 +664,11 @@ class LeaseScanner:
                     session, task_id, self.recovery_worker_id
                 ):
                     reclaimed.append(task_id)
+        if task_ids:
+            _log.info(
+                "lease.scan_completed",
+                worker_id=self.recovery_worker_id,
+                expired=len(task_ids),
+                reclaimed=len(reclaimed),
+            )
         return reclaimed

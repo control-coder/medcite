@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
 from medidiag.errors import MediDiagError
+from medidiag.observability.logging import get_logger
 from medidiag.workflow.lease import LeaseManager
 from medidiag.workflow.state_machine import (
     CaseState,
@@ -36,6 +37,8 @@ from medidiag.workflow.state_machine import (
 # 乐观锁重试参数（PLAN.md: 3 次退避 50/100/200ms）
 OPTIMISTIC_LOCK_MAX_RETRIES = 3
 OPTIMISTIC_LOCK_BACKOFF_MS: list[int] = [50, 100, 200]
+
+_log = get_logger(__name__)
 
 
 class WorkflowExecutor:
@@ -451,6 +454,14 @@ class WorkflowExecutor:
         if write.rowcount != 1:
             session.rollback()
             self._record_rejected_stale_write(session, task_id, worker_id, attempt)
+            _log.warning(
+                "lease.lost",
+                task_id=task_id,
+                worker_id=worker_id,
+                attempt=attempt,
+                error_code="TASK_LEASE_LOST",
+                stale_write_discarded=True,
+            )
             raise MediDiagError(
                 "TASK_LEASE_LOST",
                 detail=f"worker {worker_id} lost lease on task {task_id}",
@@ -491,6 +502,15 @@ class WorkflowExecutor:
             )
         )
         session.commit()
+        _log.error(
+            "case.task_desync",
+            task_id=task_id,
+            case_id=task.case_id,
+            worker_id=worker_id,
+            attempt=attempt,
+            error_code="STATE_CONFLICT",
+            result_preserved=True,
+        )
         raise MediDiagError(
             "STATE_CONFLICT",
             detail=(
@@ -572,6 +592,15 @@ class WorkflowExecutor:
         if fenced.rowcount != 1:
             session.rollback()
             self._record_lease_lost(session, task, worker_id, attempt, stage)
+            _log.warning(
+                "lease.lost",
+                task_id=task_id,
+                case_id=task.case_id,
+                worker_id=worker_id,
+                attempt=attempt,
+                stage=stage,
+                error_code="TASK_LEASE_LOST",
+            )
             raise MediDiagError(
                 "TASK_LEASE_LOST",
                 detail=f"worker {worker_id} lost lease on task {task_id}",
@@ -746,6 +775,19 @@ class WorkflowExecutor:
             )
         )
         session.commit()
+        # 只记录状态跳转本身：stage 名、状态、任务与 case 标识，不含任何阶段产物。
+        _log.info(
+            "workflow.stage_committed",
+            case_id=case.case_id,
+            task_id=task_id,
+            worker_id=worker_id,
+            attempt=attempt,
+            stage=stage,
+            from_state=current_state.value,
+            to_state=to_state.value,
+            trigger_subject=subject.value,
+            task_completed=complete_task,
+        )
 
     @staticmethod
     def _record_lease_lost(

@@ -21,7 +21,10 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
+from medidiag.observability.logging import get_logger
 from medidiag.workflow.state_machine import CaseState, is_terminal
+
+_log = get_logger(__name__)
 
 
 def _utcnow() -> datetime:
@@ -84,6 +87,16 @@ class LeaseManager:
                     detail={"task_id": task_id, "attempt": task.attempt},
                 )
             )
+            _log.info(
+                "lease.acquired",
+                task_id=task_id,
+                case_id=task.case_id,
+                worker_id=worker_id,
+                attempt=task.attempt,
+                lease_seconds=self.lease_seconds,
+            )
+        else:
+            _log.debug("lease.acquire_rejected", task_id=task_id, worker_id=worker_id)
         session.commit()
         return result.rowcount == 1
 
@@ -117,7 +130,25 @@ class LeaseManager:
             )
         )
         session.commit()
-        return result.rowcount == 1
+        renewed = result.rowcount == 1
+        if renewed:
+            _log.debug(
+                "lease.renewed",
+                task_id=task_id,
+                worker_id=worker_id,
+                attempt=attempt,
+                lease_seconds=self.lease_seconds,
+            )
+        else:
+            # 续期失败等于本 worker 已不再持有租约，调用方必须停止写入。
+            _log.warning(
+                "lease.renew_rejected",
+                task_id=task_id,
+                worker_id=worker_id,
+                attempt=attempt,
+                error_code="TASK_LEASE_LOST",
+            )
+        return renewed
 
     def find_expired(self, session: Session) -> list[WorkflowTask]:
         """查找过期任务：RUNNING 且 lease_until < now()。"""
@@ -167,6 +198,13 @@ class LeaseManager:
                 .values(status="STALE")
             )
             if stale.rowcount == 1:
+                _log.info(
+                    "lease.stale_marked",
+                    task_id=task_id,
+                    case_id=case.case_id,
+                    case_status=case.status,
+                    reason="case_terminal",
+                )
                 session.execute(
                     update(Case)
                     .where(
@@ -217,6 +255,16 @@ class LeaseManager:
                         "new_attempt": old_attempt + 1,
                     },
                 )
+            )
+            _log.warning(
+                "lease.reclaimed",
+                task_id=task_id,
+                case_id=task.case_id,
+                old_owner=old_owner,
+                new_owner=new_worker_id,
+                old_attempt=old_attempt,
+                new_attempt=old_attempt + 1,
+                error_code="TASK_LEASE_EXPIRED",
             )
         session.commit()
         return reclaimed.rowcount == 1

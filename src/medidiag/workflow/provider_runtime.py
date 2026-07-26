@@ -11,6 +11,9 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from medidiag.errors import MediDiagError, get_error_spec
+from medidiag.observability.logging import get_logger
+
+_log = get_logger(__name__)
 
 
 class _StagePayload(BaseModel):
@@ -180,6 +183,19 @@ class ProviderCallRunner:
                     http_status=http_status,
                 )
                 attempts.append(attempt)
+                # 只记录分类结果与重试决策；异常消息可能带有请求内容，不进日志。
+                _log.warning(
+                    "provider.attempt_failed",
+                    stage=stage,
+                    attempt=number,
+                    max_attempts=self.max_attempts,
+                    error_code=error_code,
+                    retryable=spec.retryable,
+                    retry_decision=decision,
+                    http_status=http_status,
+                    provider_request_id=request_id,
+                    latency_ms=attempt.latency_ms,
+                )
                 if on_attempt:
                     on_attempt(attempt)
                 if will_retry:
@@ -201,6 +217,21 @@ class ProviderCallRunner:
                 retry_decision="not_needed",
             )
             attempts.append(attempt)
+            if number > 1:
+                _log.info(
+                    "provider.call_recovered",
+                    stage=stage,
+                    attempt=number,
+                    latency_ms=attempt.latency_ms,
+                    provider_request_id=response.request_id,
+                )
+            else:
+                _log.debug(
+                    "provider.call_succeeded",
+                    stage=stage,
+                    latency_ms=attempt.latency_ms,
+                    provider_request_id=response.request_id,
+                )
             if on_attempt:
                 on_attempt(attempt)
             return ProviderCallOutcome(

@@ -10,6 +10,7 @@ import click
 
 from medidiag.config import get_settings
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
+from medidiag.observability.logging import configure_logging
 from medidiag.workflow.deepseek_provider import DeepSeekWorkflowProvider
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
@@ -20,6 +21,8 @@ _PROVIDER_CHOICES = click.Choice(["deepseek", "deterministic"], case_sensitive=F
 @click.group()
 def main() -> None:
     """MediDiag-Agent EvidenceFlow CLI."""
+    # 尽早配置，使子命令的第一条日志也经过脱敏处理器。
+    configure_logging()
 
 
 @main.command()
