@@ -320,23 +320,32 @@ class Retriever:
         Returns:
             rerank 后的 SearchResult 列表。
         """
-        from sentence_transformers import CrossEncoder
-
         if self._reranker is None:
+            from sentence_transformers import CrossEncoder
+
             self._reranker = CrossEncoder(
                 self.rerank_model_name,
                 revision=self.rerank_model_revision,
                 device=self.actual_device,
             )
 
-        pairs = [(query, c.chunk.text) for c in candidates if c.chunk]
+        # 只有带 chunk 的候选可以打分。必须先固定这个子集，再把分数写回同一个
+        # 子集：早期版本按未过滤的 candidates 下标回写，任何 chunk=None 的候选
+        # 都会让其后每个候选拿到别人的分数（静默错排，不报错）。
+        scorable = [c for c in candidates if c.chunk]
+        if not scorable:
+            return []
+
+        pairs = [(query, c.chunk.text) for c in scorable]
         scores = self._reranker.predict(pairs, batch_size=self.rerank_batch_size)
 
-        for i, score in enumerate(scores):
-            candidates[i].final_score = float(score)
+        for candidate, score in zip(scorable, scores, strict=True):
+            candidate.final_score = float(score)
 
-        candidates.sort(key=lambda x: x.final_score, reverse=True)
-        return candidates[:top_k]
+        # 无 chunk 的候选被丢弃而不是保留过期的 final_score，且返回新列表，
+        # 不就地重排调用方传入的 candidates。
+        ranked = sorted(scorable, key=lambda x: x.final_score, reverse=True)
+        return ranked[:top_k]
 
     def compute_recall_at_k(
         self,

@@ -257,3 +257,80 @@ def test_retrieval_score_cache_reuses_same_query(retriever, eval_config) -> None
     retriever.search(query, top_k=2, experiment_config=evidence)
     assert retriever.cache_stats()["embedding"]["hits"] == before + 1
 
+
+
+# ===== rerank 分数对齐测试（不需要重依赖）=====
+
+
+class _ScoreByTextReranker:
+    """把候选文本长度当作分数，使每个分数唯一可追溯到它自己的候选。"""
+
+    def __init__(self) -> None:
+        self.seen_pairs: list[tuple[str, str]] = []
+
+    def predict(self, pairs, batch_size=None):
+        self.seen_pairs = list(pairs)
+        return [float(len(text)) for _, text in self.seen_pairs]
+
+
+def _bare_retriever(reranker) -> "object":
+    """构造一个只用于 rerank 的 Retriever，跳过 embedding/FAISS 索引构建。"""
+    from medidiag.rag.retrieval import Retriever
+
+    retriever = object.__new__(Retriever)
+    retriever._reranker = reranker
+    retriever.rerank_batch_size = 8
+    return retriever
+
+
+def _result(chunk_id: str, text: str | None) -> "object":
+    from medidiag.rag.retrieval import SearchResult
+
+    chunk = (
+        KnowledgeChunk(
+            chunk_id=chunk_id, source="test", source_id="s",
+            text=text, evidence_level="level_2_review",
+        )
+        if text is not None
+        else None
+    )
+    return SearchResult(chunk_id=chunk_id, final_score=0.0, chunk=chunk)
+
+
+def test_rerank_scores_stay_aligned_when_a_candidate_has_no_chunk() -> None:
+    """chunk=None 的候选不得让后续候选拿到别人的分数。"""
+    reranker = _ScoreByTextReranker()
+    retriever = _bare_retriever(reranker)
+
+    candidates = [
+        _result("c1", "a"),          # len 1
+        _result("c2", None),         # 无 chunk，无法打分
+        _result("c3", "bbbbbbb"),    # len 7
+        _result("c4", "cccc"),       # len 4
+    ]
+
+    ranked = retriever.rerank("query", candidates, top_k=5)
+
+    # 无 chunk 的候选被排除，其余每个都拿到按自己文本算出的分数。
+    assert [item.chunk_id for item in ranked] == ["c3", "c4", "c1"]
+    assert {item.chunk_id: item.final_score for item in ranked} == {
+        "c1": 1.0, "c3": 7.0, "c4": 4.0
+    }
+    assert [text for _, text in reranker.seen_pairs] == ["a", "bbbbbbb", "cccc"]
+
+
+def test_rerank_does_not_reorder_the_caller_list() -> None:
+    """rerank 返回新列表，调用方传入的顺序不被就地打乱。"""
+    retriever = _bare_retriever(_ScoreByTextReranker())
+    candidates = [_result("c1", "a"), _result("c2", "bbbbbbb")]
+    original = list(candidates)
+
+    ranked = retriever.rerank("query", candidates, top_k=2)
+
+    assert [item.chunk_id for item in ranked] == ["c2", "c1"]
+    assert candidates == original
+
+
+def test_rerank_with_no_scorable_candidates_returns_empty() -> None:
+    retriever = _bare_retriever(_ScoreByTextReranker())
+    assert retriever.rerank("query", [_result("c1", None)], top_k=5) == []
