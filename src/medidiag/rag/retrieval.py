@@ -74,12 +74,16 @@ class Retriever:
         self.rerank_batch_size = max(1, int(rerank_batch_size))
 
         self._texts = [c.text for c in chunks]
-        self._bm25 = None
+        # 这四个是惰性构建的第三方对象（BM25Okapi / SentenceTransformer /
+        # CrossEncoder / faiss.IndexFlatIP），都没有可用的类型存根，因此标注为
+        # `Any | None`：`None` 表示尚未构建，构建入口统一返回已构建对象，
+        # 使用点不再面对 Optional。
+        self._bm25: Any | None = None
         # 测试可注入 encoder 以避免网络访问；正式 runner 不传该参数。
-        self._embedder = embedding_encoder
-        self._reranker = None
-        self._chunk_embeddings = None
-        self._faiss_index = None
+        self._embedder: Any | None = embedding_encoder
+        self._reranker: Any | None = None
+        self._chunk_embeddings: Any | None = None
+        self._faiss_index: Any | None = None
         self._embedding_score_cache: dict[str, Any] = {}
         self._bm25_score_cache: dict[str, Any] = {}
         self._cache_hits = {"embedding": 0, "bm25": 0}
@@ -94,15 +98,19 @@ class Retriever:
         if use_embedding:
             self._build_embedding_index()
 
-    def _build_bm25(self) -> None:
-        """构建 BM25 索引。"""
+    def _build_bm25(self) -> Any:
+        """构建 BM25 索引并返回它。
+
+        返回而不是只写 `self._bm25`，使调用点可以直接拿到非 None 的对象。
+        """
         from rank_bm25 import BM25Okapi
 
         tokenized = [text.lower().split() for text in self._texts]
         self._bm25 = BM25Okapi(tokenized)
+        return self._bm25
 
-    def _build_embedding_index(self) -> None:
-        """构建 embedding + FAISS 索引。"""
+    def _build_embedding_index(self) -> Any:
+        """构建 embedding + FAISS 索引，返回 FAISS 索引。"""
         import faiss
         import numpy as np
         from sentence_transformers import SentenceTransformer
@@ -114,11 +122,13 @@ class Retriever:
                 device=self.actual_device,
             )
         embeddings = self._encode_texts(self._texts)
-        self._chunk_embeddings = np.array(embeddings, dtype=np.float32)
+        chunk_embeddings = np.array(embeddings, dtype=np.float32)
+        self._chunk_embeddings = chunk_embeddings
 
-        dim = self._chunk_embeddings.shape[1]
-        self._faiss_index = faiss.IndexFlatIP(dim)  # 内积 = cosine（已归一化）
-        self._faiss_index.add(self._chunk_embeddings)
+        index = faiss.IndexFlatIP(chunk_embeddings.shape[1])  # 内积 = cosine（已归一化）
+        index.add(chunk_embeddings)
+        self._faiss_index = index
+        return index
 
     def search(
         self,
@@ -231,18 +241,25 @@ class Retriever:
         return results
 
     def _encode_texts(self, texts: list[str]) -> Any:
+        embedder = self._embedder
+        if embedder is None:
+            # 只有 `_build_embedding_index` 与 `_get_embedding_scores` 会到这里，
+            # 二者都先保证 embedder 存在；显式报错好过 None 的 AttributeError。
+            raise RuntimeError(
+                "embedding model is not built; call build_index() first"
+            )
         kwargs = {
             "normalize_embeddings": True,
             "show_progress_bar": False,
             "batch_size": self.embedding_batch_size,
         }
         try:
-            return self._embedder.encode(texts, **kwargs)
+            return embedder.encode(texts, **kwargs)
         except TypeError as exc:
             if "batch_size" not in str(exc):
                 raise
             kwargs.pop("batch_size")
-            return self._embedder.encode(texts, **kwargs)
+            return embedder.encode(texts, **kwargs)
 
     def _get_bm25_scores(self, query: str) -> Any:
         """获取与 chunk 原始顺序对齐的 BM25 分数（归一化到 [0, 1]）。"""
@@ -253,10 +270,9 @@ class Retriever:
             self._cache_hits["bm25"] += 1
             return cached
         self._cache_misses["bm25"] += 1
-        if self._bm25 is None:
-            self._build_bm25()
+        bm25 = self._bm25 if self._bm25 is not None else self._build_bm25()
         tokenized_query = query.lower().split()
-        scores = self._bm25.get_scores(tokenized_query)
+        scores = bm25.get_scores(tokenized_query)
         max_score = max(scores.max(), 1e-8)
         normalized = np.array(scores, dtype=np.float32) / max_score
         self._bm25_score_cache[query] = normalized
@@ -276,10 +292,12 @@ class Retriever:
             return cached
         self._cache_misses["embedding"] += 1
         if self._embedder is None or self._faiss_index is None:
-            self._build_embedding_index()
+            index = self._build_embedding_index()
+        else:
+            index = self._faiss_index
         query_vec = self._encode_texts([query])
         query_vec = np.array(query_vec, dtype=np.float32)
-        ranked_scores, ranked_indices = self._faiss_index.search(query_vec, len(self._texts))
+        ranked_scores, ranked_indices = index.search(query_vec, len(self._texts))
         aligned_scores = np.zeros(len(self._texts), dtype=np.float32)
         aligned_scores[ranked_indices[0]] = ranked_scores[0]
         self._embedding_score_cache[query] = aligned_scores
@@ -320,24 +338,28 @@ class Retriever:
         Returns:
             rerank 后的 SearchResult 列表。
         """
-        if self._reranker is None:
+        reranker = self._reranker
+        if reranker is None:
             from sentence_transformers import CrossEncoder
 
-            self._reranker = CrossEncoder(
+            reranker = CrossEncoder(
                 self.rerank_model_name,
                 revision=self.rerank_model_revision,
                 device=self.actual_device,
             )
+            self._reranker = reranker
 
         # 只有带 chunk 的候选可以打分。必须先固定这个子集，再把分数写回同一个
         # 子集：早期版本按未过滤的 candidates 下标回写，任何 chunk=None 的候选
         # 都会让其后每个候选拿到别人的分数（静默错排，不报错）。
-        scorable = [c for c in candidates if c.chunk]
-        if not scorable:
+        # 同时保留 chunk 引用，避免在下面重复解包 Optional。
+        scorable_pairs = [(c, c.chunk) for c in candidates if c.chunk is not None]
+        if not scorable_pairs:
             return []
+        scorable = [candidate for candidate, _ in scorable_pairs]
 
-        pairs = [(query, c.chunk.text) for c in scorable]
-        scores = self._reranker.predict(pairs, batch_size=self.rerank_batch_size)
+        pairs = [(query, chunk.text) for _, chunk in scorable_pairs]
+        scores = reranker.predict(pairs, batch_size=self.rerank_batch_size)
 
         for candidate, score in zip(scorable, scores, strict=True):
             candidate.final_score = float(score)

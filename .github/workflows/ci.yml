@@ -39,11 +39,8 @@ jobs:
       - name: Pytest
         run: python -m pytest -q
 
-      # Non-blocking. `strict = true` in pyproject.toml is aspirational for this
-      # codebase: a strict run currently reports a large backlog of missing
-      # annotations that predates this workflow and must not gate unrelated
-      # changes. Left visible so the backlog can be burned down, and flipped to
-      # blocking once it reaches zero.
-      - name: Mypy (non-blocking backlog)
-        continue-on-error: true
+      # Blocking since 2026-07-26: the backlog reached zero (97 -> 14 -> 0), so
+      # `strict = true` in pyproject.toml is now enforced rather than aspirational.
+      # New untyped code should fail here instead of quietly re-growing the backlog.
+      - name: Mypy
         run: mypy src

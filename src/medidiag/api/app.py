@@ -301,10 +301,14 @@ def create_app(
         session: Session = Depends(get_session),
     ) -> Response:
         try:
-            payload = CaseCreateRequest(
-                question=question,
-                input_kind=input_kind,
-                source_ref=source_ref or None,
+            # 表单字段是未受信的字符串，收窄到 Literal 的是 pydantic 而不是
+            # 静态类型；用 model_validate 让校验发生在它该发生的地方。
+            payload = CaseCreateRequest.model_validate(
+                {
+                    "question": question,
+                    "input_kind": input_kind,
+                    "source_ref": source_ref or None,
+                }
             )
         except ValidationError as exc:
             raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
@@ -368,7 +372,10 @@ def create_app(
         session: Session = Depends(get_session),
     ) -> Response:
         try:
-            payload = HumanDecisionRequest(decision=decision, reason=reason)
+            # 同上：Literal 的收窄由 pydantic 在运行时完成。
+            payload = HumanDecisionRequest.model_validate(
+                {"decision": decision, "reason": reason}
+            )
         except ValidationError as exc:
             raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
         case = _case_or_404(session, case_id)

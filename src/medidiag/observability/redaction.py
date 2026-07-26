@@ -64,3 +64,13 @@ def sanitize(value: Any, key: str | None = None) -> Any:
     if isinstance(value, str):
         return redact_text(value)
     return value
+
+
+def sanitize_mapping(value: dict[str, Any]) -> dict[str, Any]:
+    """对映射脱敏并保持映射类型。
+
+    `sanitize` 处理任意 JSON 结构，返回类型只能是 `Any`。但不带 key 调用时
+    敏感键短路分支不可能命中，dict 分支必然返回 dict，因此这个包装可以给出
+    确切的返回类型，而不需要调用方 cast 或 assert。
+    """
+    return {item_key: sanitize(item, item_key) for item_key, item in value.items()}

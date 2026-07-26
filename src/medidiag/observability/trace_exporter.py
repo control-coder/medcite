@@ -22,7 +22,7 @@ from medidiag.db.models import (
     WorkflowTask,
 )
 from medidiag.errors import MediDiagError, get_error_spec
-from medidiag.observability.redaction import sanitize
+from medidiag.observability.redaction import sanitize, sanitize_mapping
 
 TRACE_SCHEMA_VERSION = "1.0"
 
@@ -189,7 +189,7 @@ class TraceExporter:
             ),
             "detail": detail,
         }
-        return self._sanitize(record)
+        return self._sanitize_mapping(record)
 
     @staticmethod
     def _find_artifact(
@@ -320,7 +320,7 @@ class TraceExporter:
                 else None
             ),
         }
-        return self._sanitize(summary)
+        return self._sanitize_mapping(summary)
 
     @staticmethod
     def _error_metadata(error_code: str | None) -> dict[str, Any]:
@@ -348,6 +348,11 @@ class TraceExporter:
     def _sanitize(cls, value: Any, key: str | None = None) -> Any:
         """Delegate to the shared contract in ``medidiag.observability.redaction``."""
         return sanitize(value, key)
+
+    @classmethod
+    def _sanitize_mapping(cls, value: dict[str, Any]) -> dict[str, Any]:
+        """Same contract, but keeps the mapping type for record builders."""
+        return sanitize_mapping(value)
 
     @staticmethod
     def _hash_text(value: str) -> str:
