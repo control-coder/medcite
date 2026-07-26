@@ -54,9 +54,22 @@ class AgentOutputCache:
     misses: int = 0
 
     def compute_hash(
-        self, question: str, evidence_ids: list[str], specialty: str
+        self,
+        experiment: str,
+        question: str,
+        evidence_ids: list[str],
+        specialty: str,
     ) -> str:
-        payload = f"{question}|{'-'.join(sorted(evidence_ids))}|{specialty}"
+        """Key on the experiment as well as the sample.
+
+        The agent arms share one retrieval profile, so a key without the
+        experiment name lets the second and third arm answer almost entirely
+        from cache. Their ``stage_latency_ms["generation"]`` would then measure
+        dictionary lookups, invalidating the topology comparison.
+        """
+        payload = (
+            f"{experiment}|{question}|{'-'.join(sorted(evidence_ids))}|{specialty}"
+        )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def get(self, input_hash: str) -> AgentOutput | None:
@@ -508,6 +521,9 @@ def _run_sample(
         return result
 
     result.generation_executed = True
+    # 正式 run 不接受把 provider 故障折算成弃权：AgentProviderError 必须
+    # 向上传播，终止运行并阻止 manifest 写出。
+    fail_closed = config["evaluation"]["mode"] == "formal"
     generation_started = time.perf_counter()
     outputs = _generate_outputs(
         topology,
@@ -521,6 +537,7 @@ def _run_sample(
         llm,
         cache,
         result,
+        fail_closed,
     )
     result.stage_latency_ms["generation"] = _elapsed_ms(generation_started)
     result.agent_abstained = any(output.abstain for output in outputs)
@@ -587,6 +604,7 @@ def _generate_outputs(
     llm: LLMClient | None,
     cache: AgentOutputCache,
     sample_result: SampleResult,
+    fail_closed: bool,
 ) -> list[AgentOutput]:
     if topology == "single":
         specialties = ["general_diagnosis"]
@@ -605,16 +623,18 @@ def _generate_outputs(
 
     outputs: list[AgentOutput] = []
     for specialty in specialties:
-        input_hash = cache.compute_hash(question, evidence_ids, specialty)
+        input_hash = cache.compute_hash(
+            sample_result.experiment, question, evidence_ids, specialty
+        )
         cached = cache.get(input_hash)
         if cached is not None:
             outputs.append(cached)
             sample_result.cache_hit = True
             continue
         agent = (
-            DiagnosisAgent(llm)
+            DiagnosisAgent(llm, fail_closed=fail_closed)
             if specialty == "general_diagnosis"
-            else SpecialistAgent(specialty, llm)
+            else SpecialistAgent(specialty, llm, fail_closed=fail_closed)
         )
         output = agent.generate(question, evidence, "", options)
         cache.set(input_hash, output)

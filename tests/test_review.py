@@ -17,6 +17,7 @@ from medidiag.review.citation import (
     CitationVerdict,
     CitationVerifier,
     JudgeInferenceError,
+    JudgeInitializationError,
 )
 from medidiag.review.logic import ClinicalLogicReviewer
 
@@ -117,6 +118,108 @@ class TestCitationVerifier:
         verifier._nli_pipeline = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom"))
         with pytest.raises(JudgeInferenceError, match="judge inference failed"):
             verifier.verify("claim", "evidence", "c1", "claim-1")
+
+    def test_unrecognised_runtime_label_raises_instead_of_unsupported(self) -> None:
+        """未知标签不得静默折叠为 UNSUPPORTED。"""
+        verifier = CitationVerifier(
+            model_name="test-judge",
+            model_revision="immutable-revision",
+            method="nli",
+        )
+        verifier._nli_pipeline = lambda *_args, **_kwargs: {
+            "label": "LABEL_0",
+            "score": 0.99,
+        }
+        with pytest.raises(JudgeInferenceError, match="unrecognised label"):
+            verifier.verify("claim", "evidence", "c1", "claim-1")
+
+
+# ===== 固定 NLI judge 标签集校验（fail-closed）=====
+
+
+class _FakeModelConfig:
+    def __init__(self, id2label: object) -> None:
+        if id2label is not None:
+            self.id2label = id2label
+
+
+class _FakeModel:
+    def __init__(self, id2label: object) -> None:
+        self.config = _FakeModelConfig(id2label)
+
+
+class _FakeNliPipeline:
+    def __init__(self, id2label: object) -> None:
+        self.model = _FakeModel(id2label)
+
+    def __call__(self, *_args, **_kwargs):
+        return {"label": "ENTAILMENT", "score": 0.9}
+
+
+def _verifier_loading(id2label: object) -> CitationVerifier:
+    verifier = CitationVerifier(
+        model_name="fixed-judge",
+        model_revision="b95119ce93d3e065de6214e38cd4a97b0f2f2c6d",
+        method="nli",
+        device="cpu",
+    )
+    verifier._load_pipeline = lambda: _FakeNliPipeline(id2label)  # type: ignore[method-assign]
+    return verifier
+
+
+@pytest.mark.parametrize(
+    "id2label",
+    [
+        {0: "ENTAILMENT", 1: "NEUTRAL", 2: "CONTRADICTION"},
+        {0: "entailment", 1: "neutral", 2: "contradiction"},
+        {0: "contradiction", 1: "entail", 2: "Neutral"},
+    ],
+)
+def test_initialize_accepts_recognisable_three_class_label_sets(id2label: dict) -> None:
+    verifier = _verifier_loading(id2label)
+    verifier.initialize()
+    assert verifier._nli_pipeline is not None
+
+
+@pytest.mark.parametrize(
+    "id2label",
+    [
+        # transformers 在 config 缺少显式标签时的默认值。子串映射会把
+        # 全部 claim 判为 UNSUPPORTED，产出看似合法的 Citation Precision。
+        {0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"},
+        # 二分类 judge：缺少 neutral。
+        {0: "entailment", 1: "not_entailment"},
+        # 标签集缺失。
+        None,
+        {},
+    ],
+)
+def test_initialize_rejects_unusable_label_sets(id2label: object) -> None:
+    verifier = _verifier_loading(id2label)
+    with pytest.raises(JudgeInitializationError):
+        verifier.initialize()
+    assert verifier._nli_pipeline is None
+
+
+def test_initialize_wraps_load_failure() -> None:
+    verifier = CitationVerifier(
+        model_name="missing-judge", model_revision="rev", method="nli", device="cpu"
+    )
+
+    def _boom():
+        raise OSError("model not found offline")
+
+    verifier._load_pipeline = _boom  # type: ignore[method-assign]
+    with pytest.raises(JudgeInitializationError, match="failed to load judge"):
+        verifier.initialize()
+
+
+def test_rule_fallback_initialize_does_not_require_labels() -> None:
+    verifier = CitationVerifier(
+        model_name="", model_revision="", method="rule_fallback", device="cpu"
+    )
+    verifier.initialize()
+    assert verifier._nli_pipeline is None
 
 
 # ===== ClinicalLogicReviewer 测试 =====

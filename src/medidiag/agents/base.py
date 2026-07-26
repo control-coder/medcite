@@ -189,6 +189,15 @@ class AgentOutput:
 MANDATORY_DISCLAIMER = "仅供学习和工程演示，不构成医疗建议。"
 
 
+class AgentProviderError(RuntimeError):
+    """Provider 基础设施故障，不是模型主动弃权。
+
+    fail-closed 的调用方（正式评测）必须让该异常向上传播并终止运行：
+    把 API key 失效或 provider 不可达折算成 ``abstain=True``，会让一次
+    形式上成功的 run 产出完全由故障构成的指标。
+    """
+
+
 class BaseAgent:
     """Agent 基类。
 
@@ -205,9 +214,13 @@ class BaseAgent:
         self,
         specialty: str,
         llm_client: LLMClient | None = None,
+        fail_closed: bool = False,
     ) -> None:
         self.specialty = specialty
         self.llm = llm_client
+        # fail_closed=True 时 provider 故障向上抛 AgentProviderError；默认的
+        # 宽松路径供开发、demo 和 dry-run 使用。
+        self.fail_closed = fail_closed
 
     def generate(
         self,
@@ -241,6 +254,11 @@ class BaseAgent:
                         raise
                     completion = self.llm.complete(prompt)
             except Exception as e:
+                if self.fail_closed:
+                    raise AgentProviderError(
+                        f"provider call failed for specialty={self.specialty}: "
+                        f"{type(e).__name__}: {e}"
+                    ) from e
                 return AgentOutput(
                     specialty=self.specialty,
                     uncertainty=f"LLM error: {e}",

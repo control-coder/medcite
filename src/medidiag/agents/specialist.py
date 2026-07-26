@@ -27,5 +27,8 @@ class SpecialistAgent(BaseAgent):
         self,
         specialty: str,
         llm_client: LLMClient | None = None,
+        fail_closed: bool = False,
     ) -> None:
-        super().__init__(specialty=specialty, llm_client=llm_client)
+        super().__init__(
+            specialty=specialty, llm_client=llm_client, fail_closed=fail_closed
+        )

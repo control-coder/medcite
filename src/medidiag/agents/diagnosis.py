@@ -22,7 +22,13 @@ class DiagnosisAgent(BaseAgent):
         output = agent.generate(case_question, evidence)
     """
 
-    def __init__(self, llm_client: LLMClient | None = None) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClient | None = None,
+        fail_closed: bool = False,
+    ) -> None:
         super().__init__(
-            specialty="general_diagnosis", llm_client=llm_client
+            specialty="general_diagnosis",
+            llm_client=llm_client,
+            fail_closed=fail_closed,
         )

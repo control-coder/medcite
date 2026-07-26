@@ -47,6 +47,63 @@ class CitationResult:
 
 NLI_MAX_LENGTH = 512
 
+# 固定 NLI judge 必须暴露的三分类语义。只接受可识别为这三类的标签集，
+# 拒绝 transformers 在 config 缺少显式标签时使用的 LABEL_0/1/2 默认值。
+NLI_CANONICAL_LABELS = ("entailment", "neutral", "contradiction")
+
+_NLI_VERDICT_BY_LABEL = {
+    "entailment": CitationVerdict.SUPPORTED,
+    "neutral": CitationVerdict.PARTIAL,
+    "contradiction": CitationVerdict.UNSUPPORTED,
+}
+
+
+def canonical_nli_label(label: str) -> str | None:
+    """把 provider 标签归一为三分类之一，无法识别时返回 None。
+
+    只做前缀识别（``ENTAILMENT`` / ``entail`` / ``CONTRADICTION`` 等大小写与
+    连字符变体），不做包含匹配：``LABEL_0``、``not_entailment`` 这类标签必须
+    识别失败，否则会把未知语义静默折叠成 ``UNSUPPORTED``。
+    """
+    normalized = str(label).strip().lower().replace("-", "_").replace(" ", "_")
+    for prefix, canonical in (
+        ("entail", "entailment"),
+        ("neutral", "neutral"),
+        ("contradict", "contradiction"),
+    ):
+        if normalized.startswith(prefix):
+            return canonical
+    return None
+
+
+def validate_nli_label_set(id2label: object, judge_ref: str) -> dict[int, str]:
+    """校验 judge 暴露的 ``id2label`` 是完整的三分类 NLI 标签集。
+
+    Raises:
+        JudgeInitializationError: 标签缺失、数量不为 3 或无法识别为
+            entailment / neutral / contradiction。
+    """
+    if not isinstance(id2label, dict) or not id2label:
+        raise JudgeInitializationError(
+            f"judge {judge_ref} does not expose an id2label mapping; "
+            "a fixed NLI judge must declare its label set"
+        )
+    canonical = {}
+    for key, raw_label in id2label.items():
+        label = canonical_nli_label(raw_label)
+        if label is None:
+            raise JudgeInitializationError(
+                f"judge {judge_ref} exposes unrecognised NLI label {raw_label!r}; "
+                f"expected labels resolvable to {NLI_CANONICAL_LABELS}"
+            )
+        canonical[key] = label
+    if set(canonical.values()) != set(NLI_CANONICAL_LABELS):
+        raise JudgeInitializationError(
+            f"judge {judge_ref} exposes label set {sorted(set(canonical.values()))}; "
+            f"expected exactly {sorted(NLI_CANONICAL_LABELS)}"
+        )
+    return canonical
+
 
 class CitationVerifier:
     """Verify citations using a fixed NLI judge or an explicit dev fallback.
@@ -79,18 +136,36 @@ class CitationVerifier:
         if self.method == "rule_fallback" or self._nli_pipeline is not None:
             return
         try:
-            from transformers import pipeline
-
-            self._nli_pipeline = pipeline(
-                "text-classification",
-                model=self.model_name,
-                revision=self.model_revision,
-                device=0 if self.actual_device == "cuda" else -1,
-            )
+            loaded = self._load_pipeline()
         except Exception as exc:
             raise JudgeInitializationError(
-                f"failed to load judge {self.model_name}@{self.model_revision}: {exc}"
+                f"failed to load judge {self.judge_ref}: {exc}"
             ) from exc
+        # 标签集校验必须在任何 claim 被判定之前完成：若模型只暴露
+        # LABEL_0/1/2，子串映射会把全部 claim 静默判为 UNSUPPORTED，
+        # 产出一个看似合法的 Citation Precision。
+        validate_nli_label_set(self._pipeline_id2label(loaded), self.judge_ref)
+        self._nli_pipeline = loaded
+
+    @property
+    def judge_ref(self) -> str:
+        return f"{self.model_name}@{self.model_revision}"
+
+    def _load_pipeline(self) -> object:
+        """Load the fixed judge. Overridden in tests to avoid a model download."""
+        from transformers import pipeline
+
+        return pipeline(
+            "text-classification",
+            model=self.model_name,
+            revision=self.model_revision,
+            device=0 if self.actual_device == "cuda" else -1,
+        )
+
+    @staticmethod
+    def _pipeline_id2label(loaded: object) -> object:
+        config = getattr(getattr(loaded, "model", None), "config", None)
+        return getattr(config, "id2label", None)
 
     def verify(
         self,
@@ -204,14 +279,16 @@ class CitationVerifier:
             raise JudgeInferenceError(
                 f"judge output is not a mapping for claim={claim_id}, chunk={chunk_id}"
             )
-        label = str(result.get("label", "")).upper()
+        label = str(result.get("label", ""))
         score = float(result.get("score", 0.0))
-        if "ENTAIL" in label:
-            verdict = CitationVerdict.SUPPORTED
-        elif "NEUTRAL" in label:
-            verdict = CitationVerdict.PARTIAL
-        else:
-            verdict = CitationVerdict.UNSUPPORTED
+        canonical = canonical_nli_label(label)
+        if canonical is None:
+            # fail-closed：未知标签不得折叠为 UNSUPPORTED，否则判定结果不可解释。
+            raise JudgeInferenceError(
+                f"judge {self.judge_ref} returned unrecognised label {label!r} "
+                f"for claim={claim_id}, chunk={chunk_id}"
+            )
+        verdict = _NLI_VERDICT_BY_LABEL[canonical]
         return CitationResult(
             claim_id=claim_id,
             claim_text=claim,
