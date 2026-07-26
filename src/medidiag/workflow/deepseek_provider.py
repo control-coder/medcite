@@ -40,7 +40,12 @@ class DeepSeekWorkflowProvider:
     """
 
     def __init__(self, client: LLMClient | None = None) -> None:
-        self.client = client or LLMClient()
+        # This provider is always driven by ProviderCallRunner, which owns the
+        # bounded retry budget and writes one audited provider_call event per
+        # attempt. Leaving LLMClient's own retries enabled would multiply the two
+        # layers (3 x 3 = 9 upstream calls) and hide the inner attempts from the
+        # audit log, so the default client retries zero times.
+        self.client = client or LLMClient(max_retries=0)
         self.version = f"deepseek-live-demo:{self.client.model}"
         self._guard = ComplianceGuard()
 

@@ -269,3 +269,62 @@ def test_provider_crash_after_normalize_recovers_from_persisted_stage(runtime) -
             )
         ).scalars())
         assert len(normalize_artifacts) == 1
+
+
+def test_generation_transport_error_escalates_with_network_error_code(runtime) -> None:
+    """A DNS/connection failure must be classified, not propagated as a raw httpx error."""
+
+    class UnreachableGenerationProvider(DeterministicWorkflowProvider):
+        def generate(self, question: str, retrieval: dict, plan: dict):
+            raise httpx.ConnectError(
+                "getaddrinfo failed",
+                request=httpx.Request("POST", "https://provider.invalid/v1/chat"),
+            )
+
+    _, factory = runtime
+    case_id, task_id = _create_task(factory, "generation-network-error")
+    worker = SingleMachineWorker(
+        factory,
+        UnreachableGenerationProvider(),
+        worker_id="network-worker",
+        call_runner=ProviderCallRunner(sleep=lambda _: None),
+    )
+
+    result = worker.run_once()
+    assert result.processed is True
+    assert result.final_state == "ESCALATED"
+
+    with factory() as session:
+        attempts = [
+            event.detail
+            for event in session.execute(
+                select(CaseEventLog)
+                .where(
+                    CaseEventLog.case_id == case_id,
+                    CaseEventLog.event_type == "provider_call",
+                )
+                .order_by(CaseEventLog.id)
+            ).scalars()
+            if event.detail["stage"] == "generation"
+        ]
+        assert len(attempts) == 3
+        assert all(item["error_code"] == "PROVIDER_NETWORK_ERROR" for item in attempts)
+        assert [item["retry_decision"] for item in attempts] == [
+            "retry", "retry", "exhausted"
+        ]
+
+        failed = session.execute(
+            select(CaseEventLog).where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "stage_failed",
+            )
+        ).scalars().all()
+        assert [event.detail["stage"] for event in failed] == ["generation"]
+        assert failed[0].detail["error_code"] == "PROVIDER_NETWORK_ERROR"
+
+        case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
+        assert case.status == "ESCALATED"
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one()
+        assert task.status == "FAILED"

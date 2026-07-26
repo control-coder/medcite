@@ -253,6 +253,16 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=True,
         description="外部 provider 返回 429 限流。",
     ),
+    "PROVIDER_NETWORK_ERROR": ErrorSpec(
+        code="PROVIDER_NETWORK_ERROR",
+        http_status=503,
+        category=ErrorCategory.DEPENDENCY,
+        retryable=True,
+        default_action="按有限退避重试；耗尽后保留任务供租约恢复，不无限重试。",
+        requires_human_escalation=False,
+        alert=True,
+        description="调用外部 provider 时发生传输层故障（DNS 解析失败、连接被拒、连接中断等），未收到 HTTP 响应。",
+    ),
     "PROVIDER_RESPONSE_ID_MISSING": ErrorSpec(
         code="PROVIDER_RESPONSE_ID_MISSING",
         http_status=502,

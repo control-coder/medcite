@@ -125,3 +125,48 @@ def test_non_retryable_http_error_is_rejected_immediately() -> None:
 
     assert caught.value.code == "PROVIDER_REQUEST_REJECTED"
     assert calls == 1
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        httpx.ConnectError("dns failure"),
+        httpx.ReadError("connection reset"),
+        httpx.RemoteProtocolError("server disconnected"),
+    ],
+)
+def test_transport_errors_are_classified_and_retried(error: httpx.RequestError) -> None:
+    """Transport failures never reach an HTTP response, so they need their own code."""
+    calls = 0
+    audit = []
+
+    def operation():
+        nonlocal calls
+        calls += 1
+        raise error
+
+    runner = ProviderCallRunner(max_attempts=3, backoff_seconds=(0, 0), sleep=lambda _: None)
+    with pytest.raises(MediDiagError) as caught:
+        runner.call("generation", operation, on_attempt=audit.append)
+
+    assert caught.value.code == "PROVIDER_NETWORK_ERROR"
+    assert calls == 3
+    assert len(audit) == 3
+    assert [item.retry_decision for item in audit] == ["retry", "retry", "exhausted"]
+    assert all(item.error_code == "PROVIDER_NETWORK_ERROR" for item in audit)
+    assert all(item.retryable is True for item in audit)
+    # No response was received, so there is nothing to correlate or report.
+    assert all(item.http_status is None and item.request_id is None for item in audit)
+
+
+def test_timeout_is_classified_before_the_generic_transport_branch() -> None:
+    """TimeoutException subclasses RequestError; the timeout mapping must still win."""
+
+    def operation():
+        raise httpx.ConnectTimeout("timed out while connecting")
+
+    runner = ProviderCallRunner(max_attempts=1, backoff_seconds=(), sleep=lambda _: None)
+    with pytest.raises(MediDiagError) as caught:
+        runner.call("retrieval", operation)
+
+    assert caught.value.code == "RAG_TIMEOUT"

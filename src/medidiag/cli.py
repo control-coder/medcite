@@ -99,7 +99,14 @@ def worker(
     )
     try:
         while True:
-            result = runner.run_once()
+            try:
+                result = runner.run_once()
+            except Exception as exc:  # a single bad task must not kill the worker
+                click.echo(f"worker error: {exc}", err=True)
+                if once:
+                    raise click.exceptions.Exit(1) from exc
+                time.sleep(1.0)
+                continue
             click.echo(
                 f"processed={result.processed} task_id={result.task_id} "
                 f"state={result.final_state}"

@@ -151,7 +151,14 @@ class ProviderCallRunner:
                 raw = operation()
                 response = raw if isinstance(raw, ProviderResponse) else ProviderResponse(raw)
                 payload = self._validate(stage, response.payload)
-            except (MediDiagError, httpx.TimeoutException, httpx.HTTPStatusError, ValidationError) as exc:
+            except (
+                MediDiagError,
+                httpx.HTTPStatusError,
+                # RequestError covers every transport failure, including
+                # TimeoutException; _classify keeps the timeout branch first.
+                httpx.RequestError,
+                ValidationError,
+            ) as exc:
                 error_code, request_id, http_status = self._classify(stage, exc)
                 spec = get_error_spec(error_code)
                 will_retry = spec.retryable and number < self.max_attempts
@@ -214,14 +221,20 @@ class ProviderCallRunner:
     @staticmethod
     def _classify(
         stage: str,
-        exc: MediDiagError | httpx.TimeoutException | httpx.HTTPStatusError | ValidationError,
+        exc: MediDiagError | httpx.HTTPStatusError | httpx.RequestError | ValidationError,
     ) -> tuple[str, str | None, int | None]:
         if isinstance(exc, MediDiagError):
             return exc.code, None, None
         if isinstance(exc, ValidationError):
             return "PROVIDER_SCHEMA_INVALID", None, None
+        # TimeoutException is a RequestError subclass, so it must be matched
+        # before the generic transport branch below.
         if isinstance(exc, httpx.TimeoutException):
             return _TIMEOUT_CODES.get(stage, "LLM_TIMEOUT"), None, None
+        if isinstance(exc, httpx.RequestError):
+            # ConnectError / ReadError / RemoteProtocolError / ... — no HTTP
+            # response was received, so there is no status or request ID.
+            return "PROVIDER_NETWORK_ERROR", None, None
 
         response = exc.response
         request_id = next(
