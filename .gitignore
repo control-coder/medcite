@@ -49,6 +49,10 @@ medidiag.db
 # ===== Caches =====
 .cache/
 .pytest_cache/
+# Ad-hoc pytest basetemp dirs. Ignored so that eval.runner._git_diff_hash, which
+# hashes every untracked non-ignored file into a formal run's dirty_diff_hash,
+# can never fold leftover test scratch data into run provenance.
+.pytest-tmp*/
 .mypy_cache/
 .ruff_cache/
 .cache/huggingface/
