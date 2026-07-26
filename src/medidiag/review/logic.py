@@ -133,18 +133,22 @@ class ClinicalLogicReviewer:
             details=details,
         )
 
+    @staticmethod
     def should_escalate(
-        self,
         consecutive_failures: int,
+        max_rounds: int = MAX_CONSECUTIVE_FAILURES,
     ) -> bool:
         """判断是否应该升级人工。
 
-        连续失败超过 MAX_CONSECUTIVE_FAILURES 进入人工升级，不进死状态。
+        连续失败达到 max_rounds 进入人工升级，不进死状态。
+        SingleMachineWorker 用运行时配置的 max_review_rounds 调用本函数，
+        使复核轮次上限只有这一处判定逻辑。
 
         Args:
             consecutive_failures: 连续审核失败次数。
+            max_rounds: 上限轮次，默认为 MAX_CONSECUTIVE_FAILURES。
 
         Returns:
             True 如果应该升级。
         """
-        return consecutive_failures >= MAX_CONSECUTIVE_FAILURES
+        return consecutive_failures >= max_rounds

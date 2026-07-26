@@ -96,6 +96,7 @@ def worker(
         factory,
         _build_provider(provider_name, review_verdict),
         worker_id=worker_id,
+        max_review_rounds=get_settings().medidiag_max_review_rounds,
     )
     try:
         while True:
@@ -143,7 +144,12 @@ def demo(host: str, port: int, provider_name: str) -> None:
     init_db(engine)
     factory = get_session_factory(engine)
     provider = _build_provider(provider_name, "APPROVED")
-    runner = SingleMachineWorker(factory, provider, worker_id="demo-worker")
+    runner = SingleMachineWorker(
+        factory,
+        provider,
+        worker_id="demo-worker",
+        max_review_rounds=get_settings().medidiag_max_review_rounds,
+    )
     stop = threading.Event()
     worker_thread = threading.Thread(
         target=_demo_worker_loop,

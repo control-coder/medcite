@@ -20,6 +20,7 @@ from medidiag.db.models import (
     WorkflowTask,
 )
 from medidiag.errors import MediDiagError
+from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.provider import WorkflowProvider
@@ -84,12 +85,16 @@ class SingleMachineWorker:
         worker_id: str = "local-worker",
         executor: WorkflowExecutor | None = None,
         call_runner: ProviderCallRunner | None = None,
+        max_review_rounds: int = 3,
     ) -> None:
+        if max_review_rounds < 1:
+            raise ValueError("max_review_rounds must be at least 1")
         self.session_factory = session_factory
         self.provider = provider
         self.worker_id = worker_id
         self.executor = executor or WorkflowExecutor()
         self.call_runner = call_runner or ProviderCallRunner()
+        self.max_review_rounds = max_review_rounds
 
     def run_once(self) -> WorkerRunResult:
         with self.session_factory() as session:
@@ -320,6 +325,16 @@ class SingleMachineWorker:
                     latency = outcome.elapsed_ms
                     verdict = payload["verdict"]
                     target = CaseState(verdict)
+                    # A provider that keeps asking for revisions would otherwise
+                    # cycle REVISION_REQUIRED -> PLAN_GENERATED forever.
+                    round_number = case.review_round + 1
+                    capped = target == CaseState.REVISION_REQUIRED and (
+                        ClinicalLogicReviewer.should_escalate(
+                            round_number, self.max_review_rounds
+                        )
+                    )
+                    if capped:
+                        target = CaseState.ESCALATED
                     records = [
                         self._artifact(case, task, "review", arbitration, payload, latency),
                         Review(
@@ -327,7 +342,7 @@ class SingleMachineWorker:
                             review_type="workflow",
                             reviewer=self.provider.version,
                             result=verdict,
-                            round=case.review_round + 1,
+                            round=round_number,
                             detail=payload,
                         ),
                     ]
@@ -357,10 +372,26 @@ class SingleMachineWorker:
                         subject=TriggerSubject.REVIEWER_WORKER,
                         stage="review",
                         records=records,
-                        case_values={"review_round": case.review_round + 1},
-                        detail={"verdict": verdict, **self._provider_detail(outcome)},
+                        case_values={"review_round": round_number},
+                        detail={
+                            "verdict": verdict,
+                            "review_round": round_number,
+                            "max_review_rounds": self.max_review_rounds,
+                            **(
+                                {"error_code": "MAX_REVIEW_ROUNDS_EXCEEDED"}
+                                if capped
+                                else {}
+                            ),
+                            **self._provider_detail(outcome),
+                        },
                         complete_task=complete,
-                        task_result={"outcome": verdict} if complete else None,
+                        task_result={
+                            "outcome": (
+                                "MAX_REVIEW_ROUNDS_EXCEEDED" if capped else verdict
+                            )
+                        }
+                        if complete
+                        else None,
                     )
                     if complete:
                         return WorkerRunResult(True, task.task_id, case.case_id, target.value)

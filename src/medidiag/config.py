@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     medidiag_lease_seconds: int = 60
     medidiag_heartbeat_seconds: int = 20
     medidiag_lease_scan_seconds: int = 30
+    # 复核轮次上限。与 eval/config.yaml 的 workflow.review.max_review_rounds
+    # 有意重复：运行时 worker 只读 Settings，评测器只读该 YAML，两条链路互不
+    # 依赖。改动其一时需同步另一处。
+    medidiag_max_review_rounds: int = 3
 
     # Logging
     log_level: str = "INFO"

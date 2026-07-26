@@ -402,3 +402,74 @@ def test_lease_loss_is_not_swallowed_as_a_stage_failure(runtime) -> None:
     with pytest.raises(MediDiagError) as caught:
         worker.run_once()
     assert caught.value.code == "TASK_LEASE_LOST"
+
+
+def test_review_rounds_are_capped_and_escalate(runtime) -> None:
+    """A provider stuck on REVISION_REQUIRED must escalate, not loop forever."""
+    _, factory = runtime
+    case_id, task_id = _create_task(factory, "review-round-cap")
+    executor = WorkflowExecutor()
+
+    def _run() -> str:
+        return SingleMachineWorker(
+            factory,
+            DeterministicWorkflowProvider(review_verdict="REVISION_REQUIRED"),
+            worker_id="round-cap-worker",
+            max_review_rounds=3,
+        ).run_once().final_state
+
+    # Rounds 1 and 2 park the case for revision; each needs a fresh workflow task.
+    for round_number in (1, 2):
+        assert _run() == "REVISION_REQUIRED"
+        with factory() as session:
+            case = session.execute(
+                select(Case).where(Case.case_id == case_id)
+            ).scalar_one()
+            assert case.review_round == round_number
+            executor.start_workflow(
+                session, case_id, "case_workflow",
+                f"review-round-cap-{round_number}", "input-hash",
+            )
+
+    # Round 3 reaches the cap and escalates instead of requesting revision again.
+    assert _run() == "ESCALATED"
+
+    with factory() as session:
+        case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
+        assert case.status == "ESCALATED"
+        assert case.review_round == 3
+
+        reviews = session.execute(
+            select(CaseEventLog)
+            .where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "stage_completed",
+            )
+            .order_by(CaseEventLog.id)
+        ).scalars().all()
+        capped = [
+            event.detail for event in reviews
+            if event.detail.get("error_code") == "MAX_REVIEW_ROUNDS_EXCEEDED"
+        ]
+        assert len(capped) == 1
+        assert capped[0]["review_round"] == 3
+        assert capped[0]["max_review_rounds"] == 3
+        # The provider still said REVISION_REQUIRED; only the target was redirected.
+        assert capped[0]["verdict"] == "REVISION_REQUIRED"
+
+
+def test_review_round_cap_is_configurable(runtime) -> None:
+    """max_review_rounds=1 escalates on the very first revision request."""
+    _, factory = runtime
+    case_id, _ = _create_task(factory, "review-round-cap-1")
+    result = SingleMachineWorker(
+        factory,
+        DeterministicWorkflowProvider(review_verdict="REVISION_REQUIRED"),
+        worker_id="round-cap-1-worker",
+        max_review_rounds=1,
+    ).run_once()
+    assert result.final_state == "ESCALATED"
+    with factory() as session:
+        case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
+        assert case.status == "ESCALATED"
+        assert case.review_round == 1
