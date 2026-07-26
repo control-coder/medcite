@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+import types
 from datetime import timedelta
 
 import httpx
@@ -17,7 +19,9 @@ from medidiag.db.models import (
     WorkflowTask,
 )
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
+from medidiag.errors import MediDiagError
 from medidiag.workflow.executor import WorkflowExecutor
+from medidiag.workflow.lease import LeaseHeartbeat, LeaseManager
 from medidiag.workflow.provider import DeterministicWorkflowProvider
 from medidiag.workflow.provider_runtime import ProviderCallRunner, ProviderResponse
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
@@ -513,3 +517,154 @@ def test_compliance_block_escalation_records_its_own_error_code(runtime) -> None
             select(WorkflowTask).where(WorkflowTask.case_id == case_id)
         ).scalar_one()
         assert task.result == {"outcome": "COMPLIANCE_BLOCKED"}
+
+
+# ===== 租约心跳（DD-020）=====
+
+
+class _SlowNormalizeProvider(DeterministicWorkflowProvider):
+    """normalize 阶段刻意慢于 lease_seconds，用于验证心跳续期。"""
+
+    def __init__(self, delay_seconds: float) -> None:
+        self.delay_seconds = delay_seconds
+
+    def normalize(self, question: str):
+        time.sleep(self.delay_seconds)
+        return super().normalize(question)
+
+
+def _short_lease_worker(factory, provider, worker_id: str) -> SingleMachineWorker:
+    # lease 2s / heartbeat 1s 是构造校验允许的最短可用组合
+    # （heartbeat 必须 >=1 且 < lease）。
+    return SingleMachineWorker(
+        factory,
+        provider,
+        worker_id=worker_id,
+        executor=WorkflowExecutor(
+            LeaseManager(lease_seconds=2, heartbeat_seconds=1, scan_interval_seconds=1)
+        ),
+    )
+
+
+def test_stage_longer_than_the_lease_survives(runtime) -> None:
+    """单个阶段长于 lease_seconds 时，心跳必须让它活下来。
+
+    这是 DD-020 记录的缺口：租约此前只在阶段之间续期，因此一次超过
+    ``lease_seconds`` 的 provider 调用会在仍在执行时被扫描器接管，随后
+    ``commit_stage`` 的条件 UPDATE 拒绝写入并记 ``TASK_LEASE_LOST``。
+    """
+    _, factory = runtime
+    case_id, task_id = _create_task(factory, "heartbeat-long-stage")
+    # 3s 阶段对 2s 租约：没有心跳时租约必然在阶段结束前过期。
+    result = _short_lease_worker(
+        factory, _SlowNormalizeProvider(3.0), "heartbeat-worker"
+    ).run_once()
+
+    assert result.processed is True
+    assert result.final_state == "CLOSED_SUCCESS"
+
+    with factory() as session:
+        case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
+        assert case.status == "CLOSED_SUCCESS"
+        lease_lost = session.execute(
+            select(CaseEventLog).where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "lease_lost",
+            )
+        ).scalars().all()
+        assert lease_lost == []
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one()
+        assert task.status == "SUCCEEDED"
+
+
+def test_without_the_heartbeat_the_same_stage_loses_the_lease(runtime) -> None:
+    """对照组：证明上一个测试测的是心跳，而不是宽松的租约判定。"""
+    _, factory = runtime
+    _create_task(factory, "heartbeat-control")
+    worker = _short_lease_worker(
+        factory, _SlowNormalizeProvider(3.0), "control-worker"
+    )
+    # 停掉心跳线程，其余完全一致。
+    worker._invoke = types.MethodType(
+        lambda self, session, case, task, stage, operation: self.call_runner.call(
+            stage,
+            operation,
+            on_attempt=lambda attempt: self._record_provider_attempt(
+                session, case, task, attempt
+            ),
+        ),
+        worker,
+    )
+
+    with pytest.raises(MediDiagError) as caught:
+        worker.run_once()
+    assert caught.value.code == "TASK_LEASE_LOST"
+
+
+def test_heartbeat_stops_renewing_after_its_budget(runtime) -> None:
+    """心跳有上界：卡死的调用不能被无限续期，否则任务永远无法被接管。"""
+    _, factory = runtime
+    _create_task(factory, "heartbeat-budget")
+    worker = _short_lease_worker(
+        factory, _SlowNormalizeProvider(3.0), "budget-worker"
+    )
+    # 预算短于阶段时长：心跳应放弃续期，租约随之过期。
+    worker.heartbeat_max_seconds = 1.0
+
+    with pytest.raises(MediDiagError) as caught:
+        worker.run_once()
+    assert caught.value.code == "TASK_LEASE_LOST"
+
+
+def test_heartbeat_reports_a_rejected_renewal(runtime) -> None:
+    """续期被拒（另一 worker 已接管）时，心跳必须把租约标记为已丢失。"""
+    _, factory = runtime
+    case_id, task_id = _create_task(factory, "heartbeat-rejected")
+    lease = LeaseManager(lease_seconds=2, heartbeat_seconds=1, scan_interval_seconds=1)
+    with factory() as session:
+        assert lease.acquire(session, task_id, "owner-worker") is True
+        attempt = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one().attempt
+
+    # owner 不匹配：续期条件 UPDATE 命中 0 行。
+    heartbeat = LeaseHeartbeat(
+        factory, lease, task_id=task_id, worker_id="other-worker", attempt=attempt
+    )
+    with heartbeat:
+        time.sleep(1.5)
+    assert heartbeat.lease_lost is True
+    assert heartbeat.renewals == 0
+    assert case_id
+
+
+def test_heartbeat_uses_its_own_session(runtime) -> None:
+    """心跳不得复用 worker 的会话：Session 非线程安全，且外部 IO 不进事务。"""
+    _, factory = runtime
+    _, task_id = _create_task(factory, "heartbeat-session")
+    lease = LeaseManager(lease_seconds=2, heartbeat_seconds=1, scan_interval_seconds=1)
+    with factory() as session:
+        assert lease.acquire(session, task_id, "owner-worker") is True
+        attempt = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one().attempt
+
+    opened: list[int] = []
+    original = factory
+
+    def _tracking_factory():
+        opened.append(1)
+        return original()
+
+    heartbeat = LeaseHeartbeat(
+        _tracking_factory, lease, task_id=task_id, worker_id="owner-worker",
+        attempt=attempt,
+    )
+    with heartbeat:
+        time.sleep(1.5)
+    assert heartbeat.lease_lost is False
+    assert heartbeat.renewals >= 1
+    # 每次续期都自取会话，没有共用调用方的 Session。
+    assert len(opened) >= 1

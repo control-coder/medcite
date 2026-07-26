@@ -26,6 +26,7 @@ from medidiag.observability.logging import get_logger
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
+from medidiag.workflow.lease import LeaseHeartbeat
 from medidiag.workflow.provider import WorkflowProvider
 from medidiag.workflow.provider_runtime import (
     ProviderAttempt,
@@ -93,6 +94,7 @@ class SingleMachineWorker:
         executor: WorkflowExecutor | None = None,
         call_runner: ProviderCallRunner | None = None,
         max_review_rounds: int = 3,
+        heartbeat_max_seconds: float | None = None,
     ) -> None:
         if max_review_rounds < 1:
             raise ValueError("max_review_rounds must be at least 1")
@@ -102,6 +104,9 @@ class SingleMachineWorker:
         self.executor = executor or WorkflowExecutor()
         self.call_runner = call_runner or ProviderCallRunner()
         self.max_review_rounds = max_review_rounds
+        # None 表示用 LeaseHeartbeat 的默认上界（HEARTBEAT_MAX_LEASE_PERIODS
+        # 个租约周期）。显式传参主要供测试缩短等待。
+        self.heartbeat_max_seconds = heartbeat_max_seconds
 
     def run_once(self) -> WorkerRunResult:
         with self.session_factory() as session:
@@ -576,16 +581,39 @@ class SingleMachineWorker:
         stage: str,
         operation: Callable[[], dict[str, Any] | ProviderResponse],
     ) -> ProviderCallOutcome:
+        # 心跳在整个 provider 调用（含有界重试）期间用独立会话续期，因此单个阶段
+        # 长于 lease_seconds 不再导致任务被扫描器接管。DD-020。
+        heartbeat = LeaseHeartbeat(
+            self.session_factory,
+            self.executor.lease,
+            task_id=task.task_id,
+            worker_id=self.worker_id,
+            attempt=task.attempt,
+            max_seconds=self.heartbeat_max_seconds,
+        )
         try:
-            return self.call_runner.call(
-                stage,
-                operation,
-                on_attempt=lambda attempt: self._record_provider_attempt(
-                    session, case, task, attempt
-                ),
-            )
+            with heartbeat:
+                outcome = self.call_runner.call(
+                    stage,
+                    operation,
+                    on_attempt=lambda attempt: self._record_provider_attempt(
+                        session, case, task, attempt
+                    ),
+                )
         except MediDiagError as exc:
             raise _StageFailure(stage, exc) from exc
+        # 租约丢失与阶段失败必须区分：前者意味着任务已被别的 worker 接管，本
+        # worker 不得写入，因此不能走 _StageFailure 的升级路径。
+        if heartbeat.lease_lost or heartbeat.gave_up:
+            raise MediDiagError(
+                "TASK_LEASE_LOST",
+                detail=(
+                    f"lease heartbeat stopped during stage {stage}: "
+                    f"{'renewal rejected' if heartbeat.lease_lost else 'exceeded heartbeat budget'}"
+                ),
+                context={"task_id": task.task_id, "stage": stage},
+            )
+        return outcome
 
     def _record_provider_attempt(
         self,

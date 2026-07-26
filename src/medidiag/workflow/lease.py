@@ -15,10 +15,13 @@ PLAN.md 租约策略:
 
 from __future__ import annotations
 
+import threading
+import time
 from datetime import UTC, datetime, timedelta
+from types import TracebackType
 
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.config import get_settings
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
@@ -44,14 +47,9 @@ class LeaseManager:
     显式传参优先。此前三个环境变量中只有 scan 被真正读取，另外两个是声明了
     但不起作用的配置项。
 
-    **心跳缺口（已知限制，未实现）**：租约只在阶段之间由
-    ``SingleMachineWorker._renew`` 续期，外部 IO 期间没有独立心跳线程。因此
-    单个阶段的 provider 调用如果超过 ``lease_seconds``，扫描器会在该阶段仍在
-    执行时接管任务；此时旧 worker 的写入会被 ``commit_stage`` /
-    ``write_external_result`` 的条件 UPDATE 拒绝并记为 ``TASK_LEASE_LOST``，
-    不会造成脑裂双写，但会浪费一次调用。当前的边界是「租约必须长于最慢的单个
-    阶段」，由 ``heartbeat_seconds < lease_seconds`` 的构造校验提示该关系。
-    引入心跳线程需要独立的会话与生命周期管理，属于后续工作。
+    外部 IO 期间的续期由 :class:`LeaseHeartbeat` 承担（见 DD-020）：阶段之间
+    仍由 ``SingleMachineWorker._renew`` 续期，单次 provider 调用期间则由心跳
+    线程用独立会话续期，因此「租约必须长于最慢的单个阶段」这一运行边界不再成立。
     """
 
     def __init__(
@@ -350,3 +348,129 @@ class LeaseManager:
             True 如果租约已丢失（写入应被丢弃）。
         """
         return not self.validate_lease(session, task_id, worker_id, attempt)
+
+
+# 心跳最多续期到 `HEARTBEAT_MAX_LEASE_PERIODS * lease_seconds`。这个上界是刻意
+# 保留的：无上界的心跳会让一个卡死的 provider 调用永远续期下去，任务再也不会被
+# 扫描器接管——那是把「浪费一次调用」换成了「永久卡住」，比原来的缺口更糟。
+HEARTBEAT_MAX_LEASE_PERIODS = 10
+
+
+class LeaseHeartbeat:
+    """provider 调用期间用后台线程续期租约（DD-020）。
+
+    此前租约只在阶段之间续期，单个阶段的 provider 调用超过 ``lease_seconds``
+    时，扫描器会在该阶段仍在执行时接管任务；旧 worker 的写入随后被
+    ``commit_stage`` 的条件 UPDATE 拒绝——不会脑裂双写，但会白白浪费一次调用。
+    默认配置的边际很窄：60s 租约对 60s provider 超时，加上有界重试后必然越界。
+
+    **使用独立会话**：worker 的 ``Session`` 归 worker 线程所有，SQLAlchemy 的
+    Session 不是线程安全的，而且外部 IO 期间 worker 事务的状态不该被另一个线程
+    改写。心跳从 ``session_factory`` 自取会话并在每次续期后提交。跨线程写同一行
+    由 DD-021 的 ``journal_mode=WAL`` 与 ``busy_timeout`` 兜底。
+
+    用法::
+
+        with LeaseHeartbeat(factory, lease, task_id=..., worker_id=..., attempt=...) as hb:
+            outcome = call_runner.call(...)
+        if hb.lease_lost:
+            ...  # 本 worker 已不再持有租约，不得写入
+    """
+
+    def __init__(
+        self,
+        session_factory: sessionmaker[Session],
+        lease: LeaseManager,
+        *,
+        task_id: str,
+        worker_id: str,
+        attempt: int,
+        max_seconds: float | None = None,
+    ) -> None:
+        self.session_factory = session_factory
+        self.lease = lease
+        self.task_id = task_id
+        self.worker_id = worker_id
+        self.attempt = attempt
+        self.max_seconds = (
+            float(max_seconds)
+            if max_seconds is not None
+            else float(HEARTBEAT_MAX_LEASE_PERIODS * lease.lease_seconds)
+        )
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._lease_lost = False
+        self._gave_up = False
+        self._renewals = 0
+
+    @property
+    def lease_lost(self) -> bool:
+        """续期被拒（另一个 worker 已接管），本 worker 不得再写入。"""
+        return self._lease_lost
+
+    @property
+    def gave_up(self) -> bool:
+        """超过 ``max_seconds`` 后主动停止续期，任务将重新变为可接管。"""
+        return self._gave_up
+
+    @property
+    def renewals(self) -> int:
+        """成功续期次数（测试与诊断用）。"""
+        return self._renewals
+
+    def __enter__(self) -> LeaseHeartbeat:
+        self._thread = threading.Thread(
+            target=self._loop,
+            name=f"lease-heartbeat-{self.task_id}",
+            daemon=True,
+        )
+        self._thread.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            # 心跳只在 wait 上阻塞，join 不会等到一次完整的续期间隔。
+            self._thread.join(timeout=self.lease.lease_seconds)
+            self._thread = None
+
+    def _loop(self) -> None:
+        started = time.monotonic()
+        interval = float(self.lease.heartbeat_seconds)
+        while not self._stop.wait(interval):
+            if time.monotonic() - started >= self.max_seconds:
+                self._gave_up = True
+                _log.error(
+                    "lease.heartbeat_gave_up",
+                    task_id=self.task_id,
+                    worker_id=self.worker_id,
+                    attempt=self.attempt,
+                    max_seconds=self.max_seconds,
+                    renewals=self._renewals,
+                    error_code="TASK_LEASE_LOST",
+                )
+                return
+            try:
+                with self.session_factory() as session:
+                    renewed = self.lease.renew(
+                        session, self.task_id, self.worker_id, self.attempt
+                    )
+            except Exception:  # noqa: BLE001 - 心跳线程不得让 worker 崩溃
+                # 续期出错与续期被拒同等对待：本 worker 不能再假定持有租约。
+                _log.exception(
+                    "lease.heartbeat_failed",
+                    task_id=self.task_id,
+                    worker_id=self.worker_id,
+                    attempt=self.attempt,
+                )
+                self._lease_lost = True
+                return
+            if not renewed:
+                self._lease_lost = True
+                return
+            self._renewals += 1
