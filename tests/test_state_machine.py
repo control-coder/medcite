@@ -91,14 +91,30 @@ class TestLegalMainPath:
     def test_escalation_at_each_stage(self) -> None:
         """每个阶段都可以进入 ESCALATED。"""
         escalatable = [
+            # normalize 阶段失败：CREATED 不能死等。
+            (CaseState.CREATED, TriggerSubject.WORKER),
             (CaseState.NORMALIZED, TriggerSubject.WORKER),
             (CaseState.EVIDENCE_RETRIEVED, TriggerSubject.WORKER),
             (CaseState.PLAN_GENERATED, TriggerSubject.AGENT_WORKER),
             (CaseState.SPECIALIST_REVIEWING, TriggerSubject.AGENT_WORKER),
             (CaseState.ARBITRATION_REVIEWING, TriggerSubject.REVIEWER_WORKER),
+            (CaseState.REVISION_REQUIRED, TriggerSubject.REVIEWER_WORKER),
+            # report 阶段失败：APPROVED 不能死等。
+            (CaseState.APPROVED, TriggerSubject.REVIEWER_WORKER),
         ]
         for state, subject in escalatable:
             validate_transition(state, CaseState.ESCALATED, subject)
+
+    def test_every_provider_stage_state_can_escalate(self) -> None:
+        """worker 的每个 provider 阶段都必须有失败出口，否则 case 卡死。"""
+        from medidiag.workflow.worker import _STAGE_BY_STATE
+
+        for state, (stage, subject) in _STAGE_BY_STATE.items():
+            if stage == "close":  # 无 provider 调用，不会失败
+                continue
+            assert can_transition(state, CaseState.ESCALATED, subject), (
+                f"{stage} 阶段（{state.value} by {subject.value}）缺少 ESCALATED 出口"
+            )
 
 
 # ===== ESCALATED 人工回流测试 =====

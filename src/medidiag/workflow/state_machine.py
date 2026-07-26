@@ -82,7 +82,8 @@ def is_terminal(state: CaseState) -> bool:
 TRANSITIONS: dict[CaseState, dict[TriggerSubject, list[CaseState]]] = {
     CaseState.CREATED: {
         TriggerSubject.API: [CaseState.NORMALIZED, CaseState.CLOSED_CANCELLED],
-        TriggerSubject.WORKER: [CaseState.NORMALIZED],
+        # ESCALATED: normalize 阶段 provider 失败后不能留在 CREATED 死等。
+        TriggerSubject.WORKER: [CaseState.NORMALIZED, CaseState.ESCALATED],
     },
     CaseState.NORMALIZED: {
         TriggerSubject.WORKER: [CaseState.EVIDENCE_RETRIEVED, CaseState.ESCALATED],
@@ -124,7 +125,11 @@ TRANSITIONS: dict[CaseState, dict[TriggerSubject, list[CaseState]]] = {
         ],
     },
     CaseState.APPROVED: {
-        TriggerSubject.REVIEWER_WORKER: [CaseState.REPORT_GENERATED],
+        # ESCALATED: report 阶段 provider 失败后不能留在 APPROVED 死等。
+        TriggerSubject.REVIEWER_WORKER: [
+            CaseState.REPORT_GENERATED,
+            CaseState.ESCALATED,
+        ],
         TriggerSubject.HUMAN: [CaseState.REPORT_GENERATED],
     },
     CaseState.REPORT_GENERATED: {

@@ -328,3 +328,77 @@ def test_generation_transport_error_escalates_with_network_error_code(runtime) -
             select(WorkflowTask).where(WorkflowTask.task_id == task_id)
         ).scalar_one()
         assert task.status == "FAILED"
+
+
+_STAGE_METHODS = {
+    "normalize": "normalize",
+    "retrieval": "retrieve",
+    "plan": "plan",
+    "generation": "generate",
+    "arbitration": "arbitrate",
+    "review": "review",
+    "report": "report",
+}
+
+
+@pytest.mark.parametrize("stage", sorted(_STAGE_METHODS))
+def test_every_stage_failure_escalates_without_killing_the_worker(runtime, stage) -> None:
+    """No stage may propagate a provider failure out of run_once()."""
+    method = _STAGE_METHODS[stage]
+
+    class FailingStageProvider(DeterministicWorkflowProvider):
+        pass
+
+    def _fail(*args, **kwargs):
+        raise httpx.ConnectError(
+            "provider unreachable",
+            request=httpx.Request("POST", "https://provider.invalid/v1/call"),
+        )
+
+    setattr(FailingStageProvider, method, _fail)
+
+    _, factory = runtime
+    case_id, task_id = _create_task(factory, f"stage-failure-{stage}")
+    worker = SingleMachineWorker(
+        factory,
+        FailingStageProvider(),
+        worker_id=f"{stage}-worker",
+        call_runner=ProviderCallRunner(sleep=lambda _: None),
+    )
+
+    result = worker.run_once()
+    assert result.processed is True
+    assert result.final_state == "ESCALATED"
+
+    with factory() as session:
+        failed = session.execute(
+            select(CaseEventLog).where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "stage_failed",
+            )
+        ).scalars().all()
+        assert [event.detail["stage"] for event in failed] == [stage]
+        assert failed[0].detail["error_code"] == "PROVIDER_NETWORK_ERROR"
+
+        case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
+        assert case.status == "ESCALATED"
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one()
+        assert task.status == "FAILED"
+
+
+def test_lease_loss_is_not_swallowed_as_a_stage_failure(runtime) -> None:
+    """A lost lease means another worker owns the task; it must not escalate here."""
+    from medidiag.errors import MediDiagError
+
+    _, factory = runtime
+    _create_task(factory, "lease-loss")
+    worker = SingleMachineWorker(
+        factory, DeterministicWorkflowProvider(), worker_id="lease-worker"
+    )
+    worker.executor.lease.renew = lambda *args, **kwargs: False
+
+    with pytest.raises(MediDiagError) as caught:
+        worker.run_once()
+    assert caught.value.code == "TASK_LEASE_LOST"

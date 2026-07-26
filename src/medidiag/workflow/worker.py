@@ -39,6 +39,40 @@ class WorkerRunResult:
     final_state: str | None = None
 
 
+# The stage each state drives, and the trigger subject authorised to move that
+# state on. Single source of truth for both the success and the failure edge, so
+# a stage can never be escalated under a subject the state machine rejects.
+_STAGE_BY_STATE: dict[CaseState, tuple[str, TriggerSubject]] = {
+    CaseState.CREATED: ("normalize", TriggerSubject.WORKER),
+    CaseState.NORMALIZED: ("retrieval", TriggerSubject.WORKER),
+    CaseState.EVIDENCE_RETRIEVED: ("plan", TriggerSubject.WORKER),
+    CaseState.PLAN_GENERATED: ("generation", TriggerSubject.AGENT_WORKER),
+    CaseState.REVISION_REQUIRED: ("revision_restart", TriggerSubject.REVIEWER_WORKER),
+    CaseState.SPECIALIST_REVIEWING: ("arbitration", TriggerSubject.AGENT_WORKER),
+    CaseState.ARBITRATION_REVIEWING: ("review", TriggerSubject.REVIEWER_WORKER),
+    CaseState.APPROVED: ("report", TriggerSubject.REVIEWER_WORKER),
+    CaseState.REPORT_GENERATED: ("close", TriggerSubject.WORKER),
+}
+
+_STAGE_SUBJECTS: dict[str, TriggerSubject] = {
+    stage: subject for stage, subject in _STAGE_BY_STATE.values()
+}
+
+
+class _StageFailure(Exception):
+    """A provider stage that exhausted ProviderCallRunner's bounded retries.
+
+    Raised only by ``_invoke`` so that lease errors from ``_renew`` -- which mean
+    another worker owns the task and this one must not write -- keep propagating
+    instead of being mistaken for a stage failure.
+    """
+
+    def __init__(self, stage: str, error: MediDiagError) -> None:
+        super().__init__(str(error))
+        self.stage = stage
+        self.error = error
+
+
 class SingleMachineWorker:
     """Execute one full case workflow while retaining a database lease."""
 
@@ -106,307 +140,326 @@ class SingleMachineWorker:
 
             artifacts = self._artifacts(session, case.case_id, task.task_id)
             attempt = task.attempt
-            if state == CaseState.CREATED:
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "normalize",
-                    lambda: self.provider.normalize(case.question),
-                )
-                payload = outcome.payload
-                artifact = self._artifact(
-                    case, task, "normalize", {"question": case.question}, payload,
-                    outcome.elapsed_ms,
-                )
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.NORMALIZED,
-                    subject=TriggerSubject.WORKER,
-                    stage="normalize",
-                    records=[artifact],
-                    case_values={"normalized_query": payload["normalized_query"]},
-                    detail={
-                        "component_version": self.provider.version,
-                        **self._provider_detail(outcome),
-                    },
-                )
-                continue
+            try:
+                if state == CaseState.CREATED:
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "normalize",
+                        lambda: self.provider.normalize(case.question),
+                    )
+                    payload = outcome.payload
+                    artifact = self._artifact(
+                        case, task, "normalize", {"question": case.question}, payload,
+                        outcome.elapsed_ms,
+                    )
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.NORMALIZED,
+                        subject=TriggerSubject.WORKER,
+                        stage="normalize",
+                        records=[artifact],
+                        case_values={"normalized_query": payload["normalized_query"]},
+                        detail={
+                            "component_version": self.provider.version,
+                            **self._provider_detail(outcome),
+                        },
+                    )
+                    continue
 
-            if state == CaseState.NORMALIZED:
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "retrieval",
-                    lambda: self.provider.retrieve(
-                        case.normalized_query or case.question
-                    ),
-                )
-                payload = outcome.payload
-                artifact = self._artifact(
-                    case, task, "retrieval",
-                    {"normalized_query": case.normalized_query}, payload,
-                    outcome.elapsed_ms,
-                )
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.EVIDENCE_RETRIEVED,
-                    subject=TriggerSubject.WORKER,
-                    stage="retrieval",
-                    records=[artifact],
-                    detail={
-                        "chunk_count": len(payload.get("chunks", [])),
-                        **self._provider_detail(outcome),
-                    },
-                )
-                continue
+                if state == CaseState.NORMALIZED:
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "retrieval",
+                        lambda: self.provider.retrieve(
+                            case.normalized_query or case.question
+                        ),
+                    )
+                    payload = outcome.payload
+                    artifact = self._artifact(
+                        case, task, "retrieval",
+                        {"normalized_query": case.normalized_query}, payload,
+                        outcome.elapsed_ms,
+                    )
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.EVIDENCE_RETRIEVED,
+                        subject=TriggerSubject.WORKER,
+                        stage="retrieval",
+                        records=[artifact],
+                        detail={
+                            "chunk_count": len(payload.get("chunks", [])),
+                            **self._provider_detail(outcome),
+                        },
+                    )
+                    continue
 
-            if state == CaseState.EVIDENCE_RETRIEVED:
-                retrieval = artifacts["retrieval"].payload
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "plan",
-                    lambda: self.provider.plan(
-                        case.normalized_query or case.question, retrieval
-                    ),
-                )
-                payload = outcome.payload
-                artifact = self._artifact(
-                    case, task, "plan", retrieval, payload, outcome.elapsed_ms
-                )
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.PLAN_GENERATED,
-                    subject=TriggerSubject.WORKER,
-                    stage="plan",
-                    records=[artifact],
-                    detail=self._provider_detail(outcome),
-                )
-                continue
-
-            if state in {CaseState.PLAN_GENERATED, CaseState.REVISION_REQUIRED}:
-                if state == CaseState.REVISION_REQUIRED:
+                if state == CaseState.EVIDENCE_RETRIEVED:
+                    retrieval = artifacts["retrieval"].payload
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "plan",
+                        lambda: self.provider.plan(
+                            case.normalized_query or case.question, retrieval
+                        ),
+                    )
+                    payload = outcome.payload
+                    artifact = self._artifact(
+                        case, task, "plan", retrieval, payload, outcome.elapsed_ms
+                    )
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
                         worker_id=self.worker_id,
                         attempt=attempt,
                         to_state=CaseState.PLAN_GENERATED,
-                        subject=TriggerSubject.REVIEWER_WORKER,
-                        stage="revision_restart",
+                        subject=TriggerSubject.WORKER,
+                        stage="plan",
+                        records=[artifact],
+                        detail=self._provider_detail(outcome),
                     )
                     continue
-                retrieval = artifacts["retrieval"].payload
-                plan = artifacts["plan"].payload
-                self._renew(session, task)
-                try:
+
+                if state in {CaseState.PLAN_GENERATED, CaseState.REVISION_REQUIRED}:
+                    if state == CaseState.REVISION_REQUIRED:
+                        self.executor.commit_stage(
+                            session,
+                            task_id=task.task_id,
+                            worker_id=self.worker_id,
+                            attempt=attempt,
+                            to_state=CaseState.PLAN_GENERATED,
+                            subject=TriggerSubject.REVIEWER_WORKER,
+                            stage="revision_restart",
+                        )
+                        continue
+                    retrieval = artifacts["retrieval"].payload
+                    plan = artifacts["plan"].payload
+                    self._renew(session, task)
                     outcome = self._invoke(
                         session, case, task, "generation",
                         lambda: self.provider.generate(case.question, retrieval, plan),
                     )
-                except MediDiagError as exc:
-                    self._fail_generation(session, case, task, attempt, exc)
+                    payload = outcome.payload
+                    latency = outcome.elapsed_ms
+                    records: list[Any] = [
+                        self._artifact(case, task, "generation", plan, payload, latency)
+                    ]
+                    input_hash = compute_input_hash(
+                        {"question": case.question, "retrieval": retrieval, "plan": plan}
+                    )
+                    for agent in payload.get("agents", []):
+                        records.append(
+                            AgentRun(
+                                run_id=f"run_{uuid.uuid4().hex}",
+                                case_id=case.case_id,
+                                agent_name=agent["agent_name"],
+                                input_hash=input_hash,
+                                attempt_group=f"{task.task_id}:{attempt}",
+                                input_payload={"plan": plan},
+                                output_payload=agent,
+                                status=agent.get("status", "SUCCEEDED"),
+                                latency_ms=latency,
+                            )
+                        )
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.SPECIALIST_REVIEWING,
+                        subject=TriggerSubject.AGENT_WORKER,
+                        stage="generation",
+                        records=records,
+                        detail={
+                            "agent_count": len(payload.get("agents", [])),
+                            **self._provider_detail(outcome),
+                        },
+                    )
+                    continue
+
+                if state == CaseState.SPECIALIST_REVIEWING:
+                    generation = artifacts["generation"].payload
+                    retrieval = artifacts["retrieval"].payload
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "arbitration",
+                        lambda: self.provider.arbitrate(generation, retrieval),
+                    )
+                    payload = outcome.payload
+                    artifact = self._artifact(
+                        case, task, "arbitration", generation, payload,
+                        outcome.elapsed_ms,
+                    )
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.ARBITRATION_REVIEWING,
+                        subject=TriggerSubject.AGENT_WORKER,
+                        stage="arbitration",
+                        records=[artifact],
+                        detail=self._provider_detail(outcome),
+                    )
+                    continue
+
+                if state == CaseState.ARBITRATION_REVIEWING:
+                    generation = artifacts["generation"].payload
+                    arbitration = artifacts["arbitration"].payload
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "review",
+                        lambda: self.provider.review(generation, arbitration),
+                    )
+                    payload = outcome.payload
+                    latency = outcome.elapsed_ms
+                    verdict = payload["verdict"]
+                    target = CaseState(verdict)
+                    records = [
+                        self._artifact(case, task, "review", arbitration, payload, latency),
+                        Review(
+                            case_id=case.case_id,
+                            review_type="workflow",
+                            reviewer=self.provider.version,
+                            result=verdict,
+                            round=case.review_round + 1,
+                            detail=payload,
+                        ),
+                    ]
+                    claim_map = {
+                        item["claim_id"]: item for item in generation.get("claims", [])
+                    }
+                    for item in payload.get("citation_verdicts", []):
+                        records.append(
+                            Citation(
+                                case_id=case.case_id,
+                                claim_text=claim_map[item["claim_id"]]["text"],
+                                chunk_id=item["chunk_id"],
+                                verdict=item["verdict"],
+                                verifier_model=item["method"],
+                                verifier_score=item.get("confidence"),
+                            )
+                        )
+                    complete = target in {
+                        CaseState.REVISION_REQUIRED, CaseState.ESCALATED
+                    }
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=target,
+                        subject=TriggerSubject.REVIEWER_WORKER,
+                        stage="review",
+                        records=records,
+                        case_values={"review_round": case.review_round + 1},
+                        detail={"verdict": verdict, **self._provider_detail(outcome)},
+                        complete_task=complete,
+                        task_result={"outcome": verdict} if complete else None,
+                    )
+                    if complete:
+                        return WorkerRunResult(True, task.task_id, case.case_id, target.value)
+                    continue
+
+                if state == CaseState.APPROVED:
+                    generation = artifacts["generation"].payload
+                    review = artifacts["review"].payload
+                    self._renew(session, task)
+                    outcome = self._invoke(
+                        session, case, task, "report",
+                        lambda: self.provider.report(case.case_id, generation, review),
+                    )
+                    payload = outcome.payload
+                    latency = outcome.elapsed_ms
+                    report_version = (
+                        session.execute(
+                            select(func.count(CaseReport.id)).where(
+                                CaseReport.case_id == case.case_id
+                            )
+                        ).scalar_one()
+                        + 1
+                    )
+                    records = [
+                        self._artifact(case, task, "report", review, payload, latency),
+                        CaseReport(
+                            report_id=f"report_{uuid.uuid4().hex}",
+                            case_id=case.case_id,
+                            version=report_version,
+                            structured_report=payload,
+                            risk_warnings=["qualified_clinician_review_required"],
+                            compliance_status=review["compliance_status"],
+                            generation_version=self.provider.version,
+                        ),
+                    ]
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.REPORT_GENERATED,
+                        subject=TriggerSubject.REVIEWER_WORKER,
+                        stage="report",
+                        records=records,
+                        detail=self._provider_detail(outcome),
+                    )
+                    continue
+
+                if state == CaseState.REPORT_GENERATED:
+                    self.executor.commit_stage(
+                        session,
+                        task_id=task.task_id,
+                        worker_id=self.worker_id,
+                        attempt=attempt,
+                        to_state=CaseState.CLOSED_SUCCESS,
+                        subject=TriggerSubject.WORKER,
+                        stage="close",
+                        complete_task=True,
+                        task_result={"outcome": "CLOSED_SUCCESS"},
+                    )
                     return WorkerRunResult(
-                        True, task.task_id, case.case_id, CaseState.ESCALATED.value
+                        True, task.task_id, case.case_id, CaseState.CLOSED_SUCCESS.value
                     )
-                payload = outcome.payload
-                latency = outcome.elapsed_ms
-                records: list[Any] = [
-                    self._artifact(case, task, "generation", plan, payload, latency)
-                ]
-                input_hash = compute_input_hash(
-                    {"question": case.question, "retrieval": retrieval, "plan": plan}
-                )
-                for agent in payload.get("agents", []):
-                    records.append(
-                        AgentRun(
-                            run_id=f"run_{uuid.uuid4().hex}",
-                            case_id=case.case_id,
-                            agent_name=agent["agent_name"],
-                            input_hash=input_hash,
-                            attempt_group=f"{task.task_id}:{attempt}",
-                            input_payload={"plan": plan},
-                            output_payload=agent,
-                            status=agent.get("status", "SUCCEEDED"),
-                            latency_ms=latency,
-                        )
-                    )
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.SPECIALIST_REVIEWING,
-                    subject=TriggerSubject.AGENT_WORKER,
-                    stage="generation",
-                    records=records,
-                    detail={
-                        "agent_count": len(payload.get("agents", [])),
-                        **self._provider_detail(outcome),
-                    },
-                )
-                continue
-
-            if state == CaseState.SPECIALIST_REVIEWING:
-                generation = artifacts["generation"].payload
-                retrieval = artifacts["retrieval"].payload
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "arbitration",
-                    lambda: self.provider.arbitrate(generation, retrieval),
-                )
-                payload = outcome.payload
-                artifact = self._artifact(
-                    case, task, "arbitration", generation, payload,
-                    outcome.elapsed_ms,
-                )
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.ARBITRATION_REVIEWING,
-                    subject=TriggerSubject.AGENT_WORKER,
-                    stage="arbitration",
-                    records=[artifact],
-                    detail=self._provider_detail(outcome),
-                )
-                continue
-
-            if state == CaseState.ARBITRATION_REVIEWING:
-                generation = artifacts["generation"].payload
-                arbitration = artifacts["arbitration"].payload
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "review",
-                    lambda: self.provider.review(generation, arbitration),
-                )
-                payload = outcome.payload
-                latency = outcome.elapsed_ms
-                verdict = payload["verdict"]
-                target = CaseState(verdict)
-                records = [
-                    self._artifact(case, task, "review", arbitration, payload, latency),
-                    Review(
-                        case_id=case.case_id,
-                        review_type="workflow",
-                        reviewer=self.provider.version,
-                        result=verdict,
-                        round=case.review_round + 1,
-                        detail=payload,
-                    ),
-                ]
-                claim_map = {
-                    item["claim_id"]: item for item in generation.get("claims", [])
-                }
-                for item in payload.get("citation_verdicts", []):
-                    records.append(
-                        Citation(
-                            case_id=case.case_id,
-                            claim_text=claim_map[item["claim_id"]]["text"],
-                            chunk_id=item["chunk_id"],
-                            verdict=item["verdict"],
-                            verifier_model=item["method"],
-                            verifier_score=item.get("confidence"),
-                        )
-                    )
-                complete = target in {
-                    CaseState.REVISION_REQUIRED, CaseState.ESCALATED
-                }
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=target,
-                    subject=TriggerSubject.REVIEWER_WORKER,
-                    stage="review",
-                    records=records,
-                    case_values={"review_round": case.review_round + 1},
-                    detail={"verdict": verdict, **self._provider_detail(outcome)},
-                    complete_task=complete,
-                    task_result={"outcome": verdict} if complete else None,
-                )
-                if complete:
-                    return WorkerRunResult(True, task.task_id, case.case_id, target.value)
-                continue
-
-            if state == CaseState.APPROVED:
-                generation = artifacts["generation"].payload
-                review = artifacts["review"].payload
-                self._renew(session, task)
-                outcome = self._invoke(
-                    session, case, task, "report",
-                    lambda: self.provider.report(case.case_id, generation, review),
-                )
-                payload = outcome.payload
-                latency = outcome.elapsed_ms
-                report_version = (
-                    session.execute(
-                        select(func.count(CaseReport.id)).where(
-                            CaseReport.case_id == case.case_id
-                        )
-                    ).scalar_one()
-                    + 1
-                )
-                records = [
-                    self._artifact(case, task, "report", review, payload, latency),
-                    CaseReport(
-                        report_id=f"report_{uuid.uuid4().hex}",
-                        case_id=case.case_id,
-                        version=report_version,
-                        structured_report=payload,
-                        risk_warnings=["qualified_clinician_review_required"],
-                        compliance_status=review["compliance_status"],
-                        generation_version=self.provider.version,
-                    ),
-                ]
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.REPORT_GENERATED,
-                    subject=TriggerSubject.REVIEWER_WORKER,
-                    stage="report",
-                    records=records,
-                    detail=self._provider_detail(outcome),
-                )
-                continue
-
-            if state == CaseState.REPORT_GENERATED:
-                self.executor.commit_stage(
-                    session,
-                    task_id=task.task_id,
-                    worker_id=self.worker_id,
-                    attempt=attempt,
-                    to_state=CaseState.CLOSED_SUCCESS,
-                    subject=TriggerSubject.WORKER,
-                    stage="close",
-                    complete_task=True,
-                    task_result={"outcome": "CLOSED_SUCCESS"},
-                )
+            except _StageFailure as failure:
+                self._fail_stage(session, case, task, attempt, failure)
                 return WorkerRunResult(
-                    True, task.task_id, case.case_id, CaseState.CLOSED_SUCCESS.value
+                    True, task.task_id, case.case_id, CaseState.ESCALATED.value
                 )
 
-        raise RuntimeError(f"workflow exceeded stage safety limit: {task.task_id}")
+        # Only the review/revision cycle can spin, and WS3's round cap bounds it;
+        # every state reachable here has a legal ESCALATED edge.
+        stage, _ = _STAGE_BY_STATE[state]
+        self._fail_stage(
+            session,
+            case,
+            task,
+            task.attempt,
+            _StageFailure(
+                stage,
+                MediDiagError(
+                    "WORKFLOW_RETRY_EXCEEDED",
+                    detail=f"workflow exceeded stage safety limit: {task.task_id}",
+                ),
+            ),
+        )
+        return WorkerRunResult(
+            True, task.task_id, case.case_id, CaseState.ESCALATED.value
+        )
 
-    def _fail_generation(
+    def _fail_stage(
         self,
         session: Session,
         case: Case,
         task: WorkflowTask,
         attempt: int,
-        exc: MediDiagError,
+        failure: _StageFailure,
     ) -> None:
-        """Stop a live generation failure after ProviderCallRunner has retried."""
+        """Escalate a stage that failed after ProviderCallRunner has retried."""
+        exc = failure.error
         provider_attempt = exc.context.get("provider_attempt", {})
         self.executor.fail_stage(
             session,
@@ -414,10 +467,13 @@ class SingleMachineWorker:
             worker_id=self.worker_id,
             attempt=attempt,
             to_state=CaseState.ESCALATED,
-            subject=TriggerSubject.AGENT_WORKER,
-            stage="generation",
+            subject=_STAGE_SUBJECTS[failure.stage],
+            stage=failure.stage,
             error_code=exc.code,
-            error_message="generation provider failed after bounded retries; no report generated",
+            error_message=(
+                f"{failure.stage} provider failed after bounded retries; "
+                "no report generated"
+            ),
             detail={
                 "component_version": self.provider.version,
                 "provider_request_id": provider_attempt.get("provider_request_id"),
@@ -426,6 +482,7 @@ class SingleMachineWorker:
                 "http_status": provider_attempt.get("http_status"),
             },
         )
+
     def _renew(self, session: Session, task: WorkflowTask) -> None:
         if not self.executor.lease.renew(
             session, task.task_id, self.worker_id, task.attempt
@@ -443,13 +500,16 @@ class SingleMachineWorker:
         stage: str,
         operation,
     ) -> ProviderCallOutcome:
-        return self.call_runner.call(
-            stage,
-            operation,
-            on_attempt=lambda attempt: self._record_provider_attempt(
-                session, case, task, attempt
-            ),
-        )
+        try:
+            return self.call_runner.call(
+                stage,
+                operation,
+                on_attempt=lambda attempt: self._record_provider_attempt(
+                    session, case, task, attempt
+                ),
+            )
+        except MediDiagError as exc:
+            raise _StageFailure(stage, exc) from exc
 
     def _record_provider_attempt(
         self,
