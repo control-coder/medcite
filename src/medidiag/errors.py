@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Final
+from typing import Any, Final
 
 
 class ErrorCategory(str, Enum):
@@ -385,7 +385,7 @@ class MediDiagError(Exception):
     所有业务错误应携带错误码，便于日志、告警和客户端处理。
     """
 
-    def __init__(self, code: str, *, detail: str | None = None, context: dict | None = None) -> None:
+    def __init__(self, code: str, *, detail: str | None = None, context: dict[str, Any] | None = None) -> None:
         self.spec = get_error_spec(code)
         self.code = code
         self.detail = detail or self.spec.description

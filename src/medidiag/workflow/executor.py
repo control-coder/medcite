@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
+from medidiag.db.session import rowcount
 from medidiag.errors import MediDiagError
 from medidiag.observability.logging import get_logger
 from medidiag.workflow.lease import LeaseManager
@@ -224,7 +225,7 @@ class WorkflowExecutor:
             )
             .values(active_task_id=task_id, version=case.version + 1)
         )
-        if claimed.rowcount != 1:
+        if rowcount(claimed) != 1:
             session.rollback()
             refreshed = session.execute(
                 select(Case).where(Case.case_id == case_id)
@@ -312,7 +313,7 @@ class WorkflowExecutor:
         subject: TriggerSubject,
         trigger_entity: str | None = None,
         event_type: str = "state_transition",
-        detail: dict | None = None,
+        detail: dict[str, Any] | None = None,
     ) -> None:
         """推进病例状态。
 
@@ -368,7 +369,7 @@ class WorkflowExecutor:
                 .values(status=to_state.value, version=case.version + 1)
             )
 
-            if result.rowcount == 1:
+            if rowcount(result) == 1:
                 # 成功，同事务写事件日志
                 session.add(
                     CaseEventLog(
@@ -408,7 +409,7 @@ class WorkflowExecutor:
         task_id: str,
         worker_id: str,
         attempt: int,
-        result: dict,
+        result: dict[str, Any],
     ) -> bool:
         """写入外部 IO 结果。
 
@@ -451,7 +452,7 @@ class WorkflowExecutor:
             )
             .values(status="SUCCEEDED", result=result)
         )
-        if write.rowcount != 1:
+        if rowcount(write) != 1:
             session.rollback()
             self._record_rejected_stale_write(session, task_id, worker_id, attempt)
             _log.warning(
@@ -479,7 +480,7 @@ class WorkflowExecutor:
             )
             .values(active_task_id=None, version=Case.version + 1)
         )
-        if cleared.rowcount == 1:
+        if rowcount(cleared) == 1:
             session.commit()
             return True
 
@@ -589,7 +590,7 @@ class WorkflowExecutor:
                 error_message=error_message,
             )
         )
-        if fenced.rowcount != 1:
+        if rowcount(fenced) != 1:
             session.rollback()
             self._record_lease_lost(session, task, worker_id, attempt, stage)
             _log.warning(
@@ -637,7 +638,7 @@ class WorkflowExecutor:
                 active_task_id=None,
             )
         )
-        if advanced.rowcount != 1:
+        if rowcount(advanced) != 1:
             session.rollback()
             raise MediDiagError(
                 "OPTIMISTIC_LOCK_CONFLICT",
@@ -706,7 +707,7 @@ class WorkflowExecutor:
             )
             .values(**task_updates)
         )
-        if fenced.rowcount != 1:
+        if rowcount(fenced) != 1:
             session.rollback()
             self._record_lease_lost(session, task, worker_id, attempt, stage)
             raise MediDiagError(
@@ -748,7 +749,7 @@ class WorkflowExecutor:
             )
             .values(**values)
         )
-        if advanced.rowcount != 1:
+        if rowcount(advanced) != 1:
             session.rollback()
             raise MediDiagError(
                 "OPTIMISTIC_LOCK_CONFLICT",

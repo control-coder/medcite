@@ -230,7 +230,7 @@ class Retriever:
 
         return results
 
-    def _encode_texts(self, texts: list[str]):
+    def _encode_texts(self, texts: list[str]) -> Any:
         kwargs = {
             "normalize_embeddings": True,
             "show_progress_bar": False,
@@ -244,7 +244,7 @@ class Retriever:
             kwargs.pop("batch_size")
             return self._embedder.encode(texts, **kwargs)
 
-    def _get_bm25_scores(self, query: str):
+    def _get_bm25_scores(self, query: str) -> Any:
         """获取与 chunk 原始顺序对齐的 BM25 分数（归一化到 [0, 1]）。"""
         import numpy as np
 
@@ -262,7 +262,7 @@ class Retriever:
         self._bm25_score_cache[query] = normalized
         return normalized
 
-    def _get_embedding_scores(self, query: str):
+    def _get_embedding_scores(self, query: str) -> Any:
         """获取与 ``self.chunks`` 原始顺序严格对齐的 cosine 分数。
 
         FAISS 返回按相似度排序后的 ``scores`` 和对应 ``indices``。必须按
@@ -292,7 +292,7 @@ class Retriever:
             for name in ("embedding", "bm25")
         }
 
-    def _get_evidence_scores(self):
+    def _get_evidence_scores(self) -> Any:
         """获取证据等级分数。"""
         import numpy as np
 

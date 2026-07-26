@@ -5,7 +5,11 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Engine, create_engine, event
+from collections.abc import Callable
+from typing import Any, cast
+
+from sqlalchemy import CursorResult, Engine, create_engine, event
+from sqlalchemy.engine import Result
 from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.db.models import Base
@@ -42,7 +46,7 @@ def create_db_engine(
     return engine
 
 
-def _sqlite_pragmas(busy_timeout_ms: int):
+def _sqlite_pragmas(busy_timeout_ms: int) -> Callable[[Any, Any], None]:
     """返回 SQLite 连接级 PRAGMA 设置回调。
 
     - ``foreign_keys=ON``：SQLite 默认不强制外键。
@@ -52,7 +56,7 @@ def _sqlite_pragmas(busy_timeout_ms: int):
     - ``busy_timeout``：写锁被占用时等待而不是立即抛 ``database is locked``。
     """
 
-    def _apply(dbapi_connection, connection_record) -> None:
+    def _apply(dbapi_connection: Any, connection_record: Any) -> None:
         cursor = dbapi_connection.cursor()
         try:
             cursor.execute("PRAGMA foreign_keys=ON")
@@ -72,3 +76,14 @@ def init_db(engine: Engine) -> None:
 def get_session_factory(engine: Engine) -> sessionmaker[Session]:
     """创建 session 工厂。"""
     return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def rowcount(result: Result[Any]) -> int:
+    """返回一条 DML 语句影响的行数。
+
+    ``Session.execute`` 的静态返回类型是 ``Result``，但 INSERT/UPDATE/DELETE
+    实际返回带 ``rowcount`` 的 ``CursorResult``。全仓库的条件 UPDATE（租约
+    fencing、乐观锁）都依赖这个值，因此把这次窄化集中在一处并加以说明，而不是
+    在十几个调用点各写一次 cast 或忽略注释。
+    """
+    return cast("CursorResult[Any]", result).rowcount

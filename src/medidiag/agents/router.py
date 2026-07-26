@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from medidiag.agents.specialty_data import (
     FALLBACK_PAIR,
@@ -53,7 +54,7 @@ class SpecialtyScore:
             + w["plan_hint"] * self.plan_hint_score
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """转为字典（用于日志/trace）。"""
         return {
             "specialty": self.specialty,
@@ -89,7 +90,7 @@ class RoutingResult:
         """双专科名称列表。"""
         return list(self.specialty_pair)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """转为字典（用于日志/trace）。"""
         return {
             "specialty_pair": list(self.specialty_pair),
@@ -124,7 +125,7 @@ class SpecialistRouter:
     def route(
         self,
         normalized_query: str | NormalizedQuery,
-        evidence_chunks: list[KnowledgeChunk] | list[dict],
+        evidence_chunks: list[KnowledgeChunk] | list[dict[str, Any]],
         plan_hint: str = "",
     ) -> RoutingResult:
         """路由到双专科。
@@ -222,7 +223,7 @@ class SpecialistRouter:
     def _compute_all_scores(
         self,
         normalized_query: str | NormalizedQuery,
-        evidence_chunks: list,
+        evidence_chunks: list[Any],
         plan_hint: str,
     ) -> dict[str, SpecialtyScore]:
         """计算所有专科的得分。"""
@@ -297,7 +298,7 @@ class SpecialistRouter:
         self,
         specialty: str,
         evidence_texts: list[str],
-        evidence_chunks: list,
+        evidence_chunks: list[Any],
     ) -> float:
         """证据加权分：Top检索证据文本关键词匹配量 × 证据得分，归一 0~1。"""
         keywords = SPECIALTY_KEYWORDS.get(specialty, [])

@@ -23,7 +23,8 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import IO, Any
+from collections.abc import Mapping, MutableMapping
+from typing import Any, TextIO
 
 import structlog
 
@@ -38,10 +39,10 @@ _configured = False
 
 
 def _redact_processor(
-    _logger: Any, _method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+    _logger: Any, _method_name: str, event_dict: MutableMapping[str, Any]
+) -> Mapping[str, Any]:
     """按共享脱敏契约处理整个事件字典，并截断超长值。"""
-    redacted = sanitize(event_dict)
+    redacted = sanitize(dict(event_dict))
     return {key: _truncate(value) for key, value in redacted.items()}
 
 
@@ -52,7 +53,7 @@ def _truncate(value: Any) -> Any:
 
 
 def configure_logging(
-    *, stream: IO[str] | None = None, force: bool = False
+    *, stream: TextIO | None = None, force: bool = False
 ) -> None:
     """配置 structlog。重复调用是无操作，除非 ``force=True``。
 

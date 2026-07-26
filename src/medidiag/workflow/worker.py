@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,6 +31,7 @@ from medidiag.workflow.provider_runtime import (
     ProviderAttempt,
     ProviderCallOutcome,
     ProviderCallRunner,
+    ProviderResponse,
 )
 from medidiag.workflow.state_machine import CaseState, TriggerSubject, is_terminal
 
@@ -572,7 +574,7 @@ class SingleMachineWorker:
         case: Case,
         task: WorkflowTask,
         stage: str,
-        operation,
+        operation: Callable[[], dict[str, Any] | ProviderResponse],
     ) -> ProviderCallOutcome:
         try:
             return self.call_runner.call(
@@ -632,8 +634,8 @@ class SingleMachineWorker:
         case: Case,
         task: WorkflowTask,
         stage: str,
-        input_payload: dict,
-        output_payload: dict,
+        input_payload: dict[str, Any],
+        output_payload: dict[str, Any],
         latency_ms: int,
     ) -> StageArtifact:
         return StageArtifact(

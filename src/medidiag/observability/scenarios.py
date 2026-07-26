@@ -6,8 +6,10 @@ import tempfile
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import update
+from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.db.models import Case, WorkflowTask
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
@@ -33,7 +35,7 @@ class DualSpecialistFixtureProvider(DeterministicWorkflowProvider):
 
     version: str = "dual-specialist-negative-fixture-v1"
 
-    def generate(self, question: str, retrieval: dict, plan: dict) -> dict:
+    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
         chunk_id = retrieval["chunks"][0]["chunk_id"]
         cardiology_claim = {
             "claim_id": "cardiology_claim_0001",
@@ -67,7 +69,7 @@ class DualSpecialistFixtureProvider(DeterministicWorkflowProvider):
             "uncertainty": "The second specialist adds no new evidence in this fixture.",
         }
 
-    def arbitrate(self, generation: dict, retrieval: dict) -> dict:
+    def arbitrate(self, generation: dict[str, Any], retrieval: dict[str, Any]) -> dict[str, Any]:
         return {
             "verdict": "NO_CLEAR_SPECIALIST_GAIN",
             "selected_claim_ids": ["cardiology_claim_0001"],
@@ -117,7 +119,7 @@ def generate_trace_examples(output_root: str | Path) -> list[ScenarioTrace]:
             engine.dispose()
 
 
-def _create_task(factory, scenario: str) -> tuple[str, str]:
+def _create_task(factory: sessionmaker[Session], scenario: str) -> tuple[str, str]:
     executor = WorkflowExecutor()
     question = f"Deidentified simulated {scenario} case for trace verification."
     with factory() as session:
@@ -137,7 +139,7 @@ def _create_task(factory, scenario: str) -> tuple[str, str]:
         return case.case_id, task.task_id
 
 
-def _success_scenario(factory) -> str:
+def _success_scenario(factory: sessionmaker[Session]) -> str:
     case_id, _ = _create_task(factory, "success")
     result = SingleMachineWorker(
         factory,
@@ -149,7 +151,7 @@ def _success_scenario(factory) -> str:
     return case_id
 
 
-def _lease_recovery_scenario(factory) -> str:
+def _lease_recovery_scenario(factory: sessionmaker[Session]) -> str:
     case_id, task_id = _create_task(factory, "lease-recovery")
     executor = WorkflowExecutor()
     with factory() as session:
@@ -195,7 +197,7 @@ def _lease_recovery_scenario(factory) -> str:
     return case_id
 
 
-def _review_escalation_scenario(factory) -> str:
+def _review_escalation_scenario(factory: sessionmaker[Session]) -> str:
     case_id, _ = _create_task(factory, "review-escalation")
     escalated = SingleMachineWorker(
         factory,
@@ -239,7 +241,7 @@ def _review_escalation_scenario(factory) -> str:
     return case_id
 
 
-def _dual_specialist_scenario(factory) -> str:
+def _dual_specialist_scenario(factory: sessionmaker[Session]) -> str:
     case_id, _ = _create_task(factory, "dual-specialist-negative")
     result = SingleMachineWorker(
         factory,

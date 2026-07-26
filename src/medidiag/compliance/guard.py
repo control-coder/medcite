@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -33,7 +34,7 @@ class ComplianceResult:
     out_of_scope: bool = False
     """是否超范围问题。"""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "blocked": self.blocked,
             "block_reasons": self.block_reasons,
@@ -196,7 +197,7 @@ class ComplianceGuard:
             out_of_scope=out_of_scope,
         )
 
-    def check_output(self, output_dict: dict) -> ComplianceResult:
+    def check_output(self, output_dict: dict[str, Any]) -> ComplianceResult:
         """检查 Agent 输出字典的合规性。
 
         对输出中的所有文本字段进行检查。

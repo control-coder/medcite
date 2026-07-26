@@ -34,7 +34,7 @@ class ReviewResult:
     def is_approved(self) -> bool:
         return self.verdict == "APPROVED"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "verdict": self.verdict,
             "issues": self.issues,

@@ -7,6 +7,8 @@ import time
 from pathlib import Path
 
 import click
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.config import get_settings
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
@@ -53,7 +55,7 @@ def _mode(once: bool, loop: bool) -> None:
         raise click.UsageError("choose exactly one of --once or --loop")
 
 
-def _session_factory():
+def _session_factory() -> tuple[Engine, sessionmaker[Session]]:
     engine = create_db_engine(get_settings().database_url)
     return engine, get_session_factory(engine)
 

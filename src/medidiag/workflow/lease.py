@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from medidiag.config import get_settings
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
+from medidiag.db.session import rowcount
 from medidiag.observability.logging import get_logger
 from medidiag.workflow.state_machine import CaseState, is_terminal
 
@@ -111,7 +112,7 @@ class LeaseManager:
                 heartbeat_at=now,
             )
         )
-        if result.rowcount == 1:
+        if rowcount(result) == 1:
             task = session.execute(
                 select(WorkflowTask).where(WorkflowTask.task_id == task_id)
             ).scalar_one()
@@ -135,7 +136,7 @@ class LeaseManager:
         else:
             _log.debug("lease.acquire_rejected", task_id=task_id, worker_id=worker_id)
         session.commit()
-        return result.rowcount == 1
+        return rowcount(result) == 1
 
     def renew(
         self,
@@ -167,7 +168,7 @@ class LeaseManager:
             )
         )
         session.commit()
-        renewed = result.rowcount == 1
+        renewed = rowcount(result) == 1
         if renewed:
             _log.debug(
                 "lease.renewed",
@@ -234,7 +235,7 @@ class LeaseManager:
                 )
                 .values(status="STALE")
             )
-            if stale.rowcount == 1:
+            if rowcount(stale) == 1:
                 _log.info(
                     "lease.stale_marked",
                     task_id=task_id,
@@ -277,7 +278,7 @@ class LeaseManager:
                 attempt=old_attempt + 1,
             )
         )
-        if reclaimed.rowcount == 1:
+        if rowcount(reclaimed) == 1:
             session.add(
                 CaseEventLog(
                     case_id=task.case_id,
@@ -304,7 +305,7 @@ class LeaseManager:
                 error_code="TASK_LEASE_EXPIRED",
             )
         session.commit()
-        return reclaimed.rowcount == 1
+        return rowcount(reclaimed) == 1
 
     def validate_lease(
         self,

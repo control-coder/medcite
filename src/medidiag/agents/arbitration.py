@@ -38,7 +38,7 @@ class ArbitrationResult:
     evidence_comparison: dict[str, Any] = field(default_factory=dict)
     """证据支撑强度对比。"""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """转为字典。"""
         return {
             "consensus": self.consensus,

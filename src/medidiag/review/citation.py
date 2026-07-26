@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import asdict, dataclass
 from enum import Enum
+from typing import Any
 
 from medidiag.acceleration import resolve_torch_device
 from medidiag.schemas import KnowledgeChunk
@@ -39,7 +40,7 @@ class CitationResult:
     detail: str = ""
     error: str = ""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["verdict"] = self.verdict.value
         return data
@@ -129,7 +130,7 @@ class CitationVerifier:
         self.requested_device = device
         self.actual_device = resolve_torch_device(device)
         self.batch_size = max(1, int(batch_size))
-        self._nli_pipeline = None
+        self._nli_pipeline: Any = None
 
     def initialize(self) -> None:
         """Eagerly load the formal judge so a run fails before producing output."""
@@ -181,8 +182,8 @@ class CitationVerifier:
 
     def verify_batch(
         self,
-        claims: list[dict],
-        evidence_chunks: list[KnowledgeChunk] | list[dict],
+        claims: list[dict[str, Any]],
+        evidence_chunks: list[KnowledgeChunk] | list[dict[str, Any]],
     ) -> list[CitationResult]:
         """按原始 claim-citation 顺序返回结果；NLI 路径使用真正批推理。"""
         chunk_map: dict[str, str] = {}

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -134,7 +135,7 @@ class WorkflowTask(Base):
     attempt: Mapped[int] = mapped_column(Integer, default=0)
     input_hash: Mapped[str] = mapped_column(String(64))  # 幂等
     idempotency_key: Mapped[str] = mapped_column(String(128))
-    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
@@ -168,7 +169,7 @@ class CaseEventLog(Base):
     trigger_subject: Mapped[str] = mapped_column(String(32))
     # api / worker / agent_worker / reviewer_worker / human / system
     trigger_entity: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
 
     def __repr__(self) -> str:
@@ -207,8 +208,8 @@ class AgentRun(Base):
     # normalize / retrieve / diagnosis / diagnosis_cardiology / diagnosis_respiratory / arbitration
     input_hash: Mapped[str] = mapped_column(String(64))  # 幂等
     attempt_group: Mapped[str] = mapped_column(String(64))
-    input_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    output_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    input_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    output_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="PENDING")
     # PENDING / RUNNING / SUCCEEDED / FAILED
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -262,7 +263,7 @@ class Review(Base):
     result: Mapped[str] = mapped_column(String(32))
     # APPROVED / REVISION_REQUIRED / ESCALATED
     round: Mapped[int] = mapped_column(Integer, default=1)
-    detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     def __repr__(self) -> str:
@@ -293,7 +294,7 @@ class StageArtifact(Base):
     )
     stage: Mapped[str] = mapped_column(String(32), index=True)
     attempt: Mapped[int] = mapped_column(Integer)
-    payload: Mapped[dict] = mapped_column(JSON)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     input_hash: Mapped[str] = mapped_column(String(64))
     output_hash: Mapped[str] = mapped_column(String(64))
     component_version: Mapped[str] = mapped_column(String(128))
@@ -315,8 +316,8 @@ class CaseReport(Base):
         String(64), ForeignKey("cases.case_id"), index=True
     )
     version: Mapped[int] = mapped_column(Integer, default=1)
-    structured_report: Mapped[dict] = mapped_column(JSON)
-    risk_warnings: Mapped[list] = mapped_column(JSON)
+    structured_report: Mapped[dict[str, Any]] = mapped_column(JSON)
+    risk_warnings: Mapped[list[Any]] = mapped_column(JSON)
     compliance_status: Mapped[str] = mapped_column(String(32))
     generation_version: Mapped[str] = mapped_column(String(128))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)

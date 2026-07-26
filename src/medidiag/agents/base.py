@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import Any
 
 from medidiag.agents.llm_client import LLMClient
 from medidiag.schemas import KnowledgeChunk
@@ -117,7 +118,7 @@ class AgentOutput:
     provider_usage: dict[str, int] = field(default_factory=dict)
     """单次调用的非敏感 token/cache usage，不包含 prompt 或响应正文。"""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """转为字典。"""
         return {
             "specialty": self.specialty,
@@ -148,7 +149,7 @@ class AgentOutput:
         }
 
     @classmethod
-    def from_dict(cls, data: dict, specialty: str = "") -> AgentOutput:
+    def from_dict(cls, data: dict[str, Any], specialty: str = "") -> AgentOutput:
         """从字典构建（解析 LLM JSON 输出）。"""
         claims = [
             Claim(
@@ -225,7 +226,7 @@ class BaseAgent:
     def generate(
         self,
         case_question: str,
-        evidence: list[KnowledgeChunk] | list[dict],
+        evidence: list[KnowledgeChunk] | list[dict[str, Any]],
         routing_note: str = "",
         case_options: dict[str, str] | None = None,
     ) -> AgentOutput:
@@ -293,7 +294,7 @@ class BaseAgent:
     def build_prompt(
         self,
         case_question: str,
-        evidence: list,
+        evidence: list[Any],
         routing_note: str,
         case_options: dict[str, str] | None = None,
     ) -> str:
