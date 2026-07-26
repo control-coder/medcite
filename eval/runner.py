@@ -100,6 +100,16 @@ class SampleResult:
     provider_usage: dict[str, int] = field(default_factory=dict)
 
 
+def _round(value: float | None, digits: int) -> float | None:
+    """Round a metric, preserving None for metrics with an empty denominator."""
+    return None if value is None else round(value, digits)
+
+
+def _fmt(value: float | None) -> str:
+    """Render a metric for the console, distinguishing undefined from 0.0."""
+    return "N/A" if value is None else f"{value:.4f}"
+
+
 @dataclass
 class ExperimentResult:
     experiment: str
@@ -108,7 +118,7 @@ class ExperimentResult:
     cache_stats: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def evidence_recall_at_5(self) -> float:
+    def evidence_recall_at_5(self) -> float | None:
         eligible = [
             result.recall_hit
             for result in self.sample_results
@@ -117,12 +127,12 @@ class ExperimentResult:
         return metrics.compute_recall_at_k(eligible)
 
     @property
-    def gold_evidence_coverage(self) -> float:
+    def gold_evidence_coverage(self) -> float | None:
         eligible = sum(result.evidence_eligible for result in self.sample_results)
         return metrics.compute_gold_evidence_coverage(eligible, len(self.sample_results))
 
     @property
-    def citation_precision(self) -> float:
+    def citation_precision(self) -> float | None:
         records = [
             record for result in self.sample_results for record in result.citation_results
         ]
@@ -156,18 +166,16 @@ class ExperimentResult:
             "family": self.family,
             "sample_count": len(self.sample_results),
             "metrics": {
-                "evidence_recall_at_5": round(self.evidence_recall_at_5, 4),
-                "gold_evidence_coverage": round(self.gold_evidence_coverage, 4),
-                "citation_precision": round(self.citation_precision, 4),
-                "unsupported_claim_rate": round(self.unsupported_claim_rate, 4),
+                # None means the metric is undefined for this run (empty
+                # denominator), which is not the same as a measured 0.0.
+                "evidence_recall_at_5": _round(self.evidence_recall_at_5, 4),
+                "gold_evidence_coverage": _round(self.gold_evidence_coverage, 4),
+                "citation_precision": _round(self.citation_precision, 4),
+                "unsupported_claim_rate": _round(self.unsupported_claim_rate, 4),
                 # This is a reviewer-pipeline metric, not CLOSED_SUCCESS.
-                "pipeline_approval_rate": (
-                    round(self.pipeline_approval_rate, 4)
-                    if self.pipeline_approval_rate is not None
-                    else None
-                ),
+                "pipeline_approval_rate": _round(self.pipeline_approval_rate, 4),
                 "workflow_success_rate": None,
-                "p95_latency_ms": round(self.p95_latency_ms, 2),
+                "p95_latency_ms": _round(self.p95_latency_ms, 2),
             },
             "cache_stats": self.cache_stats,
             "samples": [asdict(result) for result in self.sample_results],
@@ -303,8 +311,8 @@ def run_evaluation(
             encoding="utf-8",
         )
         click.echo(
-            f"{name}: Recall@5={result.evidence_recall_at_5:.4f}, "
-            f"GoldCoverage={result.gold_evidence_coverage:.4f}"
+            f"{name}: Recall@5={_fmt(result.evidence_recall_at_5)}, "
+            f"GoldCoverage={_fmt(result.gold_evidence_coverage)}"
         )
 
     manifest = _build_manifest(

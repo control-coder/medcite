@@ -14,6 +14,7 @@ from eval.leakage_check import run_leakage_check
 from eval.metrics import (
     compute_citation_precision,
     compute_gold_evidence_coverage,
+    compute_recall_at_k,
     compute_unsupported_claim_rate,
 )
 from eval.runner import (
@@ -245,7 +246,25 @@ def test_recall_uses_only_evidence_eligible_samples() -> None:
 
 
 def test_gold_evidence_coverage_empty_dataset() -> None:
-    assert compute_gold_evidence_coverage(0, 0) == 0.0
+    """空分母的指标是"未定义"，必须与实测 0.0 区分开。"""
+    assert compute_gold_evidence_coverage(0, 0) is None
+    assert compute_gold_evidence_coverage(0, 4) == 0.0
+
+
+def test_undefined_metrics_are_null_not_zero() -> None:
+    """MedQA 这类样本没有 gold evidence，Recall 未定义而非"检索全失败"。"""
+    assert compute_recall_at_k([]) is None
+    assert compute_recall_at_k([False, False]) == 0.0
+    assert compute_citation_precision([]) is None
+    assert compute_citation_precision(
+        [{"claim_id": "c", "evidence_chunk_id": "", "verdict": "UNSUPPORTED"}]
+    ) is None
+
+    result = ExperimentResult(experiment="agent_only", family="agent", sample_results=[])
+    payload = result.to_dict()["metrics"]
+    assert payload["evidence_recall_at_5"] is None
+    assert payload["gold_evidence_coverage"] is None
+    assert payload["citation_precision"] is None
 
 
 def test_citation_and_claim_metrics_use_different_denominators() -> None:

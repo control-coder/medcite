@@ -12,37 +12,48 @@ from typing import Any
 import numpy as np
 
 
-def compute_recall_at_k(hit_results: Sequence[bool]) -> float:
+def compute_recall_at_k(hit_results: Sequence[bool]) -> float | None:
     """Evidence Recall@k。
 
     公式: 至少命中 1 条 gold_evidence 的 eligible 样本数 / eligible 样本数
     ground truth: eval_set.gold_evidence_ids
 
     调用方必须只传入 ``gold_evidence_ids`` 非空的样本。
+
+    没有 eligible 样本时返回 None（指标未定义），不是 0.0。MedQA 这类
+    无 gold evidence 的样本按设计被排除在分母外，返回 0.0 会与"检索全部
+    失败"完全无法区分。
     """
     if not hit_results:
-        return 0.0
+        return None
     return sum(1 for h in hit_results if h) / len(hit_results)
 
 
-def compute_gold_evidence_coverage(eligible_count: int, total_count: int) -> float:
-    """Gold Evidence Coverage = eligible samples / all samples."""
+def compute_gold_evidence_coverage(
+    eligible_count: int, total_count: int
+) -> float | None:
+    """Gold Evidence Coverage = eligible samples / all samples。
+
+    没有样本时返回 None（指标未定义），不是 0.0。
+    """
     if total_count == 0:
-        return 0.0
+        return None
     return eligible_count / total_count
 
 
-def compute_citation_precision(citation_results: Sequence[Any]) -> float:
+def compute_citation_precision(citation_results: Sequence[Any]) -> float | None:
     """Citation Precision。
 
     公式: SUPPORTED claim-citation pairs / emitted claim-citation pairs
     ground truth: judge_model (deberta-v3-base-mnli) + 人工抽样
+
+    没有 emitted pair 时返回 None（指标未定义），不是 0.0。
     """
     emitted_pairs = [
         result for result in citation_results if _citation_chunk_id(result)
     ]
     if not emitted_pairs:
-        return 0.0
+        return None
     supported = sum(1 for result in emitted_pairs if _verdict(result) == "SUPPORTED")
     return supported / len(emitted_pairs)
 
