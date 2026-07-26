@@ -1,4 +1,4 @@
-﻿"""阶段 4 RAG 测试。
+"""阶段 4 RAG 测试。
 
 覆盖:
 1. 术语归一化（三层加载、同义词替换、覆盖率、term_overlap）—— 不需要重依赖
@@ -15,7 +15,6 @@ import pytest
 from eval.configuration import load_config
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
-
 
 # ===== 术语归一化测试（快速，不需要重依赖）=====
 
@@ -273,7 +272,7 @@ class _ScoreByTextReranker:
         return [float(len(text)) for _, text in self.seen_pairs]
 
 
-def _bare_retriever(reranker) -> "object":
+def _bare_retriever(reranker) -> object:
     """构造一个只用于 rerank 的 Retriever，跳过 embedding/FAISS 索引构建。"""
     from medidiag.rag.retrieval import Retriever
 
@@ -283,7 +282,7 @@ def _bare_retriever(reranker) -> "object":
     return retriever
 
 
-def _result(chunk_id: str, text: str | None) -> "object":
+def _result(chunk_id: str, text: str | None) -> object:
     from medidiag.rag.retrieval import SearchResult
 
     chunk = (

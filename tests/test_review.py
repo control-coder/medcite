@@ -11,15 +11,14 @@ from __future__ import annotations
 import pytest
 
 from medidiag.agents.base import AgentOutput, Claim, DiagnosisItem
-from medidiag.compliance.guard import ComplianceGuard, ComplianceResult
+from medidiag.compliance.guard import ComplianceGuard
 from medidiag.review.citation import (
     CitationResult,
     CitationVerdict,
     CitationVerifier,
     JudgeInferenceError,
 )
-from medidiag.review.logic import ClinicalLogicReviewer, ReviewResult
-
+from medidiag.review.logic import ClinicalLogicReviewer
 
 # ===== CitationVerifier 测试 =====
 

@@ -15,8 +15,8 @@ from __future__ import annotations
 import pytest
 
 from medidiag.workflow.state_machine import (
-    TRANSITIONS,
     TERMINAL_STATES,
+    TRANSITIONS,
     CaseState,
     IllegalTransitionError,
     TriggerSubject,
@@ -26,7 +26,6 @@ from medidiag.workflow.state_machine import (
     is_terminal,
     validate_transition,
 )
-
 
 # ===== 终态测试 =====
 

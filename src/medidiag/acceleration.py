@@ -1,4 +1,4 @@
-﻿"""本地模型推理设备解析与可审计运行时快照。"""
+"""本地模型推理设备解析与可审计运行时快照。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,9 @@ def resolve_torch_device(requested: str = "auto") -> str:
         import torch
     except ImportError:
         if normalized == "cuda":
-            raise RuntimeError("runtime.device=cuda requires PyTorch with CUDA support")
+            raise RuntimeError(
+                "runtime.device=cuda requires PyTorch with CUDA support"
+            ) from None
         return "cpu"
 
     cuda_available = bool(torch.cuda.is_available())

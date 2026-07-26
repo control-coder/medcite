@@ -30,7 +30,6 @@ from medidiag.schemas import (
     write_jsonl,
 )
 
-
 # CONTEXT 标签 -> 证据等级
 EVIDENCE_LEVEL_MAP = {
     "BACKGROUND": "level_2_review",
@@ -94,7 +93,7 @@ def cli(
 
         # 为每个 context 段落生成 chunk
         gold_evidence_ids: list[str] = []
-        for ctx_text, label in zip(contexts, labels):
+        for ctx_text, label in zip(contexts, labels, strict=False):
             chunk_id = f"kb_pubmedqa_{chunk_seq:05d}"
             chunk_seq += 1
             chunk = KnowledgeChunk(
@@ -138,7 +137,7 @@ def cli(
     )
 
     has_evidence = sum(1 for s in samples if s.gold_evidence_ids)
-    click.echo(f"PubMedQA 改造完成:")
+    click.echo("PubMedQA 改造完成:")
     click.echo(f"  样本数          : {n_samples}")
     click.echo(f"  知识库 chunks   : {n_chunks}")
     click.echo(f"  有 gold_evidence: {has_evidence}/{n_samples} ({has_evidence / n_samples * 100:.1f}%)")

@@ -25,7 +25,6 @@ from medidiag.schemas import (
     write_jsonl,
 )
 
-
 # ===== schema 单元测试 =====
 
 

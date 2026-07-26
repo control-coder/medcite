@@ -65,7 +65,7 @@ def cohen_kappa(
     # 期望一致率 pe
     counter_a = Counter(ann_a[sid] for sid in common_ids)
     counter_b = Counter(ann_b[sid] for sid in common_ids)
-    pe = sum((counter_a[l] / n) * (counter_b[l] / n) for l in labels)
+    pe = sum((counter_a[label] / n) * (counter_b[label] / n) for label in labels)
 
     # Kappa
     if pe >= 1.0:

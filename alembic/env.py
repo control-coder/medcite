@@ -13,6 +13,7 @@ from logging.config import fileConfig
 from pathlib import Path
 
 from sqlalchemy import engine_from_config, pool
+
 from alembic import context
 
 # 添加 src 到 sys.path，让 medidiag 包可 import
@@ -21,9 +22,9 @@ if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
 # import Base 和所有 models（autogenerate 需要检测表结构）
-from medidiag.db.models import Base  # noqa: E402
 from medidiag.db.models import (  # noqa: E402, F401
     AgentRun,
+    Base,  # noqa: E402
     Case,
     CaseEventLog,
     Citation,

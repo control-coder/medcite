@@ -12,17 +12,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import inspect, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from medidiag.db.models import (
     ALL_TABLES,
     AgentRun,
-    Base,
     Case,
     CaseEventLog,
     CaseReport,
@@ -187,7 +185,7 @@ class TestCase:
 
 class TestWorkflowTask:
     def test_create_task_with_lease(self, session, case) -> None:
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         t = WorkflowTask(
             task_id="t1", case_id="c1", task_type="normalize",
             status="RUNNING", lease_owner="worker-1",

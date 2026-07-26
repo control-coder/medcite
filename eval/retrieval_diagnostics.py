@@ -1,4 +1,4 @@
-﻿"""输出可审计的 RAG top-k 诊断结果，不调用 generation、judge 或 DeepSeek。"""
+"""输出可审计的 RAG top-k 诊断结果，不调用 generation、judge 或 DeepSeek。"""
 
 from __future__ import annotations
 

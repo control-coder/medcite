@@ -12,19 +12,18 @@ from __future__ import annotations
 
 import pytest
 
-from medidiag.agents.arbitration import ArbitrationAgent, ArbitrationResult
+from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput, Claim, DiagnosisItem
 from medidiag.agents.diagnosis import DiagnosisAgent
-from medidiag.agents.router import RoutingResult, SpecialistRouter
+from medidiag.agents.router import SpecialistRouter
+from medidiag.agents.specialist import SpecialistAgent
 from medidiag.agents.specialty_data import (
     BASELINE_PAIR,
     FALLBACK_PAIR,
     SPECIALTIES,
     THRESHOLDS,
 )
-from medidiag.agents.specialist import SpecialistAgent
 from medidiag.schemas import KnowledgeChunk
-
 
 # ===== 路由器测试 =====
 
@@ -43,7 +42,7 @@ class TestRouter:
                 evidence_level="level_2_review",
             )
         ]
-        result = router.route(
+        router.route(
             "patient has chest pain and ECG shows ST elevation", chunks
         )
         scores = router._compute_all_scores(

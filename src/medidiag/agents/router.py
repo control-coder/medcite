@@ -20,9 +20,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from medidiag.rag.normalizer import NormalizedQuery, TerminologyNormalizer
-from medidiag.schemas import KnowledgeChunk
-
 from medidiag.agents.specialty_data import (
     FALLBACK_PAIR,
     ROUTING_WEIGHTS,
@@ -31,6 +28,8 @@ from medidiag.agents.specialty_data import (
     SYSTEM_MATCH_KEYWORDS,
     THRESHOLDS,
 )
+from medidiag.rag.normalizer import NormalizedQuery, TerminologyNormalizer
+from medidiag.schemas import KnowledgeChunk
 
 
 @dataclass

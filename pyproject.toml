@@ -71,7 +71,22 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
-ignore = ["E501"]
+ignore = [
+    "E501",
+    # UP042: `class X(str, Enum)` -> StrEnum. These enum values are persisted in
+    # the database and compared against stored strings; StrEnum changes what
+    # str(member) returns, so the migration is not a safe mechanical rewrite.
+    "UP042",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# B008: FastAPI resolves Depends() in argument defaults by design. Moving the
+# call into the body would break dependency injection.
+"src/medidiag/api/app.py" = ["B008"]
+# B023: the stage lambdas close over loop variables, but ProviderCallRunner
+# invokes each one synchronously inside the same iteration, so the late-binding
+# hazard the rule warns about cannot occur here.
+"src/medidiag/workflow/worker.py" = ["B023"]
 
 [tool.mypy]
 python_version = "3.11"

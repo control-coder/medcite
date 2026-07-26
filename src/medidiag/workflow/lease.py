@@ -15,7 +15,7 @@ PLAN.md 租约策略:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -26,7 +26,7 @@ from medidiag.workflow.state_machine import CaseState, is_terminal
 
 def _utcnow() -> datetime:
     """UTC 当前时间（naive）。"""
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class LeaseManager:

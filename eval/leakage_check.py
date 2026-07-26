@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import click
 import yaml
-
 
 LEAKAGE_FLAG = "EVAL_DATA_LEAKAGE_DETECTED"
 
@@ -241,8 +241,6 @@ def cli(
     kb_records = load_jsonl(kb_path)
 
     eval_sample_ids = extract_eval_sample_ids(eval_records)
-    eval_questions = extract_eval_questions(eval_records)
-    eval_answers = extract_eval_answer_keys(eval_records)
 
     click.echo(f"  eval samples  : {len(eval_records)}")
     click.echo(f"  eval ids      : {len(eval_sample_ids)}")

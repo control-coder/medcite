@@ -6,7 +6,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -133,7 +134,7 @@ def compute_judge_agreement(
     if not judge_results or len(judge_results) != len(human_results):
         return 0.0
     agree = sum(
-        1 for j, h in zip(judge_results, human_results) if j == h
+        1 for j, h in zip(judge_results, human_results, strict=True) if j == h
     )
     return agree / len(judge_results)
 

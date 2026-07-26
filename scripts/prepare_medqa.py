@@ -77,9 +77,9 @@ def cli(input_path: str, output_path: str, limit: int | None) -> None:
         [sample_to_dict(s) for s in samples], output_path
     )
 
-    click.echo(f"MedQA 改造完成:")
+    click.echo("MedQA 改造完成:")
     click.echo(f"  样本数          : {n}")
-    click.echo(f"  gold_evidence   : 空（MedQA 无 explanation，label_source=dataset_no_evidence）")
+    click.echo("  gold_evidence   : 空（MedQA 无 explanation，label_source=dataset_no_evidence）")
     click.echo(f"  output -> {output_path}")
 
 

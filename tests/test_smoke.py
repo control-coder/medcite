@@ -28,7 +28,6 @@ from medidiag.workflow.state_machine import (
     is_terminal,
 )
 
-
 # ===== errors 模块测试 =====
 
 def test_error_registry_non_empty() -> None:

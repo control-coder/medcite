@@ -15,11 +15,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
 
 from medidiag.agents.llm_client import LLMClient
 from medidiag.schemas import KnowledgeChunk
-
 
 # 稳定系统前缀：将策略和指令与动态病例 prompt 分离，便于复用 DeepSeek 自动上下文缓存。
 AGENT_SYSTEM_PROMPT = """MediDiag EvidenceFlow 证据约束起草 Agent。
@@ -150,7 +148,7 @@ class AgentOutput:
         }
 
     @classmethod
-    def from_dict(cls, data: dict, specialty: str = "") -> "AgentOutput":
+    def from_dict(cls, data: dict, specialty: str = "") -> AgentOutput:
         """从字典构建（解析 LLM JSON 输出）。"""
         claims = [
             Claim(
@@ -350,7 +348,7 @@ class BaseAgent:
             if text.startswith("```"):
                 # 去掉 markdown 代码块
                 lines = text.split("\n")
-                lines = [l for l in lines if not l.strip().startswith("```")]
+                lines = [line for line in lines if not line.strip().startswith("```")]
                 text = "\n".join(lines)
             data = json.loads(text)
             output = AgentOutput.from_dict(data, specialty=self.specialty)
