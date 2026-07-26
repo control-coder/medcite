@@ -58,14 +58,19 @@ def compute_citation_precision(citation_results: Sequence[Any]) -> float | None:
     return supported / len(emitted_pairs)
 
 
-def compute_unsupported_claim_rate(citation_results: Sequence[Any]) -> float:
+def compute_unsupported_claim_rate(citation_results: Sequence[Any]) -> float | None:
     """Unsupported Claim Rate。
 
     公式: UNSUPPORTED claims / total claims
     ground truth: judge_model
+
+    没有 claim 时返回 None（指标未定义），不是 0.0。与
+    ``compute_recall_at_k`` / ``compute_gold_evidence_coverage`` /
+    ``compute_citation_precision`` 口径一致：全员弃权或全部样本无 claim 时
+    返回 0.0，会显示为「0% 未支撑」这一看似最优的值。
     """
     if not citation_results:
-        return 0.0
+        return None
     best_by_claim: dict[str, int] = {}
     rank = {"UNSUPPORTED": 0, "PARTIAL": 1, "SUPPORTED": 2}
     for index, result in enumerate(citation_results):

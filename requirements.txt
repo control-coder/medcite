@@ -1,5 +1,10 @@
 # MediDiag-Agent EvidenceFlow dependencies
-# Pinned for reproducible evaluation. Changing any model/version requires re-running baseline + ablation.
+#
+# 这是最低版本声明，不是锁定文件。每行都是 `>=` 范围，对它求哈希不能证明
+# 任何两次运行使用了相同依赖。评测的依赖溯源改由 manifest 的
+# `resolved_package_versions` 承担：那里记录的是运行时实际解析到的发行版
+# 版本号，来自 importlib.metadata，与本文件的范围声明无关。
+# 模型版本锁定另由 eval/config.*.yaml 的 commit SHA 负责。
 
 fastapi>=0.110
 jinja2>=3.1

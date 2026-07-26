@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import click
+import httpx
 import pytest
 
 from eval.configuration import load_config, validate_config
@@ -26,6 +27,7 @@ from eval.runner import (
     _non_reportable_reasons,
     select_experiments,
 )
+from medidiag.agents.llm_client import SEED_SENT_TO_PROVIDER, LLMClient
 
 
 @pytest.fixture
@@ -219,6 +221,70 @@ def test_formal_manifest_records_generation_provenance(config: dict) -> None:
     }
 
 
+def test_manifest_does_not_call_a_range_specification_a_lock(config: dict) -> None:
+    """requirements.txt 全为 `>=`，其哈希不能冒充依赖锁定。"""
+    now = datetime.now(UTC)
+    manifest = _build_manifest(
+        run_id="run-dependency-provenance",
+        config=config,
+        experiments=["rag_embedding"],
+        started_at=now,
+        finished_at=now,
+        limit=None,
+        dry_run=False,
+        cache=AgentOutputCache(),
+        git_commit="test-commit",
+        dirty_diff_hash="test-diff",
+    )
+    assert "dependency_lock_hash" not in manifest
+    assert manifest["dependency_spec_hash"]
+    resolved = manifest["resolved_package_versions"]
+    # 实际解析到的版本才是可用的依赖溯源。
+    assert resolved["transformers"] != "not_installed"
+    assert all(isinstance(value, str) and value for value in resolved.values())
+
+
+def test_manifest_marks_recorded_seed_as_not_applied(config: dict) -> None:
+    """seed 进入校验与 manifest，但客户端不发送；未标注等于记录一个假参数。"""
+    now = datetime.now(UTC)
+    manifest = _build_manifest(
+        run_id="run-seed-provenance",
+        config=config,
+        experiments=["rag_embedding"],
+        started_at=now,
+        finished_at=now,
+        limit=None,
+        dry_run=False,
+        cache=AgentOutputCache(),
+        git_commit="test-commit",
+        dirty_diff_hash="test-diff",
+    )
+    assert manifest["generation"]["seed"] == config["generation"]["seed"]
+    assert manifest["generation"]["seed_applied"] is False
+    assert manifest["generation"]["seed_not_applied_reason"]
+
+
+def test_llm_client_request_body_omits_seed() -> None:
+    """B7 的行为依据：请求体确实不含 seed。"""
+    captured: dict[str, object] = {}
+
+    def _post(url: str, **kwargs: object) -> httpx.Response:
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            json={
+                "id": "resp-1",
+                "choices": [{"message": {"content": "ok"}}],
+            },
+            request=httpx.Request("POST", url),
+        )
+
+    client = LLMClient(api_key="test-key", seed=42, post=_post)
+    client.complete("prompt")
+    assert "seed" not in captured["json"]  # type: ignore[operator]
+    assert SEED_SENT_TO_PROVIDER is False
+
+
 def test_agent_manifest_is_fixed_to_100_unique_samples(config: dict) -> None:
     path = Path(config["dataset"]["agent_sample_manifest_path"])
     records = [line for line in path.read_text(encoding="utf-8").splitlines() if line]
@@ -259,12 +325,15 @@ def test_undefined_metrics_are_null_not_zero() -> None:
     assert compute_citation_precision(
         [{"claim_id": "c", "evidence_chunk_id": "", "verdict": "UNSUPPORTED"}]
     ) is None
+    # 没有 claim 不等于「0% 未支撑」。
+    assert compute_unsupported_claim_rate([]) is None
 
     result = ExperimentResult(experiment="agent_only", family="agent", sample_results=[])
     payload = result.to_dict()["metrics"]
     assert payload["evidence_recall_at_5"] is None
     assert payload["gold_evidence_coverage"] is None
     assert payload["citation_precision"] is None
+    assert payload["unsupported_claim_rate"] is None
 
 
 def test_citation_and_claim_metrics_use_different_denominators() -> None:

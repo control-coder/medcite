@@ -32,7 +32,7 @@ from medidiag.acceleration import runtime_snapshot
 from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput
 from medidiag.agents.diagnosis import DiagnosisAgent
-from medidiag.agents.llm_client import LLMClient
+from medidiag.agents.llm_client import SEED_SENT_TO_PROVIDER, LLMClient
 from medidiag.agents.router import SpecialistRouter
 from medidiag.agents.specialist import SpecialistAgent
 from medidiag.compliance.guard import ComplianceGuard
@@ -152,7 +152,7 @@ class ExperimentResult:
         return metrics.compute_citation_precision(records)
 
     @property
-    def unsupported_claim_rate(self) -> float:
+    def unsupported_claim_rate(self) -> float | None:
         records = [
             record for result in self.sample_results for record in result.citation_results
         ]
@@ -578,8 +578,11 @@ def _run_sample(
         guard.check_output(output.to_dict()).blocked for output in outputs
     )
     unsupported_rate = metrics.compute_unsupported_claim_rate(citation_results)
+    # unsupported_rate 为 None 表示本样本没有 claim（指标未定义）。没有 claim
+    # 就没有未支撑 claim，引用门禁通过；弃权本身另由 agent_abstained 拦截。
     citation_gate = (
         not rag_config["use_citation_review"]
+        or unsupported_rate is None
         or unsupported_rate <= config["workflow"]["review"]["unsupported_claim_threshold"]
     )
     result.pipeline_approved = (
@@ -722,7 +725,10 @@ def _build_manifest(
             )
         },
         "python_version": sys.version,
-        "dependency_lock_hash": _hash_file(_PROJECT_ROOT / "requirements.txt"),
+        # requirements.txt 全部为 `>=` 范围，对它求哈希只能证明"声明未变"，
+        # 不能证明两次运行装的是同一批依赖，因此不再称为 lock hash。
+        "dependency_spec_hash": _hash_file(_PROJECT_ROOT / "requirements.txt"),
+        "resolved_package_versions": _resolved_package_versions(),
         "models": {
             section: {
                 "model": config[section]["model"],
@@ -756,6 +762,14 @@ def _build_manifest(
         "generation": {
             "temperature": config["generation"]["temperature"],
             "seed": config["generation"]["seed"],
+            # 配置中的 seed 通过校验并被记录，但客户端不把它发给 DeepSeek。
+            # 不加标注的话，manifest 会读起来像一个已生效的可复现性参数。
+            "seed_applied": SEED_SENT_TO_PROVIDER,
+            "seed_not_applied_reason": (
+                None
+                if SEED_SENT_TO_PROVIDER
+                else "provider_seed_compatibility_unconfirmed_not_sent"
+            ),
             "thinking": config["generation"].get("thinking", "disabled"),
             "timeout_seconds": config["generation"]["timeout_seconds"],
             "cache_strategy": config["generation"].get("cache_strategy"),
@@ -813,6 +827,38 @@ def _new_run_id(config: dict[str, Any]) -> str:
 def _resolve(configured_path: str) -> Path:
     path = Path(configured_path)
     return path if path.is_absolute() else _PROJECT_ROOT / path
+
+
+# 影响评测数值的发行版。记录实际解析到的版本，而不是范围声明。
+_PROVENANCE_DISTRIBUTIONS = (
+    "faiss-cpu",
+    "httpx",
+    "numpy",
+    "rank-bm25",
+    "sentence-transformers",
+    "tokenizers",
+    "torch",
+    "transformers",
+)
+
+
+def _resolved_package_versions() -> dict[str, str]:
+    """Record the versions actually installed at run time.
+
+    This is the dependency provenance a range specification cannot provide.
+    Distributions absent from the environment are recorded as ``not_installed``
+    rather than omitted, so a missing accelerator stack is visible in the
+    manifest instead of silently indistinguishable from an unrecorded field.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+
+    resolved: dict[str, str] = {}
+    for name in _PROVENANCE_DISTRIBUTIONS:
+        try:
+            resolved[name] = version(name)
+        except PackageNotFoundError:
+            resolved[name] = "not_installed"
+    return resolved
 
 
 def _hash_file(path: Path) -> str:

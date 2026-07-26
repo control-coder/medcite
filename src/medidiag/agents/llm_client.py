@@ -18,6 +18,12 @@ import httpx
 from medidiag.config import get_settings
 from medidiag.errors import MediDiagError
 
+# 请求体不发送 `seed`：DeepSeek chat-completions 未确认该参数的兼容性，
+# 发送未确认参数会让请求被拒或被静默忽略。评测 manifest 依据该常量把配置里的
+# `generation.seed` 标注为「已记录但未生效」，避免记录一个不产生作用的
+# 可复现性参数。若日后确认兼容并在请求中发送 seed，必须同步改为 True。
+SEED_SENT_TO_PROVIDER = False
+
 
 @dataclass(frozen=True)
 class LLMCompletion:
