@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from medidiag.agents.arbitration import ArbitrationAgent
@@ -21,8 +23,10 @@ from medidiag.agents.specialty_data import (
     BASELINE_PAIR,
     FALLBACK_PAIR,
     SPECIALTIES,
+    SPECIALTY_KEYWORDS,
     THRESHOLDS,
 )
+from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
 # ===== 路由器测试 =====
@@ -131,6 +135,65 @@ class TestRouter:
         assert router._compute_plan_hint_score("cardiology", "cardiovascular system") == 1.0
         assert router._compute_plan_hint_score("cardiology", "digestive system") == 0.0
         assert router._compute_plan_hint_score("cardiology", "") == 0.0
+
+
+class TestSpecialtyKeywords:
+    """守护 `specialty_data.py` 文件头记录的三条词表编写约定。"""
+
+    def test_keywords_survive_normalization(self) -> None:
+        """词条不得被归一化器改写成本表之外的形式，否则永不命中。
+
+        `_compute_keyword_score` 打分的是归一化**之后**的查询文本。扩表前
+        `ECG` / `EKG` 会被改写为 `electrocardiogram`，而该形式不在心内科词表内，
+        于是这两个词条在 100 样本 manifest 上白丢 5 次命中。
+        """
+        normalizer = TerminologyNormalizer()
+        dead: list[tuple[str, str, str]] = []
+        for specialty, keywords in SPECIALTY_KEYWORDS.items():
+            present = {keyword.lower() for keyword in keywords}
+            for keyword in keywords:
+                preferred = normalizer._synonym_map.get(keyword.lower())
+                if not preferred or preferred.lower() == keyword.lower():
+                    continue
+                # 改写结果里仍能以词边界找回原词条时不算丢失
+                # （如 `diabetes` -> `diabetes mellitus`）。
+                if re.search(
+                    r"\b" + re.escape(keyword.lower()) + r"\b", preferred.lower()
+                ):
+                    continue
+                if preferred.lower() in present:
+                    continue
+                dead.append((specialty, keyword, preferred))
+        assert dead == [], (
+            "these keywords are rewritten out of their own specialty list and can "
+            f"never match: {dead}"
+        )
+
+    def test_keywords_are_not_cross_listed(self) -> None:
+        """同一词条不得出现在两个专科：它同时抬高两侧，不产生区分度。"""
+        owners: dict[str, list[str]] = {}
+        for specialty, keywords in SPECIALTY_KEYWORDS.items():
+            for keyword in keywords:
+                owners.setdefault(keyword.lower(), []).append(specialty)
+        shared = {k: v for k, v in owners.items() if len(v) > 1}
+        assert shared == {}, f"cross-listed keywords: {shared}"
+
+    def test_no_duplicate_keywords_within_a_specialty(self) -> None:
+        """表内重复只会稀释 term/evidence 分项的分母，不增加命中。"""
+        for specialty, keywords in SPECIALTY_KEYWORDS.items():
+            lowered = [keyword.lower() for keyword in keywords]
+            assert len(lowered) == len(set(lowered)), (
+                f"{specialty} has duplicate keywords"
+            )
+
+    def test_fallback_roles_stay_unscored(self) -> None:
+        """兜底角色刻意没有关键词；其余专科必须有。"""
+        for specialty in SPECIALTIES:
+            keywords = SPECIALTY_KEYWORDS[specialty]
+            if specialty in FALLBACK_PAIR:
+                assert keywords == []
+            else:
+                assert len(keywords) >= 15
 
 
 # ===== 仲裁测试 =====
