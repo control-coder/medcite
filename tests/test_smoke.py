@@ -28,6 +28,8 @@ from medidiag.workflow.state_machine import (
     is_terminal,
 )
 
+_ROOT = Path(__file__).resolve().parent.parent
+
 # ===== errors 模块测试 =====
 
 def test_error_registry_non_empty() -> None:
@@ -35,11 +37,32 @@ def test_error_registry_non_empty() -> None:
     assert len(codes) >= 15, f"expected >=15 error codes, got {len(codes)}"
 
 
+def test_every_registered_code_is_actually_raised() -> None:
+    """注册表只描述真实存在的行为。
+
+    描述了未实现 `default_action` 的错误码比更小的注册表更糟：它承诺了一条
+    实际不存在的处理路径。本测试扫描 src/ 与 eval/，任何只存在于注册表中的
+    错误码都会失败。
+    """
+    roots = [_ROOT / "src", _ROOT / "eval"]
+    sources = [
+        path.read_text(encoding="utf-8")
+        for root in roots
+        for path in root.rglob("*.py")
+        if "__pycache__" not in str(path) and path.name != "errors.py"
+    ]
+    unreferenced = [
+        code
+        for code in all_error_codes()
+        if not any(code in text for text in sources)
+    ]
+    assert unreferenced == [], f"registered but never raised: {unreferenced}"
+
+
 @pytest.mark.parametrize("expected_code", [
     "CASE_INVALID_INPUT",
     "CASE_NOT_FOUND",
     "CASE_ALREADY_CLOSED",
-    "CASE_CANCELLED",
     "IDEMPOTENCY_KEY_MISSING",
     "CASE_INPUT_NOT_DEIDENTIFIED",
     "STATE_CONFLICT",
@@ -51,10 +74,6 @@ def test_error_registry_non_empty() -> None:
     "LLM_TIMEOUT",
     "LLM_JSON_INVALID",
     "JUDGE_TIMEOUT",
-    "EMBEDDING_TIMEOUT",
-    "RAG_EMPTY_RESULT",
-    "REVIEW_UNSUPPORTED_CLAIM",
-    "CITATION_VERIFICATION_FAILED",
     "COMPLIANCE_BLOCKED",
     "EVAL_DATA_LEAKAGE_DETECTED",
     "TASK_LEASE_EXPIRED",
@@ -106,7 +125,6 @@ def test_retryable_codes_filter() -> None:
     assert "OPTIMISTIC_LOCK_CONFLICT" in retryable
     # 不可重试的
     assert "CASE_INVALID_INPUT" not in retryable
-    assert "CASE_CANCELLED" not in retryable
     assert "TASK_LEASE_LOST" not in retryable  # 脑裂防护，丢弃而非重试
 
 

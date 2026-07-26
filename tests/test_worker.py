@@ -8,6 +8,7 @@ import httpx
 import pytest
 from sqlalchemy import select, update
 
+from medidiag.compliance.status import ComplianceStatus
 from medidiag.db.models import (
     Case,
     CaseEventLog,
@@ -473,3 +474,42 @@ def test_review_round_cap_is_configurable(runtime) -> None:
         case = session.execute(select(Case).where(Case.case_id == case_id)).scalar_one()
         assert case.status == "ESCALATED"
         assert case.review_round == 1
+
+
+def test_compliance_block_escalation_records_its_own_error_code(runtime) -> None:
+    """合规拦截驱动的升级要带 COMPLIANCE_BLOCKED，与普通复核升级区分开。"""
+    _, factory = runtime
+    case_id, _ = _create_task(factory, "compliance-block")
+
+    class BlockingReviewProvider(DeterministicWorkflowProvider):
+        def review(self, generation: dict, arbitration: dict) -> dict:
+            payload = super().review(generation, arbitration)
+            payload["verdict"] = "ESCALATED"
+            payload["compliance_status"] = ComplianceStatus.BLOCKED.value
+            payload["issues"] = ["absolute_term_blocked"]
+            return payload
+
+    result = SingleMachineWorker(
+        factory, BlockingReviewProvider(), worker_id="compliance-worker"
+    ).run_once()
+    assert result.final_state == "ESCALATED"
+
+    with factory() as session:
+        events = session.execute(
+            select(CaseEventLog).where(
+                CaseEventLog.case_id == case_id,
+                CaseEventLog.event_type == "stage_completed",
+            )
+        ).scalars().all()
+        blocked = [
+            event.detail
+            for event in events
+            if event.detail.get("error_code") == "COMPLIANCE_BLOCKED"
+        ]
+        assert len(blocked) == 1
+        assert blocked[0]["stage"] == "review"
+
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.case_id == case_id)
+        ).scalar_one()
+        assert task.result == {"outcome": "COMPLIANCE_BLOCKED"}

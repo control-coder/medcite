@@ -10,8 +10,13 @@
     4xx 用户/输入错误       — 调用方问题，不重试
     42x 业务流程错误        — 状态/并发冲突，部分可重试
     52x 外部依赖错误        — RAG/LLM/judge 超时或不可用，可重试
-    53x 数据质量错误        — 检索空、引用不成立、合规拦截，一般不重试
+    53x 数据质量错误        — 合规拦截、评测数据泄露，一般不重试
     55x 系统错误            — 租约丢失、重试耗尽，需人工升级
+
+注册表只登记真实会被抛出或写入事件的错误码。一个描述了未实现 ``default_action``
+的错误码比更小的注册表更糟：它承诺了一条实际不存在的处理路径，会误导告警配置和
+事故排查。``tests/test_smoke.py::test_every_registered_code_is_actually_raised``
+扫描 ``src/`` 与 ``eval/`` 强制这条约束。
 """
 
 from __future__ import annotations
@@ -105,16 +110,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         requires_human_escalation=False,
         alert=False,
         description="病例已进入 CLOSED_* 终态，拒绝进一步操作。",
-    ),
-    "CASE_CANCELLED": ErrorSpec(
-        code="CASE_CANCELLED",
-        http_status=409,
-        category=ErrorCategory.USER_INPUT,
-        retryable=False,
-        default_action="返回 409，记录 CLOSED_CANCELLED。",
-        requires_human_escalation=False,
-        alert=False,
-        description="用户主动取消病例。",
     ),
     "IDEMPOTENCY_KEY_MISSING": ErrorSpec(
         code="IDEMPOTENCY_KEY_MISSING",
@@ -233,16 +228,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=True,
         description="NLI/cross-encoder judge 模型调用超时。",
     ),
-    "EMBEDDING_TIMEOUT": ErrorSpec(
-        code="EMBEDDING_TIMEOUT",
-        http_status=504,
-        category=ErrorCategory.DEPENDENCY,
-        retryable=True,
-        default_action="指数退避重试；连续失败后降级为纯 BM25。",
-        requires_human_escalation=False,
-        alert=True,
-        description="embedding 模型调用超时。",
-    ),
     "PROVIDER_RATE_LIMITED": ErrorSpec(
         code="PROVIDER_RATE_LIMITED",
         http_status=429,
@@ -305,36 +290,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
     ),
 
     # ----- 53x 数据质量错误 -----
-    "RAG_EMPTY_RESULT": ErrorSpec(
-        code="RAG_EMPTY_RESULT",
-        http_status=422,
-        category=ErrorCategory.DATA_QUALITY,
-        retryable=False,
-        default_action="放宽检索阈值重试一次；仍空则进入 REVISION_REQUIRED 并标记证据不足。",
-        requires_human_escalation=False,
-        alert=True,
-        description="RAG 检索返回空结果。",
-    ),
-    "REVIEW_UNSUPPORTED_CLAIM": ErrorSpec(
-        code="REVIEW_UNSUPPORTED_CLAIM",
-        http_status=422,
-        category=ErrorCategory.DATA_QUALITY,
-        retryable=False,
-        default_action="驳回至 REVISION_REQUIRED，要求 Agent 重新生成带证据 claim。",
-        requires_human_escalation=False,
-        alert=False,
-        description="审核发现 UNSUPPORTED claim 比例超阈值。",
-    ),
-    "CITATION_VERIFICATION_FAILED": ErrorSpec(
-        code="CITATION_VERIFICATION_FAILED",
-        http_status=422,
-        category=ErrorCategory.DATA_QUALITY,
-        retryable=False,
-        default_action="驳回至 REVISION_REQUIRED；记录不支持 claim 的证据 ID。",
-        requires_human_escalation=False,
-        alert=False,
-        description="引用校验失败，claim 无法被 evidence 支持。",
-    ),
     "COMPLIANCE_BLOCKED": ErrorSpec(
         code="COMPLIANCE_BLOCKED",
         http_status=422,
@@ -396,16 +351,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         requires_human_escalation=True,
         alert=True,
         description="工作流重试次数耗尽。",
-    ),
-    "AST_PARSE_FAILED": ErrorSpec(
-        code="AST_PARSE_FAILED",
-        http_status=500,
-        category=ErrorCategory.SYSTEM,
-        retryable=False,
-        default_action="降级到文本窗口定位（MiniCoder 用，此处预留）。",
-        requires_human_escalation=False,
-        alert=False,
-        description="AST 解析失败（预留，MediDiag 不使用）。",
     ),
 }
 

@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 
@@ -70,6 +71,60 @@ OUT_OF_SCOPE_KEYWORDS: list[str] = [
 ]
 
 
+# 中文否定前缀。CJK 没有词边界，`\b` 在汉字之间不成立，因此不能用词边界排除
+# 「尚未确诊」这类反例，只能显式列出否定语境。命中词紧邻其后时不算命中。
+CJK_NEGATION_PREFIXES: tuple[str, ...] = (
+    "尚未",
+    "暂未",
+    "还未",
+    "并未",
+    "从未",
+    "没有",
+    "无法",
+    "不能",
+    "难以",
+    "无需",
+    "排除",
+    "未",
+    "不",
+    "非",
+)
+
+
+def find_term_spans(text: str, term: str) -> list[tuple[int, int]]:
+    """返回 ``term`` 在 ``text`` 中的真实命中区间。
+
+    ASCII 词条按词边界匹配：``stock`` 不得命中神经科真实体征
+    ``stocking-glove distribution``。CJK 词条没有可用的词边界，改为显式排除
+    ``CJK_NEGATION_PREFIXES`` 中的否定语境：``确诊`` 不得命中「尚未确诊」。
+
+    两种策略都只降低误报，不试图理解语义；仍可能漏判更复杂的否定表达。
+    """
+    if not term:
+        return []
+    if term.isascii():
+        pattern = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+        return [match.span() for match in pattern.finditer(text)]
+    spans: list[tuple[int, int]] = []
+    for match in re.finditer(re.escape(term), text):
+        prefix = text[: match.start()]
+        if any(prefix.endswith(negation) for negation in CJK_NEGATION_PREFIXES):
+            continue
+        spans.append(match.span())
+    return spans
+
+
+def _merge_spans(spans: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """合并重叠区间并按倒序返回，使从后往前替换不会互相破坏下标。"""
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return list(reversed(merged))
+
+
 class ComplianceGuard:
     """合规管控器。
 
@@ -109,16 +164,20 @@ class ComplianceGuard:
 
         # 1. 超范围问题检查
         for kw in self.out_of_scope_keywords:
-            if kw.lower() in text.lower():
+            if find_term_spans(text, kw):
                 out_of_scope = True
                 reasons.append(f"out_of_scope: {kw}")
                 break
 
-        # 2. 绝对化措辞拦截
+        # 2. 绝对化措辞拦截。只替换真实命中的区间，被否定语境排除的出现保持原样。
+        blocked_spans: list[tuple[int, int]] = []
         for term in self.blocked_terms:
-            if term in text:
+            spans = find_term_spans(text, term)
+            if spans:
                 reasons.append(f"absolute_term_blocked: {term}")
-                sanitized = sanitized.replace(term, "***")
+                blocked_spans.extend(spans)
+        for start, end in _merge_spans(blocked_spans):
+            sanitized = sanitized[:start] + "***" + sanitized[end:]
 
         # 3. 强制免责声明
         disclaimer_added = False

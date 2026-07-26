@@ -15,7 +15,6 @@ alembic>=1.13
 pydantic>=2.6
 pydantic-settings>=2.2
 httpx>=0.27
-openai>=1.30
 sentence-transformers>=2.7
 transformers>=4.41
 faiss-cpu>=1.8
@@ -23,7 +22,6 @@ rank-bm25>=0.2.2
 numpy>=1.26
 pyyaml>=6.0
 click>=8.1
-tenacity>=8.2
 structlog>=24.1
 
 # Dev / test

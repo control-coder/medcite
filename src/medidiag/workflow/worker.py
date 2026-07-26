@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from medidiag.compliance.status import is_compliance_hit
 from medidiag.db.models import (
     AgentRun,
     Case,
@@ -347,6 +348,11 @@ class SingleMachineWorker:
                     )
                     if capped:
                         target = CaseState.ESCALATED
+                    # 合规拦截驱动的升级要带上自己的错误码，否则 trace 上与
+                    # 普通复核升级无法区分。
+                    compliance_blocked = target == CaseState.ESCALATED and (
+                        is_compliance_hit(payload.get("compliance_status"))
+                    )
                     records = [
                         self._artifact(case, task, "review", arbitration, payload, latency),
                         Review(
@@ -392,6 +398,8 @@ class SingleMachineWorker:
                             **(
                                 {"error_code": "MAX_REVIEW_ROUNDS_EXCEEDED"}
                                 if capped
+                                else {"error_code": "COMPLIANCE_BLOCKED"}
+                                if compliance_blocked
                                 else {}
                             ),
                             **self._provider_detail(outcome),
@@ -399,7 +407,11 @@ class SingleMachineWorker:
                         complete_task=complete,
                         task_result={
                             "outcome": (
-                                "MAX_REVIEW_ROUNDS_EXCEEDED" if capped else verdict
+                                "MAX_REVIEW_ROUNDS_EXCEEDED"
+                                if capped
+                                else "COMPLIANCE_BLOCKED"
+                                if compliance_blocked
+                                else verdict
                             )
                         }
                         if complete

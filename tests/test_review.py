@@ -348,6 +348,45 @@ class TestComplianceGuard:
         assert "超出" in template or "模拟范围" in template
         assert "仅供学习" in template
 
+    def test_ascii_terms_use_word_boundaries(self, guard: ComplianceGuard) -> None:
+        """`stock` 不得命中神经科真实体征 stocking-glove distribution。
+
+        命中即 blocked=True 并把病例推向 ESCALATED，子串匹配的代价是把正常
+        神经科描述判成超范围问题。
+        """
+        result = guard.check(
+            "Examination shows a stocking-glove distribution of sensory loss."
+        )
+        assert result.out_of_scope is False
+        assert result.blocked is False
+
+    def test_ascii_terms_still_match_as_whole_words(
+        self, guard: ComplianceGuard
+    ) -> None:
+        result = guard.check("Please recommend a stock portfolio.")
+        assert result.out_of_scope is True
+        assert result.blocked is True
+
+    def test_cjk_negation_context_is_not_a_hit(self, guard: ComplianceGuard) -> None:
+        """`确诊` 不得命中「尚未确诊」。CJK 之间不存在可用的词边界。"""
+        result = guard.check("患者尚未确诊，建议进一步检查。")
+        assert result.blocked is False
+        assert "***" not in result.sanitized_text
+
+    def test_cjk_term_without_negation_is_still_blocked(
+        self, guard: ComplianceGuard
+    ) -> None:
+        result = guard.check("患者已确诊为心肌梗死。")
+        assert result.blocked is True
+        assert "***" in result.sanitized_text
+
+    def test_only_real_hits_are_masked(self, guard: ComplianceGuard) -> None:
+        """同一词条既有否定出现又有真实出现时，只屏蔽真实出现。"""
+        result = guard.check("入院时尚未确诊；复查后确诊为肺炎。")
+        assert result.blocked is True
+        assert result.sanitized_text.count("***") == 1
+        assert "尚未确诊" in result.sanitized_text
+
     def test_check_output_dict(self, guard: ComplianceGuard) -> None:
         """检查 Agent 输出字典。"""
         output_dict = {
