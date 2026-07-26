@@ -1,0 +1,2809 @@
+{
+  "sample_count": 100,
+  "sample_set": "agent_manifest_v1",
+  "config_mode": "formal",
+  "retrieval_profile": "rag_full",
+  "thresholds": {
+    "MIN_PRIMARY_SCORE": 2.0,
+    "MIN_SECONDARY_SCORE": 1.2,
+    "SCORE_GAP": 3.0,
+    "LOW_CONFIDENCE": 0.45
+  },
+  "routing_weights": {
+    "keyword": 3.0,
+    "normalized_term": 2.0,
+    "evidence": 2.0,
+    "plan_hint": 1.0
+  },
+  "theoretical_max_total": 8.0,
+  "reachable_max_total": 7.0,
+  "branch_counts": {
+    "rule_1_primary_below_threshold": 50,
+    "rule_4_low_confidence": 26,
+    "rule_2_top1_plus_skeptic": 1,
+    "rule_3_dynamic_top2": 23
+  },
+  "fallback_count": 76,
+  "fallback_rate": 0.76,
+  "rule_4_with_both_scores_eligible": 1,
+  "specialty_pair_counts": {
+    "general_internal + evidence_skeptic": 76,
+    "cardiology + respiratory": 4,
+    "cardiology + renal": 3,
+    "respiratory + infectious_disease": 3,
+    "endocrinology + respiratory": 1,
+    "gastroenterology + oncology": 1,
+    "neurology + cardiology": 1,
+    "respiratory + gastroenterology": 1,
+    "oncology + evidence_skeptic": 1,
+    "endocrinology + renal": 1,
+    "gastroenterology + renal": 1,
+    "gastroenterology + infectious_disease": 1,
+    "gastroenterology + cardiology": 1,
+    "cardiology + gastroenterology": 1,
+    "gastroenterology + neurology": 1,
+    "renal + gastroenterology": 1,
+    "endocrinology + cardiology": 1,
+    "cardiology + endocrinology": 1
+  },
+  "top1_total_distribution": {
+    "min": 0.0123,
+    "p10": 0.7608,
+    "p50": 2.072,
+    "p90": 3.3323,
+    "max": 3.54
+  },
+  "confidence_distribution": {
+    "min": 0.0,
+    "p10": 0.0903,
+    "p50": 0.4879,
+    "p90": 0.9485,
+    "max": 0.9919
+  },
+  "top1_component_distribution": {
+    "keyword": {
+      "min": 0.0,
+      "p10": 0.25,
+      "p50": 0.5,
+      "p90": 1.0,
+      "max": 1.0
+    },
+    "normalized_term": {
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0192,
+      "p90": 0.0577,
+      "max": 0.0962
+    },
+    "evidence": {
+      "min": 0.0,
+      "p10": 0.0069,
+      "p50": 0.0708,
+      "p90": 0.176,
+      "max": 0.298
+    },
+    "plan_hint": {
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "max": 0.0
+    }
+  },
+  "top1_component_mean_share_of_weighted_max": {
+    "keyword": 0.5925,
+    "normalized_term": 0.0232,
+    "evidence": 0.0836,
+    "plan_hint": 0.0
+  },
+  "runtime": {
+    "requested_device": "auto",
+    "actual_device": "cuda",
+    "batch_size": 32,
+    "torch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "gpu_name": "NVIDIA GeForce RTX 3060 Laptop GPU"
+  },
+  "samples": [
+    {
+      "sample_id": "medqa_us_00000",
+      "question_length": 608,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.8788,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0166,
+        "plan_hint_score": 0.0,
+        "total": 0.0331
+      },
+      "top2": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0145,
+        "plan_hint_score": 0.0,
+        "total": 0.0291
+      }
+    },
+    {
+      "sample_id": "medqa_us_00001",
+      "question_length": 417,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3773,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.288,
+        "plan_hint_score": 0.0,
+        "total": 2.116
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0242,
+        "plan_hint_score": 0.0,
+        "total": 0.7983
+      }
+    },
+    {
+      "sample_id": "medqa_us_00002",
+      "question_length": 947,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "renal"
+      ],
+      "is_fallback": false,
+      "confidence": 0.9809,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.2508,
+        "plan_hint_score": 0.0,
+        "total": 3.54
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0189,
+        "evidence_score": 0.2174,
+        "plan_hint_score": 0.0,
+        "total": 3.4725
+      }
+    },
+    {
+      "sample_id": "medqa_us_00003",
+      "question_length": 773,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3981,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.2207,
+        "plan_hint_score": 0.0,
+        "total": 2.6914
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1415,
+        "plan_hint_score": 0.0,
+        "total": 1.0715
+      }
+    },
+    {
+      "sample_id": "medqa_us_00004",
+      "question_length": 738,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.52,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0062,
+        "plan_hint_score": 0.0,
+        "total": 0.0123
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0032,
+        "plan_hint_score": 0.0,
+        "total": 0.0064
+      }
+    },
+    {
+      "sample_id": "medqa_us_00005",
+      "question_length": 477,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5957,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.1108,
+        "plan_hint_score": 0.0,
+        "total": 1.7985
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.1437,
+        "plan_hint_score": 0.0,
+        "total": 1.0714
+      }
+    },
+    {
+      "sample_id": "medqa_us_00006",
+      "question_length": 404,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9616,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.0349,
+        "plan_hint_score": 0.0,
+        "total": 1.6062
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0223,
+        "plan_hint_score": 0.0,
+        "total": 1.5445
+      }
+    },
+    {
+      "sample_id": "medqa_us_00007",
+      "question_length": 752,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "respiratory"
+      ],
+      "is_fallback": false,
+      "confidence": 0.4965,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0962,
+        "evidence_score": 0.1096,
+        "plan_hint_score": 0.0,
+        "total": 3.4115
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0777,
+        "plan_hint_score": 0.0,
+        "total": 1.6938
+      }
+    },
+    {
+      "sample_id": "medqa_us_00008",
+      "question_length": 502,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9348,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0069,
+        "plan_hint_score": 0.0,
+        "total": 0.8023
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.75
+      }
+    },
+    {
+      "sample_id": "medqa_us_00009",
+      "question_length": 297,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.6441,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0084,
+        "plan_hint_score": 0.0,
+        "total": 0.0168
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0054,
+        "plan_hint_score": 0.0,
+        "total": 0.0108
+      }
+    },
+    {
+      "sample_id": "medqa_us_00010",
+      "question_length": 927,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9823,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0069,
+        "plan_hint_score": 0.0,
+        "total": 1.5523
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0124,
+        "plan_hint_score": 0.0,
+        "total": 1.5248
+      }
+    },
+    {
+      "sample_id": "medqa_us_00011",
+      "question_length": 948,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "endocrinology",
+        "respiratory"
+      ],
+      "is_fallback": false,
+      "confidence": 0.9891,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0545,
+        "evidence_score": 0.0669,
+        "plan_hint_score": 0.0,
+        "total": 3.2429
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0654,
+        "plan_hint_score": 0.0,
+        "total": 3.2077
+      }
+    },
+    {
+      "sample_id": "medqa_us_00012",
+      "question_length": 501,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4666,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.192,
+        "plan_hint_score": 0.0,
+        "total": 1.884
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0646,
+        "plan_hint_score": 0.0,
+        "total": 0.8791
+      }
+    },
+    {
+      "sample_id": "medqa_us_00013",
+      "question_length": 515,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1754,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0523,
+        "plan_hint_score": 0.0,
+        "total": 1.6046
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1407,
+        "plan_hint_score": 0.0,
+        "total": 0.2814
+      }
+    },
+    {
+      "sample_id": "medqa_us_00014",
+      "question_length": 670,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0903,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.171,
+        "plan_hint_score": 0.0,
+        "total": 1.8421
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0832,
+        "plan_hint_score": 0.0,
+        "total": 0.1664
+      }
+    },
+    {
+      "sample_id": "medqa_us_00015",
+      "question_length": 711,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "gastroenterology",
+        "oncology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.484,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0508,
+        "evidence_score": 0.0054,
+        "plan_hint_score": 0.0,
+        "total": 3.1125
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0032,
+        "plan_hint_score": 0.0,
+        "total": 1.5064
+      }
+    },
+    {
+      "sample_id": "medqa_us_00016",
+      "question_length": 1051,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0026,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0169,
+        "plan_hint_score": 0.0,
+        "total": 2.3608
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0031,
+        "plan_hint_score": 0.0,
+        "total": 0.0061
+      }
+    },
+    {
+      "sample_id": "medqa_us_00017",
+      "question_length": 968,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9919,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0031,
+        "plan_hint_score": 0.0,
+        "total": 0.7562
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.75
+      }
+    },
+    {
+      "sample_id": "medqa_us_00018",
+      "question_length": 817,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4112,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.1204,
+        "plan_hint_score": 0.0,
+        "total": 2.6062
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1415,
+        "plan_hint_score": 0.0,
+        "total": 1.0715
+      }
+    },
+    {
+      "sample_id": "medqa_us_00019",
+      "question_length": 610,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "neurology",
+        "cardiology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.7326,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.073,
+        "plan_hint_score": 0.0,
+        "total": 2.396
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0892,
+        "plan_hint_score": 0.0,
+        "total": 1.7554
+      }
+    },
+    {
+      "sample_id": "medqa_us_00020",
+      "question_length": 825,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2411,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.1068,
+        "plan_hint_score": 0.0,
+        "total": 3.2536
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.7845
+      }
+    },
+    {
+      "sample_id": "medqa_us_00021",
+      "question_length": 630,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0818,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0162,
+        "plan_hint_score": 0.0,
+        "total": 0.7823
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.032,
+        "plan_hint_score": 0.0,
+        "total": 0.064
+      }
+    },
+    {
+      "sample_id": "medqa_us_00022",
+      "question_length": 866,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "respiratory",
+        "infectious_disease"
+      ],
+      "is_fallback": false,
+      "confidence": 0.474,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.0669,
+        "plan_hint_score": 0.0,
+        "total": 3.2492
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.0028,
+        "plan_hint_score": 0.0,
+        "total": 1.54
+      }
+    },
+    {
+      "sample_id": "medqa_us_00023",
+      "question_length": 666,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "respiratory",
+        "infectious_disease"
+      ],
+      "is_fallback": false,
+      "confidence": 0.6755,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0569,
+        "plan_hint_score": 0.0,
+        "total": 2.4023
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.0441,
+        "plan_hint_score": 0.0,
+        "total": 1.6228
+      }
+    },
+    {
+      "sample_id": "medqa_us_00024",
+      "question_length": 1127,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "respiratory",
+        "gastroenterology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.4783,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0769,
+        "evidence_score": 0.05,
+        "plan_hint_score": 0.0,
+        "total": 3.2538
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0112,
+        "plan_hint_score": 0.0,
+        "total": 1.5563
+      }
+    },
+    {
+      "sample_id": "medqa_us_00025",
+      "question_length": 313,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1123,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.271,
+        "plan_hint_score": 0.0,
+        "total": 2.7921
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1568,
+        "plan_hint_score": 0.0,
+        "total": 0.3136
+      }
+    },
+    {
+      "sample_id": "medqa_us_00026",
+      "question_length": 669,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2657,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.1231,
+        "plan_hint_score": 0.0,
+        "total": 3.3615
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0523,
+        "plan_hint_score": 0.0,
+        "total": 0.8931
+      }
+    },
+    {
+      "sample_id": "medqa_us_00027",
+      "question_length": 640,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9485,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.0031,
+        "plan_hint_score": 0.0,
+        "total": 0.7907
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.75
+      }
+    },
+    {
+      "sample_id": "medqa_us_00028",
+      "question_length": 1033,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2803,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.1471,
+        "plan_hint_score": 0.0,
+        "total": 3.362
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0769,
+        "plan_hint_score": 0.0,
+        "total": 0.9423
+      }
+    },
+    {
+      "sample_id": "medqa_us_00029",
+      "question_length": 761,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4811,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1297,
+        "plan_hint_score": 0.0,
+        "total": 0.2593
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0624,
+        "plan_hint_score": 0.0,
+        "total": 0.1247
+      }
+    },
+    {
+      "sample_id": "medqa_us_00030",
+      "question_length": 744,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0046,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.0268,
+        "plan_hint_score": 0.0,
+        "total": 3.1214
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0072,
+        "plan_hint_score": 0.0,
+        "total": 0.0144
+      }
+    },
+    {
+      "sample_id": "medqa_us_00031",
+      "question_length": 452,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3865,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0369,
+        "plan_hint_score": 0.0,
+        "total": 2.3623
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0623,
+        "plan_hint_score": 0.0,
+        "total": 0.9131
+      }
+    },
+    {
+      "sample_id": "medqa_us_00032",
+      "question_length": 791,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2608,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.1359,
+        "plan_hint_score": 0.0,
+        "total": 3.3062
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0369,
+        "plan_hint_score": 0.0,
+        "total": 0.8623
+      }
+    },
+    {
+      "sample_id": "medqa_us_00033",
+      "question_length": 448,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2876,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0678,
+        "evidence_score": 0.0854,
+        "plan_hint_score": 0.0,
+        "total": 3.3064
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.0804,
+        "plan_hint_score": 0.0,
+        "total": 0.9508
+      }
+    },
+    {
+      "sample_id": "medqa_us_00034",
+      "question_length": 940,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9408,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1254,
+        "plan_hint_score": 0.0,
+        "total": 1.0392
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1138,
+        "plan_hint_score": 0.0,
+        "total": 0.9777
+      }
+    },
+    {
+      "sample_id": "medqa_us_00035",
+      "question_length": 563,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.008,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.7885
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0032,
+        "plan_hint_score": 0.0,
+        "total": 0.0063
+      }
+    },
+    {
+      "sample_id": "medqa_us_00036",
+      "question_length": 387,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9181,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.0153,
+        "plan_hint_score": 0.0,
+        "total": 0.8169
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.75
+      }
+    },
+    {
+      "sample_id": "medqa_us_00037",
+      "question_length": 400,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.528,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1054,
+        "plan_hint_score": 0.0,
+        "total": 1.7492
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0868,
+        "plan_hint_score": 0.0,
+        "total": 0.9236
+      }
+    },
+    {
+      "sample_id": "medqa_us_00038",
+      "question_length": 1102,
+      "branch": "rule_2_top1_plus_skeptic",
+      "specialty_pair": [
+        "oncology",
+        "evidence_skeptic"
+      ],
+      "is_fallback": false,
+      "confidence": 0.4693,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.266,
+        "plan_hint_score": 0.0,
+        "total": 2.072
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1112,
+        "plan_hint_score": 0.0,
+        "total": 0.9724
+      }
+    },
+    {
+      "sample_id": "medqa_us_00039",
+      "question_length": 545,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2669,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0926,
+        "plan_hint_score": 0.0,
+        "total": 0.9353
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1248,
+        "plan_hint_score": 0.0,
+        "total": 0.2496
+      }
+    },
+    {
+      "sample_id": "medqa_us_00040",
+      "question_length": 1029,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.339,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.0196,
+        "plan_hint_score": 0.0,
+        "total": 2.3256
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.7885
+      }
+    },
+    {
+      "sample_id": "medqa_us_00041",
+      "question_length": 835,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2462,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1316,
+        "plan_hint_score": 0.0,
+        "total": 1.0133
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1247,
+        "plan_hint_score": 0.0,
+        "total": 0.2495
+      }
+    },
+    {
+      "sample_id": "medqa_us_00042",
+      "question_length": 1077,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.986,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0803,
+        "plan_hint_score": 0.0,
+        "total": 1.6946
+      },
+      "top2": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.0673,
+        "plan_hint_score": 0.0,
+        "total": 1.6709
+      }
+    },
+    {
+      "sample_id": "medqa_us_00043",
+      "question_length": 266,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3846,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.032,
+        "plan_hint_score": 0.0,
+        "total": 0.064
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0123,
+        "plan_hint_score": 0.0,
+        "total": 0.0246
+      }
+    },
+    {
+      "sample_id": "medqa_us_00044",
+      "question_length": 987,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "endocrinology",
+        "renal"
+      ],
+      "is_fallback": false,
+      "confidence": 0.4972,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0545,
+        "evidence_score": 0.064,
+        "plan_hint_score": 0.0,
+        "total": 3.2371
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0547,
+        "plan_hint_score": 0.0,
+        "total": 1.6094
+      }
+    },
+    {
+      "sample_id": "medqa_us_00045",
+      "question_length": 744,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5598,
+      "top1": {
+        "specialty": "renal",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0453,
+        "plan_hint_score": 0.0,
+        "total": 1.5906
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0702,
+        "plan_hint_score": 0.0,
+        "total": 0.8904
+      }
+    },
+    {
+      "sample_id": "medqa_us_00046",
+      "question_length": 631,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3353,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1092,
+        "plan_hint_score": 0.0,
+        "total": 2.5069
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0453,
+        "plan_hint_score": 0.0,
+        "total": 0.8406
+      }
+    },
+    {
+      "sample_id": "medqa_us_00047",
+      "question_length": 866,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3447,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0364,
+        "evidence_score": 0.0291,
+        "plan_hint_score": 0.0,
+        "total": 2.3809
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0162,
+        "plan_hint_score": 0.0,
+        "total": 0.8208
+      }
+    },
+    {
+      "sample_id": "medqa_us_00048",
+      "question_length": 670,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0146,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0104,
+        "plan_hint_score": 0.0,
+        "total": 0.7708
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0056,
+        "plan_hint_score": 0.0,
+        "total": 0.0112
+      }
+    },
+    {
+      "sample_id": "medqa_us_00049",
+      "question_length": 753,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "respiratory",
+        "infectious_disease"
+      ],
+      "is_fallback": false,
+      "confidence": 0.7687,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0769,
+        "evidence_score": 0.1392,
+        "plan_hint_score": 0.0,
+        "total": 3.4323
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.1769,
+        "plan_hint_score": 0.0,
+        "total": 2.6383
+      }
+    },
+    {
+      "sample_id": "medqa_us_00050",
+      "question_length": 136,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1436,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.298,
+        "plan_hint_score": 0.0,
+        "total": 2.886
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.2072,
+        "plan_hint_score": 0.0,
+        "total": 0.4145
+      }
+    },
+    {
+      "sample_id": "medqa_us_00051",
+      "question_length": 691,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4879,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0135,
+        "plan_hint_score": 0.0,
+        "total": 1.6038
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0162,
+        "plan_hint_score": 0.0,
+        "total": 0.7825
+      }
+    },
+    {
+      "sample_id": "medqa_us_00052",
+      "question_length": 368,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.497,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1139,
+        "plan_hint_score": 0.0,
+        "total": 1.7278
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0543,
+        "plan_hint_score": 0.0,
+        "total": 0.8587
+      }
+    },
+    {
+      "sample_id": "medqa_us_00053",
+      "question_length": 368,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1054,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.0708,
+        "plan_hint_score": 0.0,
+        "total": 2.4595
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1297,
+        "plan_hint_score": 0.0,
+        "total": 0.2593
+      }
+    },
+    {
+      "sample_id": "medqa_us_00054",
+      "question_length": 552,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0088,
+        "plan_hint_score": 0.0,
+        "total": 0.0175
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.0
+      }
+    },
+    {
+      "sample_id": "medqa_us_00055",
+      "question_length": 640,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.923,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0154,
+        "plan_hint_score": 0.0,
+        "total": 0.8192
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0031,
+        "plan_hint_score": 0.0,
+        "total": 0.7562
+      }
+    },
+    {
+      "sample_id": "medqa_us_00056",
+      "question_length": 248,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.7334,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1738,
+        "plan_hint_score": 0.0,
+        "total": 0.3476
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1275,
+        "plan_hint_score": 0.0,
+        "total": 0.2549
+      }
+    },
+    {
+      "sample_id": "medqa_us_00057",
+      "question_length": 612,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.8379,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.1297,
+        "plan_hint_score": 0.0,
+        "total": 1.0438
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0431,
+        "plan_hint_score": 0.0,
+        "total": 0.8746
+      }
+    },
+    {
+      "sample_id": "medqa_us_00058",
+      "question_length": 1135,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "gastroenterology",
+        "renal"
+      ],
+      "is_fallback": false,
+      "confidence": 0.5038,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.0708,
+        "plan_hint_score": 0.0,
+        "total": 3.2095
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0189,
+        "evidence_score": 0.0396,
+        "plan_hint_score": 0.0,
+        "total": 1.617
+      }
+    },
+    {
+      "sample_id": "medqa_us_00059",
+      "question_length": 711,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0141,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0054,
+        "plan_hint_score": 0.0,
+        "total": 0.7947
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0056,
+        "plan_hint_score": 0.0,
+        "total": 0.0112
+      }
+    },
+    {
+      "sample_id": "medqa_us_00060",
+      "question_length": 571,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "gastroenterology",
+        "infectious_disease"
+      ],
+      "is_fallback": false,
+      "confidence": 0.7414,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0678,
+        "plan_hint_score": 0.0,
+        "total": 2.4195
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.1297,
+        "plan_hint_score": 0.0,
+        "total": 1.7938
+      }
+    },
+    {
+      "sample_id": "medqa_us_00061",
+      "question_length": 413,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9794,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0146,
+        "plan_hint_score": 0.0,
+        "total": 0.8131
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0175,
+        "evidence_score": 0.0056,
+        "plan_hint_score": 0.0,
+        "total": 0.7963
+      }
+    },
+    {
+      "sample_id": "medqa_us_00062",
+      "question_length": 690,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5292,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0469,
+        "plan_hint_score": 0.0,
+        "total": 1.6323
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0569,
+        "plan_hint_score": 0.0,
+        "total": 0.8638
+      }
+    },
+    {
+      "sample_id": "medqa_us_00063",
+      "question_length": 1130,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "renal"
+      ],
+      "is_fallback": false,
+      "confidence": 0.7171,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.1608,
+        "plan_hint_score": 0.0,
+        "total": 2.6485
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1996,
+        "plan_hint_score": 0.0,
+        "total": 1.8992
+      }
+    },
+    {
+      "sample_id": "medqa_us_00064",
+      "question_length": 828,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0221,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0054,
+        "plan_hint_score": 0.0,
+        "total": 0.7608
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0084,
+        "plan_hint_score": 0.0,
+        "total": 0.0168
+      }
+    },
+    {
+      "sample_id": "medqa_us_00065",
+      "question_length": 607,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4988,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.176,
+        "plan_hint_score": 0.0,
+        "total": 1.852
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0677,
+        "plan_hint_score": 0.0,
+        "total": 0.9238
+      }
+    },
+    {
+      "sample_id": "medqa_us_00066",
+      "question_length": 706,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0518,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.0766,
+        "plan_hint_score": 0.0,
+        "total": 2.471
+      },
+      "top2": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.064,
+        "plan_hint_score": 0.0,
+        "total": 0.128
+      }
+    },
+    {
+      "sample_id": "medqa_us_00067",
+      "question_length": 823,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5338,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 1.5
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0062,
+        "plan_hint_score": 0.0,
+        "total": 0.8008
+      }
+    },
+    {
+      "sample_id": "medqa_us_00068",
+      "question_length": 932,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "gastroenterology",
+        "cardiology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.4876,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0508,
+        "evidence_score": 0.0268,
+        "plan_hint_score": 0.0,
+        "total": 3.1553
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 1.5385
+      }
+    },
+    {
+      "sample_id": "medqa_us_00069",
+      "question_length": 715,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "gastroenterology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.9908,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.0158,
+        "plan_hint_score": 0.0,
+        "total": 3.1469
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.042,
+        "plan_hint_score": 0.0,
+        "total": 3.118
+      }
+    },
+    {
+      "sample_id": "medqa_us_00070",
+      "question_length": 1299,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "gastroenterology",
+        "neurology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.5014,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0339,
+        "evidence_score": 0.1536,
+        "plan_hint_score": 0.0,
+        "total": 3.3749
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0175,
+        "evidence_score": 0.0786,
+        "plan_hint_score": 0.0,
+        "total": 1.6923
+      }
+    },
+    {
+      "sample_id": "medqa_us_00071",
+      "question_length": 765,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "respiratory"
+      ],
+      "is_fallback": false,
+      "confidence": 0.5259,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0769,
+        "evidence_score": 0.0892,
+        "plan_hint_score": 0.0,
+        "total": 3.3323
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1262,
+        "plan_hint_score": 0.0,
+        "total": 1.7523
+      }
+    },
+    {
+      "sample_id": "medqa_us_00072",
+      "question_length": 1677,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "renal",
+        "gastroenterology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.9837,
+      "top1": {
+        "specialty": "renal",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0189,
+        "evidence_score": 0.1721,
+        "plan_hint_score": 0.0,
+        "total": 3.3819
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.1464,
+        "plan_hint_score": 0.0,
+        "total": 3.3268
+      }
+    },
+    {
+      "sample_id": "medqa_us_00073",
+      "question_length": 683,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.508,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0162,
+        "plan_hint_score": 0.0,
+        "total": 1.5708
+      },
+      "top2": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.0058,
+        "plan_hint_score": 0.0,
+        "total": 0.798
+      }
+    },
+    {
+      "sample_id": "medqa_us_00074",
+      "question_length": 978,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2855,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0364,
+        "evidence_score": 0.0815,
+        "plan_hint_score": 0.0,
+        "total": 3.2356
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0677,
+        "plan_hint_score": 0.0,
+        "total": 0.9238
+      }
+    },
+    {
+      "sample_id": "medqa_us_00075",
+      "question_length": 551,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2396,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0123,
+        "plan_hint_score": 0.0,
+        "total": 0.7746
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0928,
+        "plan_hint_score": 0.0,
+        "total": 0.1856
+      }
+    },
+    {
+      "sample_id": "medqa_us_00076",
+      "question_length": 708,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "endocrinology",
+        "cardiology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.6849,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0364,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 2.3227
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0069,
+        "plan_hint_score": 0.0,
+        "total": 1.5908
+      }
+    },
+    {
+      "sample_id": "medqa_us_00077",
+      "question_length": 448,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.6291,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.1862,
+        "plan_hint_score": 0.0,
+        "total": 1.9087
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.2062,
+        "plan_hint_score": 0.0,
+        "total": 1.2008
+      }
+    },
+    {
+      "sample_id": "medqa_us_00078",
+      "question_length": 509,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "respiratory"
+      ],
+      "is_fallback": false,
+      "confidence": 0.6859,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0223,
+        "plan_hint_score": 0.0,
+        "total": 2.2946
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0369,
+        "plan_hint_score": 0.0,
+        "total": 1.5738
+      }
+    },
+    {
+      "sample_id": "medqa_us_00079",
+      "question_length": 944,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3604,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.2277,
+        "plan_hint_score": 0.0,
+        "total": 3.5323
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.2615,
+        "plan_hint_score": 0.0,
+        "total": 1.2731
+      }
+    },
+    {
+      "sample_id": "medqa_us_00080",
+      "question_length": 206,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4655,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.065,
+        "plan_hint_score": 0.0,
+        "total": 1.7069
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0031,
+        "plan_hint_score": 0.0,
+        "total": 0.7946
+      }
+    },
+    {
+      "sample_id": "medqa_us_00081",
+      "question_length": 559,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.8129,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.1193,
+        "plan_hint_score": 0.0,
+        "total": 1.7749
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.3264,
+        "plan_hint_score": 0.0,
+        "total": 1.4428
+      }
+    },
+    {
+      "sample_id": "medqa_us_00082",
+      "question_length": 494,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0976,
+      "top1": {
+        "specialty": "oncology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.2112,
+        "plan_hint_score": 0.0,
+        "total": 2.7124
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1323,
+        "plan_hint_score": 0.0,
+        "total": 0.2646
+      }
+    },
+    {
+      "sample_id": "medqa_us_00083",
+      "question_length": 958,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5135,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0062,
+        "plan_hint_score": 0.0,
+        "total": 1.5508
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0175,
+        "evidence_score": 0.0056,
+        "plan_hint_score": 0.0,
+        "total": 0.7963
+      }
+    },
+    {
+      "sample_id": "medqa_us_00084",
+      "question_length": 861,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.2928,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0678,
+        "plan_hint_score": 0.0,
+        "total": 0.8856
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1297,
+        "plan_hint_score": 0.0,
+        "total": 0.2593
+      }
+    },
+    {
+      "sample_id": "medqa_us_00085",
+      "question_length": 798,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.338,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.1169,
+        "plan_hint_score": 0.0,
+        "total": 3.3492
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0172,
+        "evidence_score": 0.1738,
+        "plan_hint_score": 0.0,
+        "total": 1.1321
+      }
+    },
+    {
+      "sample_id": "medqa_us_00086",
+      "question_length": 741,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.7892,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0088,
+        "plan_hint_score": 0.0,
+        "total": 0.0175
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0069,
+        "plan_hint_score": 0.0,
+        "total": 0.0138
+      }
+    },
+    {
+      "sample_id": "medqa_us_00087",
+      "question_length": 1320,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "renal"
+      ],
+      "is_fallback": false,
+      "confidence": 0.7417,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.0069,
+        "plan_hint_score": 0.0,
+        "total": 3.1292
+      },
+      "top2": {
+        "specialty": "renal",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0189,
+        "evidence_score": 0.0166,
+        "plan_hint_score": 0.0,
+        "total": 2.3209
+      }
+    },
+    {
+      "sample_id": "medqa_us_00088",
+      "question_length": 986,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3118,
+      "top1": {
+        "specialty": "respiratory",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.16,
+        "plan_hint_score": 0.0,
+        "total": 3.3969
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1546,
+        "plan_hint_score": 0.0,
+        "total": 1.0592
+      }
+    },
+    {
+      "sample_id": "medqa_us_00089",
+      "question_length": 900,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3986,
+      "top1": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.088,
+        "plan_hint_score": 0.0,
+        "total": 2.426
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0892,
+        "plan_hint_score": 0.0,
+        "total": 0.9669
+      }
+    },
+    {
+      "sample_id": "medqa_us_00090",
+      "question_length": 737,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.5154,
+      "top1": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0169,
+        "evidence_score": 0.0275,
+        "plan_hint_score": 0.0,
+        "total": 1.5888
+      },
+      "top2": {
+        "specialty": "oncology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.02,
+        "evidence_score": 0.0144,
+        "plan_hint_score": 0.0,
+        "total": 0.8188
+      }
+    },
+    {
+      "sample_id": "medqa_us_00091",
+      "question_length": 447,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "respiratory"
+      ],
+      "is_fallback": false,
+      "confidence": 0.5014,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 1.0,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0265,
+        "plan_hint_score": 0.0,
+        "total": 3.13
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0154,
+        "plan_hint_score": 0.0,
+        "total": 1.5692
+      }
+    },
+    {
+      "sample_id": "medqa_us_00092",
+      "question_length": 648,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9444,
+      "top1": {
+        "specialty": "renal",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0815,
+        "plan_hint_score": 0.0,
+        "total": 0.913
+      },
+      "top2": {
+        "specialty": "neurology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0561,
+        "plan_hint_score": 0.0,
+        "total": 0.8623
+      }
+    },
+    {
+      "sample_id": "medqa_us_00093",
+      "question_length": 1035,
+      "branch": "rule_3_dynamic_top2",
+      "specialty_pair": [
+        "cardiology",
+        "endocrinology"
+      ],
+      "is_fallback": false,
+      "confidence": 0.6758,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0577,
+        "evidence_score": 0.1262,
+        "plan_hint_score": 0.0,
+        "total": 2.6177
+      },
+      "top2": {
+        "specialty": "endocrinology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0182,
+        "evidence_score": 0.1164,
+        "plan_hint_score": 0.0,
+        "total": 1.7691
+      }
+    },
+    {
+      "sample_id": "medqa_us_00094",
+      "question_length": 830,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.4019,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1181,
+        "plan_hint_score": 0.0,
+        "total": 2.5246
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1323,
+        "plan_hint_score": 0.0,
+        "total": 1.0146
+      }
+    },
+    {
+      "sample_id": "medqa_us_00095",
+      "question_length": 799,
+      "branch": "rule_4_low_confidence",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.3898,
+      "top1": {
+        "specialty": "renal",
+        "keyword_score": 0.75,
+        "normalized_term_score": 0.0377,
+        "evidence_score": 0.1189,
+        "plan_hint_score": 0.0,
+        "total": 2.5632
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.1054,
+        "plan_hint_score": 0.0,
+        "total": 0.9992
+      }
+    },
+    {
+      "sample_id": "medqa_us_00096",
+      "question_length": 1002,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.9762,
+      "top1": {
+        "specialty": "cardiology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0385,
+        "evidence_score": 0.0185,
+        "plan_hint_score": 0.0,
+        "total": 1.6138
+      },
+      "top2": {
+        "specialty": "respiratory",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0192,
+        "evidence_score": 0.0185,
+        "plan_hint_score": 0.0,
+        "total": 1.5754
+      }
+    },
+    {
+      "sample_id": "medqa_us_00097",
+      "question_length": 514,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1274,
+      "top1": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.25,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1386,
+        "plan_hint_score": 0.0,
+        "total": 1.0272
+      },
+      "top2": {
+        "specialty": "gastroenterology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0654,
+        "plan_hint_score": 0.0,
+        "total": 0.1308
+      }
+    },
+    {
+      "sample_id": "medqa_us_00098",
+      "question_length": 388,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.1572,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.5,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1098,
+        "plan_hint_score": 0.0,
+        "total": 1.7196
+      },
+      "top2": {
+        "specialty": "infectious_disease",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.1352,
+        "plan_hint_score": 0.0,
+        "total": 0.2703
+      }
+    },
+    {
+      "sample_id": "medqa_us_00099",
+      "question_length": 510,
+      "branch": "rule_1_primary_below_threshold",
+      "specialty_pair": [
+        "general_internal",
+        "evidence_skeptic"
+      ],
+      "is_fallback": true,
+      "confidence": 0.0,
+      "top1": {
+        "specialty": "neurology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0116,
+        "plan_hint_score": 0.0,
+        "total": 0.0232
+      },
+      "top2": {
+        "specialty": "cardiology",
+        "keyword_score": 0.0,
+        "normalized_term_score": 0.0,
+        "evidence_score": 0.0,
+        "plan_hint_score": 0.0,
+        "total": 0.0
+      }
+    }
+  ]
+}
