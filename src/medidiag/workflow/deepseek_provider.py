@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from medidiag.agents.llm_client import LLMClient
 from medidiag.compliance.guard import MANDATORY_DISCLAIMER, ComplianceGuard
+from medidiag.compliance.status import ComplianceStatus
 from medidiag.errors import MediDiagError
 from medidiag.workflow.provider_runtime import ProviderResponse
 
@@ -173,7 +174,7 @@ class DeepSeekWorkflowProvider:
                 "verdict": "ESCALATED",
                 "issues": compliance.block_reasons,
                 "citation_verdicts": [],
-                "compliance_status": "BLOCKED",
+                "compliance_status": ComplianceStatus.BLOCKED.value,
             }
 
         citation_verdicts = [
@@ -193,7 +194,7 @@ class DeepSeekWorkflowProvider:
                 "Citation verdict is structural binding only; no fixed NLI judge ran in the live demo."
             ],
             "citation_verdicts": citation_verdicts,
-            "compliance_status": "PASS_WITH_DEMO_LIMITATION",
+            "compliance_status": ComplianceStatus.PASS_WITH_DEMO_LIMITATION.value,
         }
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:

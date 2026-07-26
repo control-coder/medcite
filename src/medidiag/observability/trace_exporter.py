@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from medidiag.compliance.status import is_compliance_hit
 from medidiag.db.models import (
     AgentRun,
     Case,
@@ -190,10 +191,7 @@ class TraceExporter:
             "retry_count": self._retry_count(event.event_type, detail),
             "error_code": error_code,
             **error_meta,
-            "compliance_hit": (
-                compliance_status is not None
-                and not str(compliance_status).startswith("PASSED")
-            ),
+            "compliance_hit": is_compliance_hit(compliance_status),
             "compliance_status": compliance_status,
             "citation_verdicts": citation_verdicts,
             "human_decision": (

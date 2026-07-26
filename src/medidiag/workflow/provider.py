@@ -10,6 +10,7 @@ import hashlib
 from dataclasses import dataclass
 from typing import Protocol
 
+from medidiag.compliance.status import ComplianceStatus
 from medidiag.workflow.provider_runtime import ProviderResponse
 
 # ProviderCallRunner.call accepts either shape from every stage: a bare payload,
@@ -131,7 +132,7 @@ class DeterministicWorkflowProvider:
                 }
                 for claim in generation["claims"]
             ],
-            "compliance_status": "PASSED_NON_DIAGNOSTIC_FIXTURE",
+            "compliance_status": ComplianceStatus.PASSED_NON_DIAGNOSTIC_FIXTURE.value,
         }
 
     def report(self, case_id: str, generation: dict, review: dict) -> dict:

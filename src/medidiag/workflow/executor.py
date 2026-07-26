@@ -410,7 +410,17 @@ class WorkflowExecutor:
         """写入外部 IO 结果。
 
         结果写入与 lease 校验合并为单条条件 UPDATE（防脑裂双写）。
-        如果租约已失效，丢弃写入并抛 TASK_LEASE_LOST。
+
+        两种失败被刻意区分开：
+
+        - 条件 UPDATE 未命中 → 租约确实失效（被接管或已过期）。丢弃写入，
+          记录 ``lease_lost``，抛 ``TASK_LEASE_LOST``。
+        - 条件 UPDATE 命中、但 ``Case.active_task_id`` 已不指向本任务 →
+          租约是有效的，失配的是 case 与 task 的关联。把它报成
+          ``TASK_LEASE_LOST`` 会写下一条与事实相反的脑裂记录，并连带丢弃一个
+          已经完成的外部结果。这里改为保留任务结果、记录 ``case_task_desync``
+          并抛 ``STATE_CONFLICT``，交由调用方升级人工处理；case 状态本身不被
+          本方法改写，因此保留结果不会覆盖另一个任务的进展。
 
         Args:
             session: 数据库会话。
@@ -423,7 +433,8 @@ class WorkflowExecutor:
             True 如果写入成功。
 
         Raises:
-            MediDiagError: TASK_LEASE_LOST（租约已失效，写入被丢弃）。
+            MediDiagError: ``TASK_LEASE_LOST``（租约已失效，写入被丢弃）或
+                ``STATE_CONFLICT``（租约有效但 case/task 失配）。
         """
         now = self.lease.now()
         write = session.execute(
@@ -437,47 +448,82 @@ class WorkflowExecutor:
             )
             .values(status="SUCCEEDED", result=result)
         )
-        if write.rowcount == 1:
-            task = session.execute(
-                select(WorkflowTask).where(WorkflowTask.task_id == task_id)
-            ).scalar_one()
-            cleared = session.execute(
-                update(Case)
-                .where(
-                    Case.case_id == task.case_id,
-                    Case.active_task_id == task_id,
-                )
-                .values(active_task_id=None, version=Case.version + 1)
+        if write.rowcount != 1:
+            session.rollback()
+            self._record_rejected_stale_write(session, task_id, worker_id, attempt)
+            raise MediDiagError(
+                "TASK_LEASE_LOST",
+                detail=f"worker {worker_id} lost lease on task {task_id}",
+                context={"task_id": task_id, "attempt": attempt},
             )
-            if cleared.rowcount == 1:
-                session.commit()
-                return True
 
-        session.rollback()
-        # Record the rejected stale write in a separate transaction.
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+        ).scalar_one()
+        cleared = session.execute(
+            update(Case)
+            .where(
+                Case.case_id == task.case_id,
+                Case.active_task_id == task_id,
+            )
+            .values(active_task_id=None, version=Case.version + 1)
+        )
+        if cleared.rowcount == 1:
+            session.commit()
+            return True
+
+        # 清理未命中：case 已不指向本任务。上面的 Case UPDATE 匹配 0 行，
+        # 提交只会持久化任务结果本身，不触碰 case 状态。
+        session.commit()
+        session.add(
+            CaseEventLog(
+                case_id=task.case_id,
+                event_type="case_task_desync",
+                trigger_subject=TriggerSubject.SYSTEM.value,
+                trigger_entity=worker_id,
+                detail={
+                    "task_id": task_id,
+                    "attempt": attempt,
+                    "error_code": "STATE_CONFLICT",
+                    "reason": "CASE_ACTIVE_TASK_MISMATCH",
+                    "result_preserved": True,
+                },
+            )
+        )
+        session.commit()
+        raise MediDiagError(
+            "STATE_CONFLICT",
+            detail=(
+                f"task {task_id} completed under a valid lease but case "
+                f"{task.case_id} no longer points to it"
+            ),
+            context={"task_id": task_id, "attempt": attempt},
+        )
+
+    @staticmethod
+    def _record_rejected_stale_write(
+        session: Session, task_id: str, worker_id: str, attempt: int
+    ) -> None:
+        """Record the rejected stale write in a separate transaction."""
         task = session.execute(
             select(WorkflowTask).where(WorkflowTask.task_id == task_id)
         ).scalar_one_or_none()
-        if task:
-            session.add(
-                CaseEventLog(
-                    case_id=task.case_id,
-                    event_type="lease_lost",
-                    trigger_subject=TriggerSubject.SYSTEM.value,
-                    trigger_entity=worker_id,
-                    detail={
-                        "task_id": task_id,
-                        "attempt": attempt,
-                        "reason": "TASK_LEASE_LOST",
-                    },
-                )
+        if task is None:
+            return
+        session.add(
+            CaseEventLog(
+                case_id=task.case_id,
+                event_type="lease_lost",
+                trigger_subject=TriggerSubject.SYSTEM.value,
+                trigger_entity=worker_id,
+                detail={
+                    "task_id": task_id,
+                    "attempt": attempt,
+                    "reason": "TASK_LEASE_LOST",
+                },
             )
-            session.commit()
-        raise MediDiagError(
-            "TASK_LEASE_LOST",
-            detail=f"worker {worker_id} lost lease on task {task_id}",
-            context={"task_id": task_id, "attempt": attempt},
         )
+        session.commit()
 
     def fail_stage(
         self,

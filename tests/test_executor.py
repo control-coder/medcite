@@ -462,9 +462,14 @@ class TestLeaseLostProtection:
         assert task.status == "RUNNING"
         assert task.result is None
 
-    def test_result_rolls_back_when_case_no_longer_points_to_task(
+    def test_case_task_desync_is_not_reported_as_lease_loss(
         self, executor, session, case
     ) -> None:
+        """租约有效但 case 不再指向本任务：这是失配，不是脑臂双写防护。
+
+        旧行为回滚并抛 TASK_LEASE_LOST，既写下与事实相反的脑裂记录，又把一个
+        已完成的外部结果静默丢弃。
+        """
         task = executor.start_workflow(
             session, case.case_id, "normalize", "wk1", "h1"
         )
@@ -478,12 +483,32 @@ class TestLeaseLostProtection:
 
         with pytest.raises(MediDiagError) as exc:
             executor.write_external_result(
-                session, task.task_id, "worker-1", 0, {"should": "rollback"}
+                session, task.task_id, "worker-1", 0, {"completed": "work"}
             )
-        assert exc.value.code == "TASK_LEASE_LOST"
+        assert exc.value.code == "STATE_CONFLICT"
+
+        # 已完成的结果被保留，而不是连同错误一起丢弃。
         session.refresh(task)
-        assert task.status == "RUNNING"
-        assert task.result is None
+        assert task.status == "SUCCEEDED"
+        assert task.result == {"completed": "work"}
+        # case 状态不被本方法改写，另一个任务的进展不受影响。
+        session.refresh(case)
+        assert case.active_task_id == "other-task"
+
+        assert (
+            session.query(CaseEventLog)
+            .filter_by(case_id=case.case_id, event_type="lease_lost")
+            .count()
+            == 0
+        )
+        desync = (
+            session.query(CaseEventLog)
+            .filter_by(case_id=case.case_id, event_type="case_task_desync")
+            .all()
+        )
+        assert len(desync) == 1
+        assert desync[0].detail["error_code"] == "STATE_CONFLICT"
+        assert desync[0].detail["result_preserved"] is True
 
 
 # ===== 租约接管 =====
