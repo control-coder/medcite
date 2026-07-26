@@ -10,16 +10,23 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from medidiag.db.models import Base
 
+#: SQLite 写锁等待时长。`medidiag demo` 在同一进程内让 uvicorn 请求线程与
+#: worker 线程并发访问同一个文件库；默认 busy_timeout 为 0，任何写冲突都会
+#: 立刻抛 `database is locked`，而不是短暂等待后成功。
+SQLITE_BUSY_TIMEOUT_MS = 5000
+
 
 def create_db_engine(
     database_url: str = "sqlite:///./medidiag.db",
     echo: bool = False,
+    busy_timeout_ms: int = SQLITE_BUSY_TIMEOUT_MS,
 ) -> Engine:
     """创建数据库 engine。
 
     Args:
         database_url: 数据库连接 URL，默认 SQLite。
         echo: 是否打印 SQL 日志（调试用）。
+        busy_timeout_ms: SQLite 写锁等待毫秒数，仅对 SQLite 生效。
     """
     # SQLite 需要启用外键约束
     connect_args = {}
@@ -27,14 +34,34 @@ def create_db_engine(
         connect_args["check_same_thread"] = False
     engine = create_engine(database_url, echo=echo, connect_args=connect_args)
     if database_url.startswith("sqlite"):
-        event.listen(engine, "connect", _enable_sqlite_foreign_keys)
+        event.listen(
+            engine,
+            "connect",
+            _sqlite_pragmas(busy_timeout_ms),
+        )
     return engine
 
 
-def _enable_sqlite_foreign_keys(dbapi_connection, connection_record) -> None:
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+def _sqlite_pragmas(busy_timeout_ms: int):
+    """返回 SQLite 连接级 PRAGMA 设置回调。
+
+    - ``foreign_keys=ON``：SQLite 默认不强制外键。
+    - ``journal_mode=WAL``：让读不阻塞写、写不阻塞读。`check_same_thread=False`
+      已经允许跨线程共享连接，但没有 WAL 时 uvicorn 与 worker 线程仍会互相
+      阻塞。内存库不支持 WAL，PRAGMA 会返回 ``memory`` 而不报错。
+    - ``busy_timeout``：写锁被占用时等待而不是立即抛 ``database is locked``。
+    """
+
+    def _apply(dbapi_connection, connection_record) -> None:
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute(f"PRAGMA busy_timeout={int(busy_timeout_ms)}")
+        finally:
+            cursor.close()
+
+    return _apply
 
 
 def init_db(engine: Engine) -> None:

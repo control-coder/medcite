@@ -621,3 +621,74 @@ class TestIdempotencyUtils:
     def test_make_workflow_key(self) -> None:
         key = make_workflow_key("case_001", "normalize")
         assert key == "workflow:case_001:normalize"
+
+
+# ===== 租约配置与 SQLite 并发设置 =====
+
+
+class TestLeaseConfiguration:
+    def test_lease_manager_reads_settings_by_default(self, monkeypatch) -> None:
+        """MEDIDIAG_LEASE_SECONDS / MEDIDIAG_HEARTBEAT_SECONDS 必须真正生效。"""
+        from medidiag.config import Settings
+
+        monkeypatch.setattr(
+            "medidiag.workflow.lease.get_settings",
+            lambda: Settings(
+                medidiag_lease_seconds=120,
+                medidiag_heartbeat_seconds=30,
+                medidiag_lease_scan_seconds=15,
+            ),
+        )
+        lm = LeaseManager()
+        assert lm.lease_seconds == 120
+        assert lm.heartbeat_seconds == 30
+        assert lm.scan_interval_seconds == 15
+
+    def test_explicit_arguments_win_over_settings(self, monkeypatch) -> None:
+        from medidiag.config import Settings
+
+        monkeypatch.setattr(
+            "medidiag.workflow.lease.get_settings",
+            lambda: Settings(medidiag_lease_seconds=120),
+        )
+        assert LeaseManager(lease_seconds=45).lease_seconds == 45
+
+    def test_lease_applies_configured_duration(self, session, case) -> None:
+        lm = LeaseManager(lease_seconds=300, heartbeat_seconds=20)
+        session.add(
+            WorkflowTask(
+                task_id="t-cfg",
+                case_id=case.case_id,
+                task_type="normalize",
+                status="PENDING",
+                input_hash="h",
+                idempotency_key="k-cfg",
+            )
+        )
+        session.commit()
+        assert lm.acquire(session, "t-cfg", "worker-1") is True
+        task = session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == "t-cfg")
+        ).scalar_one()
+        assert (task.lease_until - _utcnow()).total_seconds() > 250
+
+    def test_heartbeat_must_be_shorter_than_lease(self) -> None:
+        """续期节奏不短于租约时长时，租约必然在续期之前过期。"""
+        with pytest.raises(ValueError, match="heartbeat_seconds"):
+            LeaseManager(lease_seconds=20, heartbeat_seconds=20)
+
+
+def test_sqlite_engine_enables_wal_and_busy_timeout(tmp_path) -> None:
+    """demo 在同进程内并发使用 uvicorn 与 worker 线程，需要 WAL 与写锁等待。"""
+    from sqlalchemy import text
+
+    from medidiag.db.session import create_db_engine
+
+    engine = create_db_engine(
+        f"sqlite:///{(tmp_path / 'pragma.db').as_posix()}", busy_timeout_ms=7000
+    )
+    with engine.connect() as connection:
+        assert connection.execute(text("PRAGMA journal_mode")).scalar() == "wal"
+        assert connection.execute(text("PRAGMA busy_timeout")).scalar() == 7000
+        assert connection.execute(text("PRAGMA foreign_keys")).scalar() == 1
+    engine.dispose()

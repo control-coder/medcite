@@ -20,6 +20,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from medidiag.config import get_settings
 from medidiag.db.models import Case, CaseEventLog, WorkflowTask
 from medidiag.observability.logging import get_logger
 from medidiag.workflow.state_machine import CaseState, is_terminal
@@ -36,17 +37,53 @@ class LeaseManager:
     """租约管理器。
 
     处理租约的领取、续期、超时扫描、重入校验、脑裂防护。
+
+    参数默认值取自 ``Settings``（``MEDIDIAG_LEASE_SECONDS`` /
+    ``MEDIDIAG_HEARTBEAT_SECONDS`` / ``MEDIDIAG_LEASE_SCAN_SECONDS``），
+    显式传参优先。此前三个环境变量中只有 scan 被真正读取，另外两个是声明了
+    但不起作用的配置项。
+
+    **心跳缺口（已知限制，未实现）**：租约只在阶段之间由
+    ``SingleMachineWorker._renew`` 续期，外部 IO 期间没有独立心跳线程。因此
+    单个阶段的 provider 调用如果超过 ``lease_seconds``，扫描器会在该阶段仍在
+    执行时接管任务；此时旧 worker 的写入会被 ``commit_stage`` /
+    ``write_external_result`` 的条件 UPDATE 拒绝并记为 ``TASK_LEASE_LOST``，
+    不会造成脑裂双写，但会浪费一次调用。当前的边界是「租约必须长于最慢的单个
+    阶段」，由 ``heartbeat_seconds < lease_seconds`` 的构造校验提示该关系。
+    引入心跳线程需要独立的会话与生命周期管理，属于后续工作。
     """
 
     def __init__(
         self,
-        lease_seconds: int = 60,
-        heartbeat_seconds: int = 20,
-        scan_interval_seconds: int = 30,
+        lease_seconds: int | None = None,
+        heartbeat_seconds: int | None = None,
+        scan_interval_seconds: int | None = None,
     ) -> None:
-        self.lease_seconds = lease_seconds
-        self.heartbeat_seconds = heartbeat_seconds
-        self.scan_interval_seconds = scan_interval_seconds
+        settings = get_settings()
+        self.lease_seconds = int(
+            lease_seconds
+            if lease_seconds is not None
+            else settings.medidiag_lease_seconds
+        )
+        self.heartbeat_seconds = int(
+            heartbeat_seconds
+            if heartbeat_seconds is not None
+            else settings.medidiag_heartbeat_seconds
+        )
+        self.scan_interval_seconds = int(
+            scan_interval_seconds
+            if scan_interval_seconds is not None
+            else settings.medidiag_lease_scan_seconds
+        )
+        if self.lease_seconds < 1:
+            raise ValueError("lease_seconds must be at least 1")
+        if not 1 <= self.heartbeat_seconds < self.lease_seconds:
+            # 续期节奏不短于租约时长时，租约必然在续期之前过期。
+            raise ValueError(
+                "heartbeat_seconds must be at least 1 and shorter than lease_seconds"
+            )
+        if self.scan_interval_seconds < 1:
+            raise ValueError("scan_interval_seconds must be at least 1")
 
     def now(self) -> datetime:
         """Return the database-comparable UTC timestamp used by CAS predicates."""
