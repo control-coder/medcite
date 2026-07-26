@@ -78,10 +78,10 @@ def test_exporter_emits_required_fields_and_redacted_links(tmp_path) -> None:
     assert "text" not in summary["claims"][0]
 
 
-def test_generate_three_reproducible_trace_scenarios(tmp_path) -> None:
+def test_generate_reproducible_trace_scenarios(tmp_path) -> None:
     results = generate_trace_examples(tmp_path / "traces")
     by_name = {item.scenario: item for item in results}
-    assert set(by_name) == {"success", "lease_recovery", "review_escalation"}
+    assert set(by_name) == {"success", "lease_recovery", "review_escalation", "dual_specialist_negative"}
     assert all(item.final_state == "CLOSED_SUCCESS" for item in results)
 
     success = json.loads(
@@ -104,3 +104,14 @@ def test_generate_three_reproducible_trace_scenarios(tmp_path) -> None:
     assert any(
         item["to_state"] == "ESCALATED" for item in escalation["timeline"]
     )
+
+
+def test_dual_specialist_trace_records_negative_case(tmp_path) -> None:
+    result = next(
+        item for item in generate_trace_examples(tmp_path / "traces")
+        if item.scenario == "dual_specialist_negative"
+    )
+    summary = json.loads(result.export.summary_path.read_text(encoding="utf-8"))
+    assert [item["specialty"] for item in summary["agents"]] == ["cardiology", "pulmonology"]
+    assert summary["arbitration"]["verdict"] == "NO_CLEAR_SPECIALIST_GAIN"
+    assert summary["arbitration"]["conflicts"]

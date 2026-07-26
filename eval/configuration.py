@@ -146,6 +146,12 @@ def validate_config(
         if not isinstance(generation.get(field), (int, float)) or generation[field] <= 0:
             issues.append(f"generation.{field} must be positive")
 
+    runtime = config.get("runtime", {})
+    if runtime.get("device", "auto") not in {"auto", "cuda", "cpu"}:
+        issues.append("runtime.device must be one of: auto, cuda, cpu")
+    if not isinstance(runtime.get("batch_size"), int) or runtime["batch_size"] <= 0:
+        issues.append("runtime.batch_size must be a positive integer")
+
     judge_method = config["judge"].get("method")
     if judge_method not in {"nli", "rule_fallback"}:
         issues.append("judge.method must be 'nli' or 'rule_fallback'")

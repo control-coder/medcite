@@ -115,7 +115,7 @@ class TestCitationVerifier:
             model_revision="immutable-revision",
             method="nli",
         )
-        verifier._nli_pipeline = lambda _: (_ for _ in ()).throw(RuntimeError("boom"))
+        verifier._nli_pipeline = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom"))
         with pytest.raises(JudgeInferenceError, match="judge inference failed"):
             verifier.verify("claim", "evidence", "c1", "claim-1")
 
@@ -265,3 +265,50 @@ class TestComplianceGuard:
         d = result.to_dict()
         assert "blocked" in d
         assert "disclaimer_added" in d
+
+
+class _RecordingNliPipeline:
+    def __init__(self) -> None:
+        self.calls = []
+
+    def __call__(self, inputs, **kwargs):
+        self.calls.append((inputs, kwargs))
+        return [
+            {"label": "ENTAILMENT", "score": 0.91},
+            {"label": "NEUTRAL", "score": 0.72},
+        ]
+
+
+def test_nli_verify_batch_uses_one_batched_call_and_preserves_order() -> None:
+    """NLI 必须批量推理，并保留缺失引用与有效 pair 的原始顺序。"""
+    verifier = CitationVerifier(
+        model_name="test-judge",
+        model_revision="immutable-revision",
+        method="nli",
+        device="cpu",
+        batch_size=8,
+    )
+    fake = _RecordingNliPipeline()
+    verifier._nli_pipeline = fake
+    claims = [
+        {"claim_id": "c-1", "text": "claim one", "citation_chunk_ids": ["e1"]},
+        {"claim_id": "c-2", "text": "missing", "citation_chunk_ids": ["missing"]},
+        {"claim_id": "c-3", "text": "claim three", "citation_chunk_ids": ["e2"]},
+    ]
+    chunks = [
+        {"chunk_id": "e1", "text": "evidence " * 700},
+        {"chunk_id": "e2", "text": "other evidence"},
+    ]
+
+    results = verifier.verify_batch(claims, chunks)
+
+    assert [item.claim_id for item in results] == ["c-1", "c-2", "c-3"]
+    assert [item.verdict for item in results] == [
+        CitationVerdict.SUPPORTED,
+        CitationVerdict.UNSUPPORTED,
+        CitationVerdict.PARTIAL,
+    ]
+    assert len(fake.calls) == 1
+    inputs, kwargs = fake.calls[0]
+    assert len(inputs) == 2
+    assert kwargs == {"truncation": True, "max_length": 512, "batch_size": 8}

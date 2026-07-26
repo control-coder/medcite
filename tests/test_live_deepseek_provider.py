@@ -14,36 +14,51 @@ from medidiag.workflow.provider_runtime import ProviderCallRunner
 
 
 def _response(payload: dict, *, request_id: str = "req-live-1") -> httpx.Response:
-    request = httpx.Request("POST", "https://www.dogapi.cc/v1/chat/completions")
+    request = httpx.Request("POST", "https://api.deepseek.com/chat/completions")
     return httpx.Response(200, json=payload, headers={"x-request-id": request_id}, request=request)
 
 
-def test_llm_client_uses_dogapi_openai_endpoint_and_preserves_request_id() -> None:
+def test_llm_client_uses_official_openai_endpoint_and_preserves_request_id() -> None:
     captured: dict = {}
 
     def fake_post(url: str, **kwargs) -> httpx.Response:
         captured["url"] = url
         captured.update(kwargs)
-        return _response({"choices": [{"message": {"content": "hello"}}]})
+        return _response({
+            "choices": [{"message": {"content": "hello"}}],
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 5,
+                "total_tokens": 105,
+                "prompt_cache_hit_tokens": 80,
+                "prompt_cache_miss_tokens": 20,
+            },
+        })
 
     client = LLMClient(
         api_key="test-key",
-        base_url="https://www.dogapi.cc/v1/",
+        base_url="https://api.deepseek.com/",
         model="demo-model",
         post=fake_post,
     )
     completion = client.complete("draft", system_prompt="system")
 
-    assert captured["url"] == "https://www.dogapi.cc/v1/chat/completions"
+    assert captured["url"] == "https://api.deepseek.com/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["json"]["model"] == "demo-model"
+    assert captured["json"]["thinking"] == {"type": "disabled"}
     assert captured["json"]["messages"][0] == {"role": "system", "content": "system"}
     assert completion.content == "hello"
     assert completion.request_id == "req-live-1"
+    assert completion.usage["prompt_cache_hit_tokens"] == 80
+    assert completion.usage["prompt_cache_miss_tokens"] == 20
+    assert completion.usage["prompt_cache_hit_rate"] == 800000
+    assert client.usage_summary()["prompt_cache_hit_tokens"] == 80
+    assert client.usage_summary()["prompt_cache_hit_rate"] == 800000
 
 
 def test_llm_client_retries_transient_connection_error() -> None:
-    """?????????????????????? ID?"""
+    """临时网络错误按退避策略重试，并保留请求标识。"""
     calls = 0
     sleeps: list[float] = []
 
@@ -69,7 +84,7 @@ def test_llm_client_retries_transient_connection_error() -> None:
 
 
 def test_llm_client_uses_response_body_id_when_headers_are_absent() -> None:
-    """???????????? OpenAI ????? id ?????"""
+    """响应头缺失时使用响应体 id 作为调用标识。"""
     def fake_post(url: str, **kwargs) -> httpx.Response:
         request = httpx.Request("POST", url)
         return httpx.Response(
@@ -200,6 +215,8 @@ def test_live_provider_generates_schema_bound_draft_and_audits_request_id() -> N
     )
 
     assert outcome.request_id == "req-live-1"
+    assert outcome.metadata["generation_model"] == "demo-model"
+    assert outcome.metadata["prompt_cache_hit_tokens"] == 0
     assert outcome.payload["agents"][0]["agent_name"] == "live_evidence_drafter"
     assert outcome.payload["claims"][0]["citation_chunk_ids"] == ["live_demo_evidence"]
     review = provider.review(outcome.payload, provider.arbitrate(outcome.payload, retrieval))

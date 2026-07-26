@@ -23,6 +23,7 @@ from eval.runner import (
     _assert_formal_response_id_provenance,
     _build_manifest,
     _non_reportable_reasons,
+    select_experiments,
 )
 
 
@@ -49,6 +50,20 @@ def test_each_rag_ablation_changes_one_switch(config: dict) -> None:
         assert differences == [switch]
 
 
+def test_rag_retrieval_selection_excludes_generation_groups(config: dict) -> None:
+    """纯检索选择只包含不需要 generation/judge 的单变量组。"""
+    names = select_experiments(config, "rag_retrieval")
+    assert names == [
+        "rag_embedding",
+        "rag_bm25",
+        "rag_evidence_weight",
+        "rag_term_norm",
+    ]
+    assert all(
+        not config["experiments"]["rag"][name]["config"]["use_citation_review"]
+        for name in names
+    )
+
 def test_config_rejects_coupled_single_variable_group(config: dict) -> None:
     invalid = deepcopy(config)
     invalid["experiments"]["rag"]["rag_bm25"]["config"][
@@ -59,12 +74,12 @@ def test_config_rejects_coupled_single_variable_group(config: dict) -> None:
 
 
 def _valid_formal_config(config: dict) -> dict:
-    """??????? snapshot ??? formal ???"""
+    """构造具有可核验 snapshot 的合法 formal 配置。"""
     formal = deepcopy(config)
     formal["evaluation"]["mode"] = "formal"
     formal["generation"].update(
         {
-            "revision": "deepseek-v4-flash-free",
+            "revision": "deepseek-v4-flash",
             "provenance_mode": "provider_snapshot",
             "snapshot_id": "provider-system-fingerprint-20260717-a1b2c3",
         }
@@ -77,11 +92,11 @@ def _valid_formal_config(config: dict) -> dict:
 
 
 def _valid_response_id_formal_config(config: dict) -> dict:
-    """????????? snapshot ?????? formal ???"""
+    """构造使用响应 ID 且不声明 snapshot 的合法 formal 配置。"""
     formal = _valid_formal_config(config)
     formal["generation"].update(
         {
-            "revision": "deepseek-v4-flash-free",
+            "revision": "deepseek-v4-flash",
             "provenance_mode": "provider_response_id",
             "response_id_source": "response.id",
         }
@@ -110,7 +125,7 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
         assert not any(
             issue.startswith(f"{section}.revision must be") for issue in issues
         )
-    # ????????? formal raw run ???????????????? 20% ?????
+    # 现有 dataset annotation 不能替代 formal raw run 后实际输出的 20% 人工复核。
     assert not any("existing dataset.annotation" in issue for issue in issues)
 
     missing_annotation_path = deepcopy(config)
@@ -196,8 +211,8 @@ def test_formal_manifest_records_generation_provenance(config: dict) -> None:
     )
 
     assert manifest["models"]["generation"] == {
-        "model": "deepseek-v4-flash-free",
-        "revision": "deepseek-v4-flash-free",
+        "model": "deepseek-v4-flash",
+        "revision": "deepseek-v4-flash",
         "provenance_mode": "provider_response_id",
         "response_id_source": "response.id",
     }

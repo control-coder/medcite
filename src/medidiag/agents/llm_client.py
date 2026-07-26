@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
@@ -26,6 +26,8 @@ class LLMCompletion:
     content: str
     request_id: str | None
     model: str
+    # DeepSeek 返回的非敏感 token 与上下文缓存计数。
+    usage: dict[str, int] = field(default_factory=dict)
 
 
 class LLMClient:
@@ -46,6 +48,7 @@ class LLMClient:
         seed: int = 42,
         max_retries: int = 2,
         retry_backoff_seconds: float = 1.0,
+        thinking: str = "disabled",
         require_request_id: bool = False,
         post: Callable[..., httpx.Response] | None = None,
         sleep: Callable[[float], None] = time.sleep,
@@ -60,6 +63,11 @@ class LLMClient:
         self.seed = seed
         self.max_retries = max(0, max_retries)
         self.retry_backoff_seconds = max(0.0, retry_backoff_seconds)
+        if thinking not in {"enabled", "disabled"}:
+            raise ValueError("thinking must be 'enabled' or 'disabled'")
+        self.thinking = thinking
+        # 只累计 token 计数，不保存 prompt、病例内容或完整 provider 响应。
+        self._usage_totals: dict[str, int] = {}
         # 正式评测的 response-id 溯源模式必须拒绝无真实调用标识的成功响应。
         self.require_request_id = require_request_id
         self._post = post or httpx.post
@@ -108,8 +116,9 @@ class LLMClient:
                         "messages": messages,
                         "temperature": self.temperature if temperature is None else temperature,
                         "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
-                        "seed": self.seed,
                         "stream": False,
+                        # JSON 工作流阶段显式关闭思考模式，确保结果位于 message.content。
+                        "thinking": {"type": self.thinking},
                     },
                     timeout=self.timeout,
                 )
@@ -140,10 +149,13 @@ class LLMClient:
                 )
             request_id = _request_id(response, data)
             if request_id or not self.require_request_id:
+                usage = _usage_snapshot(data.get("usage"))
+                self._record_usage(usage)
                 return LLMCompletion(
                     content=content,
                     request_id=request_id,
                     model=self.model,
+                    usage=usage,
                 )
             if attempt == self.max_retries:
                 raise MediDiagError(
@@ -157,6 +169,21 @@ class LLMClient:
             "PROVIDER_UNAVAILABLE",
             detail="live DeepSeek provider did not return a usable response",
         )
+
+    def usage_summary(self) -> dict[str, int]:
+        """返回本客户端调用累计的 token/cache 计数。"""
+        result = dict(self._usage_totals)
+        hit = result.get("prompt_cache_hit_tokens")
+        miss = result.get("prompt_cache_miss_tokens")
+        if hit is not None and miss is not None and hit + miss > 0:
+            result["prompt_cache_hit_rate"] = round(hit / (hit + miss) * 1000000)
+        return result
+
+    def _record_usage(self, usage: dict[str, int]) -> None:
+        """累计可审计的数值字段，忽略派生比例字段。"""
+        for key, value in usage.items():
+            if key != "prompt_cache_hit_rate":
+                self._usage_totals[key] = self._usage_totals.get(key, 0) + value
 
     def chat(
         self,
@@ -193,6 +220,35 @@ class LLMClient:
                 detail="live DeepSeek output must be a JSON object",
             )
         return payload
+
+
+def _usage_snapshot(value: Any) -> dict[str, int]:
+    """Extract DeepSeek token counters without persisting arbitrary provider data.
+
+    DeepSeek returns ``prompt_cache_hit_tokens`` and ``prompt_cache_miss_tokens``
+    in ``usage``. Keeping the counters in the completion object lets the worker
+    write cache telemetry to the trace without logging prompts or API secrets.
+    """
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, int] = {}
+    for key in (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "prompt_cache_hit_tokens",
+        "prompt_cache_miss_tokens",
+    ):
+        raw = value.get(key)
+        if isinstance(raw, bool):
+            continue
+        if isinstance(raw, int) and raw >= 0:
+            result[key] = raw
+    hit = result.get("prompt_cache_hit_tokens")
+    miss = result.get("prompt_cache_miss_tokens")
+    if hit is not None and miss is not None and hit + miss > 0:
+        result["prompt_cache_hit_rate"] = round(hit / (hit + miss) * 1000000)
+    return result
 
 
 def _request_id(

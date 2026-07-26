@@ -251,7 +251,7 @@ class TestAgents:
         assert output.specialty == "general_diagnosis"
 
     def test_generation_preserves_provider_response_id(self) -> None:
-        """?????????????????? ID?"""
+        """生成输出解析失败时仍保留 provider 响应 ID。"""
         class FakeCompletion:
             content = "not valid json {{{"
             request_id = "chatcmpl-test-id"
@@ -269,7 +269,7 @@ class TestAgents:
         assert output.provider_request_id == "chatcmpl-test-id"
 
     def test_generation_preserves_request_id_when_schema_parse_raises(self) -> None:
-        """?? JSON ???????????????????? ID?"""
+        """当 JSON schema 解析失败时仍保留 provider 请求 ID。"""
         class FakeCompletion:
             content = "[]"
             request_id = "chatcmpl-schema-error-id"

@@ -28,6 +28,7 @@ from eval.configuration import (
     validate_config,
 )
 from eval.leakage_check import LEAKAGE_FLAG, run_leakage_check
+from medidiag.acceleration import runtime_snapshot
 from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput
 from medidiag.agents.diagnosis import DiagnosisAgent
@@ -43,7 +44,7 @@ from medidiag.schemas import KnowledgeChunk, read_jsonl
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-VALID_SELECTIONS = (*EXPERIMENTS, "rag_all", "agent_all", "all")
+VALID_SELECTIONS = (*EXPERIMENTS, "rag_all", "rag_retrieval", "agent_all", "all")
 
 
 @dataclass
@@ -94,7 +95,9 @@ class SampleResult:
     compliance_blocked: bool = False
     agent_abstained: bool = False
     cache_hit: bool = False
+    generation_executed: bool = False
     provider_request_ids: list[str] = field(default_factory=list)
+    provider_usage: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -184,11 +187,24 @@ def show_config_summary(config: dict[str, Any]) -> None:
 def select_experiments(config: dict[str, Any], selection: str) -> list[str]:
     if selection == "rag_all":
         return list(config["experiments"]["rag"])
+    if selection == "rag_retrieval":
+        return [
+            name
+            for name in config["experiments"]["rag"]
+            if not config["experiments"]["rag"][name]["config"].get("use_citation_review")
+        ]
     if selection == "agent_all":
         return list(config["experiments"]["agent"])
     if selection == "all":
         return all_experiment_names(config)
     return [selection]
+
+
+def _experiment_requires_generation(config: dict[str, Any], name: str) -> bool:
+    family, experiment = get_experiment(config, name)
+    if family == "agent":
+        return True
+    return bool(experiment["config"].get("use_citation_review"))
 
 
 def run_evaluation(
@@ -207,6 +223,9 @@ def run_evaluation(
     kb_path = _resolve(config["dataset"]["knowledge_base_path"])
     chunks = [KnowledgeChunk(**record) for record in read_jsonl(kb_path)]
     normalizer = TerminologyNormalizer()
+    runtime = config.get("runtime", {})
+    requested_device = str(runtime.get("device", "auto"))
+    batch_size = int(runtime.get("batch_size", config["embedding"].get("batch_size", 32)))
     retriever = Retriever(
         chunks,
         weights=config["retrieval"]["weights"],
@@ -216,16 +235,24 @@ def run_evaluation(
         normalizer=normalizer,
         embedding_revision=config["embedding"]["revision"],
         rerank_revision=config["rerank"]["revision"],
+        device=requested_device,
+        embedding_batch_size=batch_size,
+        rerank_batch_size=batch_size,
     )
     retriever.build_index(use_bm25=True, use_embedding=True)
 
     verifier: CitationVerifier | None = None
     llm: LLMClient | None = None
-    if not dry_run:
+    needs_generation = (not dry_run) and any(
+        _experiment_requires_generation(config, name) for name in experiment_names
+    )
+    if needs_generation:
         verifier = CitationVerifier(
             model_name=config["judge"]["model"],
             model_revision=config["judge"]["revision"],
             method=config["judge"]["method"],
+            device=requested_device,
+            batch_size=batch_size,
         )
         verifier.initialize()
         generation = config["generation"]
@@ -236,6 +263,7 @@ def run_evaluation(
             temperature=float(generation["temperature"]),
             max_tokens=int(generation["max_tokens"]),
             seed=int(generation["seed"]),
+            thinking=str(generation.get("thinking", "disabled")),
             require_request_id=(
                 config["evaluation"]["mode"] == "formal"
                 and generation.get("provenance_mode") == "provider_response_id"
@@ -290,6 +318,8 @@ def run_evaluation(
         cache,
         git_commit,
         dirty_diff_hash,
+        llm=llm,
+        retriever=retriever,
     )
     (run_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -351,6 +381,9 @@ def _run_experiment(
     dry_run: bool,
 ) -> ExperimentResult:
     result = ExperimentResult(experiment=name, family=family)
+    local_before = (cache.hits, cache.misses)
+    provider_before = llm.usage_summary() if llm is not None else {}
+    retrieval_before = retriever.cache_stats()
     rag_config = (
         experiment["config"]
         if family == "rag"
@@ -375,10 +408,25 @@ def _run_experiment(
                 dry_run,
             )
         )
+    local_hits = cache.hits - local_before[0]
+    local_misses = cache.misses - local_before[1]
+    provider_after = llm.usage_summary() if llm is not None else {}
+    retrieval_after = retriever.cache_stats()
     result.cache_stats = {
-        "hits": cache.hits,
-        "misses": cache.misses,
-        "hit_rate": round(cache.hit_rate, 4),
+        "local_agent_output": {
+            "hits": local_hits,
+            "misses": local_misses,
+            "hit_rate": round(local_hits / (local_hits + local_misses), 4)
+            if local_hits + local_misses
+            else 0.0,
+        },
+        "provider_kv": _counter_delta(provider_before, provider_after),
+        "retrieval_scores": {
+            component: _counter_delta(
+                retrieval_before.get(component, {}), retrieval_after.get(component, {})
+            )
+            for component in ("embedding", "bm25")
+        },
     }
     return result
 
@@ -386,7 +434,7 @@ def _run_experiment(
 def _assert_formal_response_id_provenance(
     config: dict[str, Any], result: SampleResult
 ) -> None:
-    """???? formal ????????????????? ID?"""
+    """校验 formal Agent 样本保存了真实 provider 响应 ID。"""
     generation = config["generation"]
     if (
         config["evaluation"]["mode"] == "formal"
@@ -447,10 +495,11 @@ def _run_sample(
     evidence_ids = [item.chunk_id for item in search_results]
     evidence = [item.chunk for item in search_results if item.chunk is not None]
     result.recall_hit = bool(set(evidence_ids) & set(gold_ids)) if gold_ids else None
-    if dry_run:
+    if dry_run or (family == "rag" and not rag_config["use_citation_review"]):
         result.latency_ms = _elapsed_ms(started)
         return result
 
+    result.generation_executed = True
     generation_started = time.perf_counter()
     outputs = _generate_outputs(
         topology,
@@ -561,6 +610,15 @@ def _generate_outputs(
         )
         output = agent.generate(question, evidence, "", options)
         cache.set(input_hash, output)
+        for key, value in output.provider_usage.items():
+            if isinstance(value, int) and not isinstance(value, bool) and key != "prompt_cache_hit_rate":
+                sample_result.provider_usage[key] = sample_result.provider_usage.get(key, 0) + value
+        hit = sample_result.provider_usage.get("prompt_cache_hit_tokens", 0)
+        miss = sample_result.provider_usage.get("prompt_cache_miss_tokens", 0)
+        if hit + miss > 0:
+            sample_result.provider_usage["prompt_cache_hit_rate"] = round(
+                hit / (hit + miss) * 1000000
+            )
         outputs.append(output)
 
     if len(outputs) == 2 and not any(output.abstain for output in outputs):
@@ -570,6 +628,20 @@ def _generate_outputs(
     elif len(outputs) == 2:
         sample_result.arbitration_verdict = "ESCALATED"
     return outputs
+
+
+def _counter_delta(before: dict[str, int], after: dict[str, int]) -> dict[str, int]:
+    keys = set(before) | set(after)
+    result = {
+        key: int(after.get(key, 0)) - int(before.get(key, 0))
+        for key in keys
+        if key != "prompt_cache_hit_rate"
+    }
+    hit = result.get("prompt_cache_hit_tokens", 0)
+    miss = result.get("prompt_cache_miss_tokens", 0)
+    if hit + miss > 0:
+        result["prompt_cache_hit_rate"] = round(hit / (hit + miss) * 1000000)
+    return result
 
 
 def _build_manifest(
@@ -583,6 +655,8 @@ def _build_manifest(
     cache: AgentOutputCache,
     git_commit: str,
     dirty_diff_hash: str,
+    llm: LLMClient | None = None,
+    retriever: Retriever | None = None,
 ) -> dict[str, Any]:
     dataset = config["dataset"]
     formal_candidate = (
@@ -654,13 +728,27 @@ def _build_manifest(
         "generation": {
             "temperature": config["generation"]["temperature"],
             "seed": config["generation"]["seed"],
+            "thinking": config["generation"].get("thinking", "disabled"),
             "timeout_seconds": config["generation"]["timeout_seconds"],
+            "cache_strategy": config["generation"].get("cache_strategy"),
+            "provider_usage": llm.usage_summary() if llm is not None else {},
         },
-        "retrieval": config["retrieval"],
+        "retrieval": {
+            **config["retrieval"],
+            "score_cache": retriever.cache_stats() if retriever is not None else {},
+        },
+        "runtime": runtime_snapshot(
+            str(config.get("runtime", {}).get("device", "auto")),
+            retriever.actual_device if retriever is not None else "cpu",
+            int(config.get("runtime", {}).get("batch_size", config["embedding"].get("batch_size", 32))),
+        ),
         "judge_method": config["judge"]["method"],
         "limit": limit,
         "dry_run": dry_run,
-        "cache": {"hits": cache.hits, "misses": cache.misses},
+        "cache": {
+            "local_agent_output": {"hits": cache.hits, "misses": cache.misses},
+            "provider_kv": llm.usage_summary() if llm is not None else {},
+        },
     }
 
 

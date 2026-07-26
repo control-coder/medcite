@@ -237,6 +237,7 @@ class TraceExporter:
             latest_by_stage[artifact.stage] = artifact
         retrieval = latest_by_stage.get("retrieval")
         generation = latest_by_stage.get("generation")
+        arbitration = latest_by_stage.get("arbitration")
         review = latest_by_stage.get("review")
 
         evidence = []
@@ -259,6 +260,18 @@ class TraceExporter:
                         "claim_id": item.get("claim_id"),
                         "claim_hash": self._hash_text(item.get("text", "")),
                         "citation_chunk_ids": item.get("citation_chunk_ids", []),
+                    }
+                )
+
+        agents = []
+        if generation:
+            for item in generation.payload.get("agents", []):
+                agents.append(
+                    {
+                        "agent_name": item.get("agent_name"),
+                        "specialty": item.get("specialty"),
+                        "status": item.get("status"),
+                        "claim_ids": [claim.get("claim_id") for claim in item.get("claims", [])],
                     }
                 )
 
@@ -286,7 +299,9 @@ class TraceExporter:
                 for item in raw_events
             ],
             "evidence": evidence,
+            "agents": agents,
             "claims": claims,
+            "arbitration": arbitration.payload if arbitration else None,
             "citation_verdicts": (
                 review.payload.get("citation_verdicts", []) if review else []
             ),

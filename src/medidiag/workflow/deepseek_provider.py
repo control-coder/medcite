@@ -142,6 +142,12 @@ class DeepSeekWorkflowProvider:
                 "uncertainty": draft.uncertainty.strip(),
             },
             request_id=completion.request_id,
+            metadata={
+                "generation_model": completion.model,
+                "prompt_cache_hit_tokens": completion.usage.get("prompt_cache_hit_tokens", 0),
+                "prompt_cache_miss_tokens": completion.usage.get("prompt_cache_miss_tokens", 0),
+                "prompt_cache_hit_rate_ppm": completion.usage.get("prompt_cache_hit_rate", 0),
+            },
         )
 
     def arbitrate(self, generation: dict[str, Any], retrieval: dict[str, Any]) -> dict[str, Any]:
@@ -208,7 +214,10 @@ class DeepSeekWorkflowProvider:
             for item in evidence
         )
         allowed_ids = [item["chunk_id"] for item in evidence]
-        return f"""Draft a cautious Chinese evidence-bound summary for this deidentified/public demo input.
+        return f"""MediDiag live generation prompt v2. Follow the fixed output contract below.
+
+Draft a cautious Chinese evidence-bound summary for this deidentified/public demo input.
+Do not infer facts not present in the supplied evidence. Keep every claim citation-bound.
 
 Input question:
 {question}

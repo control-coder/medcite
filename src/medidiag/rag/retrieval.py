@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from medidiag.acceleration import resolve_torch_device
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
@@ -54,6 +55,10 @@ class Retriever:
         normalizer: TerminologyNormalizer | None = None,
         embedding_revision: str | None = None,
         rerank_revision: str | None = None,
+        embedding_encoder: Any | None = None,
+        device: str = "auto",
+        embedding_batch_size: int = 32,
+        rerank_batch_size: int = 32,
     ) -> None:
         self.chunks = chunks
         self.weights = dict(weights)
@@ -63,13 +68,22 @@ class Retriever:
         self.embedding_model_revision = embedding_revision
         self.rerank_model_revision = rerank_revision
         self.normalizer = normalizer
+        self.requested_device = device
+        self.actual_device = resolve_torch_device(device)
+        self.embedding_batch_size = max(1, int(embedding_batch_size))
+        self.rerank_batch_size = max(1, int(rerank_batch_size))
 
         self._texts = [c.text for c in chunks]
         self._bm25 = None
-        self._embedder = None
+        # 测试可注入 encoder 以避免网络访问；正式 runner 不传该参数。
+        self._embedder = embedding_encoder
         self._reranker = None
         self._chunk_embeddings = None
         self._faiss_index = None
+        self._embedding_score_cache: dict[str, Any] = {}
+        self._bm25_score_cache: dict[str, Any] = {}
+        self._cache_hits = {"embedding": 0, "bm25": 0}
+        self._cache_misses = {"embedding": 0, "bm25": 0}
 
     def build_index(
         self, use_bm25: bool = True, use_embedding: bool = True
@@ -93,13 +107,13 @@ class Retriever:
         import numpy as np
         from sentence_transformers import SentenceTransformer
 
-        self._embedder = SentenceTransformer(
-            self.embedding_model_name,
-            revision=self.embedding_model_revision,
-        )
-        embeddings = self._embedder.encode(
-            self._texts, normalize_embeddings=True, show_progress_bar=False
-        )
+        if self._embedder is None:
+            self._embedder = SentenceTransformer(
+                self.embedding_model_name,
+                revision=self.embedding_model_revision,
+                device=self.actual_device,
+            )
+        embeddings = self._encode_texts(self._texts)
         self._chunk_embeddings = np.array(embeddings, dtype=np.float32)
 
         dim = self._chunk_embeddings.shape[1]
@@ -216,29 +230,67 @@ class Retriever:
 
         return results
 
+    def _encode_texts(self, texts: list[str]):
+        kwargs = {
+            "normalize_embeddings": True,
+            "show_progress_bar": False,
+            "batch_size": self.embedding_batch_size,
+        }
+        try:
+            return self._embedder.encode(texts, **kwargs)
+        except TypeError as exc:
+            if "batch_size" not in str(exc):
+                raise
+            kwargs.pop("batch_size")
+            return self._embedder.encode(texts, **kwargs)
+
     def _get_bm25_scores(self, query: str):
-        """获取 BM25 分数（归一化到 [0, 1]）。"""
+        """获取与 chunk 原始顺序对齐的 BM25 分数（归一化到 [0, 1]）。"""
         import numpy as np
 
+        cached = self._bm25_score_cache.get(query)
+        if cached is not None:
+            self._cache_hits["bm25"] += 1
+            return cached
+        self._cache_misses["bm25"] += 1
         if self._bm25 is None:
             self._build_bm25()
         tokenized_query = query.lower().split()
         scores = self._bm25.get_scores(tokenized_query)
         max_score = max(scores.max(), 1e-8)
-        return np.array(scores, dtype=np.float32) / max_score
+        normalized = np.array(scores, dtype=np.float32) / max_score
+        self._bm25_score_cache[query] = normalized
+        return normalized
 
     def _get_embedding_scores(self, query: str):
-        """获取 embedding cosine 相似度分数。"""
+        """获取与 ``self.chunks`` 原始顺序严格对齐的 cosine 分数。
+
+        FAISS 返回按相似度排序后的 ``scores`` 和对应 ``indices``。必须按
+        indices 回填；否则排序后分数会被错误绑定到原始 chunk 下标。
+        """
         import numpy as np
 
+        cached = self._embedding_score_cache.get(query)
+        if cached is not None:
+            self._cache_hits["embedding"] += 1
+            return cached
+        self._cache_misses["embedding"] += 1
         if self._embedder is None or self._faiss_index is None:
             self._build_embedding_index()
-        query_vec = self._embedder.encode(
-            [query], normalize_embeddings=True, show_progress_bar=False
-        )
+        query_vec = self._encode_texts([query])
         query_vec = np.array(query_vec, dtype=np.float32)
-        scores, _ = self._faiss_index.search(query_vec, len(self._texts))
-        return scores[0]
+        ranked_scores, ranked_indices = self._faiss_index.search(query_vec, len(self._texts))
+        aligned_scores = np.zeros(len(self._texts), dtype=np.float32)
+        aligned_scores[ranked_indices[0]] = ranked_scores[0]
+        self._embedding_score_cache[query] = aligned_scores
+        return aligned_scores
+
+    def cache_stats(self) -> dict[str, dict[str, int]]:
+        """返回检索分数组件缓存计数，避免与 provider KV cache 混淆。"""
+        return {
+            name: {"hits": self._cache_hits[name], "misses": self._cache_misses[name]}
+            for name in ("embedding", "bm25")
+        }
 
     def _get_evidence_scores(self):
         """获取证据等级分数。"""
@@ -274,10 +326,11 @@ class Retriever:
             self._reranker = CrossEncoder(
                 self.rerank_model_name,
                 revision=self.rerank_model_revision,
+                device=self.actual_device,
             )
 
         pairs = [(query, c.chunk.text) for c in candidates if c.chunk]
-        scores = self._reranker.predict(pairs)
+        scores = self._reranker.predict(pairs, batch_size=self.rerank_batch_size)
 
         for i, score in enumerate(scores):
             candidates[i].final_score = float(score)

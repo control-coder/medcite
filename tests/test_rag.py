@@ -1,4 +1,4 @@
-"""阶段 4 RAG 测试。
+﻿"""阶段 4 RAG 测试。
 
 覆盖:
 1. 术语归一化（三层加载、同义词替换、覆盖率、term_overlap）—— 不需要重依赖
@@ -6,6 +6,9 @@
 """
 
 from __future__ import annotations
+
+import hashlib
+import re
 
 import pytest
 
@@ -86,6 +89,30 @@ class TestNormalizer:
 # ===== 检索测试（需要重依赖）=====
 
 
+class _DeterministicEmbeddingEncoder:
+    """使用 token hashing 的确定性测试 encoder，不访问外网。"""
+
+    dimension = 128
+
+    def encode(self, texts, normalize_embeddings=True, show_progress_bar=False):
+        import numpy as np
+
+        vectors = []
+        for text in texts:
+            vector = np.zeros(self.dimension, dtype=np.float32)
+            for token in re.findall(r"[a-z0-9]+", text.lower()):
+                index = int.from_bytes(
+                    hashlib.sha256(token.encode("utf-8")).digest()[:4], "big"
+                ) % self.dimension
+                vector[index] += 1.0
+            if normalize_embeddings:
+                norm = float(np.linalg.norm(vector))
+                if norm > 0:
+                    vector /= norm
+            vectors.append(vector)
+        return np.vstack(vectors)
+
+
 @pytest.fixture(scope="module")
 def test_chunks() -> list[KnowledgeChunk]:
     """小规模测试知识库。"""
@@ -137,6 +164,7 @@ def retriever(test_chunks, normalizer, eval_config):
         normalizer=normalizer,
         embedding_revision=eval_config["embedding"]["revision"],
         rerank_revision=eval_config["rerank"]["revision"],
+        embedding_encoder=_DeterministicEmbeddingEncoder(),
     )
     r.build_index(use_bm25=True, use_embedding=True)
     return r
@@ -206,3 +234,26 @@ class TestRetriever:
         assert retriever.evidence_level_scores == eval_config["retrieval"]["evidence_levels"]
         assert retriever.embedding_model_revision == eval_config["embedding"]["revision"]
         assert retriever.rerank_model_revision == eval_config["rerank"]["revision"]
+
+
+def test_embedding_scores_follow_faiss_indices(retriever, eval_config) -> None:
+    """回归：FAISS 排序分数必须按 indices 回填，不能错绑到 chunk 0。"""
+    config = eval_config["experiments"]["rag"]["rag_embedding"]["config"]
+    results = retriever.search(
+        "hypertension stroke cardiovascular",
+        top_k=1,
+        experiment_config=config,
+    )
+    assert results[0].chunk_id == "c5"
+
+
+def test_retrieval_score_cache_reuses_same_query(retriever, eval_config) -> None:
+    """同一 query 跨消融组复用 embedding 分数，但不混同 provider KV cache。"""
+    before = retriever.cache_stats()["embedding"]["hits"]
+    query = "myocardial infarction cache regression"
+    embedding = eval_config["experiments"]["rag"]["rag_embedding"]["config"]
+    evidence = eval_config["experiments"]["rag"]["rag_evidence_weight"]["config"]
+    retriever.search(query, top_k=2, experiment_config=embedding)
+    retriever.search(query, top_k=2, experiment_config=evidence)
+    assert retriever.cache_stats()["embedding"]["hits"] == before + 1
+

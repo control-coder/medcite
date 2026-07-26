@@ -206,7 +206,7 @@ def eval_config() -> dict:
 
 def test_eval_config_locked_models(eval_config: dict) -> None:
     """验证锁定模型版本。换模型必须重跑全部评测。"""
-    assert eval_config["generation"]["model"] == "deepseek-v4-flash-free"
+    assert eval_config["generation"]["model"] == "deepseek-v4-flash"
     assert eval_config["embedding"]["model"] == "sentence-transformers/all-MiniLM-L6-v2"
     assert eval_config["rerank"]["model"] == "cross-encoder/ms-marco-MiniLM-L-6-v2"
     assert eval_config["judge"]["model"] == "cross-encoder/nli-MiniLM2-L6-H768"

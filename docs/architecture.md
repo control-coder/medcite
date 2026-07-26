@@ -1,6 +1,6 @@
-# Architecture
+# MediDiag 架构说明
 
-> 更新日期：2026-07-17。本文区分当前已实现组件和一期目标链路。
+> 更新日期：2026-07-23。本文区分当前已实现组件、演示边界和一期目标链路。
 
 ## 当前实现边界
 
@@ -14,11 +14,11 @@
 - 评测链路：配置验证、实验隔离、leakage gate、raw provenance 和指标聚合。
 - P0-C 单机闭环：六个 FastAPI API、单机 worker、lease scanner、人工回流和结构化报告。
 - Provider runtime：阶段 schema、timeout/HTTP 错误映射、有限退避和逐 attempt 事件审计。
-- P1-A observability：统一 trace schema、raw/summary exporter 与三类确定性工程案例。
+- P1-A observability：统一 trace schema、raw/summary exporter 与四类确定性工程案例，其中第四类是双专科无明确收益的负向 fixture。
 - P1-B demo：FastAPI 服务端模板、Jinja2、vendored HTMX、响应式 CSS 和原生表单 fallback。
 - P2 评测门禁：基于 actual raw run 的 20% citation 模板、双人标注/Kappa/裁决审计和自动报告阻断。
 
-当前 P0-C 只接入确定性非诊断 provider，用于验证事务、恢复和 API 契约。可靠性边界可包裹后续真实 adapter，但真实 RAG/LLM/judge adapter、成功调用缓存和双专科实验 trace 尚未交付。
+当前 P0-C 以确定性非诊断 provider 验证事务、恢复和 API 契约；演示路径另已接入 DeepSeek 官方 generation adapter。DeepSeek provider 的 retrieval 仍使用明确标注的本地 fixture，citation 判定仍不是固定 NLI。客户端已实现稳定公共前缀与自动缓存 usage 遥测，但没有自建缓存层；正式单 Agent 与双专科对照实验仍未交付。
 
 ## 一期目标链路
 
@@ -83,7 +83,7 @@ RAG 和 Agent 实验不能复用同一标识：
 - case_reports：结构化报告、风险提示、合规状态和生成版本。
 - case_event_log：append-only 事件，不作为业务结果的唯一存储。
 
-`provider_call` 事件保存 trace/task 关联、provider version、provider attempt、request ID、latency、错误码、retryable、retry decision 和 HTTP status，不保存 API key 或原始病例文本。成功阶段的 `stage_completed` 事件额外保存最终 request ID 与 retry count。
+`provider_call` 事件保存 trace/task 关联、provider version、provider attempt、request ID、latency、错误码、retryable、retry decision 和 HTTP status；DeepSeek generation metadata 只保留模型标识与非敏感 token/cache usage，不保存 API key、prompt、病例正文或完整 provider 响应。成功阶段的 `stage_completed` 事件额外保存最终 request ID 与 retry count。
 
 每个 stage artifact 使用 `(case_id, task_id, stage, attempt)` 唯一约束，并保存 input/output hash、component version 和 latency。provider 调用发生在事务外；写入由 `commit_stage()` 将 lease fence、case CAS、artifact 和 event 合并进同一事务。
 
@@ -135,4 +135,4 @@ flowchart LR
 
 审计器校验 sample 内容未脱离 raw run、双人覆盖完全一致且标注者不同、每项包含日期与判定依据、全部分歧具有裁决记录。它输出 Kappa、混淆矩阵、裁决数以及固定 NLI judge 相对于裁决后人工标签的 agreement。此 agreement 是 judge 校准指标，不替代全量 Citation Precision。
 
-完整人工文件 schema 与命令见 `docs/evaluation_protocol.md` 和 `eval/annotations/README.md`。截至 2026-07-17，该链路只完成工程门禁测试，尚无真实人工标签、正式 NLI raw run 或正式报告。
+完整人工文件 schema 与命令见 `docs/evaluation_protocol.md` 和 `eval/annotations/README.md`。截至 2026-07-23，该链路只完成工程门禁测试；formal 配置校验和 leakage gate 已通过，但尚无完整正式 NLI raw run、真实人工标签或正式报告。

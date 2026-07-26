@@ -1,0 +1,1347 @@
+{
+  "experiment": "rag_embedding",
+  "sample_count": 20,
+  "eligible_sample_count": 19,
+  "gold_evidence_in_kb_rate": 1.0,
+  "recall_at_5": 0.6842105263157895,
+  "knowledge_base_chunk_count": 1927,
+  "empty_chunk_count": 0,
+  "runtime": {
+    "requested_device": "auto",
+    "actual_device": "cuda",
+    "batch_size": 32,
+    "torch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "gpu_name": "NVIDIA GeForce RTX 3060 Laptop GPU"
+  },
+  "retrieval_cache": {
+    "embedding": {
+      "hits": 0,
+      "misses": 20
+    },
+    "bm25": {
+      "hits": 0,
+      "misses": 0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "pubmedqa_21645374",
+      "question": "Do mitochondria play a role in remodelling lace plant leaves during programmed cell death?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00001"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00000",
+          "final_score": 0.331967,
+          "embedding_score": 0.737705,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21645374",
+          "text_length": 538
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00001",
+          "final_score": 0.254941,
+          "embedding_score": 0.566537,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21645374",
+          "text_length": 1154
+        },
+        {
+          "chunk_id": "kb_textbook_00600",
+          "final_score": 0.219707,
+          "embedding_score": 0.488237,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "Pathoma_Husain",
+          "text_length": 51
+        },
+        {
+          "chunk_id": "kb_textbook_00180",
+          "final_score": 0.214655,
+          "embedding_score": 0.477011,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step1",
+          "text_length": 92
+        },
+        {
+          "chunk_id": "kb_textbook_00157",
+          "final_score": 0.203984,
+          "embedding_score": 0.453298,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step1",
+          "text_length": 81
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_16418930",
+      "question": "Landolt C and snellen e acuity: differences in strabismus amblyopia?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00004"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00004",
+          "final_score": 0.366819,
+          "embedding_score": 0.815153,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "16418930",
+          "text_length": 475
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00003",
+          "final_score": 0.33353,
+          "embedding_score": 0.741178,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "16418930",
+          "text_length": 519
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00080",
+          "final_score": 0.300752,
+          "embedding_score": 0.668337,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10966943",
+          "text_length": 367
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00002",
+          "final_score": 0.265674,
+          "embedding_score": 0.590388,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "16418930",
+          "text_length": 450
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00461",
+          "final_score": 0.214902,
+          "embedding_score": 0.47756,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22497340",
+          "text_length": 329
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_9488747",
+      "question": "Syncope during bathing in infants, a pediatric form of water-induced urticaria?",
+      "gold_evidence_ids": [],
+      "gold_present_in_kb": false,
+      "hit_at_5": null,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00006",
+          "final_score": 0.345471,
+          "embedding_score": 0.767712,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "9488747",
+          "text_length": 935
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00953",
+          "final_score": 0.156191,
+          "embedding_score": 0.34709,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "11566686",
+          "text_length": 260
+        },
+        {
+          "chunk_id": "kb_textbook_00176",
+          "final_score": 0.154754,
+          "embedding_score": 0.343897,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step1",
+          "text_length": 158
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00952",
+          "final_score": 0.153936,
+          "embedding_score": 0.34208,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "11566686",
+          "text_length": 633
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00572",
+          "final_score": 0.151087,
+          "embedding_score": 0.33575,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "11970923",
+          "text_length": 178
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_17208539",
+      "question": "Are the long-term results of the transanal pull-through equal to those of the transabdominal pull-through?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00009"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00007",
+          "final_score": 0.24698,
+          "embedding_score": 0.548845,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17208539",
+          "text_length": 343
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00008",
+          "final_score": 0.213222,
+          "embedding_score": 0.473828,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17208539",
+          "text_length": 659
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00624",
+          "final_score": 0.166058,
+          "embedding_score": 0.369018,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24748473",
+          "text_length": 507
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00058",
+          "final_score": 0.165692,
+          "embedding_score": 0.368205,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22694248",
+          "text_length": 405
+        },
+        {
+          "chunk_id": "kb_textbook_00234",
+          "final_score": 0.162333,
+          "embedding_score": 0.360741,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step2",
+          "text_length": 73
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_10808977",
+      "question": "Can tailored interventions increase mammography use among HMO women?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00015"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00015",
+          "final_score": 0.287468,
+          "embedding_score": 0.638817,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10808977",
+          "text_length": 477
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00010",
+          "final_score": 0.285268,
+          "embedding_score": 0.633929,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10808977",
+          "text_length": 495
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00014",
+          "final_score": 0.272777,
+          "embedding_score": 0.606171,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10808977",
+          "text_length": 94
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00438",
+          "final_score": 0.211558,
+          "embedding_score": 0.470128,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25311479",
+          "text_length": 585
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00349",
+          "final_score": 0.202965,
+          "embedding_score": 0.451033,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24160268",
+          "text_length": 376
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_23831910",
+      "question": "Double balloon enteroscopy: is it efficacious and safe in a community setting?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00017"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00200",
+          "final_score": 0.199265,
+          "embedding_score": 0.442811,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "27491658",
+          "text_length": 131
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00016",
+          "final_score": 0.185306,
+          "embedding_score": 0.411791,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "23831910",
+          "text_length": 290
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00199",
+          "final_score": 0.175666,
+          "embedding_score": 0.39037,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "27491658",
+          "text_length": 254
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00379",
+          "final_score": 0.164665,
+          "embedding_score": 0.365922,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25480629",
+          "text_length": 313
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00856",
+          "final_score": 0.160378,
+          "embedding_score": 0.356396,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25986020",
+          "text_length": 404
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_26037986",
+      "question": "30-Day and 1-year mortality in emergency general surgery laparotomies: an area of concern and need for improvement?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00020"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00019",
+          "final_score": 0.385808,
+          "embedding_score": 0.857351,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26037986",
+          "text_length": 223
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00018",
+          "final_score": 0.384521,
+          "embedding_score": 0.85449,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26037986",
+          "text_length": 422
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00020",
+          "final_score": 0.321571,
+          "embedding_score": 0.714603,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26037986",
+          "text_length": 276
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00550",
+          "final_score": 0.229519,
+          "embedding_score": 0.510041,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24666444",
+          "text_length": 505
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00379",
+          "final_score": 0.225143,
+          "embedding_score": 0.500318,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25480629",
+          "text_length": 313
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_26852225",
+      "question": "Is adjustment for reporting heterogeneity necessary in sleep disorders?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00023"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00023",
+          "final_score": 0.308331,
+          "embedding_score": 0.68518,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26852225",
+          "text_length": 620
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00021",
+          "final_score": 0.297157,
+          "embedding_score": 0.660349,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26852225",
+          "text_length": 453
+        },
+        {
+          "chunk_id": "kb_pubmedqa_01006",
+          "final_score": 0.229433,
+          "embedding_score": 0.509851,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "20297950",
+          "text_length": 179
+        },
+        {
+          "chunk_id": "kb_textbook_00829",
+          "final_score": 0.223747,
+          "embedding_score": 0.497216,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "Psichiatry_DSM-5",
+          "text_length": 59
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00022",
+          "final_score": 0.208613,
+          "embedding_score": 0.463584,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26852225",
+          "text_length": 525
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_17113061",
+      "question": "Do mutations causing low HDL-C promote increased carotid intima-media thickness?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00026"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00025",
+          "final_score": 0.350975,
+          "embedding_score": 0.779944,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17113061",
+          "text_length": 245
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00024",
+          "final_score": 0.265821,
+          "embedding_score": 0.590713,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17113061",
+          "text_length": 217
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00944",
+          "final_score": 0.18842,
+          "embedding_score": 0.418712,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22532370",
+          "text_length": 258
+        },
+        {
+          "chunk_id": "kb_textbook_00193",
+          "final_score": 0.185379,
+          "embedding_score": 0.411953,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step1",
+          "text_length": 276
+        },
+        {
+          "chunk_id": "kb_textbook_00191",
+          "final_score": 0.179979,
+          "embedding_score": 0.399952,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "First_Aid_Step1",
+          "text_length": 225
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_10966337",
+      "question": "A short stay or 23-hour ward in a general and academic children's hospital: are they effective?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00029"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00027",
+          "final_score": 0.363543,
+          "embedding_score": 0.807873,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10966337",
+          "text_length": 263
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00029",
+          "final_score": 0.333593,
+          "embedding_score": 0.741317,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10966337",
+          "text_length": 1305
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00028",
+          "final_score": 0.317647,
+          "embedding_score": 0.705882,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10966337",
+          "text_length": 623
+        },
+        {
+          "chunk_id": "kb_textbook_00438",
+          "final_score": 0.221919,
+          "embedding_score": 0.493154,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "InternalMed_Harrison",
+          "text_length": 792
+        },
+        {
+          "chunk_id": "kb_textbook_00440",
+          "final_score": 0.218695,
+          "embedding_score": 0.485989,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "InternalMed_Harrison",
+          "text_length": 2917
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_25432938",
+      "question": "Did Chile's traffic law reform push police enforcement?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00032"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00030",
+          "final_score": 0.324972,
+          "embedding_score": 0.722159,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25432938",
+          "text_length": 261
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00032",
+          "final_score": 0.229747,
+          "embedding_score": 0.51055,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25432938",
+          "text_length": 426
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00031",
+          "final_score": 0.208578,
+          "embedding_score": 0.463507,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25432938",
+          "text_length": 711
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00302",
+          "final_score": 0.103481,
+          "embedding_score": 0.229957,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "9792366",
+          "text_length": 135
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00316",
+          "final_score": 0.097988,
+          "embedding_score": 0.217752,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "23076787",
+          "text_length": 154
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_18847643",
+      "question": "Therapeutic anticoagulation in the trauma patient: is it safe?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00035"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00033",
+          "final_score": 0.390383,
+          "embedding_score": 0.867517,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18847643",
+          "text_length": 296
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00034",
+          "final_score": 0.324282,
+          "embedding_score": 0.720626,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18847643",
+          "text_length": 431
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00035",
+          "final_score": 0.307307,
+          "embedding_score": 0.682904,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18847643",
+          "text_length": 847
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00849",
+          "final_score": 0.24271,
+          "embedding_score": 0.539356,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10605400",
+          "text_length": 480
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00765",
+          "final_score": 0.242561,
+          "embedding_score": 0.539024,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "12805495",
+          "text_length": 511
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_18239988",
+      "question": "Differentiation of nonalcoholic from alcoholic steatohepatitis: are routine laboratory markers useful?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00038"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00036",
+          "final_score": 0.407305,
+          "embedding_score": 0.905122,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18239988",
+          "text_length": 200
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00037",
+          "final_score": 0.29659,
+          "embedding_score": 0.65909,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18239988",
+          "text_length": 364
+        },
+        {
+          "chunk_id": "kb_textbook_00316",
+          "final_score": 0.18273,
+          "embedding_score": 0.406068,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "Histology_Ross",
+          "text_length": 875
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00998",
+          "final_score": 0.182098,
+          "embedding_score": 0.404663,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "27615402",
+          "text_length": 138
+        },
+        {
+          "chunk_id": "kb_textbook_00793",
+          "final_score": 0.179507,
+          "embedding_score": 0.398905,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "Physiology_Levy",
+          "text_length": 674
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_25957366",
+      "question": "Prompting Primary Care Providers about Increased Patient Risk As a Result of Family History: Does It Work?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00041"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00039",
+          "final_score": 0.338542,
+          "embedding_score": 0.752316,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25957366",
+          "text_length": 282
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00041",
+          "final_score": 0.296606,
+          "embedding_score": 0.659125,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25957366",
+          "text_length": 518
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00040",
+          "final_score": 0.288132,
+          "embedding_score": 0.640293,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25957366",
+          "text_length": 578
+        },
+        {
+          "chunk_id": "kb_textbook_00407",
+          "final_score": 0.276523,
+          "embedding_score": 0.614496,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "InternalMed_Harrison",
+          "text_length": 1123
+        },
+        {
+          "chunk_id": "kb_textbook_00260",
+          "final_score": 0.264079,
+          "embedding_score": 0.586842,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "Gynecology_Novak",
+          "text_length": 489
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_24866606",
+      "question": "Do emergency ultrasound fellowship programs impact emergency medicine residents' ultrasound education?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00044"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00042",
+          "final_score": 0.366076,
+          "embedding_score": 0.813502,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24866606",
+          "text_length": 352
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00043",
+          "final_score": 0.253972,
+          "embedding_score": 0.564382,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24866606",
+          "text_length": 511
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00044",
+          "final_score": 0.219996,
+          "embedding_score": 0.48888,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "24866606",
+          "text_length": 554
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00933",
+          "final_score": 0.206018,
+          "embedding_score": 0.457817,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "18496363",
+          "text_length": 57
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00664",
+          "final_score": 0.204004,
+          "embedding_score": 0.453341,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "20549895",
+          "text_length": 268
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_26578404",
+      "question": "Patient-Controlled Therapy of Breathlessness in Palliative Care: A New Therapeutic Concept for Opioid Administration?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00048"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00047",
+          "final_score": 0.322491,
+          "embedding_score": 0.716646,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26578404",
+          "text_length": 526
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00046",
+          "final_score": 0.319555,
+          "embedding_score": 0.710122,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26578404",
+          "text_length": 262
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00048",
+          "final_score": 0.307628,
+          "embedding_score": 0.683617,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26578404",
+          "text_length": 612
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00045",
+          "final_score": 0.266927,
+          "embedding_score": 0.593172,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "26578404",
+          "text_length": 422
+        },
+        {
+          "chunk_id": "kb_textbook_00433",
+          "final_score": 0.188283,
+          "embedding_score": 0.418406,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "MedQA_textbook",
+          "source_id": "InternalMed_Harrison",
+          "text_length": 919
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_11729377",
+      "question": "Is there still a need for living-related liver transplantation in children?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00052"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00049",
+          "final_score": 0.277287,
+          "embedding_score": 0.616193,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "11729377",
+          "text_length": 116
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00050",
+          "final_score": 0.250048,
+          "embedding_score": 0.555663,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "11729377",
+          "text_length": 418
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00988",
+          "final_score": 0.246639,
+          "embedding_score": 0.548087,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21850494",
+          "text_length": 380
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00989",
+          "final_score": 0.229762,
+          "embedding_score": 0.510582,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21850494",
+          "text_length": 248
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00157",
+          "final_score": 0.203508,
+          "embedding_score": 0.45224,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "20571467",
+          "text_length": 793
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_17096624",
+      "question": "Do patterns of knowledge and attitudes exist among unvaccinated seniors?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00055"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00053",
+          "final_score": 0.37646,
+          "embedding_score": 0.836577,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17096624",
+          "text_length": 101
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00054",
+          "final_score": 0.371639,
+          "embedding_score": 0.825865,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17096624",
+          "text_length": 129
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00663",
+          "final_score": 0.227653,
+          "embedding_score": 0.505897,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "20549895",
+          "text_length": 345
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00055",
+          "final_score": 0.220726,
+          "embedding_score": 0.490503,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "17096624",
+          "text_length": 413
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00226",
+          "final_score": 0.218427,
+          "embedding_score": 0.485393,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22188074",
+          "text_length": 47
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_22694248",
+      "question": "Is there a model to teach and practice retroperitoneoscopic nephrectomy?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00058"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": false,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00057",
+          "final_score": 0.317427,
+          "embedding_score": 0.705393,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22694248",
+          "text_length": 363
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00056",
+          "final_score": 0.282059,
+          "embedding_score": 0.626797,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22694248",
+          "text_length": 283
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00059",
+          "final_score": 0.276625,
+          "embedding_score": 0.614723,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22694248",
+          "text_length": 187
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00714",
+          "final_score": 0.183534,
+          "embedding_score": 0.407854,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "10354335",
+          "text_length": 434
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00134",
+          "final_score": 0.183404,
+          "embedding_score": 0.407565,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "25489696",
+          "text_length": 93
+        }
+      ]
+    },
+    {
+      "sample_id": "pubmedqa_22990761",
+      "question": "Cardiovascular risk in a rural adult West African population: is resting heart rate also relevant?",
+      "gold_evidence_ids": [
+        "kb_pubmedqa_00063"
+      ],
+      "gold_present_in_kb": true,
+      "hit_at_5": true,
+      "top_5": [
+        {
+          "chunk_id": "kb_pubmedqa_00060",
+          "final_score": 0.378633,
+          "embedding_score": 0.841406,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22990761",
+          "text_length": 349
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00063",
+          "final_score": 0.223389,
+          "embedding_score": 0.49642,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22990761",
+          "text_length": 712
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00968",
+          "final_score": 0.213174,
+          "embedding_score": 0.473721,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21658267",
+          "text_length": 664
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00969",
+          "final_score": 0.194732,
+          "embedding_score": 0.432737,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "21658267",
+          "text_length": 807
+        },
+        {
+          "chunk_id": "kb_pubmedqa_00619",
+          "final_score": 0.191221,
+          "embedding_score": 0.424937,
+          "bm25_score": 0.0,
+          "evidence_level_score": 0.0,
+          "term_overlap": 0.0,
+          "source": "PubMedQA_context",
+          "source_id": "22720085",
+          "text_length": 300
+        }
+      ]
+    }
+  ]
+}

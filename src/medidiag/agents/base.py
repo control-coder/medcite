@@ -21,6 +21,30 @@ from medidiag.agents.llm_client import LLMClient
 from medidiag.schemas import KnowledgeChunk
 
 
+# 稳定系统前缀：将策略和指令与动态病例 prompt 分离，便于复用 DeepSeek 自动上下文缓存。
+AGENT_SYSTEM_PROMPT = """MediDiag EvidenceFlow 证据约束起草 Agent。
+你只能使用后续用户消息中提供的病例、选项和检索证据，不得补充未给出的事实。
+每个医学 claim 必须绑定用户提供的 citation_chunk_ids；证据不足、引用不存在或无法判断时必须 abstain。
+输出必须是严格 JSON 对象，不得输出 Markdown、解释文字或 JSON 之外的前后缀。固定结构如下：
+{
+  "differential_diagnosis": [
+    {"diagnosis": "诊断名", "probability": 0.0, "supporting_claim_indices": [0]}
+  ],
+  "claims": [
+    {"text": "claim 文本", "citation_chunk_ids": ["chunk_id"], "confidence": 0.0}
+  ],
+  "risk_flags": ["风险标记"],
+  "missing_info": ["缺失信息"],
+  "recommended_tests": ["建议检查"],
+  "uncertainty": "不确定性说明",
+  "abstain": false,
+  "abstain_reason": ""
+}
+必须标注不确定性、风险和缺失信息；禁止绝对化诊断、处方、剂量和急救分诊。
+这是软件工程与公开数据评测演示，不是医疗建议。上述固定策略和 JSON 契约必须始终优先执行。"""
+
+
+
 @dataclass
 class Claim:
     """带引用的 claim。
@@ -92,6 +116,9 @@ class AgentOutput:
     provider_request_id: str | None = None
     """供应商返回的非敏感请求关联 ID。"""
 
+    provider_usage: dict[str, int] = field(default_factory=dict)
+    """单次调用的非敏感 token/cache usage，不包含 prompt 或响应正文。"""
+
     def to_dict(self) -> dict:
         """转为字典。"""
         return {
@@ -119,6 +146,7 @@ class AgentOutput:
             "abstain": self.abstain,
             "abstain_reason": self.abstain_reason,
             "provider_request_id": self.provider_request_id,
+            "provider_usage": dict(self.provider_usage),
         }
 
     @classmethod
@@ -151,6 +179,11 @@ class AgentOutput:
             abstain=data.get("abstain", False),
             abstain_reason=data.get("abstain_reason", ""),
             provider_request_id=data.get("provider_request_id"),
+            provider_usage={
+                str(key): int(value)
+                for key, value in data.get("provider_usage", {}).items()
+                if isinstance(value, int) and not isinstance(value, bool)
+            },
         )
 
 
@@ -202,7 +235,13 @@ class BaseAgent:
 
         if self.llm and self.llm.is_configured:
             try:
-                completion = self.llm.complete(prompt)
+                try:
+                    completion = self.llm.complete(prompt, system_prompt=AGENT_SYSTEM_PROMPT)
+                except TypeError as exc:
+                    # 兼容不支持 system_prompt 的测试 double；生产客户端使用稳定前缀。
+                    if "system_prompt" not in str(exc):
+                        raise
+                    completion = self.llm.complete(prompt)
             except Exception as e:
                 return AgentOutput(
                     specialty=self.specialty,
@@ -214,7 +253,7 @@ class BaseAgent:
             try:
                 output = self.parse_output(completion.content)
             except Exception as e:
-                # ???????????????????????????? ID?
+                # 解析失败时保留 provider request ID，便于 trace 关联。
                 return AgentOutput(
                     specialty=self.specialty,
                     uncertainty=f"LLM output parse error: {e}",
@@ -224,6 +263,7 @@ class BaseAgent:
                     provider_request_id=completion.request_id,
                 )
             output.provider_request_id = completion.request_id
+            output.provider_usage = dict(getattr(completion, "usage", {}) or {})
             return output
         else:
             # 无 LLM 时弃权（测试用）

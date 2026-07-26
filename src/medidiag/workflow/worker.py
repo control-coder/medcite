@@ -480,6 +480,7 @@ class SingleMachineWorker:
         return {
             "provider_request_id": outcome.request_id,
             "provider_retry_count": outcome.retry_count,
+            **outcome.metadata,
         }
 
     def _artifacts(

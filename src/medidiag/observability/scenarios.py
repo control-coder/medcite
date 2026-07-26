@@ -27,8 +27,65 @@ class ScenarioTrace:
     export: TraceExportResult
 
 
+@dataclass
+class DualSpecialistFixtureProvider(DeterministicWorkflowProvider):
+    """为负向 trace 固定生成两个专科输出及无收益仲裁结果。"""
+
+    version: str = "dual-specialist-negative-fixture-v1"
+
+    def generate(self, question: str, retrieval: dict, plan: dict) -> dict:
+        chunk_id = retrieval["chunks"][0]["chunk_id"]
+        cardiology_claim = {
+            "claim_id": "cardiology_claim_0001",
+            "text": "The cardiology fixture cannot establish a diagnosis from the supplied evidence.",
+            "citation_chunk_ids": [chunk_id],
+            "confidence": 0.2,
+        }
+        pulmonology_claim = {
+            "claim_id": "pulmonology_claim_0001",
+            "text": "The pulmonology fixture reaches the same limitation without adding evidence.",
+            "citation_chunk_ids": [chunk_id],
+            "confidence": 0.2,
+        }
+        return {
+            "agents": [
+                {
+                    "agent_name": "cardiology_fixture",
+                    "specialty": "cardiology",
+                    "status": "SUCCEEDED",
+                    "claims": [cardiology_claim],
+                },
+                {
+                    "agent_name": "pulmonology_fixture",
+                    "specialty": "pulmonology",
+                    "status": "SUCCEEDED",
+                    "claims": [pulmonology_claim],
+                },
+            ],
+            "claims": [cardiology_claim, pulmonology_claim],
+            "risk_flags": ["qualified_clinician_review_required"],
+            "uncertainty": "The second specialist adds no new evidence in this fixture.",
+        }
+
+    def arbitrate(self, generation: dict, retrieval: dict) -> dict:
+        return {
+            "verdict": "NO_CLEAR_SPECIALIST_GAIN",
+            "selected_claim_ids": ["cardiology_claim_0001"],
+            "conflicts": [
+                {
+                    "type": "redundant_evidence",
+                    "detail": "Both specialists rely on the same fixture chunk.",
+                }
+            ],
+            "limitation": (
+                "Deterministic negative case: dual-specialist output adds redundancy, "
+                "not validated medical value."
+            ),
+        }
+
+
 def generate_trace_examples(output_root: str | Path) -> list[ScenarioTrace]:
-    """Generate three network-free traces without retaining a scenario database."""
+    """生成可复现的工程 trace 示例并导出脱敏摘要。"""
     output_root = Path(output_root)
     with tempfile.TemporaryDirectory(prefix="medidiag-traces-") as directory:
         engine = create_db_engine(
@@ -41,6 +98,7 @@ def generate_trace_examples(output_root: str | Path) -> list[ScenarioTrace]:
                 "success": _success_scenario(factory),
                 "lease_recovery": _lease_recovery_scenario(factory),
                 "review_escalation": _review_escalation_scenario(factory),
+                "dual_specialist_negative": _dual_specialist_scenario(factory),
             }
             exporter = TraceExporter()
             results = []
@@ -178,4 +236,16 @@ def _review_escalation_scenario(factory) -> str:
     ).run_once()
     if resumed.final_state != CaseState.CLOSED_SUCCESS.value:
         raise RuntimeError("review trace scenario did not resume")
+    return case_id
+
+
+def _dual_specialist_scenario(factory) -> str:
+    case_id, _ = _create_task(factory, "dual-specialist-negative")
+    result = SingleMachineWorker(
+        factory,
+        DualSpecialistFixtureProvider(),
+        worker_id="trace-dual-specialist-worker",
+    ).run_once()
+    if result.final_state != CaseState.CLOSED_SUCCESS.value:
+        raise RuntimeError("dual-specialist trace scenario did not close successfully")
     return case_id

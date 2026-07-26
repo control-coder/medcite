@@ -8,15 +8,23 @@ evaluation:
 
 generation:
   provider: "deepseek"
-  model: "deepseek-v4-flash-free"
+  model: "deepseek-v4-flash"
   revision: "development-unpinned"
-  base_url: "https://www.dogapi.cc/v1"
+  base_url: "https://api.deepseek.com"
   temperature: 0
   seed: 42
   max_tokens: 2048
+  thinking: "disabled"
   timeout_seconds: 60
-  prompt_version: "diagnosis-v1"
+  prompt_version: "diagnosis-v3-cache-prefix"
+  cache_strategy: "deepseek_automatic_prefix_v1"
+  cache_usage_fields: ["prompt_cache_hit_tokens", "prompt_cache_miss_tokens"]
 
+
+runtime:
+  # auto 优先使用 CUDA；CUDA 不可用时回退 CPU，并在 manifest 记录实际设备。
+  device: "auto"
+  batch_size: 32
 embedding:
   model: "sentence-transformers/all-MiniLM-L6-v2"
   revision: "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
@@ -199,6 +207,6 @@ metrics:
 
 reproduction:
   validate_command: "python -m eval.runner --config eval/config.yaml --validate"
-  rag_command: "python -m eval.runner --config eval/config.yaml --experiment rag_all --output reports/raw/"
+  rag_command: "python -m eval.runner --config eval/config.yaml --experiment rag_retrieval --output reports/raw/"
   agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output reports/raw/"
   leakage_check_command: "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl"

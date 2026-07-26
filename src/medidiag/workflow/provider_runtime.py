@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 import httpx
@@ -74,6 +74,8 @@ class ProviderResponse:
 
     payload: dict[str, Any]
     request_id: str | None = None
+    # Non-sensitive provider counters, e.g. DeepSeek prompt-cache usage.
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,7 @@ class ProviderCallOutcome:
     request_id: str | None
     attempts: tuple[ProviderAttempt, ...]
     elapsed_ms: int
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def retry_count(self) -> int:
@@ -198,6 +201,7 @@ class ProviderCallRunner:
                 response.request_id,
                 tuple(attempts),
                 self._latency_ms(call_started),
+                dict(response.metadata),
             )
 
         raise AssertionError("provider retry loop exited unexpectedly")
