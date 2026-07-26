@@ -122,8 +122,39 @@ warning 是 FastAPI/Starlette TestClient 当前 httpx adapter 的弃用提示，
 
 ## Development Commands
 
+### 在本地跑 CI 的同一组检查
+
+`.github/workflows/ci.yml` 只在 `push` 到 `main` 和 `pull_request` 时触发。本仓库
+目前没有配置 remote，全部工作都在特性分支上进行，因此 CI 实际上不会运行——落盘前
+必须在本地跑完同样三步。三步与 CI 中的步骤逐条对应：
+
 ```powershell
 conda activate medidiag
+
+# 1. ruff：阻断
+python -m ruff check .
+
+# 2. pytest + 覆盖率：阻断（覆盖率只报告，不设阈值门禁）
+python -m pytest -q --cov=medidiag --cov=eval --cov-report=term-missing
+
+# 3. mypy：自 2026-07-26 起阻断（存量已清零）
+python -m mypy src
+```
+
+CI 另外设置了 `HF_HUB_OFFLINE=1` 与 `TRANSFORMERS_OFFLINE=1`，使任何非预期的
+Hugging Face 下载变成显式失败而不是缓慢的网络依赖式通过。想完全复现 CI 环境时
+在本地一并设置：
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"; $env:TRANSFORMERS_OFFLINE = "1"
+```
+
+注意用 conda `medidiag` 环境而不是 base：base 缺少 `sentence_transformers` 与
+`faiss`，会在 `tests/test_rag.py` 产生 12 个与代码无关的错误。
+
+### 其余命令
+
+```powershell
 pip install -e ".[dev]"
 
 python -m pytest -q
@@ -207,4 +238,4 @@ trace raw 文件位于 `traces/raw/<trace_id>.jsonl`，脱敏摘要位于 `trace
 
 ## License
 
-MIT。仅用于工程演示与公开数据评测。
+MIT，全文见 [`LICENSE`](LICENSE)。仅用于工程演示与公开数据评测。

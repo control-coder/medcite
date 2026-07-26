@@ -20,19 +20,114 @@
 
 当前 P0-C 以确定性非诊断 provider 验证事务、恢复和 API 契约；演示路径另已接入 DeepSeek 官方 generation adapter。DeepSeek provider 的 retrieval 仍使用明确标注的本地 fixture，citation 判定仍不是固定 NLI。客户端已实现稳定公共前缀与自动缓存 usage 遥测，但没有自建缓存层；正式单 Agent 与双专科对照实验仍未交付。
 
-## 一期目标链路
+## 请求路径
 
-```text
-FastAPI/CLI
-  -> case service (idempotency + optimistic CAS)
-  -> workflow_tasks (one active task per case)
-  -> single-machine worker acquires lease
-  -> external stages outside transaction
-       normalize -> retrieve -> rerank -> generate -> judge -> review
-  -> atomic result CAS (owner + attempt + RUNNING + lease_until)
-  -> stage artifacts + state transition + append-only event
-  -> report generation or ESCALATED human wait state
+下图只画已实现的组件，与 `src/medidiag/` 一一对应；虚线是事务外的外部 IO
+（DD-002），实线是同事务写入。
+
+```mermaid
+flowchart TB
+  subgraph entry["入口 (src/medidiag/api, cli.py)"]
+    API["FastAPI /cases, /demo<br/>api/app.py"]
+    CLI["medidiag CLI<br/>cli.py"]
+  end
+
+  subgraph svc["服务层 (src/medidiag/workflow)"]
+    EX["WorkflowExecutor<br/>幂等 + 乐观锁 + 状态/事件同事务"]
+    TASKS[("workflow_tasks<br/>每个 case 至多一个 active task")]
+  end
+
+  subgraph run["执行层"]
+    W["SingleMachineWorker<br/>worker.py"]
+    LS["LeaseScanner<br/>回收过期租约"]
+    HB["LeaseHeartbeat<br/>独立会话，调用期间续期"]
+    PCR["ProviderCallRunner<br/>schema 校验 + 分类 + 有界重试"]
+  end
+
+  subgraph ext["外部依赖（事务外）"]
+    PROV["WorkflowProvider<br/>Deterministic / DeepSeek"]
+    RAG["Retriever<br/>BM25 + embedding + rerank"]
+  end
+
+  subgraph store["持久化 (src/medidiag/db)"]
+    CASES[("cases")]
+    ART[("stage_artifacts")]
+    EV[("case_event_log<br/>append-only")]
+    REP[("case_reports")]
+  end
+
+  API --> EX
+  CLI --> EX
+  EX --> TASKS
+  TASKS -->|"acquire lease"| W
+  W --> PCR
+  PCR -.->|"每次 attempt"| PROV
+  PCR -.-> RAG
+  W --- HB
+  HB -.->|"每 heartbeat_seconds 续期"| TASKS
+  LS -.->|"lease_until < now 时 reclaim"| TASKS
+  W -->|"commit_stage: lease fence + case CAS<br/>单事务"| CASES
+  W --> ART
+  W --> EV
+  W --> REP
 ```
+
+租约 fence 是唯一的脑裂防护：`commit_stage` 的条件 UPDATE 同时校验
+task_id、lease_owner、attempt、`status=RUNNING` 与 `lease_until > now`，
+未命中即丢弃本次外部调用结果并追加 `TASK_LEASE_LOST`。
+
+## 状态机
+
+14 个状态，定义在 `workflow/state_machine.py`。每条边都标注触发主体；
+`TRANSITIONS` 表是唯一事实源，下图与之对应。
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> CREATED
+
+  CREATED --> NORMALIZED: worker / api
+  NORMALIZED --> EVIDENCE_RETRIEVED: worker
+  EVIDENCE_RETRIEVED --> PLAN_GENERATED: worker
+  PLAN_GENERATED --> SPECIALIST_REVIEWING: agent_worker
+  SPECIALIST_REVIEWING --> ARBITRATION_REVIEWING: agent_worker
+  ARBITRATION_REVIEWING --> APPROVED: reviewer_worker
+  APPROVED --> REPORT_GENERATED: reviewer_worker
+  REPORT_GENERATED --> CLOSED_SUCCESS: worker
+
+  ARBITRATION_REVIEWING --> REVISION_REQUIRED: reviewer_worker
+  REVISION_REQUIRED --> PLAN_GENERATED: reviewer_worker / human
+  REVISION_REQUIRED --> CLOSED_FAILED: reviewer_worker / human
+
+  state "ESCALATED (等待态，非终态)" as ESCALATED
+  CREATED --> ESCALATED: worker
+  NORMALIZED --> ESCALATED: worker
+  EVIDENCE_RETRIEVED --> ESCALATED: worker
+  PLAN_GENERATED --> ESCALATED: agent_worker
+  SPECIALIST_REVIEWING --> ESCALATED: agent_worker
+  ARBITRATION_REVIEWING --> ESCALATED: reviewer_worker
+  REVISION_REQUIRED --> ESCALATED: reviewer_worker / human
+  APPROVED --> ESCALATED: reviewer_worker
+
+  ESCALATED --> REVISION_REQUIRED: human
+  ESCALATED --> APPROVED: human
+  ESCALATED --> CLOSED_ESCALATED: human
+
+  CREATED --> CLOSED_CANCELLED: api
+
+  CLOSED_SUCCESS --> [*]
+  CLOSED_ESCALATED --> [*]
+  CLOSED_FAILED --> [*]
+  CLOSED_CANCELLED --> [*]
+```
+
+三条约束值得单独说明：
+
+- **每个执行状态都有一条 ESCALATED 出边**，因此任何阶段的 provider 失败都不会
+  把 case 留在中间态死等；`_STAGE_BY_STATE` 保证失败边使用状态机接受的触发主体。
+- **`ESCALATED` 只能由 `human` 回流**，system 与 worker 都无权推进它。
+- **`REVISION_REQUIRED -> PLAN_GENERATED` 的环由复核轮次上限截断**：达到
+  `max_review_rounds` 后改判 `ESCALATED` 并记 `MAX_REVIEW_ROUNDS_EXCEEDED`。
 
 ## 事务边界
 
@@ -47,19 +142,39 @@ FastAPI/CLI
 
 步骤 3-5 的数据库原子 CAS 已在 P0-B 落盘并由模型、executor、lease 与迁移测试覆盖。它只证明单机 SQLite 条件更新语义，不代表多 worker 生产部署能力。
 
-## 评测数据流
+## 评测门禁链
 
-```text
-eval/config.yaml
-  -> schema/semantic validation
-  -> leakage gate
-  -> select rag_* or agent_* experiment family
-  -> explicit Retriever/LLM/Judge construction
-  -> per-sample raw records
-  -> run manifest + config snapshot + hashes
-  -> report eligibility gate
-  -> formal report (only when all gates pass)
+每个菱形都是硬门禁：不通过就终止，不降级、不产出可报告数值。
+
+```mermaid
+flowchart TB
+  CFG["eval/config.formal.yaml<br/>唯一事实源 (DD-003)"] --> V{"validate_config<br/>mode / 40 位 HF SHA<br/>judge.method=nli / 溯源模式"}
+  V -->|"issues"| STOP1["拒绝启动"]
+  V -->|"OK"| LK{"leakage gate<br/>sample ID / 问题原文 / answer key"}
+  LK -->|"命中"| STOP2["EVAL_DATA_LEAKAGE_DETECTED<br/>非零退出"]
+  LK -->|"OK"| BUILD["加载 KB、构建索引<br/>初始化 NLI judge 与 LLMClient"]
+  BUILD --> JI{"judge 标签集校验<br/>必须可识别为 entail/neutral/contradiction"}
+  JI -->|"不符"| STOP3["JudgeInitializationError"]
+  JI -->|"OK"| FAM["按族选实验<br/>rag_* 固定 topology / agent_* 固定 rag_full"]
+
+  FAM --> SAMPLE["逐样本：检索 → rerank → generation → judge → review"]
+  SAMPLE --> PROV{"formal + provider_response_id<br/>每个样本必须有 response.id"}
+  PROV -->|"缺失"| STOP4["FORMAL_GENERATION_RESPONSE_ID_MISSING"]
+  PROV -->|"OK"| RAW["reports/raw/run_id/<br/>config snapshot + 逐实验 JSON"]
+  RAW --> MF["manifest.json<br/>formal_candidate = true<br/>report_eligible = false"]
+
+  MF --> PREP["annotation_audit prepare<br/>按 judge verdict 分层抽 >=20%"]
+  PREP --> A["标注者 A 独立标签"]
+  PREP --> B["标注者 B 独立标签"]
+  A --> AUD{"audit: Kappa + 分歧裁决<br/>run ID 与 manifest hash 必须匹配"}
+  B --> AUD
+  AUD -->|"Kappa < 0.60 或 run 不匹配"| STOP5["FAILED，阻断报告"]
+  AUD -->|"PASSED"| RPT["reports/final_eval.md"]
 ```
+
+`formal_candidate` 与 `report_eligible` 是两件事：runner 只能置前者，后者必须由
+一份 run ID 匹配、状态为 `PASSED` 的人工 citation audit 授予（DD-015）。因此
+「配置全部合法且 run 成功结束」不足以产出正式报告。
 
 RAG 和 Agent 实验不能复用同一标识：
 

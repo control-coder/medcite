@@ -36,8 +36,13 @@ jobs:
       - name: Ruff
         run: ruff check .
 
+      # Coverage is reported, not gated. A threshold is a policy decision about
+      # which code must be tested; adding one here would fail the build on
+      # untested CLI entry points that are deliberately exercised by hand.
       - name: Pytest
-        run: python -m pytest -q
+        run: >
+          python -m pytest -q
+          --cov=medidiag --cov=eval --cov-report=term-missing
 
       # Blocking since 2026-07-26: the backlog reached zero (97 -> 14 -> 0), so
       # `strict = true` in pyproject.toml is now enforced rather than aspirational.
