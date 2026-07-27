@@ -14,10 +14,16 @@
   - textbook chunk 的 source_id = 教材名（如 "Anatomy_Gray"），非 sample_id
   - 构建时过滤包含评测问题原文（len > 50）的 chunk
   - 合并后由 leakage_check 最终校验
+
+切分长度上限:
+  - 空行切分只对排版规范的教材有效。18 本教材里 `Surgery_Schwartz.txt`（11.4MB）
+    只有 250 个换行、几乎没有空行段落边界，因此只能切出 126 个巨型块，最大
+    722,301 字符。见 `MAX_CHUNK_CHARS` 与 `split_textbook_paragraphs`。
 """
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -32,14 +38,80 @@ from medidiag.schemas import (
     write_jsonl,
 )
 
+MAX_CHUNK_CHARS = 800
+"""单个 chunk 的硬字符上限。
 
-def split_textbook_paragraphs(content: str, min_chars: int = 50) -> list[str]:
-    """按空行分割教材段落，过滤过短段落。"""
-    paragraphs = []
+800 的依据是既有语料本身：修复前 PubMedQA + 正常教材 chunk 的 p90 恰为 800 字符，
+因此这个上限对 18 本教材中排版规范的那 17 本几乎不改变切分结果，只截断异常块。它同时
+落在 embedding 模型 `all-MiniLM-L6-v2` 的 256 token 输入窗口的同一量级
+（约 200 token），使 chunk 能被向量完整表示——修复前 722,301 字符的 chunk 实际
+只有开头约 1000 字符参与检索。
+"""
+
+# 句末标点后接空白：英文教材用 .!?，CJK 语料用 。！？。
+_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?。！？])\s+")
+
+
+def _hard_split(text: str, max_chars: int) -> list[str]:
+    """按定长切分：句子本身超过上限时的最后手段。"""
+    return [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
+
+
+def split_long_block(text: str, max_chars: int) -> list[str]:
+    """把超过 ``max_chars`` 的块切成若干不超过上限的片段。
+
+    优先在句边界切分并贪心合并相邻句子，使片段尽量接近上限而不越界；单个句子
+    本身超过上限时对该句做定长硬切。
+    """
+    pieces: list[str] = []
+    buffer = ""
+    for sentence in _SENTENCE_BOUNDARY.split(text):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        if len(sentence) > max_chars:
+            # 该句自身越界：先冲刷缓冲区，再对它硬切。
+            if buffer:
+                pieces.append(buffer)
+                buffer = ""
+            pieces.extend(_hard_split(sentence, max_chars))
+            continue
+        candidate = f"{buffer} {sentence}" if buffer else sentence
+        if len(candidate) <= max_chars:
+            buffer = candidate
+        else:
+            pieces.append(buffer)
+            buffer = sentence
+    if buffer:
+        pieces.append(buffer)
+    return [piece.strip() for piece in pieces if piece.strip()]
+
+
+def split_textbook_paragraphs(
+    content: str,
+    min_chars: int = 50,
+    max_chars: int = MAX_CHUNK_CHARS,
+) -> list[str]:
+    """按空行分割教材段落，对超长块继续切分，过滤过短段落。
+
+    Args:
+        content: 教材全文。
+        min_chars: 片段最小字符数，短于此值的片段被丢弃（原有行为）。
+        max_chars: 片段最大字符数。超过上限的块按句边界切分，仍越界的残片硬切。
+
+    Returns:
+        全部片段，长度均在 ``[min_chars, max_chars]`` 内。
+    """
+    paragraphs: list[str] = []
     for block in content.split("\n\n"):
         text = block.strip()
-        if len(text) >= min_chars:
-            paragraphs.append(text)
+        if len(text) <= max_chars:
+            if len(text) >= min_chars:
+                paragraphs.append(text)
+            continue
+        for piece in split_long_block(text, max_chars):
+            if len(piece) >= min_chars:
+                paragraphs.append(piece)
     return paragraphs
 
 
@@ -74,6 +146,11 @@ def split_textbook_paragraphs(content: str, min_chars: int = 50) -> list[str]:
     show_default=True,
     help="每本教材取前 N 段（控制知识库规模）。",
 )
+@click.option(
+    "--max-chunk-chars", type=int, default=MAX_CHUNK_CHARS,
+    show_default=True,
+    help="单个 chunk 的硬字符上限；超长块按句边界切分。",
+)
 def cli(
     textbook_dir: str,
     pubmedqa_chunks: str,
@@ -82,6 +159,7 @@ def cli(
     kb_output: str,
     eval_output: str,
     chunks_per_book: int,
+    max_chunk_chars: int,
 ) -> None:
     """构建知识库与合并评测集。"""
 
@@ -100,7 +178,9 @@ def cli(
         for txt_file in txt_files:
             book_name = txt_file.stem
             content = txt_file.read_text(encoding="utf-8", errors="ignore")
-            paragraphs = split_textbook_paragraphs(content)
+            paragraphs = split_textbook_paragraphs(
+                content, max_chars=max_chunk_chars
+            )
             paragraphs = paragraphs[:chunks_per_book]
 
             for para in paragraphs:

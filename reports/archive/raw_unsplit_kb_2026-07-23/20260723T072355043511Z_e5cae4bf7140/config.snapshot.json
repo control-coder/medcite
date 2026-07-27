@@ -1,0 +1,276 @@
+{
+  "compliance": {
+    "block_absolute_terms": [
+      "确诊",
+      "保证治愈",
+      "无需就医",
+      "根治",
+      "百分之百"
+    ],
+    "mandatory_disclaimer": "仅供学习和工程演示，不构成医疗建议。",
+    "out_of_scope_reject_template": "该问题超出本系统的模拟范围，无法提供诊断建议。请咨询专业医生。"
+  },
+  "dataset": {
+    "agent_eval_set_path": "eval/datasets/eval_set_medqa.jsonl",
+    "agent_sample_manifest_path": "eval/datasets/agent_eval_manifest_v1.jsonl",
+    "annotation": {
+      "adjudication_path": "eval/annotations/citation_adjudication_v1.jsonl",
+      "annotator_a_path": "eval/annotations/citation_labels_a_v1.jsonl",
+      "annotator_b_path": "eval/annotations/citation_labels_b_v1.jsonl",
+      "citation_sample_path": "eval/annotations/citation_sample_v1.jsonl",
+      "double_check_ratio": 0.2,
+      "kappa_below_threshold": 0.6,
+      "kappa_discuss_range": [
+        0.6,
+        0.8
+      ],
+      "kappa_stable_threshold": 0.8
+    },
+    "knowledge_base_path": "eval/datasets/knowledge_chunks.jsonl",
+    "public_ratio_min": 0.4,
+    "rag_eval_set_path": "eval/datasets/eval_set_pubmedqa.jsonl",
+    "sources": [
+      {
+        "license": "MIT",
+        "name": "MedQA",
+        "subset": "train"
+      },
+      {
+        "license": "CC BY 4.0",
+        "name": "PubMedQA",
+        "subset": "pqa_labeled"
+      }
+    ],
+    "version": "v1"
+  },
+  "embedding": {
+    "batch_size": 32,
+    "dimension": 384,
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "normalize": true,
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "timeout_seconds": 60
+  },
+  "evaluation": {
+    "mode": "formal",
+    "seed": 42
+  },
+  "experiments": {
+    "agent": {
+      "agent_dynamic_pair": {
+        "description": "dynamic two-specialist arbitration",
+        "retrieval_profile": "rag_full",
+        "topology": "dynamic_pair"
+      },
+      "agent_fixed_pair": {
+        "description": "fixed two-specialist arbitration",
+        "retrieval_profile": "rag_full",
+        "specialist_pair": [
+          "cardiology",
+          "respiratory"
+        ],
+        "topology": "fixed_pair"
+      },
+      "agent_single": {
+        "description": "single diagnosis agent baseline",
+        "retrieval_profile": "rag_full",
+        "topology": "single"
+      }
+    },
+    "rag": {
+      "rag_bm25": {
+        "config": {
+          "use_bm25": true,
+          "use_citation_review": false,
+          "use_evidence_weighting": false,
+          "use_rerank": false,
+          "use_term_normalization": false
+        },
+        "description": "embedding + BM25"
+      },
+      "rag_citation_review": {
+        "config": {
+          "use_bm25": false,
+          "use_citation_review": true,
+          "use_evidence_weighting": false,
+          "use_rerank": false,
+          "use_term_normalization": false
+        },
+        "description": "embedding + citation review"
+      },
+      "rag_embedding": {
+        "config": {
+          "use_bm25": false,
+          "use_citation_review": false,
+          "use_evidence_weighting": false,
+          "use_rerank": false,
+          "use_term_normalization": false
+        },
+        "description": "pure embedding baseline"
+      },
+      "rag_evidence_weight": {
+        "config": {
+          "use_bm25": false,
+          "use_citation_review": false,
+          "use_evidence_weighting": true,
+          "use_rerank": false,
+          "use_term_normalization": false
+        },
+        "description": "embedding + evidence-level weighting"
+      },
+      "rag_full": {
+        "config": {
+          "use_bm25": true,
+          "use_citation_review": true,
+          "use_evidence_weighting": true,
+          "use_rerank": true,
+          "use_term_normalization": true
+        },
+        "description": "combined configuration; not used for single-variable attribution"
+      },
+      "rag_term_norm": {
+        "config": {
+          "use_bm25": false,
+          "use_citation_review": false,
+          "use_evidence_weighting": false,
+          "use_rerank": false,
+          "use_term_normalization": true
+        },
+        "description": "embedding + terminology normalization"
+      }
+    }
+  },
+  "generation": {
+    "base_url": "https://api.deepseek.com",
+    "cache_strategy": "deepseek_automatic_prefix_v1",
+    "cache_usage_fields": [
+      "prompt_cache_hit_tokens",
+      "prompt_cache_miss_tokens"
+    ],
+    "max_tokens": 2048,
+    "model": "deepseek-v4-flash",
+    "prompt_version": "diagnosis-v2-stable-prefix",
+    "provenance_mode": "provider_response_id",
+    "provider": "deepseek",
+    "response_id_source": "response.id",
+    "revision": "deepseek-v4-flash",
+    "seed": 42,
+    "temperature": 0,
+    "thinking": "disabled",
+    "timeout_seconds": 60
+  },
+  "judge": {
+    "method": "nli",
+    "model": "cross-encoder/nli-MiniLM2-L6-H768",
+    "revision": "b95119ce93d3e065de6214e38cd4a97b0f2f2c6d",
+    "timeout_seconds": 60,
+    "verdict_labels": [
+      "SUPPORTED",
+      "PARTIAL",
+      "UNSUPPORTED"
+    ]
+  },
+  "leakage_check": {
+    "check_answer_key": true,
+    "check_question_text": true,
+    "chunk_fields_to_check": [
+      "source",
+      "source_id",
+      "metadata.raw_id"
+    ]
+  },
+  "metrics": [
+    {
+      "formula": "eligible samples with >=1 gold evidence hit / samples with non-empty gold_evidence_ids",
+      "ground_truth_source": "PubMedQA eval_set.gold_evidence_ids",
+      "name": "evidence_recall_at_5"
+    },
+    {
+      "formula": "samples with non-empty gold_evidence_ids / all samples",
+      "ground_truth_source": "eval_set.gold_evidence_ids",
+      "name": "gold_evidence_coverage"
+    },
+    {
+      "formula": "SUPPORTED claim-citation pairs / all emitted claim-citation pairs",
+      "ground_truth_source": "configured judge + human calibration sample",
+      "name": "citation_precision"
+    },
+    {
+      "formula": "judge labels matching adjudicated human labels / adjudicated sample",
+      "ground_truth_source": "double annotation + adjudication",
+      "name": "judge_agreement"
+    },
+    {
+      "formula": "claims whose best citation verdict is UNSUPPORTED / all claims",
+      "ground_truth_source": "configured judge",
+      "name": "unsupported_claim_rate"
+    },
+    {
+      "formula": "Recall@5(rag_term_norm) - Recall@5(rag_embedding)",
+      "ground_truth_source": "single-variable RAG experiments",
+      "name": "terminology_normalization_gain"
+    },
+    {
+      "formula": "cases reaching CLOSED_SUCCESS / all workflow cases",
+      "ground_truth_source": "persisted case terminal state",
+      "name": "workflow_success_rate"
+    },
+    {
+      "formula": "cold and warm end-to-end P95 latency",
+      "ground_truth_source": "stage timing events",
+      "name": "p95_latency_ms"
+    },
+    {
+      "formula": "normalize/retrieval/rerank/generation/judge/review/state_transition latency",
+      "ground_truth_source": "stage timing events",
+      "name": "stage_latency_ms"
+    }
+  ],
+  "reproduction": {
+    "agent_command": "python -m eval.runner --config eval/config.yaml --experiment agent_all --output reports/raw/",
+    "leakage_check_command": "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl",
+    "rag_command": "python -m eval.runner --config eval/config.yaml --experiment rag_all --output reports/raw/",
+    "validate_command": "python -m eval.runner --config eval/config.yaml --validate"
+  },
+  "rerank": {
+    "model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "revision": "c5ee24cb16019beea0893ab7796b1df96625c6b8",
+    "timeout_seconds": 60
+  },
+  "retrieval": {
+    "candidate_k": 10,
+    "evidence_levels": {
+      "level_1_guideline": 1.0,
+      "level_2_review": 0.8,
+      "level_3_primary_study": 0.9,
+      "level_4_case_report": 0.5,
+      "level_5_other": 0.3
+    },
+    "top_k": 5,
+    "weights": {
+      "w1_bm25": 0.25,
+      "w2_embedding": 0.45,
+      "w3_evidence_level": 0.2,
+      "w4_term_overlap": 0.1
+    }
+  },
+  "workflow": {
+    "lease": {
+      "heartbeat_seconds": 20,
+      "lease_seconds": 60,
+      "scan_interval_seconds": 30
+    },
+    "optimistic_lock": {
+      "backoff_ms": [
+        50,
+        100,
+        200
+      ],
+      "max_retries": 3
+    },
+    "review": {
+      "max_review_rounds": 3,
+      "unsupported_claim_threshold": 0.2
+    }
+  }
+}

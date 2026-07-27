@@ -1,0 +1,286 @@
+{
+  "sample_count": 100,
+  "sample_set": "agent_manifest_v1",
+  "config_mode": "formal",
+  "retrieval_profile": "rag_full",
+  "knowledge_base_chunk_count": 1928,
+  "knowledge_base_total_chars": 692533,
+  "system_prompt_chars": 655,
+  "max_tokens_per_call": 2048,
+  "evidence_chars_per_sample": {
+    "min": 1583,
+    "p50": 2973,
+    "p90": 3737,
+    "p99": 4410,
+    "max": 4508
+  },
+  "experiments": {
+    "agent_single": {
+      "provider_calls": 100,
+      "prompt_chars": {
+        "min": 3280,
+        "p50": 5196,
+        "p90": 6047,
+        "p99": 6724,
+        "max": 6988
+      },
+      "prompt_chars_total": 520939,
+      "context_window_overflow_calls": {
+        "chars_per_token_3.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_3.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        }
+      }
+    },
+    "agent_fixed_pair": {
+      "provider_calls": 200,
+      "prompt_chars": {
+        "min": 3273,
+        "p50": 5189,
+        "p90": 6041,
+        "p99": 6718,
+        "max": 6982
+      },
+      "prompt_chars_total": 1040578,
+      "context_window_overflow_calls": {
+        "chars_per_token_3.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_3.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        }
+      }
+    },
+    "agent_dynamic_pair": {
+      "provider_calls": 200,
+      "prompt_chars": {
+        "min": 3279,
+        "p50": 5190,
+        "p90": 6046,
+        "p99": 6723,
+        "max": 6987
+      },
+      "prompt_chars_total": 1041461,
+      "context_window_overflow_calls": {
+        "chars_per_token_3.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_3.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        }
+      }
+    },
+    "rag_citation_review": {
+      "provider_calls": 300,
+      "prompt_chars": {
+        "min": 2013,
+        "p50": 3485,
+        "p90": 4120,
+        "p99": 4778,
+        "max": 5627
+      },
+      "prompt_chars_total": 1041188,
+      "context_window_overflow_calls": {
+        "chars_per_token_3.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_3.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        }
+      }
+    },
+    "rag_full": {
+      "provider_calls": 300,
+      "prompt_chars": {
+        "min": 2057,
+        "p50": 3665,
+        "p90": 4336,
+        "p99": 4795,
+        "max": 5305
+      },
+      "prompt_chars_total": 1097004,
+      "context_window_overflow_calls": {
+        "chars_per_token_3.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_3.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.0": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        },
+        "chars_per_token_4.5": {
+          "over_32k_tokens": 0,
+          "over_64k_tokens": 0,
+          "over_128k_tokens": 0,
+          "over_256k_tokens": 0
+        }
+      }
+    }
+  },
+  "agent_total": {
+    "provider_calls": 500,
+    "prompt_chars": {
+      "min": 3273,
+      "p50": 5189,
+      "p90": 6047,
+      "p99": 6724,
+      "max": 6988
+    },
+    "prompt_chars_total": 2602978,
+    "context_window_overflow_calls": {
+      "chars_per_token_3.0": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_3.5": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_4.0": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_4.5": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      }
+    }
+  },
+  "all_generation_total": {
+    "provider_calls": 1100,
+    "prompt_chars": {
+      "min": 2013,
+      "p50": 4095,
+      "p90": 5745,
+      "p99": 6671,
+      "max": 6988
+    },
+    "prompt_chars_total": 4741170,
+    "context_window_overflow_calls": {
+      "chars_per_token_3.0": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_3.5": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_4.0": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      },
+      "chars_per_token_4.5": {
+        "over_32k_tokens": 0,
+        "over_64k_tokens": 0,
+        "over_128k_tokens": 0,
+        "over_256k_tokens": 0
+      }
+    }
+  },
+  "runtime": {
+    "requested_device": "auto",
+    "actual_device": "cuda",
+    "batch_size": 32,
+    "torch_version": "2.13.0+cu130",
+    "torch_cuda_version": "13.0",
+    "gpu_name": "NVIDIA GeForce RTX 3060 Laptop GPU"
+  }
+}
