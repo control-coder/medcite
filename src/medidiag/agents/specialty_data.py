@@ -11,12 +11,16 @@
 2. 一个词条只在它真正具有区分度的专科出现。跨专科同时出现的词条（如
    `endocarditis` 之于心内科与感染科）只保留区分度更高的一侧，否则它同时抬高
    两个专科的分数，对 Top2 选择没有贡献，却会推高歧义比值。
-3. **词条必须能在归一化后的查询里存活。** `SpecialistRouter._compute_keyword_score`
-   打分的是 `NormalizedQuery.normalized`，即同义词已被 `TerminologyNormalizer`
-   替换为首选术语之后的文本。若某词条会被归一化器改写成另一个形式，而该形式
-   不在本表内，这个词条就永远不可能命中——扩表前 `ECG` / `EKG` 正是如此
-   （被改写为 `electrocardiogram`），在 100 样本 manifest 上白白丢掉 5 次命中。
-   `tests/test_agents.py::TestSpecialtyKeywords` 对该不变量做了回归保护。
+3. **词条的归一化改写结果不得落在别的专科词表上。**（2026-07-27 修订）
+   `SpecialistRouter._compute_keyword_score` 现在同时打分原文与归一化后的文本，
+   因此「词条被改写成本表之外的形式」不再等于「永不命中」——`ECG` / `EKG` 被改写为
+   `electrocardiogram` 时仍然能在原文里命中。仍然有害的是改写结果落到**别的**专科
+   词表上：`cachexia` 会被改写为 `weight loss`（内分泌科词条），若只打分改写后的
+   文本，一个肿瘤科词条会为内分泌科加分。`tests/test_agents.py::TestSpecialtyKeywords`
+   与 `TestKeywordScoringSeesBothTexts` 对这两条性质做了回归保护。
+4. **不得假设词表越长分数越低。** 三个分项现在都按固定的 `MATCH_SATURATION_COUNT`
+   归一（见下），加词不会压低任何已经命中的专科的分数。修复前不是这样，
+   `tests/test_agents.py::TestScoreDenominators` 守护这条不变量。
 """
 
 from __future__ import annotations
@@ -42,18 +46,34 @@ FALLBACK_PAIR: tuple[str, str] = ("general_internal", "evidence_skeptic")
 BASELINE_PAIR: tuple[str, str] = ("cardiology", "respiratory")
 
 # ===== 打分公式权重 =====
-# 单专科总分 = 3.0*关键词分 + 2.0*归一化术语分 + 2.0*证据加权分 + 1.0*诊断规划提示分
+# 单专科总分 = 3.0*关键词分 + 2.0*归一化术语分 + 2.0*证据加权分
 #
-# 注意：`eval/runner.py` 固定以 `plan_hint=""` 调用 `route()`，因此在评测链路上
-# plan_hint 分项恒为 0，8.0 的名义上限里有 1.0 不可达。归一化术语分与证据加权分
-# 各自除以 `len(SPECIALTY_KEYWORDS[specialty])`，也不可能接近各自的权重。详见
-# `docs/current-status.md` 的路由实测记录。
+# 2026-07-27（DD-023）删除了原第四个分项 `plan_hint`（权重 1.0）：它唯一的取值来源
+# 是 `route(plan_hint=...)` 的实参，而全部调用点都传空串，因此该分项恒为 0，名义
+# 上限 8.0 里有 1.0 结构上不可达。删除后 7.0 既是名义上限也是可达上限。
+#
+# **其余三项权重刻意保持 3.0 / 2.0 / 2.0，没有按 8.0 重标定。** 对三项同乘一个常数
+# 等价于把 `MIN_PRIMARY_SCORE` 除以同一个常数，那是阈值决策而不是缺陷修复；阈值
+# 是否要动仍是待人工决策项（`docs/current-status.md`）。
 ROUTING_WEIGHTS: dict[str, float] = {
     "keyword": 3.0,
     "normalized_term": 2.0,
     "evidence": 2.0,
-    "plan_hint": 1.0,
 }
+
+# ===== 三个分项共用的匹配数饱和上限 =====
+# 每个分项都按 `min(命中数 / MATCH_SATURATION_COUNT, 1.0)` 归一，因此分母与词表
+# 长度无关。取 4 的理由：
+#
+# 1. 这是 `_compute_keyword_score` 自 P5 起就在用的常数，三项统一到它不引入新的
+#    自由参数；统一之后 3.0 / 2.0 / 2.0 这组权重才真的表示分项之间的相对重要性。
+# 2. 修复前 `normalized_term` 与 `evidence` 除以 `len(SPECIALTY_KEYWORDS[specialty])`
+#    （51-59），于是**给词表加词会压低已经命中的专科的分数**——扩表与打分互相打架。
+# 3. 不取更小的上限（如 2）是刻意的：更小的上限会整体抬高总分，效果等价于降低
+#    `MIN_PRIMARY_SCORE`，属于阈值决策。实测分布（200 个 MedQA 样本的真实检索结果）
+#    为：归一化术语命中数 p90 ≈ 2、最大 5；单条证据 chunk 的最佳专科命中数 p90 ≈ 3、
+#    最大 6。4 落在两者的 p90 与 max 之间，能让强信号样本接近 1.0 而不让弱信号饱和。
+MATCH_SATURATION_COUNT: float = 4.0
 
 # ===== Top2 筛选阈值 =====
 THRESHOLDS: dict[str, float] = {
@@ -170,8 +190,10 @@ SPECIALTY_KEYWORDS: dict[str, list[str]] = {
         "hormone", "metabolic",
     ],
     "oncology": [
-        # 症状与体征。`cachexia` 被归一化器改写为 `weight loss`（内分泌科词条），
-        # 按约定 3 属于永不命中的死词条，故不收录。
+        # 症状与体征。`cachexia` 于 2026-07-27 重新收录：关键词分现在同时打分原文
+        # 与归一化文本，被改写掉的词条不再是死词条（DD-023）。归一化术语分仍只看
+        # 首选形式，因此该词条在那一项上仍然归到 `weight loss`（内分泌科）。
+        "cachexia",
         "lymphadenopathy", "night sweats", "mass", "lesion",
         # 检查
         "biopsy", "cytology", "immunohistochemistry", "tumor marker",
@@ -239,14 +261,9 @@ SPECIALTY_KEYWORDS: dict[str, list[str]] = {
     "evidence_skeptic": [],  # 证据审核，无特定关键词
 }
 
-# ===== 诊断规划系统匹配关键词（用于 plan_hint_score）=====
-SYSTEM_MATCH_KEYWORDS: dict[str, list[str]] = {
-    "cardiology": ["cardiovascular system", "circulatory"],
-    "respiratory": ["respiratory system", "ventilatory"],
-    "neurology": ["nervous system", "neurological"],
-    "gastroenterology": ["digestive system", "gastrointestinal"],
-    "endocrinology": ["endocrine system", "metabolic system"],
-    "oncology": ["neoplastic", "oncological"],
-    "infectious_disease": ["immune system", "infectious process"],
-    "renal": ["urinary system", "renal system"],
-}
+# ===== 已删除：SYSTEM_MATCH_KEYWORDS（原 plan_hint 分项的词表）=====
+# 2026-07-27 随 plan_hint 分项一并删除（DD-023）。它只被 `_compute_plan_hint_score`
+# 读取，而该函数的入参在所有调用点都是空串。持久化产物里也没有任何「系统匹配」
+# 字段可以填进来：`medidiag.workflow` 的 `plan` 阶段确实产出 `objective` 文本，但
+# 运行时 worker 从不调用 `SpecialistRouter`，评测链路里也没有 plan 阶段。要恢复这个
+# 分项，得先有一个真实产出系统归属信息的上游阶段，那是新功能而不是修 bug。

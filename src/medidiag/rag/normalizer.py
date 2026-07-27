@@ -239,6 +239,14 @@ class TerminologyNormalizer:
                 hits += 1
         return hits / len(unique_preferred)
 
+    def preferred_form(self, term: str) -> str:
+        """返回 ``term`` 的首选形式；未知术语原样返回。
+
+        供需要把同义词折叠成同一术语的调用方使用（如 `SpecialistRouter` 的关键词
+        计数，避免 `ECG` / `EKG` / `electrocardiogram` 被算成三次命中）。
+        """
+        return self._synonym_map.get(term.lower(), term)
+
     @property
     def term_count(self) -> int:
         """已知术语总数。"""

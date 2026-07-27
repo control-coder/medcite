@@ -1,9 +1,13 @@
 """专科路由器：确定性规则打分，不依赖 LLM。
 
-打分公式:
-    单专科总分 = 3.0*关键词分 + 2.0*归一化术语分 + 2.0*证据加权分 + 1.0*诊断规划提示分
+打分公式（2026-07-27 修正，DD-023）:
+    单专科总分 = 3.0*关键词分 + 2.0*归一化术语分 + 2.0*证据加权分
 
-Top2 筛选阈值:
+三个分项都按 `min(命中数 / MATCH_SATURATION_COUNT, 1.0)` 归一，分母与词表长度无关。
+原第四个分项 `plan_hint` 已删除：它的唯一取值来源是 `route()` 的入参，而所有调用点
+都传空串，该分项恒为 0。
+
+Top2 筛选阈值（**未改动**）:
     MIN_PRIMARY_SCORE = 2.0
     MIN_SECONDARY_SCORE = 1.2
     SCORE_GAP = 3.0
@@ -23,14 +27,30 @@ from typing import Any
 
 from medidiag.agents.specialty_data import (
     FALLBACK_PAIR,
+    MATCH_SATURATION_COUNT,
     ROUTING_WEIGHTS,
     SPECIALTIES,
     SPECIALTY_KEYWORDS,
-    SYSTEM_MATCH_KEYWORDS,
     THRESHOLDS,
 )
 from medidiag.rag.normalizer import NormalizedQuery, TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
+
+_PATTERN_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _pattern(term: str) -> re.Pattern[str]:
+    """词边界正则的进程内缓存（每个样本都会重建一次 router）。"""
+    cached = _PATTERN_CACHE.get(term)
+    if cached is None:
+        cached = re.compile(r"\b" + re.escape(term) + r"\b")
+        _PATTERN_CACHE[term] = cached
+    return cached
+
+
+def _contains_word(text: str, term: str) -> bool:
+    """按词边界在已小写的 ``text`` 中查找已小写的 ``term``。"""
+    return _pattern(term).search(text) is not None
 
 
 @dataclass
@@ -41,7 +61,6 @@ class SpecialtyScore:
     keyword_score: float = 0.0
     normalized_term_score: float = 0.0
     evidence_score: float = 0.0
-    plan_hint_score: float = 0.0
     total: float = 0.0
 
     def compute_total(self) -> None:
@@ -51,17 +70,19 @@ class SpecialtyScore:
             w["keyword"] * self.keyword_score
             + w["normalized_term"] * self.normalized_term_score
             + w["evidence"] * self.evidence_score
-            + w["plan_hint"] * self.plan_hint_score
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """转为字典（用于日志/trace）。"""
+        """转为字典（用于日志/trace）。
+
+        2026-07-27 起不再输出 `plan_hint_score`（分项已删除，DD-023）。历史
+        `reports/routing_diagnostics_*_{before,after}.json` 里仍带该键。
+        """
         return {
             "specialty": self.specialty,
             "keyword_score": round(self.keyword_score, 4),
             "normalized_term_score": round(self.normalized_term_score, 4),
             "evidence_score": round(self.evidence_score, 4),
-            "plan_hint_score": round(self.plan_hint_score, 4),
             "total": round(self.total, 4),
         }
 
@@ -126,22 +147,18 @@ class SpecialistRouter:
         self,
         normalized_query: str | NormalizedQuery,
         evidence_chunks: list[KnowledgeChunk] | list[dict[str, Any]],
-        plan_hint: str = "",
     ) -> RoutingResult:
         """路由到双专科。
 
         Args:
             normalized_query: 归一化后的查询（字符串或 NormalizedQuery）。
             evidence_chunks: 检索证据 chunks。
-            plan_hint: 前置诊断规划提示（系统匹配信息）。
 
         Returns:
             RoutingResult，包含双专科、分项得分、置信度、理由。
         """
         # 1. 计算所有专科得分
-        scores = self._compute_all_scores(
-            normalized_query, evidence_chunks, plan_hint
-        )
+        scores = self._compute_all_scores(normalized_query, evidence_chunks)
 
         # 2. 按总分降序排序
         sorted_scores = sorted(
@@ -224,7 +241,6 @@ class SpecialistRouter:
         self,
         normalized_query: str | NormalizedQuery,
         evidence_chunks: list[Any],
-        plan_hint: str,
     ) -> dict[str, SpecialtyScore]:
         """计算所有专科的得分。"""
         # 归一化查询
@@ -238,7 +254,11 @@ class SpecialistRouter:
         else:
             nq = normalized_query
 
+        # 关键词分同时看归一化前后的文本：归一化器会把 `ECG` 改写成
+        # `electrocardiogram`、`dyspnea` 改写成 `shortness of breath`，只打分
+        # 改写后的文本会丢掉被改写掉的那些词条的命中（详见 `_compute_keyword_score`）。
         query_text = nq.normalized.lower()
+        original_text = nq.original.lower()
 
         # 证据文本
         evidence_texts: list[str] = []
@@ -253,7 +273,7 @@ class SpecialistRouter:
             score = SpecialtyScore(specialty=specialty)
 
             score.keyword_score = self._compute_keyword_score(
-                specialty, query_text
+                specialty, query_text, original_text
             )
             score.normalized_term_score = self._compute_term_score(
                 specialty, nq
@@ -261,38 +281,64 @@ class SpecialistRouter:
             score.evidence_score = self._compute_evidence_score(
                 specialty, evidence_texts, evidence_chunks
             )
-            score.plan_hint_score = self._compute_plan_hint_score(
-                specialty, plan_hint
-            )
 
             score.compute_total()
             scores[specialty] = score
 
         return scores
 
-    def _compute_keyword_score(self, specialty: str, query_text: str) -> float:
-        """关键词分：匹配数量，上限4条归一至 0~1。"""
+    def _compute_keyword_score(
+        self, specialty: str, query_text: str, original_text: str = ""
+    ) -> float:
+        """关键词分：命中词条数按 ``MATCH_SATURATION_COUNT`` 饱和归一至 0~1。
+
+        同时在归一化后文本与原文中查找，取并集去重计数。只看归一化后的文本会
+        丢命中：归一化器把 `ECG`/`EKG` 改写成 `electrocardiogram`、`dyspnea`
+        改写成 `shortness of breath`，被改写掉的原词条在改写结果里不再存在。
+        并集去重保证同一词条不会因为两处都在而被数两次，也保证「同义词组里命中
+        几个变体」只算一次命中（`electrocardiogram` 与 `ECG` 都在心内科表内，
+        并集会把它们算成 2 次，这一点见下方 `_dedupe_by_preferred`）。
+        """
         keywords = SPECIALTY_KEYWORDS.get(specialty, [])
         if not keywords:
             return 0.0
-        matches = 0
+        hits: set[str] = set()
         for kw in keywords:
-            pattern = r"\b" + re.escape(kw.lower()) + r"\b"
-            if re.search(pattern, query_text):
-                matches += 1
-        return min(matches / 4.0, 1.0)
+            lowered = kw.lower()
+            if _contains_word(query_text, lowered) or (
+                original_text and _contains_word(original_text, lowered)
+            ):
+                hits.add(lowered)
+        matches = len(self._dedupe_by_preferred(hits))
+        return min(matches / MATCH_SATURATION_COUNT, 1.0)
+
+    def _dedupe_by_preferred(self, hits: set[str]) -> set[str]:
+        """把命中的词条折叠到归一化首选形式，同义词组只计一次。
+
+        `ECG`、`EKG`、`electrocardiogram` 三条都在心内科表内且互为同义词；同时
+        对原文与归一化文本计数时它们会同时命中，把一个临床事实数成 3 次命中。
+        没有 normalizer 时退化为原样返回。
+        """
+        if not self.normalizer:
+            return hits
+        return {self.normalizer.preferred_form(hit).lower() for hit in hits}
 
     def _compute_term_score(
         self, specialty: str, nq: NormalizedQuery
     ) -> float:
-        """归一化术语分：该专科关键词在归一化术语中的匹配占比。"""
+        """归一化术语分：命中的首选术语落在该专科词表内的**数量**，饱和归一。
+
+        2026-07-27 修正（DD-023）：原实现除以 `len(SPECIALTY_KEYWORDS[specialty])`，
+        于是给词表加词会**降低**一个已经命中的专科的分数。现在与关键词分共用
+        `MATCH_SATURATION_COUNT`，分母与词表长度无关。
+        """
         keywords = SPECIALTY_KEYWORDS.get(specialty, [])
         if not keywords or not nq.matched_terms:
             return 0.0
         matched_preferred = {m.preferred.lower() for m in nq.matched_terms}
         kw_lower = {kw.lower() for kw in keywords}
         overlap = len(matched_preferred & kw_lower)
-        return min(overlap / max(len(keywords), 1), 1.0)
+        return min(overlap / MATCH_SATURATION_COUNT, 1.0)
 
     def _compute_evidence_score(
         self,
@@ -300,7 +346,14 @@ class SpecialistRouter:
         evidence_texts: list[str],
         evidence_chunks: list[Any],
     ) -> float:
-        """证据加权分：Top检索证据文本关键词匹配量 × 证据得分，归一 0~1。"""
+        """证据加权分：Top 检索证据的关键词命中数 × 证据等级权重，饱和归一 0~1。
+
+        2026-07-27 修正（DD-023）：每条 chunk 的命中数原先除以
+        `len(SPECIALTY_KEYWORDS[specialty])`，与 `_compute_term_score` 同病。现在
+        每条 chunk 用 `min(命中数 / MATCH_SATURATION_COUNT, 1.0)` 得到 0~1 的
+        chunk 级分，乘以证据等级权重后按 chunk 数取平均，因此分母只与 chunk 数
+        有关，与词表长度无关。
+        """
         keywords = SPECIALTY_KEYWORDS.get(specialty, [])
         if not keywords or not evidence_texts:
             return 0.0
@@ -310,11 +363,12 @@ class SpecialistRouter:
 
         for i in range(top_k):
             text = evidence_texts[i].lower()
-            matches = 0
+            hits: set[str] = set()
             for kw in keywords:
-                pattern = r"\b" + re.escape(kw.lower()) + r"\b"
-                if re.search(pattern, text):
-                    matches += 1
+                lowered = kw.lower()
+                if _contains_word(text, lowered):
+                    hits.add(lowered)
+            matches = len(self._dedupe_by_preferred(hits))
 
             # 证据等级分数
             if i < len(evidence_chunks):
@@ -329,20 +383,6 @@ class SpecialistRouter:
             else:
                 ev_score = 0.3
 
-            total_score += (
-                matches / max(len(keywords), 1)
-            ) * ev_score
+            total_score += min(matches / MATCH_SATURATION_COUNT, 1.0) * ev_score
 
         return min(total_score / max(top_k, 1), 1.0)
-
-    def _compute_plan_hint_score(
-        self, specialty: str, plan_hint: str
-    ) -> float:
-        """诊断规划提示分：疑似系统匹配则 1，否则 0。"""
-        if not plan_hint:
-            return 0.0
-        system_keywords = SYSTEM_MATCH_KEYWORDS.get(specialty, [])
-        for sk in system_keywords:
-            if sk.lower() in plan_hint.lower():
-                return 1.0
-        return 0.0

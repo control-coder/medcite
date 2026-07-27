@@ -3,11 +3,15 @@
 这是路由**代码行为**的测量工具，不产生任何评测指标。它复现
 ``eval/runner.py`` 中 ``agent_dynamic_pair`` 的检索链路（固定
 ``rag_full`` profile，term normalization -> search(candidate_k) -> rerank(top_k)），
-然后对每个样本调用 ``route(question, evidence, "")``，统计：
+然后对每个样本调用 ``route(question, evidence)``，统计：
 
 - 四条路由规则各自命中多少样本，最终有多少落到兜底组合；
-- top1 总分与四个分项各自达到理论上限的比例（定位「哪个分项在饿死」）；
+- top1 总分与三个分项各自达到理论上限的比例（定位「哪个分项在饿死」）；
 - 歧义比值 ``top2.total / top1.total`` 的分布。
+
+2026-07-27（DD-023）起分项只有三个：``plan_hint`` 分项已从打分公式中删除，因此
+名义上限 7.0 与可达上限相同，不再区分 ``theoretical_max_total`` 与
+``reachable_max_total``。
 
 用法::
 
@@ -25,14 +29,18 @@ import click
 from eval.configuration import load_config, validate_config
 from medidiag.acceleration import runtime_snapshot
 from medidiag.agents.router import SpecialistRouter
-from medidiag.agents.specialty_data import ROUTING_WEIGHTS, THRESHOLDS
+from medidiag.agents.specialty_data import (
+    MATCH_SATURATION_COUNT,
+    ROUTING_WEIGHTS,
+    THRESHOLDS,
+)
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import Retriever
 from medidiag.schemas import KnowledgeChunk, read_jsonl
 
 ROOT = Path(__file__).resolve().parent.parent
 
-COMPONENTS = ("keyword", "normalized_term", "evidence", "plan_hint")
+COMPONENTS = ("keyword", "normalized_term", "evidence")
 
 
 def _resolve(value: str) -> Path:
@@ -165,7 +173,7 @@ def run_routing_diagnostics(
             )
         evidence = [item.chunk for item in search_results if item.chunk is not None]
 
-        result = router.route(question, evidence, "")
+        result = router.route(question, evidence)
         ranked = sorted(
             result.scores.values(), key=lambda s: s.total, reverse=True
         )
@@ -187,7 +195,6 @@ def run_routing_diagnostics(
         component_values["keyword"].append(top1.keyword_score)
         component_values["normalized_term"].append(top1.normalized_term_score)
         component_values["evidence"].append(top1.evidence_score)
-        component_values["plan_hint"].append(top1.plan_hint_score)
 
         samples.append(
             {
@@ -204,7 +211,6 @@ def run_routing_diagnostics(
 
     total = len(ordered)
     theoretical_max = sum(ROUTING_WEIGHTS.values())
-    reachable_max = theoretical_max - ROUTING_WEIGHTS["plan_hint"]
     return {
         "sample_count": total,
         "sample_set": "agent_manifest_holdout" if holdout else "agent_manifest_v1",
@@ -213,8 +219,9 @@ def run_routing_diagnostics(
         "thresholds": dict(THRESHOLDS),
         "routing_weights": dict(ROUTING_WEIGHTS),
         "theoretical_max_total": theoretical_max,
-        # plan_hint 由 eval/runner.py 固定传 ""，该分项永远为 0。
-        "reachable_max_total": reachable_max,
+        # DD-023 起三个分项的分母都与词表长度无关，因此名义上限就是可达上限。
+        "reachable_max_total": theoretical_max,
+        "match_saturation_count": MATCH_SATURATION_COUNT,
         "branch_counts": branch_counts,
         "fallback_count": fallback_count,
         "fallback_rate": round(fallback_count / total, 4) if total else 0.0,

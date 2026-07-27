@@ -166,7 +166,7 @@ def run_prompt_size_diagnostics(
             elif topology == "fixed_pair":
                 specialties = list(experiment["specialist_pair"])
             else:
-                specialties = list(router.route(question, evidence, "").specialty_pair)
+                specialties = list(router.route(question, evidence).specialty_pair)
             for specialty in specialties:
                 agent = (
                     DiagnosisAgent(None)

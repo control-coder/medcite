@@ -79,7 +79,7 @@ class TestClassifyMatchesTheRouter:
     def test_every_query_classifies_to_the_branch_route_took(self) -> None:
         router = SpecialistRouter()
         for question, evidence in self.QUERIES:
-            result = router.route(question, evidence, "")
+            result = router.route(question, evidence)
             ranked = sorted(result.scores.values(), key=lambda s: s.total, reverse=True)
             top1 = ranked[0]
             top2_total = ranked[1].total if len(ranked) > 1 else 0.0

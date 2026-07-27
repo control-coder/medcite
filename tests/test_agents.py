@@ -10,8 +10,6 @@
 
 from __future__ import annotations
 
-import re
-
 import pytest
 
 from medidiag.agents.arbitration import ArbitrationAgent
@@ -22,6 +20,7 @@ from medidiag.agents.specialist import SpecialistAgent
 from medidiag.agents.specialty_data import (
     BASELINE_PAIR,
     FALLBACK_PAIR,
+    MATCH_SATURATION_COUNT,
     SPECIALTIES,
     SPECIALTY_KEYWORDS,
     THRESHOLDS,
@@ -50,7 +49,7 @@ class TestRouter:
             "patient has chest pain and ECG shows ST elevation", chunks
         )
         scores = router._compute_all_scores(
-            "patient has chest pain and ECG shows ST elevation", chunks, ""
+            "patient has chest pain and ECG shows ST elevation", chunks
         )
         assert scores["cardiology"].keyword_score > 0
         assert scores["cardiology"].total > scores["respiratory"].total
@@ -83,7 +82,7 @@ class TestRouter:
 
     def test_all_specialties_scored(self, router: SpecialistRouter) -> None:
         """所有 10 个专科都有得分。"""
-        scores = router._compute_all_scores("fever and headache", [], "")
+        scores = router._compute_all_scores("fever and headache", [])
         assert len(scores) == 10
         for sp in SPECIALTIES:
             assert sp in scores
@@ -130,43 +129,195 @@ class TestRouter:
         )
         assert score_high >= score_low
 
-    def test_plan_hint_score(self, router: SpecialistRouter) -> None:
-        """诊断规划提示分。"""
-        assert router._compute_plan_hint_score("cardiology", "cardiovascular system") == 1.0
-        assert router._compute_plan_hint_score("cardiology", "digestive system") == 0.0
-        assert router._compute_plan_hint_score("cardiology", "") == 0.0
+    def test_plan_hint_component_is_gone(self, router: SpecialistRouter) -> None:
+        """plan_hint 分项已删除（DD-023）：它恒为 0，不得再出现在打分公式或产物里。"""
+        from medidiag.agents.specialty_data import ROUTING_WEIGHTS
+
+        assert "plan_hint" not in ROUTING_WEIGHTS
+        assert not hasattr(router, "_compute_plan_hint_score")
+        scores = router._compute_all_scores("chest pain", [])
+        assert "plan_hint_score" not in scores["cardiology"].to_dict()
+
+
+class TestScoreDenominators:
+    """三个分项的分母必须与词表长度无关（DD-023）。"""
+
+    @pytest.fixture
+    def router(self) -> SpecialistRouter:
+        return SpecialistRouter(normalizer=TerminologyNormalizer())
+
+    def test_adding_vocabulary_cannot_lower_a_matching_specialty(
+        self, monkeypatch: pytest.MonkeyPatch, router: SpecialistRouter
+    ) -> None:
+        """给词表加词不得降低一个已经命中的专科在同一查询上的分数。
+
+        这是修复前的实际行为：`_compute_term_score` 与 `_compute_evidence_score`
+        都除以 `len(SPECIALTY_KEYWORDS[specialty])`，因此扩表与打分互相打架
+        （见 `612004e` 的 commit message）。
+        """
+        question = "chest pain with ST elevation and troponin rise and angina"
+        chunks = [
+            KnowledgeChunk(
+                chunk_id="c1", source="test", source_id="b1",
+                text=(
+                    "myocardial infarction with coronary artery disease, "
+                    "angina, troponin elevation and cardiac arrhythmia"
+                ),
+                evidence_level="level_2_review",
+            )
+        ]
+        before = router._compute_all_scores(question, chunks)["cardiology"]
+
+        # 追加 40 个不会在本查询或证据中命中的心内科词条。
+        padded = dict(SPECIALTY_KEYWORDS)
+        padded["cardiology"] = [
+            *SPECIALTY_KEYWORDS["cardiology"],
+            *[f"zzz placeholder term {n}" for n in range(40)],
+        ]
+        monkeypatch.setattr(
+            "medidiag.agents.router.SPECIALTY_KEYWORDS", padded
+        )
+        after = router._compute_all_scores(question, chunks)["cardiology"]
+
+        assert after.keyword_score == before.keyword_score
+        assert after.normalized_term_score == before.normalized_term_score
+        assert after.evidence_score == before.evidence_score
+        assert after.total == before.total
+
+    def test_all_three_components_use_the_same_saturation_count(
+        self, router: SpecialistRouter
+    ) -> None:
+        """关键词、术语、证据三项共用 `MATCH_SATURATION_COUNT`。"""
+        # 四个心内科词条 -> 关键词分饱和到 1.0。
+        four = "chest pain, palpitation, syncope and murmur"
+        assert router._compute_keyword_score(
+            "cardiology", four.lower(), four.lower()
+        ) == pytest.approx(1.0)
+        # 三个词条 -> 3/4。
+        three = "chest pain, palpitation and syncope"
+        assert router._compute_keyword_score(
+            "cardiology", three.lower(), three.lower()
+        ) == pytest.approx(3.0 / MATCH_SATURATION_COUNT)
+
+    def test_evidence_score_denominator_is_chunk_count_only(
+        self, router: SpecialistRouter
+    ) -> None:
+        """证据分只按 chunk 数取平均：单条满命中的 level_1 chunk 应得满分。"""
+        text = "chest pain palpitation syncope murmur troponin"
+        chunk = KnowledgeChunk(
+            chunk_id="c1", source="test", source_id="b1",
+            text=text, evidence_level="level_1_guideline",
+        )
+        router.evidence_level_scores = {"level_1_guideline": 1.0}
+        assert router._compute_evidence_score(
+            "cardiology", [text], [chunk]
+        ) == pytest.approx(1.0)
+
+    def test_synonym_variants_of_one_term_count_once(
+        self, router: SpecialistRouter
+    ) -> None:
+        """`ECG` 与 `electrocardiogram` 同时出现时只算一次命中。
+
+        关键词分同时打分原文与归一化文本，若不折叠同义词，一个临床事实会被
+        数成两次甚至三次命中。
+        """
+        query = "the ECG and the electrocardiogram both show ST elevation"
+        both = router._compute_keyword_score(
+            "cardiology", query.lower(), query.lower()
+        )
+        single = "the electrocardiogram shows ST elevation"
+        one = router._compute_keyword_score(
+            "cardiology", single.lower(), single.lower()
+        )
+        assert both == one
+
+
+class TestKeywordScoringSeesBothTexts:
+    """`612004e` 声称修好的「归一化改写导致词条永不命中」问题的回归保护。"""
+
+    @pytest.fixture
+    def router(self) -> SpecialistRouter:
+        return SpecialistRouter(normalizer=TerminologyNormalizer())
+
+    def test_cachexia_scores_for_oncology(self, router: SpecialistRouter) -> None:
+        """`cachexia` 被改写为 `weight loss`（内分泌科词条），但仍须给肿瘤科计分。
+
+        修复前：关键词分只看归一化后的文本，`cachexia` 不可能命中，且改写结果
+        `weight loss` 反而给内分泌科加分——一个肿瘤科词条为别的专科加分。
+        """
+        question = "a 62-year-old man with cachexia and lymphadenopathy"
+        scores = router._compute_all_scores(question, [])
+        assert scores["oncology"].keyword_score > 0
+        assert scores["oncology"].total > scores["endocrinology"].total
+
+    def test_normalizer_rewritten_keywords_still_match(
+        self, router: SpecialistRouter
+    ) -> None:
+        """被归一化器改写掉的词条仍应命中自己所属的专科。"""
+        for keyword, specialty in [
+            ("ECG", "cardiology"),
+            ("EKG", "cardiology"),
+            ("dyspnea", "respiratory"),
+            ("COPD", "respiratory"),
+            ("vertigo", "neurology"),
+            ("febrile", "infectious_disease"),
+        ]:
+            question = f"the patient reports {keyword} today"
+            score = router._compute_all_scores(question, [])[specialty]
+            assert score.keyword_score > 0, (keyword, specialty)
+
+    def test_no_keyword_is_unreachable_in_context(
+        self, router: SpecialistRouter
+    ) -> None:
+        """词表中不得存在任何在真实查询里永不可能命中的词条。
+
+        `tests/test_agents.py::TestSpecialtyKeywords` 只检查词条不会被改写到
+        本表之外；这里检查更强的性质：把词条放进一个句子后，它所属的专科必须
+        真的得分。
+        """
+        unreachable: list[tuple[str, str]] = []
+        for specialty, keywords in SPECIALTY_KEYWORDS.items():
+            if not keywords:
+                continue
+            for keyword in keywords:
+                question = f"the patient reports {keyword} today"
+                if router._compute_all_scores(question, [])[
+                    specialty
+                ].keyword_score <= 0:
+                    unreachable.append((specialty, keyword))
+        assert unreachable == [], f"keywords that can never score: {unreachable}"
 
 
 class TestSpecialtyKeywords:
     """守护 `specialty_data.py` 文件头记录的三条词表编写约定。"""
 
-    def test_keywords_survive_normalization(self) -> None:
-        """词条不得被归一化器改写成本表之外的形式，否则永不命中。
+    def test_a_rewritten_keyword_never_favours_another_specialty(self) -> None:
+        """归一化改写不得让别的专科在只含该词条的查询上超过词条的归属专科。
 
-        `_compute_keyword_score` 打分的是归一化**之后**的查询文本。扩表前
-        `ECG` / `EKG` 会被改写为 `electrocardiogram`，而该形式不在心内科词表内，
-        于是这两个词条在 100 样本 manifest 上白丢 5 次命中。
+        2026-07-27 前的约定更强也更脆：词条**必须**能在归一化后的查询里存活，
+        否则永不命中（`ECG`/`EKG` 曾因此白丢 5 次 manifest 命中）。现在关键词分
+        同时打分原文与归一化文本（DD-023），存活不再是必要条件，但改写落到别的
+        专科词表上仍然有害——`cachexia` 会被改写成内分泌科的 `weight loss`。
+        本测试守护那个仍然重要的部分。
         """
-        normalizer = TerminologyNormalizer()
-        dead: list[tuple[str, str, str]] = []
+        router = SpecialistRouter(normalizer=TerminologyNormalizer())
+        offenders: list[tuple[str, str, str, float, float]] = []
         for specialty, keywords in SPECIALTY_KEYWORDS.items():
-            present = {keyword.lower() for keyword in keywords}
+            if not keywords:
+                continue
             for keyword in keywords:
-                preferred = normalizer._synonym_map.get(keyword.lower())
-                if not preferred or preferred.lower() == keyword.lower():
-                    continue
-                # 改写结果里仍能以词边界找回原词条时不算丢失
-                # （如 `diabetes` -> `diabetes mellitus`）。
-                if re.search(
-                    r"\b" + re.escape(keyword.lower()) + r"\b", preferred.lower()
-                ):
-                    continue
-                if preferred.lower() in present:
-                    continue
-                dead.append((specialty, keyword, preferred))
-        assert dead == [], (
-            "these keywords are rewritten out of their own specialty list and can "
-            f"never match: {dead}"
+                scores = router._compute_all_scores(
+                    f"the patient reports {keyword} today", []
+                )
+                own = scores[specialty].keyword_score
+                for other, score in scores.items():
+                    if other != specialty and score.keyword_score > own:
+                        offenders.append(
+                            (specialty, keyword, other, own, score.keyword_score)
+                        )
+        assert offenders == [], (
+            "normalization makes another specialty outscore the owning one: "
+            f"{offenders}"
         )
 
     def test_keywords_are_not_cross_listed(self) -> None:
@@ -419,10 +570,13 @@ class TestAblationConfigs:
         assert THRESHOLDS["LOW_CONFIDENCE"] == 0.45
 
     def test_routing_weights(self) -> None:
-        """打分权重。"""
+        """打分权重：三项，`plan_hint` 已删除（DD-023）。"""
         from medidiag.agents.specialty_data import ROUTING_WEIGHTS
 
-        assert ROUTING_WEIGHTS["keyword"] == 3.0
-        assert ROUTING_WEIGHTS["normalized_term"] == 2.0
-        assert ROUTING_WEIGHTS["evidence"] == 2.0
-        assert ROUTING_WEIGHTS["plan_hint"] == 1.0
+        assert ROUTING_WEIGHTS == {
+            "keyword": 3.0,
+            "normalized_term": 2.0,
+            "evidence": 2.0,
+        }
+        assert sum(ROUTING_WEIGHTS.values()) == 7.0
+        assert MATCH_SATURATION_COUNT == 4.0

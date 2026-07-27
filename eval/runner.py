@@ -618,7 +618,7 @@ def _generate_outputs(
         routing = SpecialistRouter(
             normalizer=normalizer,
             evidence_level_scores=evidence_level_scores,
-        ).route(question, evidence, "")
+        ).route(question, evidence)
         specialties = list(routing.specialty_pair)
         sample_result.routing_fallback = routing.is_fallback
         sample_result.routing_confidence = routing.confidence
