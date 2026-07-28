@@ -18,9 +18,40 @@ _MODULE = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = _MODULE
 _SPEC.loader.exec_module(_MODULE)
 
+CHUNKS_PER_BOOK = _MODULE.CHUNKS_PER_BOOK
 MAX_CHUNK_CHARS = _MODULE.MAX_CHUNK_CHARS
 split_long_block = _MODULE.split_long_block
 split_textbook_paragraphs = _MODULE.split_textbook_paragraphs
+
+
+class TestChunksPerBookCoupling:
+    """`--chunks-per-book` 的截断在切分之后，因此它与字符上限耦合。
+
+    这是修复前漏掉的缺陷：上限从「一整章」降到 800 字符后，N=50 保留的正文量同比
+    下降到约 1/14，教材语料静默从 395 万降到 29.6 万字符。检索侧无法发现——评测集
+    280 条 gold evidence 全为 `kb_pubmedqa_*`，PubMedQA chunk 不经过该切分路径。
+    """
+
+    def test_default_retains_old_corpus_volume(self) -> None:
+        # 按每段接近上限估算：N 段 × 上限应覆盖修复前的教材体量（约 395 万字符 / 18 本）。
+        per_book_before_fix = 3_955_185 / 18
+        assert CHUNKS_PER_BOOK * MAX_CHUNK_CHARS >= per_book_before_fix
+
+    def test_truncation_after_split_shrinks_corpus_at_low_n(self) -> None:
+        # 复现缺陷本身：同一本书，上限收紧后前 N 段的字符数必然下降。
+        # 必须大到「切分后片段数 > N」，否则截断根本不生效，也就复现不出缺陷。
+        chapter = "The finding was unremarkable on examination. " * 3000
+        paragraphs_uncapped = split_textbook_paragraphs(
+            chapter, max_chars=len(chapter)
+        )
+        paragraphs_capped = split_textbook_paragraphs(chapter, max_chars=800)
+        kept_uncapped = sum(len(p) for p in paragraphs_uncapped[:50])
+        kept_capped = sum(len(p) for p in paragraphs_capped[:50])
+        assert kept_capped < kept_uncapped
+        # 而放大 N 后语料量应回到同一量级，这正是默认值调整的依据。切分永远无法
+        # 完全等量还原：不足 min_chars 的尾片会被丢掉，因此按 99% 判定而非全等。
+        kept_restored = sum(len(p) for p in paragraphs_capped[:CHUNKS_PER_BOOK])
+        assert kept_restored >= kept_uncapped * 0.99
 
 
 class TestSplitTextbookParagraphs:

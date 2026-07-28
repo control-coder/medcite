@@ -14,10 +14,16 @@
 - embedding 模型 `all-MiniLM-L6-v2` 输入窗口为 256 token，巨块实际只有开头约
   1000 字符参与向量检索，其余内容既检索不到、又会在命中后被整块塞进 prompt。
 
-2026-07-27 引入 `MAX_CHUNK_CHARS = 800` 后知识库变为 1928 chunk / 692,533 字符，
-最大教材 chunk 800 字符。**知识库内容变了，因此 Recall@5、GoldCoverage、prompt 体积
-都是在不同语料上测的数，直接对比只有"修复前 / 修复后"这一种读法，不能当作同一
-设置下的性能变化。** 新旧数字的并列见 `docs/current-status.md`。
+2026-07-27 引入 `MAX_CHUNK_CHARS = 800` 后知识库变为 1928 chunk / 692,533 字符。
+**该中间态本身有缺陷**：`--chunks-per-book` 仍为 50，而它的截断发生在切分之后，
+于是教材语料从 3,955,185 字符缩到 296,002（丢掉 92.5% 正文）。2026-07-28 把默认值
+改为 650 后知识库为 12,728 chunk / 4,489,384 字符，教材语料 4,092,853 字符，即恢复
+到原体量的 1.03 倍。
+
+**三代知识库的语料都不同，因此 Recall@5、GoldCoverage、prompt 体积跨代不可比。**
+当前有效结果是 12,728-chunk 语料上的 run `20260728T121950082650Z_ded91c0c061e`；
+1928-chunk 那一代的数字（`rag_embedding=0.7357` 等）是在削减后的索引上测的，干扰项
+少、分数偏高，同样不应引用。三代数字的并列见 `docs/current-status.md`。
 
 ## 目录内容
 
@@ -27,7 +33,8 @@
 | `20260723T074438809322Z_e5cae4bf7140/` | 同上，重跑 | 同上 |
 | `20260723T083139002188Z_7fe2f747cc11/` | 修复回填后的单组 `rag_embedding`=0.7393 | 仅一组，未切分 KB |
 | `20260723T084524335257Z_7fe2f747cc11/` | CPU 四组纯检索对照 | 未切分 KB |
-| `20260723T091824063036Z_ded91c0c061e/` | GPU 四组纯检索对照（与 CPU 一致） | 未切分 KB；被 `20260727T080437012992Z_ded91c0c061e` 取代 |
+| `20260723T091824063036Z_ded91c0c061e/` | GPU 四组纯检索对照（与 CPU 一致） | 未切分 KB；最终被 `20260728T121950082650Z_ded91c0c061e` 取代 |
+| `20260727T080437012992Z_shrunk_kb/` | 1928-chunk 中间态的四组纯检索（`rag_embedding`=0.7357 等） | **语料丢失版本**：只加了字符上限、`--chunks-per-book` 仍为 50，教材正文只剩 7.5%。分数偏高是因为干扰项被削掉，不可引用 |
 | `retrieval_diagnostics_smoke.json` | 20 样本 CPU smoke，`knowledge_base_chunk_count: 1927` | 未切分 KB，且是 smoke 规模 |
 | `retrieval_diagnostics_gpu_smoke.json` | 同上，GPU | 同上 |
 | `prompt_size_diagnostics_unsplit_kb.json` | 未切分 KB 上的 prompt 体积（A1 阻塞项的原始证据） | 未切分 KB |

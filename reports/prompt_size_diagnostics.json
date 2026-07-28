@@ -3,28 +3,28 @@
   "sample_set": "agent_manifest_v1",
   "config_mode": "formal",
   "retrieval_profile": "rag_full",
-  "knowledge_base_chunk_count": 1928,
-  "knowledge_base_total_chars": 692533,
+  "knowledge_base_chunk_count": 12728,
+  "knowledge_base_total_chars": 4489384,
   "system_prompt_chars": 655,
   "max_tokens_per_call": 2048,
   "evidence_chars_per_sample": {
-    "min": 1583,
-    "p50": 2973,
-    "p90": 3737,
-    "p99": 4410,
-    "max": 4508
+    "min": 857,
+    "p50": 2824,
+    "p90": 3288,
+    "p99": 3811,
+    "max": 3984
   },
   "experiments": {
     "agent_single": {
       "provider_calls": 100,
       "prompt_chars": {
-        "min": 3280,
-        "p50": 5196,
-        "p90": 6047,
-        "p99": 6724,
-        "max": 6988
+        "min": 2554,
+        "p50": 5059,
+        "p90": 5731,
+        "p99": 6420,
+        "max": 6544
       },
-      "prompt_chars_total": 520939,
+      "prompt_chars_total": 499861,
       "context_window_overflow_calls": {
         "chars_per_token_3.0": {
           "over_32k_tokens": 0,
@@ -55,13 +55,13 @@
     "agent_fixed_pair": {
       "provider_calls": 200,
       "prompt_chars": {
-        "min": 3273,
-        "p50": 5189,
-        "p90": 6041,
-        "p99": 6718,
-        "max": 6982
+        "min": 2547,
+        "p50": 5052,
+        "p90": 5725,
+        "p99": 6414,
+        "max": 6538
       },
-      "prompt_chars_total": 1040578,
+      "prompt_chars_total": 998422,
       "context_window_overflow_calls": {
         "chars_per_token_3.0": {
           "over_32k_tokens": 0,
@@ -92,13 +92,13 @@
     "agent_dynamic_pair": {
       "provider_calls": 200,
       "prompt_chars": {
-        "min": 3279,
-        "p50": 5190,
-        "p90": 6046,
-        "p99": 6723,
-        "max": 6987
+        "min": 2553,
+        "p50": 5058,
+        "p90": 5730,
+        "p99": 6419,
+        "max": 6543
       },
-      "prompt_chars_total": 1041461,
+      "prompt_chars_total": 999234,
       "context_window_overflow_calls": {
         "chars_per_token_3.0": {
           "over_32k_tokens": 0,
@@ -129,13 +129,13 @@
     "rag_citation_review": {
       "provider_calls": 300,
       "prompt_chars": {
-        "min": 2013,
-        "p50": 3485,
-        "p90": 4120,
-        "p99": 4778,
-        "max": 5627
+        "min": 1912,
+        "p50": 3386,
+        "p90": 4171,
+        "p99": 4795,
+        "max": 5343
       },
-      "prompt_chars_total": 1041188,
+      "prompt_chars_total": 1029096,
       "context_window_overflow_calls": {
         "chars_per_token_3.0": {
           "over_32k_tokens": 0,
@@ -167,12 +167,12 @@
       "provider_calls": 300,
       "prompt_chars": {
         "min": 2057,
-        "p50": 3665,
-        "p90": 4336,
-        "p99": 4795,
-        "max": 5305
+        "p50": 3640,
+        "p90": 4420,
+        "p99": 4873,
+        "max": 5279
       },
-      "prompt_chars_total": 1097004,
+      "prompt_chars_total": 1098223,
       "context_window_overflow_calls": {
         "chars_per_token_3.0": {
           "over_32k_tokens": 0,
@@ -204,13 +204,13 @@
   "agent_total": {
     "provider_calls": 500,
     "prompt_chars": {
-      "min": 3273,
-      "p50": 5189,
-      "p90": 6047,
-      "p99": 6724,
-      "max": 6988
+      "min": 2547,
+      "p50": 5052,
+      "p90": 5731,
+      "p99": 6420,
+      "max": 6544
     },
-    "prompt_chars_total": 2602978,
+    "prompt_chars_total": 2497517,
     "context_window_overflow_calls": {
       "chars_per_token_3.0": {
         "over_32k_tokens": 0,
@@ -241,13 +241,13 @@
   "all_generation_total": {
     "provider_calls": 1100,
     "prompt_chars": {
-      "min": 2013,
-      "p50": 4095,
-      "p90": 5745,
-      "p99": 6671,
-      "max": 6988
+      "min": 1912,
+      "p50": 4166,
+      "p90": 5514,
+      "p99": 6278,
+      "max": 6544
     },
-    "prompt_chars_total": 4741170,
+    "prompt_chars_total": 4624836,
     "context_window_overflow_calls": {
       "chars_per_token_3.0": {
         "over_32k_tokens": 0,

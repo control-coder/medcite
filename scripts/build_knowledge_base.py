@@ -19,6 +19,8 @@
   - 空行切分只对排版规范的教材有效。18 本教材里 `Surgery_Schwartz.txt`（11.4MB）
     只有 250 个换行、几乎没有空行段落边界，因此只能切出 126 个巨型块，最大
     722,301 字符。见 `MAX_CHUNK_CHARS` 与 `split_textbook_paragraphs`。
+  - `--chunks-per-book` 的截断在切分之后，因此它与上限耦合：改动任一方都要重新
+    核对教材语料总字符数，否则「切分」会静默变成「削减语料」。见 `CHUNKS_PER_BOOK`。
 """
 
 from __future__ import annotations
@@ -46,6 +48,16 @@ MAX_CHUNK_CHARS = 800
 落在 embedding 模型 `all-MiniLM-L6-v2` 的 256 token 输入窗口的同一量级
 （约 200 token），使 chunk 能被向量完整表示——修复前 722,301 字符的 chunk 实际
 只有开头约 1000 字符参与检索。
+"""
+
+CHUNKS_PER_BOOK = 650
+"""每本教材取前 N 段。
+
+该值与 `MAX_CHUNK_CHARS` 耦合：截断发生在切分之后，因此上限从「一整章」降到 800
+字符时，同样的 N 保留的正文量会同比例下降。修复前 N=50 配巨型块 = 每本约 22 万字符，
+修复后 N=50 只剩约 1.6 万字符（仅前言与第一章开头），教材语料整体从 3,955,185 降到
+296,002 字符——这是内容丢失，不是切分收益。650 使教材语料回到 4,092,853 字符
+（原体量的 1.03 倍），因此「切分」不再附带削减知识库。
 """
 
 # 句末标点后接空白：英文教材用 .!?，CJK 语料用 。！？。
@@ -142,7 +154,7 @@ def split_textbook_paragraphs(
     show_default=True,
 )
 @click.option(
-    "--chunks-per-book", type=int, default=50,
+    "--chunks-per-book", type=int, default=CHUNKS_PER_BOOK,
     show_default=True,
     help="每本教材取前 N 段（控制知识库规模）。",
 )
