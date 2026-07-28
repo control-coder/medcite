@@ -5,13 +5,18 @@
 ``rag_full`` profile，term normalization -> search(candidate_k) -> rerank(top_k)），
 然后对每个样本调用 ``route(question, evidence)``，统计：
 
-- 四条路由规则各自命中多少样本，最终有多少落到兜底组合；
+- 三条路由规则各自命中多少样本，最终有多少落到兜底组合；
 - top1 总分与三个分项各自达到理论上限的比例（定位「哪个分项在饿死」）；
 - 歧义比值 ``top2.total / top1.total`` 的分布。
 
 2026-07-27（DD-023）起分项只有三个：``plan_hint`` 分项已从打分公式中删除，因此
 名义上限 7.0 与可达上限相同，不再区分 ``theoretical_max_total`` 与
 ``reachable_max_total``。
+
+2026-07-28（DD-025）起规则只有三条：原规则 4 按歧义比值兜底，方向颠倒，已删除。
+输出中 ``branch_counts`` 不再含 ``rule_4_low_confidence``，``rule_4_with_both_
+scores_eligible`` 字段一并移除；历史 ``reports/routing_diagnostics_*_fixed.json``
+仍带这两项。歧义比值仍在 ``confidence_distribution`` 中报告。
 
 用法::
 
@@ -67,13 +72,15 @@ def _percentiles(values: list[float]) -> dict[str, float]:
     }
 
 
-def _classify(top1_total: float, top2_total: float, confidence: float) -> str:
-    """复现 ``SpecialistRouter.route`` 的规则顺序，返回命中的规则名。"""
+def _classify(top1_total: float, top2_total: float) -> str:
+    """复现 ``SpecialistRouter.route`` 的规则顺序，返回命中的规则名。
+
+    2026-07-28（DD-025）起只有三条规则：原规则 4 已删除，因此本函数不再需要
+    ``confidence``。歧义度比值仍单独统计分布，只是不再决定分支。
+    """
     th = THRESHOLDS
     if top1_total < th["MIN_PRIMARY_SCORE"]:
         return "rule_1_primary_below_threshold"
-    if confidence < th["LOW_CONFIDENCE"]:
-        return "rule_4_low_confidence"
     if (
         top2_total < th["MIN_SECONDARY_SCORE"]
         or (top1_total - top2_total) >= th["SCORE_GAP"]
@@ -145,7 +152,6 @@ def run_routing_diagnostics(
 
     branch_counts: dict[str, int] = {
         "rule_1_primary_below_threshold": 0,
-        "rule_4_low_confidence": 0,
         "rule_2_top1_plus_skeptic": 0,
         "rule_3_dynamic_top2": 0,
     }
@@ -154,7 +160,6 @@ def run_routing_diagnostics(
     confidences: list[float] = []
     component_values: dict[str, list[float]] = {key: [] for key in COMPONENTS}
     fallback_count = 0
-    rule_4_both_eligible = 0
     samples: list[dict[str, Any]] = []
 
     for record in ordered:
@@ -180,13 +185,9 @@ def run_routing_diagnostics(
         top1 = ranked[0]
         top2 = ranked[1] if len(ranked) > 1 else None
         top2_total = top2.total if top2 else 0.0
-        branch = _classify(top1.total, top2_total, result.confidence)
+        branch = _classify(top1.total, top2_total)
 
         branch_counts[branch] += 1
-        if branch == "rule_4_low_confidence" and (
-            top2_total >= THRESHOLDS["MIN_SECONDARY_SCORE"]
-        ):
-            rule_4_both_eligible += 1
         fallback_count += int(result.is_fallback)
         pair_key = " + ".join(result.specialty_pair)
         pair_counts[pair_key] = pair_counts.get(pair_key, 0) + 1
@@ -225,7 +226,6 @@ def run_routing_diagnostics(
         "branch_counts": branch_counts,
         "fallback_count": fallback_count,
         "fallback_rate": round(fallback_count / total, 4) if total else 0.0,
-        "rule_4_with_both_scores_eligible": rule_4_both_eligible,
         "specialty_pair_counts": dict(
             sorted(pair_counts.items(), key=lambda kv: kv[1], reverse=True)
         ),
@@ -279,6 +279,7 @@ def cli(config: str, limit: int | None, holdout: bool, output: str) -> None:
         f"({report['fallback_rate']:.2%})"
     )
     click.echo(f"top1 total    : {report['top1_total_distribution']}")
+    # 只是诊断量，不再是门禁（DD-025）。
     click.echo(f"ambiguity     : {report['confidence_distribution']}")
     for key, dist in report["top1_component_distribution"].items():
         click.echo(f"  {key:<16}: {dist}")

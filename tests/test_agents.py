@@ -69,7 +69,7 @@ class TestRouter:
                 assert result.is_fallback is True
 
     def test_confidence_range(self, router: SpecialistRouter) -> None:
-        """置信度在 0~1 之间。"""
+        """歧义比值在 0~1 之间（DD-025 后只是诊断量，不参与决策）。"""
         chunks = [
             KnowledgeChunk(
                 chunk_id="c1", source="test", source_id="b1",
@@ -128,6 +128,45 @@ class TestRouter:
             "cardiology", [c.text for c in chunks_low], chunks_low
         )
         assert score_high >= score_low
+
+    def test_dominant_top1_is_not_a_fallback(
+        self, router: SpecialistRouter
+    ) -> None:
+        """规则 4 已删除（DD-025）：top1 压倒性领先时不得兜底。
+
+        旧规则按 `top2/top1 < 0.45` 兜底，而该比值越小恰恰表示 top1 越占优、
+        路由越明确——语义是颠倒的。这里构造一个单专科强信号样本，确认它现在走
+        Top1 + evidence_skeptic 而不是 `FALLBACK_PAIR`。
+        """
+        chunks = [
+            KnowledgeChunk(
+                chunk_id="c1", source="test", source_id="b1",
+                text=(
+                    "Myocardial infarction with angina, troponin rise, "
+                    "coronary artery disease and ST elevation."
+                ),
+                evidence_level="level_1_guideline",
+            )
+        ]
+        query = (
+            "chest pain with ST elevation on the electrocardiogram, "
+            "troponin rise and a history of coronary artery disease"
+        )
+        result = router.route(query, chunks)
+        ranked = sorted(
+            result.scores.values(), key=lambda s: s.total, reverse=True
+        )
+        assert ranked[0].total >= THRESHOLDS["MIN_PRIMARY_SCORE"]
+        # 前提：这确实是旧规则 4 会拦下的形状（比值低于已删除的 0.45）。
+        assert result.confidence < 0.45
+        assert result.is_fallback is False
+        assert result.specialty_pair == (ranked[0].specialty, "evidence_skeptic")
+
+    def test_low_confidence_threshold_is_gone(
+        self, router: SpecialistRouter
+    ) -> None:
+        """`LOW_CONFIDENCE` 常量必须一并删除，不留下不生效的阈值（DD-019 的教训）。"""
+        assert "LOW_CONFIDENCE" not in THRESHOLDS
 
     def test_plan_hint_component_is_gone(self, router: SpecialistRouter) -> None:
         """plan_hint 分项已删除（DD-023）：它恒为 0，不得再出现在打分公式或产物里。"""
@@ -563,11 +602,12 @@ class TestAblationConfigs:
         assert len(SPECIALTIES) == 10
 
     def test_thresholds(self) -> None:
-        """阈值常量。"""
-        assert THRESHOLDS["MIN_PRIMARY_SCORE"] == 2.0
-        assert THRESHOLDS["MIN_SECONDARY_SCORE"] == 1.2
-        assert THRESHOLDS["SCORE_GAP"] == 3.0
-        assert THRESHOLDS["LOW_CONFIDENCE"] == 0.45
+        """阈值常量：三项数值未变，`LOW_CONFIDENCE` 已随规则 4 删除（DD-025）。"""
+        assert THRESHOLDS == {
+            "MIN_PRIMARY_SCORE": 2.0,
+            "MIN_SECONDARY_SCORE": 1.2,
+            "SCORE_GAP": 3.0,
+        }
 
     def test_routing_weights(self) -> None:
         """打分权重：三项，`plan_hint` 已删除（DD-023）。"""

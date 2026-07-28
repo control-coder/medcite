@@ -1,8 +1,9 @@
 """`eval/routing_diagnostics.py` 的纯函数测试（不加载模型、不访问网络）。
 
 `_classify` 复制了 `SpecialistRouter.route` 的规则顺序，用于把路由结果归类到
-四个分支。复制就会漂移：路由改了规则顺序而诊断工具没跟上时，测量出来的分布会
-静默地对不上实际行为。这里逐条比对两者，使漂移变成失败而不是错误的报表。
+三个分支（DD-025 删除规则 4 之前是四个）。复制就会漂移：路由改了规则顺序而诊断
+工具没跟上时，测量出来的分布会静默地对不上实际行为。这里逐条比对两者，使漂移
+变成失败而不是错误的报表。
 """
 
 from __future__ import annotations
@@ -83,12 +84,9 @@ class TestClassifyMatchesTheRouter:
             ranked = sorted(result.scores.values(), key=lambda s: s.total, reverse=True)
             top1 = ranked[0]
             top2_total = ranked[1].total if len(ranked) > 1 else 0.0
-            branch = _classify(top1.total, top2_total, result.confidence)
+            branch = _classify(top1.total, top2_total)
 
-            if branch in {
-                "rule_1_primary_below_threshold",
-                "rule_4_low_confidence",
-            }:
+            if branch == "rule_1_primary_below_threshold":
                 assert result.is_fallback is True, (question, branch)
             else:
                 assert result.is_fallback is False, (question, branch)
@@ -99,12 +97,21 @@ class TestClassifyMatchesTheRouter:
             if branch == "rule_2_top1_plus_skeptic":
                 assert result.specialty_pair[0] == top1.specialty
 
-    def test_the_four_branches_are_mutually_exclusive_and_ordered(self) -> None:
-        # 规则 1 先于规则 4：总分不足时不看比值。
-        assert _classify(0.5, 0.5, 1.0) == "rule_1_primary_below_threshold"
-        # 规则 4 先于规则 2：这正是被记录为语义颠倒的顺序。
-        assert _classify(3.0, 0.1, 0.0333) == "rule_4_low_confidence"
+    def test_the_three_branches_are_mutually_exclusive_and_ordered(self) -> None:
+        # 规则 1 最先：总分不足时不看第二名。
+        assert _classify(0.5, 0.5) == "rule_1_primary_below_threshold"
         # 第二名不足 -> 规则 2。
-        assert _classify(3.0, 1.0, 0.5) == "rule_2_top1_plus_skeptic"
-        # 两名均达标且比值高 -> 规则 3。
-        assert _classify(3.0, 2.5, 0.8333) == "rule_3_dynamic_top2"
+        assert _classify(3.0, 1.0) == "rule_2_top1_plus_skeptic"
+        # 分差 >= SCORE_GAP -> 同样是规则 2，即便第二名达标。
+        assert _classify(5.0, 1.5) == "rule_2_top1_plus_skeptic"
+        # 两名均达标且分差小 -> 规则 3。
+        assert _classify(3.0, 2.5) == "rule_3_dynamic_top2"
+
+    def test_top1_dominant_case_no_longer_falls_back(self) -> None:
+        """删除规则 4 的核心行为变化：top1 压倒性领先时不再兜底。
+
+        `top2/top1 = 0.1/3.0 = 0.033` 远低于原 `LOW_CONFIDENCE=0.45`，旧实现在
+        这里返回兜底组合——而这恰恰是路由最明确的情形（DD-025）。现在它走规则 2，
+        由 top1 专科配 evidence_skeptic。
+        """
+        assert _classify(3.0, 0.1) == "rule_2_top1_plus_skeptic"

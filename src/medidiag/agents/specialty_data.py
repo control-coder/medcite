@@ -80,8 +80,10 @@ THRESHOLDS: dict[str, float] = {
     "MIN_PRIMARY_SCORE": 2.0,
     "MIN_SECONDARY_SCORE": 1.2,
     "SCORE_GAP": 3.0,
-    "LOW_CONFIDENCE": 0.45,
 }
+# `LOW_CONFIDENCE`（0.45）已于 2026-07-28 随规则 4 一并删除（DD-025）：它约束的
+# `top2/top1` 比值方向是颠倒的——比值越小表示 top1 越占优、路由越明确，而该规则
+# 恰在这时兜底。留下三项的数值一字未改。
 
 # ===== 每个专科的关键词（用于 keyword_score）=====
 SPECIALTY_KEYWORDS: dict[str, list[str]] = {

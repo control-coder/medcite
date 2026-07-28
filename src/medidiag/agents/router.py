@@ -7,14 +7,19 @@
 原第四个分项 `plan_hint` 已删除：它的唯一取值来源是 `route()` 的入参，而所有调用点
 都传空串，该分项恒为 0。
 
-Top2 筛选阈值（**未改动**）:
+Top2 筛选阈值（数值**未改动**）:
     MIN_PRIMARY_SCORE = 2.0
     MIN_SECONDARY_SCORE = 1.2
     SCORE_GAP = 3.0
-    LOW_CONFIDENCE = 0.45
+
+原规则 4（`置信度 < LOW_CONFIDENCE → 兜底`）已于 2026-07-28 删除，其语义是颠倒的
+（DD-025）：`confidence = top2.total / top1.total` 越小表示 top1 越占优，也就是路由
+**越明确**，而该规则恰恰在这时兜底。`LOW_CONFIDENCE` 常量随之删除——它没有别的
+消费者，保留一个不再生效的阈值属于 DD-019 明确反对的做法。比值本身仍作为歧义度
+诊断量保留在 `RoutingResult.confidence` 与路由诊断输出中，只是不再当门禁。
 
 全局默认执行策略:
-    if 置信度 >= 0.45 且 第二名分数 >= 1.2: 动态Top2
+    if 第一名分数 >= 2.0 且 第二名分数 >= 1.2 且 分差 < 3.0: 动态Top2
     elif 第一名分数 >= 2.0: Top1 + evidence_skeptic
     else: 兜底组合 general_internal + evidence_skeptic
 """
@@ -98,7 +103,12 @@ class RoutingResult:
     """所有专科的分项得分。"""
 
     confidence: float = 0.0
-    """路由置信度 = top2.total / top1.total。"""
+    """歧义度比值 = top2.total / top1.total。
+
+    **该值不参与路由决策**（原规则 4 已删除，DD-025）。名字沿用 `confidence` 是为了
+    不破坏 `eval/runner.py` 的 `routing_confidence` 字段与历史产物的键名，但它的方向
+    与"置信度"直觉相反：值越大表示前两名越接近，也就是越难判断。
+    """
 
     is_fallback: bool = False
     """是否使用了兜底组合。"""
@@ -170,7 +180,8 @@ class SpecialistRouter:
 
         th = THRESHOLDS
 
-        # 3. 计算置信度 = top2.total / top1.total
+        # 3. 歧义度比值 = top2.total / top1.total。只作为诊断量记录，不参与决策
+        # （原规则 4 已删除，DD-025）。
         if top1 and top2 and top1.total > 0:
             confidence = top2.total / top1.total
         else:
@@ -187,19 +198,6 @@ class SpecialistRouter:
                 reason=(
                     f"最高分 {top1.total if top1 else 0:.2f} < "
                     f"{th['MIN_PRIMARY_SCORE']}, 兜底组合"
-                ),
-            )
-
-        # 规则4: 置信度 < LOW_CONFIDENCE → 兜底
-        if confidence < th["LOW_CONFIDENCE"]:
-            return RoutingResult(
-                specialty_pair=FALLBACK_PAIR,
-                scores={s.specialty: s for s in sorted_scores[:5]},
-                confidence=confidence,
-                is_fallback=True,
-                reason=(
-                    f"置信度 {confidence:.2f} < "
-                    f"{th['LOW_CONFIDENCE']}, 兜底组合"
                 ),
             )
 
