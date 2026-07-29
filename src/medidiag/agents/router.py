@@ -7,10 +7,10 @@
 原第四个分项 `plan_hint` 已删除：它的唯一取值来源是 `route()` 的入参，而所有调用点
 都传空串，该分项恒为 0。
 
-Top2 筛选阈值（数值**未改动**）:
-    MIN_PRIMARY_SCORE = 2.0
-    MIN_SECONDARY_SCORE = 1.2
-    SCORE_GAP = 3.0
+Top2 筛选阈值:
+    MIN_PRIMARY_SCORE = 1.5   # 2026-07-29 由 2.0 下调（DD-027），理由见 specialty_data
+    MIN_SECONDARY_SCORE = 1.2 # 未改动
+    SCORE_GAP = 3.0           # 未改动
 
 原规则 4（`置信度 < LOW_CONFIDENCE → 兜底`）已于 2026-07-28 删除，其语义是颠倒的
 （DD-025）：`confidence = top2.total / top1.total` 越小表示 top1 越占优，也就是路由
@@ -19,8 +19,8 @@ Top2 筛选阈值（数值**未改动**）:
 诊断量保留在 `RoutingResult.confidence` 与路由诊断输出中，只是不再当门禁。
 
 全局默认执行策略:
-    if 第一名分数 >= 2.0 且 第二名分数 >= 1.2 且 分差 < 3.0: 动态Top2
-    elif 第一名分数 >= 2.0: Top1 + evidence_skeptic
+    if 第一名分数 >= 1.5 且 第二名分数 >= 1.2 且 分差 < 3.0: 动态Top2
+    elif 第一名分数 >= 1.5: Top1 + evidence_skeptic
     else: 兜底组合 general_internal + evidence_skeptic
 """
 

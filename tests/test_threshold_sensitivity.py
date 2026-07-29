@@ -101,11 +101,20 @@ class TestKeywordHitTranslation:
         assert KEYWORD_HIT_VALUE == pytest.approx(0.75)
         assert MATCH_SATURATION_COUNT == 4.0
 
-    def test_current_threshold_is_between_two_and_three_hits(self) -> None:
-        # 2.0 落在 2 次命中（1.5）与 3 次命中（2.25）之间，因此它实际是
-        # "至少 2 次关键词命中 + 一点其他信号"的门槛。
-        assert 2 * KEYWORD_HIT_VALUE < THRESHOLDS["MIN_PRIMARY_SCORE"]
+    def test_current_threshold_is_exactly_two_keyword_hits(self) -> None:
+        """`MIN_PRIMARY_SCORE=1.5` 恰好等于 2 次关键词命中（DD-027）。
+
+        旧值 2.0 落在 2 次（1.5）与 3 次（2.25）之间，因此是「2 次命中 + 一点
+        其他信号」；新值正好落在 2 次命中上，即关键词证据本身就足够放行。
+        """
+        assert THRESHOLDS["MIN_PRIMARY_SCORE"] == pytest.approx(
+            2 * KEYWORD_HIT_VALUE
+        )
         assert 3 * KEYWORD_HIT_VALUE > THRESHOLDS["MIN_PRIMARY_SCORE"]
+
+    def test_one_keyword_hit_alone_cannot_pass(self) -> None:
+        # 单次命中（0.75）仍需另外 0.75 分才够，因此「一个词就放行」不成立。
+        assert 1 * KEYWORD_HIT_VALUE < THRESHOLDS["MIN_PRIMARY_SCORE"]
 
     def test_hit_counts_are_recovered_from_scores(self) -> None:
         report = run_sensitivity(

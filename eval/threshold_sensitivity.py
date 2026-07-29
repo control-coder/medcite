@@ -162,12 +162,15 @@ def run_sensitivity(diagnostics: dict[str, Any]) -> dict[str, Any]:
             ),
         }
 
+    # 固定分段边界，使不同代产物可逐段对照；「现在放行」一段跟随生产阈值而不是
+    # 写死 2.0，否则改阈值后这个标签会静默变成谎话。
     bands = {
         "[0.0,1.0)": [s for s in samples if s["top1"]["total"] < 1.0],
         "[1.0,1.5)": [s for s in samples if 1.0 <= s["top1"]["total"] < 1.5],
         "[1.5,2.0)": [s for s in samples if 1.5 <= s["top1"]["total"] < 2.0],
-        ">=2.0_released_today": [
-            s for s in samples if s["top1"]["total"] >= 2.0
+        "[2.0,inf)": [s for s in samples if s["top1"]["total"] >= 2.0],
+        f">={current}_released_today": [
+            s for s in samples if s["top1"]["total"] >= current
         ],
     }
 

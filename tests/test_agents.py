@@ -602,9 +602,14 @@ class TestAblationConfigs:
         assert len(SPECIALTIES) == 10
 
     def test_thresholds(self) -> None:
-        """阈值常量：三项数值未变，`LOW_CONFIDENCE` 已随规则 4 删除（DD-025）。"""
+        """阈值常量。
+
+        `MIN_PRIMARY_SCORE` 于 2026-07-29 由 2.0 降为 1.5（DD-027），另两项数值
+        自始未动；`LOW_CONFIDENCE` 已随规则 4 删除（DD-025）。这条断言的作用是让
+        阈值改动必须是有意的——改这三个数会在这里失败。
+        """
         assert THRESHOLDS == {
-            "MIN_PRIMARY_SCORE": 2.0,
+            "MIN_PRIMARY_SCORE": 1.5,
             "MIN_SECONDARY_SCORE": 1.2,
             "SCORE_GAP": 3.0,
         }
