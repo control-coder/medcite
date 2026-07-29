@@ -170,6 +170,16 @@ python -m eval.leakage_check `
   --eval-set eval/datasets/eval_set_pubmedqa.jsonl `
   --kb eval/datasets/knowledge_chunks.jsonl
 
+# 工程测量工具：均不调用 provider、不产生评测指标
+# prompt 体积（formal run 起飞前门禁之一）
+python -m eval.prompt_size_diagnostics --config eval/config.formal.yaml
+# 路由代码行为（分支分布与分项得分，不是路由准确率）
+python -m eval.routing_diagnostics --config eval/config.formal.yaml
+# 费用折算：读上面的实测字符数 × DeepSeek 官方单价，输出上限与下界
+python -m eval.cost_estimate
+# run 完成后回填实测 token 与实际费用
+python -m eval.cost_estimate --run-dir reports/raw/<run_id>
+
 # P0-C 本地工程闭环（当前 worker 使用确定性非诊断 provider）
 alembic upgrade head
 uvicorn medidiag.api.app:app --host 127.0.0.1 --port 8400
