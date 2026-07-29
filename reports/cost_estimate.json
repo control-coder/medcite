@@ -739,5 +739,21 @@
         }
       }
     }
+  },
+  "actual": {
+    "run_id": "20260729T130801479412Z_ded91c0c061e",
+    "measured": true,
+    "cache_split_source": "provider_reported",
+    "cache_split_reconciles_prompt_tokens": true,
+    "prompt_tokens": 1265594,
+    "completion_tokens": 412328,
+    "prompt_cache_hit_tokens": 346240,
+    "prompt_cache_miss_tokens": 919354,
+    "cost": {
+      "input_cache_hit": 0.0069,
+      "input_cache_miss": 0.9194,
+      "output": 0.8247,
+      "total": 1.7509
+    }
   }
 }
