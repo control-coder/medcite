@@ -175,6 +175,8 @@ python -m eval.leakage_check `
 python -m eval.prompt_size_diagnostics --config eval/config.formal.yaml
 # 路由代码行为（分支分布与分项得分，不是路由准确率）
 python -m eval.routing_diagnostics --config eval/config.formal.yaml
+# 阈值反事实：MIN_PRIMARY_SCORE 取不同值会放行多少样本（只读上面的产物，秒级）
+python -m eval.threshold_sensitivity
 # 费用折算：读上面的实测字符数 × DeepSeek 官方单价，输出上限与下界
 python -m eval.cost_estimate
 # run 完成后回填实测 token 与实际费用
