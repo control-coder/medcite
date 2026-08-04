@@ -7,8 +7,8 @@
 
 为什么需要这个工具：`--dry-run` 在 `_run_sample` 中于 generation 之前就返回
 （`eval/runner.py`），因此 dry-run 本身测不到 prompt 体积。2026-07-26 的首次测量
-是临时脚本，本工具把它固化为可复现命令，使 `docs/evaluation_protocol.md` 的
-起飞前检查单能被逐条重跑。
+是临时脚本，本工具把它固化为可复现命令，使 `doc/evaluation_protocol.md` 的
+体积门禁能被逐条重跑。
 
 用法::
 

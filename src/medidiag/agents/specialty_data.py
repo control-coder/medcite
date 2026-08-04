@@ -54,7 +54,7 @@ BASELINE_PAIR: tuple[str, str] = ("cardiology", "respiratory")
 #
 # **其余三项权重刻意保持 3.0 / 2.0 / 2.0，没有按 8.0 重标定。** 对三项同乘一个常数
 # 等价于把 `MIN_PRIMARY_SCORE` 除以同一个常数，那是阈值决策而不是缺陷修复；阈值
-# 是否要动仍是待人工决策项（`docs/current-status.md`）。
+# 决策已于 2026-07-29 关闭（`MIN_PRIMARY_SCORE` 2.0 -> 1.5，见 `doc/log.md` DD-027）。
 ROUTING_WEIGHTS: dict[str, float] = {
     "keyword": 3.0,
     "normalized_term": 2.0,

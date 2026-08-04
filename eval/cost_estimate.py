@@ -96,7 +96,7 @@ def cache_hit_tokens_ceiling(calls: int, system_prompt_chars: int, ratio: float)
     """本工作负载**最多**能命中的缓存 token 数（上限，不是实测）。
 
     唯一的稳定公共前缀是 `AGENT_SYSTEM_PROMPT`；用户消息从第一句起就逐样本不同
-    （见 `docs/evaluation_protocol.md`「A2」）。DeepSeek 自动缓存按
+    （历史估算与实测修正见 `doc/log.md` 2026-07-29 条）。DeepSeek 自动缓存按
     `CACHE_BLOCK_TOKENS` 粒度命中，因此每次调用的命中量向下取整到整块。
 
     这是上限而非期望值，两个原因：首次调用必然全 miss，且缓存条目有存活期，
