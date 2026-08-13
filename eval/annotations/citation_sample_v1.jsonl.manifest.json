@@ -1,0 +1,12 @@
+{
+  "all_pair_count": 2809,
+  "all_pair_hash": "48adf44e442f59599869cfaa66c25e28b9f5aca9e4393379ca0cec6c51e3583d",
+  "requested_ratio": 0.2,
+  "run_id": "20260729T130801479412Z_ded91c0c061e",
+  "schema_version": 1,
+  "seed": 42,
+  "selected_annotation_ids_hash": "f46a9c4360f2d8b764608d0c53dcbb4dc869fe200fb7792b2209394b4f123303",
+  "selected_pair_count": 562,
+  "selected_ratio": 0.20007119971520113,
+  "source_run_manifest_hash": "c6529c2eb86ab65f141998a99c05544c13178661682c8673f0c6ae9752c066b7"
+}
