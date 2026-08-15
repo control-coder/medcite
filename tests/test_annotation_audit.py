@@ -73,6 +73,10 @@ def _label_records(sample_path: Path, annotator: str, labels: list[str]) -> list
             "annotator_id": annotator,
             "annotated_at": "2026-07-17T12:00:00+08:00",
             "rationale": "Reviewed the emitted claim against the cited public evidence.",
+            "annotation_method": "human_independent",
+            "reviewer_type": "human",
+            "assistance_disclosure": "none",
+            "independence_attestation": True,
         }
         for record, label in zip(sample, labels, strict=True)
     ]
@@ -98,6 +102,8 @@ def _write_review_package(tmp_path: Path, sample_path: Path, *, include_adjudica
                 "adjudicated_at": "2026-07-17T13:00:00+08:00",
                 "reason": "The evidence supports only part of the claim.",
                 "modified_fields": ["final_label"],
+                "reviewer_type": "human",
+                "assistance_disclosure": "none",
             }
         ]
         if include_adjudication
@@ -138,6 +144,13 @@ def test_audit_requires_all_disagreements_and_writes_calibration(tmp_path: Path)
     assert audit["agreement"]["disagreement_count"] == 1
     assert audit["agreement"]["adjudication_count"] == 1
     assert audit_path.is_file()
+    assert audit["human_review_attestations"]["annotator_a"] == {
+        "annotator_ids": ["reviewer-a"],
+        "annotation_methods": ["human_independent"],
+        "reviewer_types": ["human"],
+        "assistance_disclosures": ["none"],
+        "independence_attested": True,
+    }
 
 
 def test_audit_rejects_missing_adjudication_for_disagreement(tmp_path: Path) -> None:
@@ -149,6 +162,32 @@ def test_audit_rejects_missing_adjudication_for_disagreement(tmp_path: Path) -> 
     )
 
     with pytest.raises(AnnotationAuditError, match="every and only annotator disagreement"):
+        audit_annotation_package(
+            run_dir, sample_path, a_path, b_path, adjudication_path, tmp_path / "audit.json"
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("annotation_method", "model_assisted_prelabel", "non-human annotation_method"),
+        ("reviewer_type", "model", "non-human reviewer_type"),
+        ("assistance_disclosure", "model_assisted", "disallowed assistance_disclosure"),
+        ("independence_attestation", False, "must attest independent human review"),
+    ],
+)
+def test_audit_rejects_nonhuman_or_nonindependent_labels(
+    tmp_path: Path, field: str, value: object, message: str
+) -> None:
+    run_dir = _make_run(tmp_path)
+    sample_path = tmp_path / "citation-sample.jsonl"
+    prepare_annotation_sample(run_dir, sample_path, ratio=1.0)
+    a_path, b_path, adjudication_path = _write_review_package(tmp_path, sample_path)
+    labels_a = read_jsonl(a_path)
+    labels_a[0][field] = value
+    write_jsonl(labels_a, a_path)
+
+    with pytest.raises(AnnotationAuditError, match=message):
         audit_annotation_package(
             run_dir, sample_path, a_path, b_path, adjudication_path, tmp_path / "audit.json"
         )

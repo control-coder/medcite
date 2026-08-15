@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "artifact_type": "model_assisted_prelabel_comparison",
+  "created_at": "2026-08-15T06:57:44.8771380Z",
+  "source_sample": {
+    "path": "eval/annotations/citation_sample_v1.jsonl",
+    "sha256": "b99eae09cb5060e4a875ac0c56ac99a6cd5a3852e9c1d016bb4fde4c6005b89c",
+    "count": 562
+  },
+  "formal_eligibility": {
+    "eligible": false,
+    "reason": "模型辅助预标注不属于独立人工复核，且 annotation_method 不是 human_independent。"
+  },
+  "files": [
+    {
+      "path": "eval/annotations/model_assisted/citation_model_prelabels_gpt54mini_v1.jsonl",
+      "sha256": "1285983a888deaa5a8acd57b58a9e039db040a48cd96a89df7850649a7d599f7",
+      "count": 562,
+      "annotator_id": "model:gpt-5.4-mini",
+      "annotation_method": "model_assisted_prelabel",
+      "label_counts": {
+        "UNSUPPORTED": 101,
+        "PARTIAL": 391,
+        "SUPPORTED": 70
+      }
+    },
+    {
+      "path": "eval/annotations/model_assisted/citation_model_prelabels_gpt56terra_v1.jsonl",
+      "sha256": "43a4750b78f814575f4b8e97528efcf38e98349b5e0b40f505f2d9626a2e18df",
+      "count": 562,
+      "annotator_id": "model:gpt-5.6-terra",
+      "annotation_method": "model_assisted_prelabel",
+      "label_counts": {
+        "SUPPORTED": 70,
+        "PARTIAL": 391,
+        "UNSUPPORTED": 101
+      }
+    }
+  ],
+  "comparison": {
+    "matching_annotation_id_count": 562,
+    "label_agreement_rate": 1.0,
+    "interpretation": "机器标签一致不构成正确性、独立性或人工校准证据。"
+  }
+}

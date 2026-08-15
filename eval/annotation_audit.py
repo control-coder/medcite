@@ -23,7 +23,20 @@ from eval.kappa import cohen_kappa, kappa_verdict
 from medidiag.schemas import read_jsonl, write_jsonl
 
 _VALID_LABELS = {"SUPPORTED", "PARTIAL", "UNSUPPORTED"}
-_REQUIRED_LABEL_FIELDS = {"annotation_id", "label", "annotator_id", "annotated_at", "rationale"}
+_FORMAL_REVIEWER_TYPE = "human"
+_FORMAL_ASSISTANCE_DISCLOSURE = "none"
+_FORMAL_ANNOTATION_METHOD = "human_independent"
+_REQUIRED_LABEL_FIELDS = {
+    "annotation_id",
+    "label",
+    "annotator_id",
+    "annotated_at",
+    "rationale",
+    "annotation_method",
+    "reviewer_type",
+    "assistance_disclosure",
+    "independence_attestation",
+}
 _REQUIRED_ADJUDICATION_FIELDS = {
     "annotation_id",
     "final_label",
@@ -31,6 +44,8 @@ _REQUIRED_ADJUDICATION_FIELDS = {
     "adjudicated_at",
     "reason",
     "modified_fields",
+    "reviewer_type",
+    "assistance_disclosure",
 }
 
 
@@ -178,6 +193,18 @@ def audit_annotation_package(
             "annotator_a": {"path": str(Path(annotator_a_path)), "hash": _sha256_file(Path(annotator_a_path))},
             "annotator_b": {"path": str(Path(annotator_b_path)), "hash": _sha256_file(Path(annotator_b_path))},
             "adjudication": {"path": str(Path(adjudication_path)), "hash": _sha256_file(Path(adjudication_path))},
+        },
+        "human_review_attestations": {
+            "schema": "human_independent_v1",
+            "annotator_a": _summarize_label_attestation(labels_a),
+            "annotator_b": _summarize_label_attestation(labels_b),
+            "adjudicator_ids": sorted({str(record["adjudicator_id"]).strip() for record in adjudications}),
+            "adjudication_reviewer_types": sorted(
+                {str(record["reviewer_type"]).strip() for record in adjudications}
+            ),
+            "adjudication_assistance_disclosures": sorted(
+                {str(record["assistance_disclosure"]).strip() for record in adjudications}
+            ),
         },
         "agreement": {
             "common_sample_count": count,
@@ -342,7 +369,20 @@ def _load_labels(path: str | Path, role: str) -> list[dict[str, Any]]:
         if not str(record["annotator_id"]).strip() or not str(record["rationale"]).strip():
             raise AnnotationAuditError(f"{role} requires non-empty annotator_id and rationale")
         _validate_timestamp(str(record["annotated_at"]), f"{role}.annotated_at")
+        _validate_formal_label_attestation(record, role, index)
     return records
+
+
+def _validate_formal_label_attestation(record: dict[str, Any], role: str, index: int) -> None:
+    """拒绝未声明为独立人工复核的标签，避免模型预标注误入正式门禁。"""
+    if str(record["annotation_method"]).strip() != _FORMAL_ANNOTATION_METHOD:
+        raise AnnotationAuditError(f"{role} line {index} has non-human annotation_method")
+    if str(record["reviewer_type"]).strip() != _FORMAL_REVIEWER_TYPE:
+        raise AnnotationAuditError(f"{role} line {index} has non-human reviewer_type")
+    if str(record["assistance_disclosure"]).strip() != _FORMAL_ASSISTANCE_DISCLOSURE:
+        raise AnnotationAuditError(f"{role} line {index} has disallowed assistance_disclosure")
+    if record["independence_attestation"] is not True:
+        raise AnnotationAuditError(f"{role} line {index} must attest independent human review")
 
 
 def _validate_label_coverage(records: list[dict[str, Any]], expected_ids: set[str], role: str) -> None:
@@ -383,7 +423,30 @@ def _load_adjudications(path: str | Path) -> list[dict[str, Any]]:
         if not isinstance(record["modified_fields"], list) or not record["modified_fields"]:
             raise AnnotationAuditError("adjudication.modified_fields must be a non-empty list")
         _validate_timestamp(str(record["adjudicated_at"]), "adjudication.adjudicated_at")
+        if str(record["reviewer_type"]).strip() != _FORMAL_REVIEWER_TYPE:
+            raise AnnotationAuditError(f"adjudication line {index} has non-human reviewer_type")
+        if str(record["assistance_disclosure"]).strip() != _FORMAL_ASSISTANCE_DISCLOSURE:
+            raise AnnotationAuditError(
+                f"adjudication line {index} has disallowed assistance_disclosure"
+            )
     return records
+
+
+def _summarize_label_attestation(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """将已验证的声明压缩到审计产物，保留文件级可追溯性而不写入个人身份。"""
+    return {
+        "annotator_ids": sorted({str(record["annotator_id"]).strip() for record in records}),
+        "annotation_methods": sorted(
+            {str(record["annotation_method"]).strip() for record in records}
+        ),
+        "reviewer_types": sorted({str(record["reviewer_type"]).strip() for record in records}),
+        "assistance_disclosures": sorted(
+            {str(record["assistance_disclosure"]).strip() for record in records}
+        ),
+        "independence_attested": all(
+            record["independence_attestation"] is True for record in records
+        ),
+    }
 
 
 def _validate_adjudications(records: list[dict[str, Any]], disagreements: list[str]) -> None:
