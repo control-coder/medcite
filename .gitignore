@@ -64,6 +64,8 @@ eval/config.formal.yaml
 # Keep directory structure via .gitkeep, but ignore raw outputs
 reports/raw/**
 !reports/raw/.gitkeep
+# 人工审阅界面生成目录，不属于 formal 标注产物
+eval/annotations_ui/
 traces/raw/*.jsonl
 traces/summary/*.json
 

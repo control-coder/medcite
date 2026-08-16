@@ -1,0 +1,106 @@
+{
+  "agreement": {
+    "adjudication_count": 147,
+    "cohen_kappa": 0.6048859576543959,
+    "common_sample_count": 562,
+    "confusion": {
+      "PARTIAL|PARTIAL": 95,
+      "PARTIAL|SUPPORTED": 27,
+      "PARTIAL|UNSUPPORTED": 6,
+      "SUPPORTED|PARTIAL": 58,
+      "SUPPORTED|SUPPORTED": 184,
+      "SUPPORTED|UNSUPPORTED": 3,
+      "UNSUPPORTED|PARTIAL": 42,
+      "UNSUPPORTED|SUPPORTED": 11,
+      "UNSUPPORTED|UNSUPPORTED": 136
+    },
+    "disagreement_count": 147,
+    "expected_agreement": 0.33799913881536453,
+    "labels": [
+      "PARTIAL",
+      "SUPPORTED",
+      "UNSUPPORTED"
+    ],
+    "observed_agreement": 0.7384341637010676,
+    "verdict": "DISCUSS: 0.6-0.8，进入分歧讨论（记录裁决人、理由、修改字段）"
+  },
+  "calibration": {
+    "human_supported_rate": 0.4928825622775801,
+    "judge_agreement": 0.37544483985765126,
+    "label_counts": {
+      "PARTIAL": 116,
+      "SUPPORTED": 277,
+      "UNSUPPORTED": 169
+    }
+  },
+  "failure_reasons": [],
+  "human_review_attestations": {
+    "adjudication_assistance_disclosures": [
+      "none"
+    ],
+    "adjudication_reviewer_types": [
+      "human"
+    ],
+    "adjudicator_ids": [
+      "adjudicator_c_anon"
+    ],
+    "annotator_a": {
+      "annotation_methods": [
+        "human_independent"
+      ],
+      "annotator_ids": [
+        "reviewer_a_anon"
+      ],
+      "assistance_disclosures": [
+        "none"
+      ],
+      "independence_attested": true,
+      "reviewer_types": [
+        "human"
+      ]
+    },
+    "annotator_b": {
+      "annotation_methods": [
+        "human_independent"
+      ],
+      "annotator_ids": [
+        "reviewer_b_anon"
+      ],
+      "assistance_disclosures": [
+        "none"
+      ],
+      "independence_attested": true,
+      "reviewer_types": [
+        "human"
+      ]
+    },
+    "schema": "human_independent_v1"
+  },
+  "report_eligible": true,
+  "review_files": {
+    "adjudication": {
+      "hash": "5b11b85529490e232ac86d7212495ddd348c543c9429fb4fb262e88005603130",
+      "path": "eval\\annotations\\citation_adjudication_v1.jsonl"
+    },
+    "annotator_a": {
+      "hash": "bceedffee157e9b5b1b61ab919bdd1405aa8843a77c0247adcfef09567e077d7",
+      "path": "eval\\annotations\\citation_labels_a_v1.jsonl"
+    },
+    "annotator_b": {
+      "hash": "963e650e9a8870d26da1295a0c371fe59b75b2bd5452dbdb05dadf5a7b3a313c",
+      "path": "eval\\annotations\\citation_labels_b_v1.jsonl"
+    }
+  },
+  "run_id": "20260729T130801479412Z_ded91c0c061e",
+  "sample": {
+    "annotation_ids_hash": "f46a9c4360f2d8b764608d0c53dcbb4dc869fe200fb7792b2209394b4f123303",
+    "count": 562,
+    "hash": "b99eae09cb5060e4a875ac0c56ac99a6cd5a3852e9c1d016bb4fde4c6005b89c",
+    "path": "eval\\annotations\\citation_sample_v1.jsonl",
+    "population_count": 2809,
+    "ratio": 0.20007119971520113
+  },
+  "schema_version": 1,
+  "source_run_manifest_hash": "c6529c2eb86ab65f141998a99c05544c13178661682c8673f0c6ae9752c066b7",
+  "status": "PASSED"
+}

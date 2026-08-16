@@ -551,7 +551,7 @@ def audit_command(run_dir: Path, sample: Path, annotator_a: Path, annotator_b: P
 @click.option("--output", type=click.Path(path_type=Path), required=True)
 def report_command(run_dir: Path, audit: Path, output: Path) -> None:
     """Render the formal Markdown report after the audit gate passes."""
-    from eval.report import write_report
+    from eval.report import write_baseline_report, write_report
 
     manifest = _read_json(run_dir / "manifest.json")
     config = _read_json(run_dir / "config.snapshot.json")
@@ -564,7 +564,15 @@ def report_command(run_dir: Path, audit: Path, output: Path) -> None:
     if not results:
         raise click.ClickException("run contains no experiment result JSON files")
     write_report(results, config, manifest, output, _read_json(audit))
+    write_baseline_report(
+        results,
+        config,
+        manifest,
+        output.with_name("baseline.md"),
+        _read_json(audit),
+    )
     click.echo(f"report={output}")
+    click.echo(f"baseline={output.with_name('baseline.md')}")
 
 
 if __name__ == "__main__":

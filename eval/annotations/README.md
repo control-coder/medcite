@@ -1,6 +1,6 @@
 # Citation 人工复核产物目录
 
-此目录保存 formal run 的 citation 抽样模板与**实际人工完成**的正式评测标注。当前仓库已冻结 `citation_sample_v1.jsonl`（562 条），但尚未存在可通过正式审计的人工标签；不得把模型输出、示例数据、脚本生成数据或同一人重复填写的数据伪装为人工复核。
+此目录保存 formal run 的 citation 抽样模板与**实际人工完成**的正式评测标注。截至 2026-08-16，`citation_labels_a_v1.jsonl`、`citation_labels_b_v1.jsonl` 已覆盖 562 条样本，`citation_adjudication_v1.jsonl` 已覆盖全部 147 条分歧；审计结果为 `PASSED`、`report_eligible: true`。不得把模型输出、示例数据、脚本生成数据或同一人重复填写的数据伪装为人工复核。
 
 ## 文件与隔离边界
 

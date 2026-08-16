@@ -215,3 +215,6 @@ def test_report_refuses_missing_audit_and_accepts_matching_passing_audit(tmp_pat
     report = generate_report({"rag_full": results}, config, manifest, audit)
     assert "Human citation-review gate" in report
     assert "Cohen's Kappa" in report
+    assert "provider snapshot **不可核验**" in report
+    assert "ground truth" in report
+    assert "leakage gate" in report

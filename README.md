@@ -10,7 +10,7 @@
 
 二期预留或明确不在范围内：多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送、全量公开基准跑分。
 
-**当前状态**：工程门禁全绿（456 测试通过、ruff/mypy 阻断级通过）；首次 formal run 已完成（2026-07-29，9 组实验、1100 次付费调用、实测 1.7509 元），但 `report_eligible: false`——唯一阻断是缺真实双人 citation 人工校准。**项目尚不能表述为"第一阶段完成"，现有指标不得写入简历。**详见 [doc/status.md](doc/status.md)。
+**当前状态**：工程门禁全绿（456 测试通过、ruff/mypy 阻断级通过）；首次 formal run 已完成（2026-07-29，9 组实验、1100 次付费调用、实测 1.7509 元），并已完成 562 条真实双人 citation 标注与 147 条第三人裁决。审计结果为 `report_eligible: true`、Cohen's Kappa `0.6049`，正式报告已生成；但项目仍需完成拓扑结论、judge 误差分析和最终一致性审查，**暂不把指标直接写入简历或表述为医学效果**。详见 [doc/status.md](doc/status.md) 与 [reports/final_eval.md](reports/final_eval.md)。
 
 ## 核心特性
 
@@ -65,7 +65,7 @@ medidiag demo --provider deepseek   # 需 .env 配置 DEEPSEEK_API_KEY
 | [doc/structure.md](doc/structure.md) | 项目结构详解：目录、架构图、状态机、事务边界 |
 | [doc/progress.md](doc/progress.md) | 项目进度：阶段路线图与各切片完成状态 |
 | [doc/status.md](doc/status.md) | 项目状态：当前验收快照、formal run 结果、未验收项 |
-| [doc/log.md](doc/log.md) | 项目日志与决策记录：时间线 + DD-001~DD-027 |
+| [doc/log.md](doc/log.md) | 项目日志与决策记录：时间线 + DD-001~DD-029 |
 | [doc/handoff.md](doc/handoff.md) | 续作交接：当前基线、环境、后续执行顺序 |
 | [doc/evaluation_protocol.md](doc/evaluation_protocol.md) | 正式评测与人工 citation 复核协议 |
 | [reports/README.md](reports/README.md) | 评测产物目录说明（raw/archive/诊断产物口径） |
