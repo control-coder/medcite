@@ -59,6 +59,7 @@ class AgentOutputCache:
         question: str,
         evidence_ids: list[str],
         specialty: str,
+        claim_language: str | None = None,
     ) -> str:
         """Key on the experiment as well as the sample.
 
@@ -67,8 +68,10 @@ class AgentOutputCache:
         from cache. Their ``stage_latency_ms["generation"]`` would then measure
         dictionary lookups, invalidating the topology comparison.
         """
+        # claim 语言会改变 prompt 和 judge 输入，不能复用旧语言策略的生成缓存。
         payload = (
-            f"{experiment}|{question}|{'-'.join(sorted(evidence_ids))}|{specialty}"
+            f"{experiment}|{question}|{'-'.join(sorted(evidence_ids))}|"
+            f"{specialty}|claim_language={claim_language or 'default'}"
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -274,6 +277,7 @@ def run_evaluation(
             method=config["judge"]["method"],
             device=requested_device,
             batch_size=batch_size,
+            input_language=config["judge"]["input_language"],
         )
         verifier.initialize()
         generation = config["generation"]
@@ -524,6 +528,12 @@ def _run_sample(
     # 正式 run 不接受把 provider 故障折算成弃权：AgentProviderError 必须
     # 向上传播，终止运行并阻止 manifest 写出。
     fail_closed = config["evaluation"]["mode"] == "formal"
+    # 仅正式 NLI 评测要求 Agent 直接生成英文 claim，避免向英文 judge 输入中英混用文本。
+    claim_language = (
+        config["judge"]["input_language"]
+        if fail_closed and config["judge"]["method"] == "nli"
+        else None
+    )
     generation_started = time.perf_counter()
     outputs = _generate_outputs(
         topology,
@@ -538,6 +548,7 @@ def _run_sample(
         cache,
         result,
         fail_closed,
+        claim_language=claim_language,
     )
     result.stage_latency_ms["generation"] = _elapsed_ms(generation_started)
     result.agent_abstained = any(output.abstain for output in outputs)
@@ -608,6 +619,7 @@ def _generate_outputs(
     cache: AgentOutputCache,
     sample_result: SampleResult,
     fail_closed: bool,
+    claim_language: str | None = None,
 ) -> list[AgentOutput]:
     if topology == "single":
         specialties = ["general_diagnosis"]
@@ -627,7 +639,11 @@ def _generate_outputs(
     outputs: list[AgentOutput] = []
     for specialty in specialties:
         input_hash = cache.compute_hash(
-            sample_result.experiment, question, evidence_ids, specialty
+            sample_result.experiment,
+            question,
+            evidence_ids,
+            specialty,
+            claim_language=claim_language,
         )
         cached = cache.get(input_hash)
         if cached is not None:
@@ -639,7 +655,9 @@ def _generate_outputs(
             if specialty == "general_diagnosis"
             else SpecialistAgent(specialty, llm, fail_closed=fail_closed)
         )
-        output = agent.generate(question, evidence, "", options)
+        output = agent.generate(
+            question, evidence, "", options, claim_language=claim_language
+        )
         cache.set(input_hash, output)
         for key, value in output.provider_usage.items():
             if isinstance(value, int) and not isinstance(value, bool) and key != "prompt_cache_hit_rate":

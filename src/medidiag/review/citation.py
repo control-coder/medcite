@@ -25,6 +25,10 @@ class JudgeInferenceError(RuntimeError):
     """Raised when formal judge inference fails."""
 
 
+class JudgeInputLanguageError(RuntimeError):
+    """固定语言 NLI judge 收到不兼容的输入语言时抛出。"""
+
+
 @dataclass
 class CitationResult:
     """Auditable verdict for one claim-citation pair (or an uncited claim)."""
@@ -47,6 +51,8 @@ class CitationResult:
 
 
 NLI_MAX_LENGTH = 512
+# 汉字命中表示输入包含中文；在英文 NLI judge 下这会造成中英混用 pair。
+_HAN_CHARACTER_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 # 固定 NLI judge 必须暴露的三分类语义。只接受可识别为这三类的标签集，
 # 拒绝 transformers 在 config 缺少显式标签时使用的 LABEL_0/1/2 默认值。
@@ -121,12 +127,16 @@ class CitationVerifier:
         method: str = "nli",
         device: str = "auto",
         batch_size: int = 32,
+        input_language: str = "en",
     ) -> None:
         if method not in {"nli", "rule_fallback"}:
             raise ValueError("method must be 'nli' or 'rule_fallback'")
+        if input_language != "en":
+            raise ValueError("input_language 目前只支持 'en'")
         self.model_name = model_name
         self.model_revision = model_revision
         self.method = method
+        self.input_language = input_language
         self.requested_device = device
         self.actual_device = resolve_torch_device(device)
         self.batch_size = max(1, int(batch_size))
@@ -168,6 +178,31 @@ class CitationVerifier:
         config = getattr(getattr(loaded, "model", None), "config", None)
         return getattr(config, "id2label", None)
 
+    def _validate_nli_input_language(
+        self,
+        claim_text: str,
+        evidence_text: str,
+        claim_id: str,
+        evidence_chunk_id: str,
+    ) -> None:
+        """在执行 NLI 前拒绝与固定英文 judge 不兼容的文本 pair。"""
+        fields_with_han = [
+            field_name
+            for field_name, value in (
+                ("claim_text", claim_text),
+                ("evidence_text", evidence_text),
+            )
+            if _HAN_CHARACTER_PATTERN.search(value)
+        ]
+        if fields_with_han:
+            raise JudgeInputLanguageError(
+                "NLI_JUDGE_LANGUAGE_MISMATCH: "
+                f"judge_input_language={self.input_language}; "
+                f"fields_with_han={','.join(fields_with_han)}; "
+                f"claim_id={claim_id}; evidence_chunk_id={evidence_chunk_id}. "
+                "英文 NLI judge 不接受包含中文或中英混用的 claim/evidence pair"
+            )
+
     def verify(
         self,
         claim_text: str,
@@ -176,6 +211,9 @@ class CitationVerifier:
         claim_id: str = "",
     ) -> CitationResult:
         if self.method == "nli":
+            self._validate_nli_input_language(
+                claim_text, evidence_text, claim_id, evidence_chunk_id
+            )
             self.initialize()
             return self._verify_nli(claim_id, claim_text, evidence_text, evidence_chunk_id)
         return self._verify_rule(claim_id, claim_text, evidence_text, evidence_chunk_id)
@@ -234,6 +272,9 @@ class CitationVerifier:
                     continue
 
                 if self.method == "nli":
+                    self._validate_nli_input_language(
+                        text, evidence_text, claim_id, chunk_id
+                    )
                     marker = (claim_id, text, chunk_id, evidence_text)
                     ordered.append(marker)
                     pending_meta.append((claim_id, text, chunk_id))

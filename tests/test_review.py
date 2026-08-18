@@ -18,6 +18,7 @@ from medidiag.review.citation import (
     CitationVerifier,
     JudgeInferenceError,
     JudgeInitializationError,
+    JudgeInputLanguageError,
 )
 from medidiag.review.logic import ClinicalLogicReviewer
 
@@ -453,3 +454,46 @@ def test_nli_verify_batch_uses_one_batched_call_and_preserves_order() -> None:
     inputs, kwargs = fake.calls[0]
     assert len(inputs) == 2
     assert kwargs == {"truncation": True, "max_length": 512, "batch_size": 8}
+
+
+def test_nli_rejects_chinese_or_mixed_claim_before_model_loading() -> None:
+    """英文 NLI judge 不得静默接收中文或中英混用的 claim。"""
+    verifier = CitationVerifier(
+        model_name="test-judge",
+        model_revision="immutable-revision",
+        method="nli",
+        device="cpu",
+    )
+
+    with pytest.raises(JudgeInputLanguageError, match="NLI_JUDGE_LANGUAGE_MISMATCH") as excinfo:
+        verifier.verify(
+            "中文 claim with English abbreviation",
+            "English evidence supports the conclusion.",
+            evidence_chunk_id="e1",
+            claim_id="c-1",
+        )
+
+    assert "fields_with_han=claim_text" in str(excinfo.value)
+    assert verifier._nli_pipeline is None
+
+
+def test_nli_batch_rejects_chinese_evidence_but_keeps_missing_citation_path() -> None:
+    """只有实际 NLI pair 受语言门禁约束；缺失引用仍按既有规则返回。"""
+    verifier = CitationVerifier(
+        model_name="test-judge",
+        model_revision="immutable-revision",
+        method="nli",
+        device="cpu",
+    )
+
+    missing_only = verifier.verify_batch(
+        [{"claim_id": "c-missing", "text": "English claim", "citation_chunk_ids": []}],
+        [],
+    )
+    assert missing_only[0].verdict == CitationVerdict.UNSUPPORTED
+
+    with pytest.raises(JudgeInputLanguageError, match="fields_with_han=evidence_text"):
+        verifier.verify_batch(
+            [{"claim_id": "c-1", "text": "English claim", "citation_chunk_ids": ["e1"]}],
+            [{"chunk_id": "e1", "text": "中文证据"}],
+        )

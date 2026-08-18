@@ -138,6 +138,23 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
     assert "formal mode requires configured dataset.annotation.citation_sample_path" in annotation_issues
 
 
+def test_config_rejects_missing_or_non_english_nli_input_language(config: dict) -> None:
+    """固定英文 NLI judge 不允许用缺失或 any 绕过语言契约。"""
+    missing = deepcopy(config)
+    missing["judge"].pop("input_language")
+    assert (
+        "judge.input_language must be 'en' for the fixed English NLI judge"
+        in validate_config(missing, Path.cwd())
+    )
+
+    invalid = deepcopy(config)
+    invalid["judge"]["input_language"] = "any"
+    assert (
+        "judge.input_language must be 'en' for the fixed English NLI judge"
+        in validate_config(invalid, Path.cwd())
+    )
+
+
 def test_formal_mode_accepts_full_hf_commits_and_provider_snapshot(config: dict) -> None:
     assert validate_config(_valid_formal_config(config), Path.cwd()) == []
 

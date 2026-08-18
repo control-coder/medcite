@@ -157,6 +157,9 @@ def validate_config(
         issues.append("judge.method must be 'nli' or 'rule_fallback'")
     if mode == "formal" and judge_method != "nli":
         issues.append("formal evaluation requires judge.method=nli")
+    # 当前固定 judge 仅有经过验证的英文输入契约，禁止用 any 静默绕过。
+    if config["judge"].get("input_language") != "en":
+        issues.append("judge.input_language must be 'en' for the fixed English NLI judge")
 
     retrieval = config["retrieval"]
     if not isinstance(retrieval.get("top_k"), int) or retrieval["top_k"] <= 0:

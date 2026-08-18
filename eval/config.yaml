@@ -42,6 +42,8 @@ judge:
   model: "cross-encoder/nli-MiniLM2-L6-H768"
   revision: "b95119ce93d3e065de6214e38cd4a97b0f2f2c6d"
   method: "rule_fallback"
+  # 当前固定 NLI judge 只接受英文 claim 与英文 evidence；formal run 会强制 claims[].text 为英文。
+  input_language: "en"
   timeout_seconds: 60
   verdict_labels: ["SUPPORTED", "PARTIAL", "UNSUPPORTED"]
 

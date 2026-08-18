@@ -61,12 +61,14 @@ class _FakeLLM:
     def __init__(self, error: Exception | None = None) -> None:
         self.error = error
         self.calls = 0
+        self.prompts: list[str] = []
 
     @property
     def is_configured(self) -> bool:
         return True
 
     def complete(self, prompt: str, *, system_prompt: str | None = None) -> LLMCompletion:
+        self.prompts.append(prompt)
         self.calls += 1
         if self.error is not None:
             raise self.error
@@ -183,6 +185,44 @@ def test_cache_hash_distinguishes_experiments() -> None:
     first = cache.compute_hash("agent_single", "q", ["e1"], "cardiology")
     second = cache.compute_hash("agent_fixed_pair", "q", ["e1"], "cardiology")
     assert first != second
+
+
+def test_cache_hash_distinguishes_claim_language() -> None:
+    """语言策略会改变 formal prompt，缓存键必须隔离。"""
+    cache = AgentOutputCache()
+    default_hash = cache.compute_hash("agent_single", "q", ["e1"], "cardiology")
+    english_hash = cache.compute_hash(
+        "agent_single", "q", ["e1"], "cardiology", claim_language="en"
+    )
+    assert default_hash != english_hash
+
+
+def test_generate_outputs_adds_english_claim_contract_to_formal_prompt() -> None:
+    """formal NLI 路径必须把英文 claim 契约传入 Agent prompt。"""
+    cache = AgentOutputCache()
+    llm = _FakeLLM()
+    sample_result = SampleResult(
+        sample_id="s1", experiment="agent_single", family="agent", evidence_eligible=True
+    )
+
+    _generate_outputs(
+        "single",
+        {},
+        "same question",
+        _chunks(),
+        ["kb_test_00001", "kb_test_00002"],
+        None,
+        TerminologyNormalizer(),
+        {},
+        llm,
+        cache,
+        sample_result,
+        True,
+        claim_language="en",
+    )
+
+    assert len(llm.prompts) == 1
+    assert "claims[].text 必须使用英文完整陈述" in llm.prompts[0]
 
 
 def test_generate_outputs_does_not_reuse_another_experiment_cache_entry() -> None:

@@ -229,6 +229,7 @@ class BaseAgent:
         evidence: list[KnowledgeChunk] | list[dict[str, Any]],
         routing_note: str = "",
         case_options: dict[str, str] | None = None,
+        claim_language: str | None = None,
     ) -> AgentOutput:
         """生成诊断输出。
 
@@ -237,12 +238,13 @@ class BaseAgent:
             evidence: 检索证据 chunks。
             routing_note: 路由说明（专科选择理由）。
             case_options: 病例选项（MedQA 的 A/B/C/D）。
+            claim_language: ``claims[].text`` 的强制语言；formal NLI 评测传入 ``en``。
 
         Returns:
             AgentOutput 统一输出。
         """
         prompt = self.build_prompt(
-            case_question, evidence, routing_note, case_options
+            case_question, evidence, routing_note, case_options, claim_language
         )
 
         if self.llm and self.llm.is_configured:
@@ -297,11 +299,25 @@ class BaseAgent:
         evidence: list[Any],
         routing_note: str,
         case_options: dict[str, str] | None = None,
+        claim_language: str | None = None,
     ) -> str:
         """构建 LLM prompt。
 
         包含输出约束: 强制绑定引用、标注不确定性、禁用绝对诊断、强制免责。
         """
+        if claim_language not in {None, "en"}:
+            raise ValueError("claim_language 目前只支持 None 或 'en'")
+        # formal NLI 使用英语 judge；只约束用于判定的 claim，其他展示字段仍可为中文。
+        claim_example = (
+            "English evidence-backed claim" if claim_language == "en" else "claim 文本"
+        )
+        claim_language_constraint = (
+            "\n6. claims[].text 必须使用英文完整陈述，且不得包含中文汉字；"
+            "该字段将直接作为英文 NLI judge 的输入。"
+            if claim_language == "en"
+            else ""
+        )
+
         # 证据文本
         evidence_text = ""
         for i, chunk in enumerate(evidence[:10]):  # Top10 证据
@@ -336,7 +352,7 @@ class BaseAgent:
     {{"diagnosis": "诊断名", "probability": 0.0, "supporting_claim_indices": [0]}}
   ],
   "claims": [
-    {{"text": "claim 文本", "citation_chunk_ids": ["chunk_id"], "confidence": 0.8}}
+    {{"text": "{claim_example}", "citation_chunk_ids": ["chunk_id"], "confidence": 0.8}}
   ],
   "risk_flags": ["风险标记1"],
   "missing_info": ["缺失信息1"],
@@ -351,7 +367,7 @@ class BaseAgent:
 2. 标注不确定性
 3. 禁用绝对诊断措辞（如"确诊""保证治愈"）
 4. 如证据不足可弃权（abstain=true）
-5. {MANDATORY_DISCLAIMER}
+5. {MANDATORY_DISCLAIMER}{claim_language_constraint}
 
 只输出 JSON，不要其他文字。"""
         return prompt
