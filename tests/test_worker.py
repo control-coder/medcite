@@ -486,8 +486,10 @@ def test_compliance_block_escalation_records_its_own_error_code(runtime) -> None
     case_id, _ = _create_task(factory, "compliance-block")
 
     class BlockingReviewProvider(DeterministicWorkflowProvider):
-        def review(self, generation: dict, arbitration: dict) -> dict:
-            payload = super().review(generation, arbitration)
+        def review(
+            self, generation: dict, arbitration: dict, retrieval: dict
+        ) -> dict:
+            payload = super().review(generation, arbitration, retrieval)
             payload["verdict"] = "ESCALATED"
             payload["compliance_status"] = ComplianceStatus.BLOCKED.value
             payload["issues"] = ["absolute_term_blocked"]

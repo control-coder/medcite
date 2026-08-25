@@ -92,7 +92,7 @@ def test_active_polling_stops_and_final_report_is_rendered(demo_runtime) -> None
     assert 'hx-trigger="every 2s"' not in final.text
     assert "SUPPORTED" in final.text
     assert "deterministic_fixture" in final.text
-    assert "No definitive diagnosis was generated." in final.text
+    assert "确定性 fixture 未生成明确诊断，仅用于工作流测试。" in final.text
     assert "不构成医疗建议" in final.text
 
 

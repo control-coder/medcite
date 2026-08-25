@@ -16,6 +16,7 @@ from medidiag.errors import MediDiagError
 from medidiag.llm import LLMRequest, ProviderCapabilities, ProviderResult
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
+from medidiag.workflow.provider import DeterministicWorkflowProvider
 from medidiag.workflow.worker import SingleMachineWorker
 
 
@@ -258,6 +259,29 @@ def test_topology_change_keeps_same_evidence_bundle_hash() -> None:
     assert len(pair["agents"]) == 2
 
 
+class _FixtureReview:
+    """P4 集成测试只验证 Agent 持久化，审核阶段使用确定性测试替身。"""
+
+    def __init__(self) -> None:
+        self.provider = DeterministicWorkflowProvider()
+
+    def review(
+        self,
+        generation: dict[str, Any],
+        arbitration: dict[str, Any],
+        retrieval: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.provider.review(generation, arbitration, retrieval)
+
+    def report(
+        self,
+        case_id: str,
+        generation: dict[str, Any],
+        review: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.provider.report(case_id, generation, review)
+
+
 class _StaticRAG:
     corpus_version = "test-public-v1"
 
@@ -292,7 +316,12 @@ def test_worker_persists_two_agent_runs_and_arbitration_artifact(worker_runtime)
         case_id = case.case_id
     llm = RecordingProvider()
     agents = RuntimeMedicalAgents(llm, config=AgentTopologyConfig(topology="fixed_pair"))
-    workflow = OpenAICompatibleWorkflowProvider(llm, rag_stage=_StaticRAG(), agent_stage=agents)  # type: ignore[arg-type]
+    workflow = OpenAICompatibleWorkflowProvider(
+        llm,
+        rag_stage=_StaticRAG(),
+        agent_stage=agents,
+        review_stage=_FixtureReview(),  # type: ignore[arg-type]
+    )
     result = SingleMachineWorker(factory, workflow, worker_id="p4-worker").run_once()
     assert result.final_state == "CLOSED_SUCCESS"
 

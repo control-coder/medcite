@@ -21,7 +21,10 @@ class ComplianceStatus(str, Enum):
     """确定性 fixture provider：非诊断性固定产物，未触发管控。"""
 
     PASS_WITH_DEMO_LIMITATION = "PASS_WITH_DEMO_LIMITATION"
-    """live provider：未触发管控，但仅为受限演示复核，不是正式合规结论。"""
+    """历史 live demo：未触发管控，但 citation 仅为结构绑定。"""
+
+    PASSED_FIXED_NLI = "PASSED_FIXED_NLI"
+    """医疗助手 runtime：合规未命中，且 citation 已执行固定 NLI judge。"""
 
     BLOCKED = "BLOCKED"
     """`ComplianceGuard` 命中绝对化措辞或超范围问题，输出被拦截。"""
@@ -37,6 +40,7 @@ COMPLIANCE_CLEAR_STATUSES: frozenset[str] = frozenset(
     {
         ComplianceStatus.PASSED_NON_DIAGNOSTIC_FIXTURE.value,
         ComplianceStatus.PASS_WITH_DEMO_LIMITATION.value,
+        ComplianceStatus.PASSED_FIXED_NLI.value,
     }
 )
 

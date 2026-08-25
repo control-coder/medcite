@@ -219,7 +219,9 @@ def test_live_provider_generates_schema_bound_draft_and_audits_request_id() -> N
     assert outcome.metadata["prompt_cache_hit_tokens"] == 0
     assert outcome.payload["agents"][0]["agent_name"] == "live_evidence_drafter"
     assert outcome.payload["claims"][0]["citation_chunk_ids"] == ["live_demo_evidence"]
-    review = provider.review(outcome.payload, provider.arbitrate(outcome.payload, retrieval))
+    review = provider.review(
+        outcome.payload, provider.arbitrate(outcome.payload, retrieval), retrieval
+    )
     assert review["verdict"] == "APPROVED"
     assert review["citation_verdicts"][0]["method"] == "demo_structure_binding_not_nli"
 

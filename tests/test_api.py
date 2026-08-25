@@ -128,7 +128,7 @@ def test_api_to_worker_to_report_end_to_end(api_runtime) -> None:
     report = client.get(f"/api/v1/cases/{case_id}/report")
     assert report.status_code == 200
     assert report.json()["structured_report"]["summary"] == (
-        "No definitive diagnosis was generated."
+        "确定性 fixture 未生成明确诊断，仅用于工作流测试。"
     )
     assert report.json()["risk_warnings"]
 

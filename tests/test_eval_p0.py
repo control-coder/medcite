@@ -113,6 +113,7 @@ def test_formal_mode_rejects_rule_fallback_and_unverifiable_model_locks(
 ) -> None:
     invalid = deepcopy(config)
     invalid["evaluation"]["mode"] = "formal"
+    invalid["judge"]["method"] = "rule_fallback"
     issues = validate_config(invalid, Path.cwd())
     assert "formal evaluation requires judge.method=nli" in issues
     assert (
@@ -387,6 +388,6 @@ def test_leakage_gate_missing_file_fails(tmp_path: Path) -> None:
 def test_development_dry_run_is_non_reportable(config: dict) -> None:
     reasons = _non_reportable_reasons(config, limit=5, dry_run=True)
     assert "evaluation_mode_is_development" in reasons
-    assert "judge_method_is_not_nli" in reasons
+    assert "judge_method_is_not_nli" not in reasons
     assert "sample_limit_used" in reasons
     assert "dry_run_has_no_generation_or_workflow_result" in reasons

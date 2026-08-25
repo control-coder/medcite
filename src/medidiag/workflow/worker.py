@@ -351,13 +351,14 @@ class SingleMachineWorker:
                 if state == CaseState.ARBITRATION_REVIEWING:
                     generation = artifacts["generation"].payload
                     arbitration = artifacts["arbitration"].payload
+                    retrieval = artifacts["retrieval"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
                         session,
                         case,
                         task,
                         "review",
-                        lambda: self.provider.review(generation, arbitration),
+                        lambda: self.provider.review(generation, arbitration, retrieval),
                     )
                     payload = outcome.payload
                     verdict = payload["verdict"]
@@ -388,13 +389,20 @@ class SingleMachineWorker:
                     ]
                     claim_map = {item["claim_id"]: item for item in generation.get("claims", [])}
                     for item in payload.get("citation_verdicts", []):
+                        model_name = str(item.get("model_name") or item["method"])
+                        model_revision = str(item.get("model_revision") or "")
+                        verifier_ref = (
+                            f"{model_name}@{model_revision}"
+                            if model_revision
+                            else model_name
+                        )
                         records.append(
                             Citation(
                                 case_id=case.case_id,
                                 claim_text=claim_map[item["claim_id"]]["text"],
                                 chunk_id=item["chunk_id"],
                                 verdict=item["verdict"],
-                                verifier_model=item["method"],
+                                verifier_model=verifier_ref,
                                 verifier_score=item.get("confidence"),
                             )
                         )
@@ -654,6 +662,7 @@ class SingleMachineWorker:
             return {
                 "generation": artifacts["generation"].payload,
                 "arbitration": artifacts["arbitration"].payload,
+                "retrieval": artifacts["retrieval"].payload,
             }
         if stage == "report":
             return {

@@ -86,8 +86,9 @@ class DemoWorkflowSupport:
         self,
         generation: dict[str, Any],
         arbitration: dict[str, Any],
+        retrieval: dict[str, Any],
     ) -> dict[str, Any]:
-        del arbitration
+        del arbitration, retrieval
         compliance = self._guard.check_output(generation)
         if compliance.blocked:
             return {

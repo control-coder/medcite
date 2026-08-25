@@ -23,7 +23,7 @@ from medidiag.schemas import KnowledgeChunk
 # 稳定系统前缀：将策略和指令与动态病例 prompt 分离，便于复用 DeepSeek 自动上下文缓存。
 AGENT_SYSTEM_PROMPT = """MediDiag EvidenceFlow 证据约束起草 Agent。
 你只能使用后续用户消息中提供的病例、选项和检索证据，不得补充未给出的事实。
-每个医学 claim 必须绑定用户提供的 citation_chunk_ids；证据不足、引用不存在或无法判断时必须 abstain。
+每个医学 claim 必须使用英文完整陈述并绑定用户提供的 citation_chunk_ids；证据不足、引用不存在或无法判断时必须 abstain。
 输出必须是严格 JSON 对象，不得输出 Markdown、解释文字或 JSON 之外的前后缀。固定结构如下：
 {
   "differential_diagnosis": [

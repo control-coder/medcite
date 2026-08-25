@@ -33,7 +33,12 @@ class WorkflowProvider(Protocol):
 
     def arbitrate(self, generation: dict[str, Any], retrieval: dict[str, Any]) -> StageResult: ...
 
-    def review(self, generation: dict[str, Any], arbitration: dict[str, Any]) -> StageResult: ...
+    def review(
+        self,
+        generation: dict[str, Any],
+        arbitration: dict[str, Any],
+        retrieval: dict[str, Any],
+    ) -> StageResult: ...
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> StageResult: ...
 
@@ -115,7 +120,13 @@ class DeterministicWorkflowProvider:
             "limitation": "Deterministic engineering fixture; no clinical conclusion.",
         }
 
-    def review(self, generation: dict[str, Any], arbitration: dict[str, Any]) -> dict[str, Any]:
+    def review(
+        self,
+        generation: dict[str, Any],
+        arbitration: dict[str, Any],
+        retrieval: dict[str, Any],
+    ) -> dict[str, Any]:
+        del arbitration, retrieval
         verdict = self.review_verdict.upper()
         if verdict not in {"APPROVED", "REVISION_REQUIRED", "ESCALATED"}:
             raise ValueError(f"unsupported deterministic review verdict: {verdict}")
@@ -137,13 +148,18 @@ class DeterministicWorkflowProvider:
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
         return {
+            "schema_version": "assistant-report-v1",
             "case_id": case_id,
-            "title": "Evidence Review Draft",
-            "summary": "No definitive diagnosis was generated.",
+            "title": "确定性证据审阅报告（测试 fixture）",
+            "summary": "确定性 fixture 未生成明确诊断，仅用于工作流测试。",
             "claims": generation["claims"],
+            "filtered_claim_count": 0,
+            "risk_warnings": ["该结果不能用于真实医疗决策。"],
             "limitations": [
                 "Deterministic local fixture; not clinical evidence synthesis.",
                 "Requires review by a qualified clinician.",
             ],
+            "next_steps": ["如有真实健康问题，请咨询具备资质的医疗专业人员。"],
             "disclaimer": "仅供学习和工程演示，不构成医疗建议。",
+            "provenance": {"fixture": True},
         }

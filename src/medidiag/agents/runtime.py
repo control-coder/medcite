@@ -212,6 +212,20 @@ class RuntimeMedicalAgents:
                     for flag in artifact["output"].get("risk_flags", [])
                 }
             ),
+            "missing_info": sorted(
+                {
+                    value
+                    for artifact in artifacts
+                    for value in artifact["output"].get("missing_info", [])
+                }
+            ),
+            "recommended_tests": sorted(
+                {
+                    value
+                    for artifact in artifacts
+                    for value in artifact["output"].get("recommended_tests", [])
+                }
+            ),
             "uncertainty": "；".join(
                 text
                 for artifact in artifacts
@@ -407,6 +421,7 @@ class RuntimeMedicalAgents:
                 question,
                 evidence,
                 routing_note=str(routing.get("reason", "")),
+                claim_language="en",
             )
         except Exception as exc:
             raise MediDiagError(

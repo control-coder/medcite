@@ -167,7 +167,7 @@ def _live_provider_review_status() -> str:
         "Deidentified demo input.", retrieval, provider.plan("q", retrieval)
     ).payload
     review = provider.review(
-        generation, provider.arbitrate(generation, retrieval)
+        generation, provider.arbitrate(generation, retrieval), retrieval
     )
     return review["compliance_status"]
 
@@ -187,6 +187,7 @@ def test_live_provider_normal_review_is_not_a_compliance_hit() -> None:
 def test_compliance_hit_covers_every_registered_status() -> None:
     assert is_compliance_hit(ComplianceStatus.BLOCKED.value) is True
     assert is_compliance_hit(ComplianceStatus.PASSED_NON_DIAGNOSTIC_FIXTURE.value) is False
+    assert is_compliance_hit(ComplianceStatus.PASSED_FIXED_NLI.value) is False
     assert is_compliance_hit(None) is False
     # 未登记的状态按命中处理：宁可进入人工视野，也不要被静默放行。
     assert is_compliance_hit("SOME_FUTURE_STATUS") is True

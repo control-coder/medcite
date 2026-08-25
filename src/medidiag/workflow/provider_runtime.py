@@ -49,9 +49,17 @@ class _ReviewPayload(_StagePayload):
 
 
 class _ReportPayload(_StagePayload):
+    schema_version: Literal["assistant-report-v1"]
     case_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
     summary: str = Field(min_length=1)
+    claims: list[dict[str, Any]]
+    filtered_claim_count: int = Field(ge=0)
+    risk_warnings: list[str] = Field(min_length=1)
+    limitations: list[str] = Field(min_length=1)
+    next_steps: list[str] = Field(min_length=1)
     disclaimer: str = Field(min_length=1)
+    provenance: dict[str, Any]
 
 
 _STAGE_SCHEMAS: dict[str, type[_StagePayload]] = {

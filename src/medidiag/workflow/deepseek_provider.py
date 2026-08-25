@@ -167,7 +167,13 @@ class DeepSeekWorkflowProvider:
             ),
         }
 
-    def review(self, generation: dict[str, Any], arbitration: dict[str, Any]) -> dict[str, Any]:
+    def review(
+        self,
+        generation: dict[str, Any],
+        arbitration: dict[str, Any],
+        retrieval: dict[str, Any],
+    ) -> dict[str, Any]:
+        del arbitration, retrieval
         compliance = self._guard.check_output(generation)
         if compliance.blocked:
             return {
@@ -199,16 +205,21 @@ class DeepSeekWorkflowProvider:
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
         return {
+            "schema_version": "assistant-report-v1",
             "case_id": case_id,
-            "title": "Live DeepSeek Evidence-Bound Draft",
+            "title": "历史 DeepSeek 演示草稿",
             "summary": " ".join(item["text"] for item in generation["claims"]),
             "claims": generation["claims"],
+            "filtered_claim_count": 0,
+            "risk_warnings": ["历史结构绑定演示不能用于真实医疗决策。"],
             "limitations": [
                 "Live model output is constrained to a local demo fixture, not a medical knowledge base.",
                 "Citation verdicts are structural-only in this demo and do not represent NLI validation.",
                 "Requires review by a qualified clinician.",
             ],
+            "next_steps": ["如有真实健康问题，请咨询具备资质的医疗专业人员。"],
             "disclaimer": MANDATORY_DISCLAIMER,
+            "provenance": {"legacy_structural_demo": True},
         }
 
     @staticmethod

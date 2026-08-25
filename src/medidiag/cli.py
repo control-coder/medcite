@@ -15,6 +15,7 @@ from medidiag.config import get_settings, load_eval_config
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.observability.logging import configure_logging
 from medidiag.rag.runtime import RuntimeMedicalRAG
+from medidiag.review.runtime import RuntimeMedicalReview
 from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
@@ -99,6 +100,7 @@ def _build_provider(
         normalizer=rag_stage.normalizer,
         evidence_level_scores=dict(config["retrieval"]["evidence_levels"]),
     )
+    provider.review_stage = RuntimeMedicalReview.from_config(config)
     return provider
 
 
@@ -271,7 +273,7 @@ def demo(
         runtime_detail = (
             f"生成阶段使用 {provider.version} 与 {agent_topology} topology；检索使用 corpus "
             f"{provider.rag_stage.corpus_version} 并保存 EvidenceBundle。"
-            "当前 citation 仍是结构绑定，不代表 NLI 支持或正式评测结论。"
+            "审核使用固定 revision 的英文 NLI judge；该判定不代表临床有效性或正式评测结论。"
         )
     app.state.demo_runtime = {
         "label": runtime_label,
