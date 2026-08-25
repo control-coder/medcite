@@ -55,7 +55,7 @@ profiles:
     api_style: chat_completions
     temperature: null
     top_p: null
-    max_tokens: 1200
+    max_tokens: 4096
     reasoning_mode: provider_default
     timeout_s: 60
     require_response_id: false

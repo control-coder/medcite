@@ -172,9 +172,16 @@ class RuntimeMedicalReview:
         if not generation.get("risk_flags"):
             issues.append("缺少风险提示")
 
+        agent_abstained = any(
+            bool((artifact.get("output") or {}).get("abstain"))
+            for artifact in generation.get("agents", [])
+        )
         if compliance.blocked:
             verdict = "ESCALATED"
             issues.extend(compliance.block_reasons)
+        elif agent_abstained:
+            verdict = "REVISION_REQUIRED"
+            issues.append("至少一个 Agent 因证据不足而弃权")
         elif not supported_ids:
             verdict = "REVISION_REQUIRED"
             issues.append("没有通过固定 NLI judge 的 SUPPORTED claim")
@@ -332,7 +339,7 @@ class RuntimeMedicalReview:
                 "CLAIM_LANGUAGE_INVALID",
                 detail=f"canonical claim schema/language 校验失败: {type(exc).__name__}",
             ) from exc
-        if not claims:
+        if not claims and not generation.get("all_agents_abstained"):
             raise MediDiagError("CITATION_REVIEW_INVALID", detail="仲裁后没有可审核 claim")
         if len({item.claim_id for item in claims}) != len(claims):
             raise MediDiagError("CITATION_REVIEW_INVALID", detail="仲裁后 claim_id 重复")

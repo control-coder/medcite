@@ -5,11 +5,23 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from importlib.resources import files
+from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 
 from medidiag.llm.contracts import ProviderCapabilities
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _load_project_env() -> None:
+    """加载项目根目录 ``.env``，但不覆盖进程已注入的环境变量。
+
+    Provider profile 只读取变量值，不把密钥写入 profile、日志或评测产物。
+    """
+    load_dotenv(dotenv_path=_PROJECT_ROOT / ".env", override=False)
 
 
 @dataclass(frozen=True)
@@ -39,6 +51,7 @@ class ProviderProfile:
 
 def load_provider_profiles() -> tuple[str, dict[str, ProviderProfile]]:
     """从包内 YAML 加载 profile，避免在业务代码中写死供应商参数。"""
+    _load_project_env()
     resource = files("medidiag.llm").joinpath("profiles.yaml")
     with resource.open("r", encoding="utf-8") as handle:
         raw = yaml.safe_load(handle)
@@ -54,12 +67,13 @@ def load_provider_profiles() -> tuple[str, dict[str, ProviderProfile]]:
         if not isinstance(capability_raw, dict):
             raise ValueError(f"profile {profile_id}.capabilities 必须是映射")
         capabilities = ProviderCapabilities(**capability_raw)
+        provider_id = str(value.get("provider_id", profile_id))
         profiles[str(profile_id)] = ProviderProfile(
             profile_id=str(profile_id),
             adapter=str(value["adapter"]),
-            provider_id=str(value.get("provider_id", profile_id)),
+            provider_id=provider_id,
             model=_resolve_env(str(value.get("model", ""))),
-            base_url=_optional_env(value.get("base_url")),
+            base_url=_normalize_base_url(provider_id, _optional_env(value.get("base_url"))),
             api_key_env=_optional_text(value.get("api_key_env")),
             api_style=str(value.get("api_style", "chat_completions")),
             timeout_s=float(value.get("timeout_s", 60)),
@@ -112,3 +126,17 @@ def _optional_float(value: Any) -> float | None:
 
 def _optional_int(value: Any) -> int | None:
     return None if value is None else int(value)
+
+
+def _normalize_base_url(provider_id: str, value: str | None) -> str | None:
+    """归一化已知 Provider 的 OpenAI 兼容 API 根路径。
+
+    MiMo 控制台常给出域名根地址，而 Chat Completions 端点位于 ``/v1``。
+    已显式配置路径时保持原值，避免破坏代理网关。
+    """
+    if value is None:
+        return None
+    normalized = value.rstrip("/")
+    if provider_id == "mimo" and normalized == "https://api.xiaomimimo.com":
+        return normalized + "/v1"
+    return normalized

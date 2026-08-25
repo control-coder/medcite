@@ -15,7 +15,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import click
 
@@ -27,20 +27,25 @@ from eval.configuration import (
     load_config,
     validate_config,
 )
-from eval.leakage_check import LEAKAGE_FLAG, run_leakage_check
+from eval.leakage_check import run_leakage_check
 from medidiag.acceleration import runtime_snapshot
 from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput
 from medidiag.agents.diagnosis import DiagnosisAgent
-from medidiag.agents.llm_client import SEED_SENT_TO_PROVIDER, LLMClient
+from medidiag.agents.llm_client import LLMClient
 from medidiag.agents.router import SpecialistRouter
+from medidiag.agents.runtime import AgentTopologyConfig, RuntimeMedicalAgents
 from medidiag.agents.specialist import SpecialistAgent
 from medidiag.compliance.guard import ComplianceGuard
+from medidiag.llm import LLMProvider
+from medidiag.llm.factory import build_llm_provider
+from medidiag.rag.leakage import LEAKAGE_FLAG
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import Retriever
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.review.citation import CitationVerifier
 from medidiag.review.logic import ClinicalLogicReviewer
+from medidiag.review.runtime import RuntimeMedicalReview
 from medidiag.schemas import KnowledgeChunk, read_jsonl
 from medidiag.workflow.assistant_pipeline import AssistantPipeline, StageContext
 
@@ -259,7 +264,7 @@ def run_evaluation(
     batch_size = int(runtime.get("batch_size", config["embedding"].get("batch_size", 32)))
 
     verifier: CitationVerifier | None = None
-    llm: LLMClient | None = None
+    llm: LLMClient | LLMProvider | None = None
     needs_generation = (not dry_run) and any(
         _experiment_requires_generation(config, name) for name in experiment_names
     )
@@ -274,19 +279,27 @@ def run_evaluation(
         )
         verifier.initialize()
         generation = config["generation"]
-        llm = LLMClient(
-            base_url=generation["base_url"],
-            model=generation["model"],
-            timeout=int(generation["timeout_seconds"]),
-            temperature=float(generation["temperature"]),
-            max_tokens=int(generation["max_tokens"]),
-            seed=int(generation["seed"]),
-            thinking=str(generation.get("thinking", "disabled")),
-            require_request_id=(
-                config["evaluation"]["mode"] == "formal"
-                and generation.get("provenance_mode") == "provider_response_id"
-            ),
-        )
+        if mode == "formal":
+            profile_id = str(
+                generation.get("profile")
+                or generation.get("provider_profile")
+                or generation.get("provider")
+            )
+            llm = build_llm_provider(profile_id, max_retries=2)
+        else:
+            # development runner 保留旧客户端，以维持离线 rule-fallback 测试；
+            # formal runner 强制走统一 Provider Layer 与 P4/P5 runtime。
+            temperature = generation.get("temperature")
+            llm = LLMClient(
+                base_url=generation["base_url"],
+                model=generation["model"],
+                timeout=int(generation["timeout_seconds"]),
+                temperature=0.0 if temperature is None else float(temperature),
+                max_tokens=int(generation["max_tokens"]),
+                seed=int(generation["seed"]),
+                thinking=str(generation.get("thinking", "disabled")),
+                require_request_id=False,
+            )
 
     run_id = _new_run_id(config)
     cache = AgentOutputCache()
@@ -351,6 +364,7 @@ def run_evaluation(
         dirty_diff_hash,
         llm=llm,
         retriever=retriever,
+        provider_usage=_aggregate_provider_usage(results),
     )
     (run_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -404,10 +418,10 @@ def _run_experiment(
     experiment: dict[str, Any],
     records: list[dict[str, Any]],
     config: dict[str, Any],
-    retriever: Retriever,
+    retriever: Any,
     normalizer: TerminologyNormalizer,
     verifier: CitationVerifier | None,
-    llm: LLMClient | None,
+    llm: LLMClient | LLMProvider | None,
     cache: AgentOutputCache,
     dry_run: bool,
     pipeline: AssistantPipeline | None = None,
@@ -415,7 +429,7 @@ def _run_experiment(
 ) -> ExperimentResult:
     result = ExperimentResult(experiment=name, family=family)
     local_before = (cache.hits, cache.misses)
-    provider_before = llm.usage_summary() if llm is not None else {}
+    provider_before = _legacy_usage_summary(llm)
     retrieval_before = retriever.cache_stats()
     rag_config = (
         experiment["config"]
@@ -445,7 +459,7 @@ def _run_experiment(
         )
     local_hits = cache.hits - local_before[0]
     local_misses = cache.misses - local_before[1]
-    provider_after = llm.usage_summary() if llm is not None else {}
+    provider_after = _legacy_usage_summary(llm)
     retrieval_after = retriever.cache_stats()
     result.cache_stats = {
         "local_agent_output": {
@@ -466,20 +480,67 @@ def _run_experiment(
     return result
 
 
+def _is_unified_provider(llm: object | None) -> bool:
+    """统一 Provider 暴露 generate/capabilities；旧评测客户端只暴露 complete。"""
+    return llm is not None and callable(getattr(llm, "generate", None)) and callable(
+        getattr(llm, "capabilities", None)
+    )
+
+
+def _legacy_usage_summary(llm: object | None) -> dict[str, int]:
+    summary = getattr(llm, "usage_summary", None)
+    return dict(summary()) if callable(summary) else {}
+
+
+def _merge_usage(target: dict[str, int], usage: dict[str, Any] | None) -> None:
+    for key, value in (usage or {}).items():
+        if isinstance(value, int):
+            target[key] = target.get(key, 0) + value
+
+
 def _assert_formal_response_id_provenance(
-    config: dict[str, Any], result: SampleResult
+    config: dict[str, Any],
+    result: SampleResult,
+    generation_payload: dict[str, Any] | None = None,
+    arbitration_payload: dict[str, Any] | None = None,
 ) -> None:
-    """校验 formal Agent 样本保存了真实 provider 响应 ID。"""
+    """校验 formal Agent 每一次真实生成调用都保存了 provider 响应 ID。"""
     generation = config["generation"]
-    if (
-        config["evaluation"]["mode"] == "formal"
-        and generation.get("provenance_mode", "provider_snapshot")
-        == "provider_response_id"
-        and not result.provider_request_ids
-    ):
+    if config["evaluation"]["mode"] != "formal" or generation.get(
+        "provenance_mode", "provider_snapshot"
+    ) != "provider_response_id":
+        return
+
+    if generation_payload is None:
+        if not result.provider_request_ids:
+            raise click.ClickException(
+                "FORMAL_GENERATION_RESPONSE_ID_MISSING: "
+                "provider_response_id mode requires response.id for every generated sample"
+            )
+        return
+
+    arbitration_payload = arbitration_payload or {}
+    missing_calls: list[str] = []
+    agents = generation_payload.get("agents", [])
+    for index, artifact in enumerate(agents, start=1):
+        provenance = artifact.get("provider_provenance") or {}
+        if not provenance.get("response_id"):
+            missing_calls.append(f"specialist_{index}")
+
+    topology = str(generation_payload.get("topology", "single"))
+    arbitration_method = str(arbitration_payload.get("arbitration_method", ""))
+    if topology != "single" and arbitration_method != "abstention_no_claims":
+        arbitration_provenance = arbitration_payload.get("provider_provenance") or {}
+        if not arbitration_provenance.get("response_id"):
+            missing_calls.append("arbitration")
+
+    if not agents:
+        missing_calls.append("specialist")
+    if missing_calls:
         raise click.ClickException(
             "FORMAL_GENERATION_RESPONSE_ID_MISSING: "
-            "provider_response_id mode requires response.id for every generated sample"
+            "provider_response_id mode requires response.id for every actual provider "
+            f"call; missing={','.join(missing_calls)}"
         )
 
 
@@ -491,10 +552,10 @@ def _run_sample(
     rag_config: dict[str, bool],
     sample: dict[str, Any],
     config: dict[str, Any],
-    retriever: Retriever,
+    retriever: Any,
     normalizer: TerminologyNormalizer,
     verifier: CitationVerifier | None,
-    llm: LLMClient | None,
+    llm: LLMClient | LLMProvider | None,
     cache: AgentOutputCache,
     dry_run: bool,
     pipeline: AssistantPipeline | None = None,
@@ -541,9 +602,30 @@ def _run_sample(
         result.stage_artifacts["normalize"] = normalize_execution.artifact.to_dict()
 
     search_results: list[Any] = []
+    retrieval_payload: dict[str, Any] = {}
 
     def retrieve_stage() -> dict[str, Any]:
-        nonlocal search_results
+        nonlocal search_results, retrieval_payload
+        if _is_unified_provider(llm):
+            runtime_rag = RuntimeMedicalRAG(
+                chunks=list(retriever.chunks),
+                corpus_version=str(config["dataset"]["version"]),
+                retrieval_config=dict(config["retrieval"]),
+                experiment_config=dict(rag_config),
+                normalizer=normalizer,
+                retriever=retriever,
+                corpus_path=str(_resolve(config["dataset"]["knowledge_base_path"])),
+                leakage_gate={
+                    "status": "passed",
+                    "rule_version": "eval-runner-leakage-v1",
+                },
+            )
+            rerank_started = time.perf_counter() if rag_config["use_rerank"] else None
+            retrieval_payload = runtime_rag.retrieve(retrieval_query)
+            if rerank_started is not None:
+                result.stage_latency_ms["rerank"] = _elapsed_ms(rerank_started)
+            return retrieval_payload
+
         search_results = retriever.search(
             retrieval_query,
             top_k=candidate_k if rag_config["use_rerank"] else top_k,
@@ -555,7 +637,7 @@ def _run_sample(
                 retrieval_query, search_results, top_k=top_k
             )
             result.stage_latency_ms["rerank"] = _elapsed_ms(rerank_started)
-        return {
+        retrieval_payload = {
             "query": retrieval_query,
             "chunks": [
                 {
@@ -566,6 +648,7 @@ def _run_sample(
                 for item in search_results
             ],
         }
+        return retrieval_payload
 
     retrieval_execution = active_pipeline.run_stage(
         stage="retrieval",
@@ -581,8 +664,22 @@ def _run_sample(
     result.stage_latency_ms["retrieval"] = retrieval_execution.elapsed_ms
     result.stage_artifacts["retrieval"] = retrieval_execution.artifact.to_dict()
 
-    evidence_ids = [item.chunk_id for item in search_results]
-    evidence = [item.chunk for item in search_results if item.chunk is not None]
+    if _is_unified_provider(llm):
+        evidence_ids = [str(item["chunk_id"]) for item in retrieval_payload["chunks"]]
+        evidence = [
+            KnowledgeChunk(
+                chunk_id=str(item["chunk_id"]),
+                source=str(item.get("source", "")),
+                source_id=str(item.get("source_id", "")),
+                text=str(item.get("text", "")),
+                evidence_level=str(item.get("evidence_level", "level_5_other")),
+                metadata=dict(item.get("metadata", {})),
+            )
+            for item in retrieval_payload["chunks"]
+        ]
+    else:
+        evidence_ids = [item.chunk_id for item in search_results]
+        evidence = [item.chunk for item in search_results if item.chunk is not None]
     result.recall_hit = bool(set(evidence_ids) & set(gold_ids)) if gold_ids else None
     if dry_run or (family == "rag" and not rag_config["use_citation_review"]):
         result.latency_ms = _elapsed_ms(started)
@@ -598,6 +695,23 @@ def _run_sample(
         if fail_closed and config["judge"]["method"] == "nli"
         else None
     )
+    if _is_unified_provider(llm):
+        return _run_unified_runtime_sample(
+            result=result,
+            started=started,
+            question=question,
+            sample=sample,
+            topology=topology,
+            experiment=experiment,
+            config=config,
+            retrieval_payload=retrieval_payload,
+            verifier=verifier,
+            provider=cast(LLMProvider, llm),
+            active_pipeline=active_pipeline,
+            stage_context=stage_context,
+            generation_input_hash=retrieval_execution.artifact.output_hash,
+        )
+
     outputs: list[AgentOutput] = []
 
     def generation_stage() -> dict[str, Any]:
@@ -644,7 +758,6 @@ def _run_sample(
             if output.provider_request_id
         }
     )
-    _assert_formal_response_id_provenance(config, result)
 
     citation_results: list[Any] = []
     review_approved = False
@@ -712,6 +825,162 @@ def _run_sample(
     return result
 
 
+def _run_unified_runtime_sample(
+    *,
+    result: SampleResult,
+    started: float,
+    question: str,
+    sample: dict[str, Any],
+    topology: str,
+    experiment: dict[str, Any],
+    config: dict[str, Any],
+    retrieval_payload: dict[str, Any],
+    verifier: CitationVerifier | None,
+    provider: LLMProvider,
+    active_pipeline: AssistantPipeline,
+    stage_context: StageContext,
+    generation_input_hash: str,
+) -> SampleResult:
+    """使用 P4/P5 统一 runtime 完成 formal generation、仲裁与固定 NLI 审核。"""
+    if verifier is None:
+        raise click.ClickException("FORMAL_JUDGE_MISSING: 统一 runtime 缺少固定 NLI judge")
+    fixed_pair = tuple(experiment.get("specialist_pair", ("cardiology", "respiratory")))
+    if len(fixed_pair) != 2:
+        fixed_pair = ("cardiology", "respiratory")
+    runtime_agents = RuntimeMedicalAgents(
+        provider,
+        config=AgentTopologyConfig(
+            topology=cast(Any, topology),
+            fixed_pair=(str(fixed_pair[0]), str(fixed_pair[1])),
+            specialist_prompt_version=str(config["generation"].get("prompt_version", "")),
+            arbitration_prompt_version=str(
+                config["generation"].get("arbitration_prompt_version", "arbitrator-agent-v1")
+            ),
+            timeout_s=float(config["generation"].get("timeout_seconds", 60)),
+            max_tokens=int(config["generation"].get("max_tokens", 4096)),
+            reasoning_mode=cast(Any, config["generation"].get("thinking", "provider_default")),
+        ),
+        normalizer=None,
+        evidence_level_scores=config["retrieval"]["evidence_levels"],
+    )
+    generation: dict[str, Any] = {}
+    arbitration: dict[str, Any] = {}
+
+    def generation_stage() -> dict[str, Any]:
+        nonlocal generation
+        generation = runtime_agents.generate(
+            question,
+            retrieval_payload,
+            {
+                "question": question,
+                "options": sample.get("options"),
+                "evaluation_experiment": result.experiment,
+            },
+        )
+        return generation
+
+    generation_execution = active_pipeline.run_stage(
+        stage="generation",
+        input_payload={
+            "retrieval_output_hash": generation_input_hash,
+            "topology": topology,
+            "experiment": result.experiment,
+        },
+        operation=generation_stage,
+        context=stage_context,
+    )
+    result.stage_latency_ms["generation"] = generation_execution.elapsed_ms
+    result.stage_artifacts["generation"] = generation_execution.artifact.to_dict()
+
+    def arbitration_stage() -> dict[str, Any]:
+        nonlocal arbitration
+        arbitration = runtime_agents.arbitrate(generation, retrieval_payload)
+        if (
+            config["evaluation"]["mode"] == "formal"
+            and topology != "single"
+            and arbitration.get("fallback_used")
+        ):
+            raise click.ClickException(
+                "FORMAL_ARBITRATION_FALLBACK: 正式评测禁止把仲裁 Provider 故障折算为规则回退"
+            )
+        return arbitration
+
+    arbitration_execution = active_pipeline.run_stage(
+        stage="arbitration",
+        input_payload={
+            "generation_output_hash": generation_execution.artifact.output_hash,
+            "evidence_bundle_id": retrieval_payload.get("evidence_bundle_id"),
+            "topology": topology,
+        },
+        operation=arbitration_stage,
+        context=stage_context,
+    )
+    result.stage_latency_ms["arbitration"] = arbitration_execution.elapsed_ms
+    result.stage_artifacts["arbitration"] = arbitration_execution.artifact.to_dict()
+    routing = generation.get("routing", {})
+    result.specialty_pair = [str(value) for value in routing.get("specialty_pair", [])]
+    result.routing_confidence = float(routing.get("confidence", 0.0) or 0.0)
+    result.routing_fallback = bool(routing.get("is_fallback", False))
+    result.arbitration_verdict = str(arbitration.get("verdict", ""))
+
+    provider_ids: set[str] = set()
+    usage: dict[str, int] = {}
+    for artifact in generation.get("agents", []):
+        provenance = artifact.get("provider_provenance", {})
+        response_id = provenance.get("response_id")
+        if response_id:
+            provider_ids.add(str(response_id))
+        _merge_usage(usage, provenance.get("usage"))
+    arbitration_provenance = arbitration.get("provider_provenance") or {}
+    arbitration_response_id = arbitration_provenance.get("response_id")
+    if arbitration_response_id:
+        provider_ids.add(str(arbitration_response_id))
+    _merge_usage(usage, arbitration_provenance.get("usage"))
+    result.provider_request_ids = sorted(provider_ids)
+    result.provider_usage = usage
+    _assert_formal_response_id_provenance(config, result, generation, arbitration)
+
+    review_payload: dict[str, Any] = {}
+
+    def review_stage() -> dict[str, Any]:
+        nonlocal review_payload
+        review_started = time.perf_counter()
+        review_payload = RuntimeMedicalReview(verifier).review(
+            generation, arbitration, retrieval_payload
+        )
+        result.stage_latency_ms["judge"] = _elapsed_ms(review_started)
+        return review_payload
+
+    review_execution = active_pipeline.run_stage(
+        stage="review",
+        input_payload={
+            "generation_output_hash": generation_execution.artifact.output_hash,
+            "arbitration_output_hash": arbitration_execution.artifact.output_hash,
+            "evidence_bundle_id": retrieval_payload.get("evidence_bundle_id"),
+        },
+        operation=review_stage,
+        context=stage_context,
+    )
+    result.stage_latency_ms["review"] = review_execution.elapsed_ms
+    result.stage_artifacts["review"] = review_execution.artifact.to_dict()
+    result.citation_results = []
+    for item in review_payload.get("citation_verdicts", []):
+        value = dict(item)
+        value.setdefault("evidence_chunk_id", value.get("chunk_id", ""))
+        result.citation_results.append(value)
+    result.total_claims = len(review_payload.get("canonical_claims", []))
+    result.compliance_blocked = review_payload.get("compliance_status") == "BLOCKED"
+    result.agent_abstained = any(
+        bool((artifact.get("output") or {}).get("abstain"))
+        for artifact in generation.get("agents", [])
+    )
+    result.pipeline_approved = (
+        review_payload.get("verdict") == "APPROVED" and not result.agent_abstained
+    )
+    result.latency_ms = _elapsed_ms(started)
+    return result
+
+
 def _generate_outputs(
     topology: str,
     experiment: dict[str, Any],
@@ -721,7 +990,7 @@ def _generate_outputs(
     options: dict[str, str] | None,
     normalizer: TerminologyNormalizer,
     evidence_level_scores: dict[str, float],
-    llm: LLMClient | None,
+    llm: LLMClient | LLMProvider | None,
     cache: AgentOutputCache,
     sample_result: SampleResult,
     fail_closed: bool,
@@ -757,9 +1026,9 @@ def _generate_outputs(
             sample_result.cache_hit = True
             continue
         agent = (
-            DiagnosisAgent(llm, fail_closed=fail_closed)
+            DiagnosisAgent(cast(Any, llm), fail_closed=fail_closed)
             if specialty == "general_diagnosis"
-            else SpecialistAgent(specialty, llm, fail_closed=fail_closed)
+            else SpecialistAgent(specialty, cast(Any, llm), fail_closed=fail_closed)
         )
         output = agent.generate(
             question, evidence, "", options, claim_language=claim_language
@@ -799,6 +1068,16 @@ def _counter_delta(before: dict[str, int], after: dict[str, int]) -> dict[str, i
     return result
 
 
+def _aggregate_provider_usage(
+    results: dict[str, ExperimentResult],
+) -> dict[str, int]:
+    total: dict[str, int] = {}
+    for experiment in results.values():
+        for sample in experiment.sample_results:
+            _merge_usage(total, sample.provider_usage)
+    return total
+
+
 def _build_manifest(
     run_id: str,
     config: dict[str, Any],
@@ -810,8 +1089,9 @@ def _build_manifest(
     cache: AgentOutputCache,
     git_commit: str,
     dirty_diff_hash: str,
-    llm: LLMClient | None = None,
-    retriever: Retriever | None = None,
+    llm: LLMClient | LLMProvider | None = None,
+    retriever: Any | None = None,
+    provider_usage: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     dataset = config["dataset"]
     formal_candidate = (
@@ -886,18 +1166,13 @@ def _build_manifest(
         "generation": {
             "temperature": config["generation"]["temperature"],
             "seed": config["generation"]["seed"],
-            # 配置中的 seed 通过校验并被记录，但客户端不把它发给 DeepSeek。
-            # 不加标注的话，manifest 会读起来像一个已生效的可复现性参数。
-            "seed_applied": SEED_SENT_TO_PROVIDER,
-            "seed_not_applied_reason": (
-                None
-                if SEED_SENT_TO_PROVIDER
-                else "provider_seed_compatibility_unconfirmed_not_sent"
-            ),
+            # 统一 Provider 契约当前不发送 seed；配置 seed 只用于数据抽样与本地确定性步骤。
+            "seed_applied": False,
+            "seed_not_applied_reason": "provider_profile_does_not_send_seed",
             "thinking": config["generation"].get("thinking", "disabled"),
             "timeout_seconds": config["generation"]["timeout_seconds"],
             "cache_strategy": config["generation"].get("cache_strategy"),
-            "provider_usage": llm.usage_summary() if llm is not None else {},
+            "provider_usage": provider_usage or _legacy_usage_summary(llm),
         },
         "retrieval": {
             **config["retrieval"],
@@ -913,7 +1188,7 @@ def _build_manifest(
         "dry_run": dry_run,
         "cache": {
             "local_agent_output": {"hits": cache.hits, "misses": cache.misses},
-            "provider_kv": llm.usage_summary() if llm is not None else {},
+            "provider_kv": _legacy_usage_summary(llm),
         },
     }
 

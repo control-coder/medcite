@@ -41,6 +41,8 @@ class AgentTopologyConfig:
     specialist_prompt_version: str = "specialist-agent-v1"
     arbitration_prompt_version: str = "arbitrator-agent-v1"
     timeout_s: float = 60.0
+    max_tokens: int = 4096
+    reasoning_mode: Literal["disabled", "enabled", "provider_default"] = "provider_default"
 
     def __post_init__(self) -> None:
         if self.topology not in {"single", "fixed_pair", "dynamic_pair"}:
@@ -49,6 +51,10 @@ class AgentTopologyConfig:
             raise ValueError("fixed_pair 必须包含两个不同专科")
         if self.timeout_s <= 0:
             raise ValueError("Agent timeout_s 必须大于 0")
+        if self.max_tokens <= 0:
+            raise ValueError("Agent max_tokens 必须大于 0")
+        if self.reasoning_mode not in {"disabled", "enabled", "provider_default"}:
+            raise ValueError("Agent reasoning_mode 取值非法")
 
 
 class ProviderAgentClient:
@@ -61,11 +67,15 @@ class ProviderAgentClient:
         prompt_version: str,
         timeout_s: float,
         idempotency_key: str,
+        default_max_tokens: int = 4096,
+        reasoning_mode: Literal["disabled", "enabled", "provider_default"] = "provider_default",
     ) -> None:
         self.provider = provider
         self.prompt_version = prompt_version
         self.timeout_s = timeout_s
         self.idempotency_key = idempotency_key
+        self.default_max_tokens = default_max_tokens
+        self.reasoning_mode = reasoning_mode
         self.last_result: ProviderResult | None = None
 
     @property
@@ -89,7 +99,8 @@ class ProviderAgentClient:
                 messages=messages,
                 response_format={"type": "json_object"},
                 temperature=0.0 if temperature is None else temperature,
-                max_tokens=max_tokens or 1200,
+                max_tokens=max_tokens or self.default_max_tokens,
+                reasoning_mode=self.reasoning_mode,
                 prompt_version=self.prompt_version,
             ),
             timeout_s=self.timeout_s,
@@ -194,7 +205,10 @@ class RuntimeMedicalAgents:
                 value["agent_run_id"] = artifact["agent_run_id"]
                 value["specialty"] = artifact["specialty"]
                 claims.append(value)
-        if not claims:
+        all_agents_abstained = bool(artifacts) and all(
+            bool(artifact["output"].get("abstain")) for artifact in artifacts
+        )
+        if not claims and not all_agents_abstained:
             raise MediDiagError("AGENT_RUNTIME_INVALID", detail="Agent 未生成可仲裁 claim")
 
         payload: dict[str, Any] = {
@@ -205,6 +219,7 @@ class RuntimeMedicalAgents:
             "agents": artifacts,
             "claims": claims,
             "claims_before_arbitration": claims,
+            "all_agents_abstained": all_agents_abstained,
             "risk_flags": sorted(
                 {
                     flag
@@ -250,9 +265,27 @@ class RuntimeMedicalAgents:
     ) -> dict[str, Any]:
         before = list(generation.get("claims_before_arbitration") or generation.get("claims") or [])
         before_ids = [str(item.get("claim_id")) for item in before if item.get("claim_id")]
-        if not before_ids:
-            raise MediDiagError("AGENT_RUNTIME_INVALID", detail="仲裁前 claim 集合为空")
         topology = str(generation.get("topology", self.config.topology))
+        if not before_ids:
+            if generation.get("all_agents_abstained"):
+                return {
+                    "verdict": "REVISION_REQUIRED",
+                    "arbitration_method": "abstention_no_claims",
+                    "before_claim_ids": [],
+                    "selected_claim_ids": [],
+                    "excluded_claim_ids": [],
+                    "conflicts": [],
+                    "routing": generation.get("routing", {}),
+                    "fallback_used": False,
+                    "fallback_reason": None,
+                    "rule_baseline": None,
+                    "constrained_arbitration": None,
+                    "provider_provenance": None,
+                    "evidence_bundle_id": generation.get("evidence_bundle_id"),
+                    "evidence_hash": generation.get("evidence_hash"),
+                    "stage_provider_request_id": None,
+                }
+            raise MediDiagError("AGENT_RUNTIME_INVALID", detail="仲裁前 claim 集合为空")
         if topology == "single":
             payload = {
                 "verdict": "SINGLE_AGENT_BASELINE",
@@ -288,7 +321,10 @@ class RuntimeMedicalAgents:
                             "content": (
                                 "你是受约束的医疗助手工程仲裁组件。只能从输入的 claim_id 中选择，"
                                 "不得新增、改写或补充医学 claim。verdict 只能是 APPROVED、"
-                                "REVISION_REQUIRED 或 ESCALATED。只返回 JSON。"
+                                "REVISION_REQUIRED 或 ESCALATED。只返回一个 JSON object，且必须严格使用"
+                                "以下四个字段：selected_claim_ids（字符串数组）、conflicts（对象数组）、"
+                                "verdict（字符串）、reason（非空字符串）。禁止把 selected_claim_ids 改名为"
+                                "claim_id、selected_claim_id 或 allowed_claim_ids。"
                             ),
                         },
                         {
@@ -300,6 +336,12 @@ class RuntimeMedicalAgents:
                                     "routing": generation.get("routing", {}),
                                     "evidence_bundle_id": generation.get("evidence_bundle_id"),
                                     "allowed_claim_ids": before_ids,
+                                    "required_output_example": {
+                                        "selected_claim_ids": before_ids[:1],
+                                        "conflicts": [],
+                                        "verdict": "REVISION_REQUIRED",
+                                        "reason": "说明选择依据与仍需人工复核的流程原因。",
+                                    },
                                 },
                                 ensure_ascii=False,
                                 sort_keys=True,
@@ -308,7 +350,8 @@ class RuntimeMedicalAgents:
                     ],
                     response_format={"type": "json_object"},
                     temperature=0.0,
-                    max_tokens=900,
+                    max_tokens=max(900, self.config.max_tokens),
+                    reasoning_mode=self.config.reasoning_mode,
                     prompt_version=self.config.arbitration_prompt_version,
                 ),
                 timeout_s=self.config.timeout_s,
@@ -320,10 +363,12 @@ class RuntimeMedicalAgents:
             raw = provider_result.parsed_json
             if raw is None:
                 raise ValueError("provider 未返回 JSON object")
-            parsed = _ConstrainedArbitrationPayload.model_validate(raw)
+            normalized_raw, normalization_actions = _normalize_arbitration_payload(raw)
+            parsed = _ConstrainedArbitrationPayload.model_validate(normalized_raw)
             if not set(parsed.selected_claim_ids).issubset(set(before_ids)):
                 raise ValueError("仲裁选择了未知 claim_id")
             constrained = parsed.model_dump(mode="json")
+            constrained["normalization_actions"] = normalization_actions
         except Exception as exc:
             fallback_reason = f"{type(exc).__name__}: {exc}"
 
@@ -409,6 +454,8 @@ class RuntimeMedicalAgents:
             prompt_version=prompt_version,
             timeout_s=self.config.timeout_s,
             idempotency_key=f"agent:{specialty}:{input_hash}",
+            default_max_tokens=self.config.max_tokens,
+            reasoning_mode=self.config.reasoning_mode,
         )
         agent = (
             DiagnosisAgent(client, fail_closed=True)
@@ -430,7 +477,13 @@ class RuntimeMedicalAgents:
             ) from exc
         latency_ms = max(0, round((time.perf_counter() - started) * 1000))
         allowed_ids = {item.chunk_id for item in evidence}
-        for claim in output.claims:
+        normalization_actions: list[str] = []
+        for claim_index, claim in enumerate(output.claims, start=1):
+            if len(claim.citation_chunk_ids) > 3:
+                claim.citation_chunk_ids = claim.citation_chunk_ids[:3]
+                normalization_actions.append(
+                    f"claims[{claim_index}].citation_chunk_ids:truncate_to_3"
+                )
             if not claim.citation_chunk_ids or not set(claim.citation_chunk_ids).issubset(
                 allowed_ids
             ):
@@ -438,11 +491,6 @@ class RuntimeMedicalAgents:
                     "AGENT_RUNTIME_INVALID",
                     detail=f"{specialty} Agent 引用了未知 EvidenceBundle chunk_id",
                 )
-        if output.abstain:
-            raise MediDiagError(
-                "AGENT_RUNTIME_INVALID",
-                detail=f"{specialty} Agent 输出弃权: {output.abstain_reason}",
-            )
         result = client.last_result
         if result is None:
             raise MediDiagError(
@@ -468,6 +516,7 @@ class RuntimeMedicalAgents:
             "latency_ms": latency_ms,
             "output": output.to_dict(),
             "provider_provenance": _provider_provenance(result),
+            "normalization_actions": normalization_actions,
         }
 
     @staticmethod
@@ -486,6 +535,27 @@ class RuntimeMedicalAgents:
             )
             for item in raw
         ]
+
+
+def _normalize_arbitration_payload(raw: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """只修复不改变医学语义的常见结构偏差，并记录全部修复动作。"""
+    normalized = dict(raw)
+    actions: list[str] = []
+    selected = normalized.get("selected_claim_ids")
+    if isinstance(selected, str) and selected.strip():
+        normalized["selected_claim_ids"] = [selected.strip()]
+        actions.append("selected_claim_ids:string_to_list")
+    elif selected is None:
+        for alias in ("selected_claim_id", "claim_id"):
+            value = normalized.get(alias)
+            if isinstance(value, str) and value.strip():
+                normalized["selected_claim_ids"] = [value.strip()]
+                actions.append(f"{alias}:alias_to_selected_claim_ids")
+                break
+    if not isinstance(normalized.get("reason"), str) or not str(normalized.get("reason")).strip():
+        normalized["reason"] = "Provider 未返回流程说明；结构归一化未新增或改写医学 claim。"
+        actions.append("reason:insert_non_medical_process_note")
+    return normalized, actions
 
 
 def _provider_provenance(result: ProviderResult | None) -> dict[str, Any]:

@@ -140,8 +140,9 @@ def validate_config(
     generation = config["generation"]
     if not isinstance(generation.get("seed"), int):
         issues.append("generation.seed must be an integer")
-    if not isinstance(generation.get("temperature"), (int, float)):
-        issues.append("generation.temperature must be numeric")
+    temperature = generation.get("temperature")
+    if temperature is not None and not isinstance(temperature, (int, float)):
+        issues.append("generation.temperature must be numeric or null")
     for field in ("timeout_seconds", "max_tokens"):
         if not isinstance(generation.get(field), (int, float)) or generation[field] <= 0:
             issues.append(f"generation.{field} must be positive")

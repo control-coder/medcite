@@ -29,6 +29,8 @@ from eval.runner import (
 )
 from medidiag.agents.base import AgentProviderError
 from medidiag.agents.llm_client import LLMCompletion
+from medidiag.errors import MediDiagError
+from medidiag.llm import ProviderCapabilities
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import SearchResult
 from medidiag.review.citation import CitationVerifier
@@ -481,9 +483,18 @@ def test_formal_run_aborts_without_manifest_on_provider_failure(
     formal["judge"]["method"] = "nli"
     formal["generation"]["provenance_mode"] = "provider_snapshot"
     monkeypatch.setattr(runner_module, "Retriever", _FakeRetriever)
+    class _FailingProvider:
+        provider_id = "test"
+        profile_id = "test_formal"
+
+        def capabilities(self) -> ProviderCapabilities:
+            return ProviderCapabilities(structured_output=True, response_id=True)
+
+        def generate(self, *_args: Any, **_kwargs: Any):
+            raise MediDiagError("PROVIDER_AUTH_FAILED")
+
     monkeypatch.setattr(
-        runner_module, "LLMClient",
-        lambda **_kwargs: _FakeLLM(error=RuntimeError("401 invalid api key")),
+        runner_module, "build_llm_provider", lambda *_args, **_kwargs: _FailingProvider()
     )
     monkeypatch.setattr(
         runner_module, "CitationVerifier",
@@ -492,7 +503,7 @@ def test_formal_run_aborts_without_manifest_on_provider_failure(
         ),
     )
     output_dir = tmp_path / "raw"
-    with pytest.raises(AgentProviderError):
+    with pytest.raises(MediDiagError):
         run_evaluation(formal, ["agent_single"], output_dir)
     assert list(output_dir.glob("*/manifest.json")) == []
 

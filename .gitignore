@@ -91,3 +91,6 @@ p1a-trace-test-output.txt
 p1a-trace-cli-output.txt
 p1b-*-output.txt
 p1b-server-error.txt
+
+# 本地测试临时目录
+.tmp/

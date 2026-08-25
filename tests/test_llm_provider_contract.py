@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -24,6 +25,34 @@ def _response(
     return httpx.Response(status, json=payload, headers=headers, request=request)
 
 
+
+def test_provider_profile_loads_project_dotenv_without_overriding_process_env(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """项目 .env 可补齐 profile，且显式进程变量优先。"""
+    import medidiag.llm.profiles as profiles_module
+
+    tmp_path = Path("tests/.tmp_provider_profile_env")
+    tmp_path.mkdir(exist_ok=True)
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "MIMO_API_KEY=dotenv-secret\n"
+        "MIMO_BASE_URL=https://dotenv.example/v1\n"
+        "MIMO_MODEL=dotenv-model\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(profiles_module, "_PROJECT_ROOT", tmp_path)
+    monkeypatch.delenv("MIMO_API_KEY", raising=False)
+    monkeypatch.delenv("MIMO_BASE_URL", raising=False)
+    monkeypatch.setenv("MIMO_MODEL", "process-model")
+
+    profile = profiles_module.get_provider_profile("mimo_v25")
+
+    assert profile.api_key == "dotenv-secret"
+    assert profile.base_url == "https://dotenv.example/v1"
+    assert profile.model == "process-model"
+    assert "dotenv-secret" not in repr(profile)
+
 def test_fake_provider_is_deterministic_and_network_free() -> None:
     provider = FakeProvider()
     request = LLMRequest(
@@ -44,6 +73,15 @@ def test_fake_provider_is_deterministic_and_network_free() -> None:
         "prompt_version": "test-v1",
     }
 
+
+
+def test_mimo_official_origin_is_normalized_to_v1(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MiMo 官方域名根地址应归一化到 OpenAI 兼容的 /v1 API 根路径。"""
+    monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
+
+    profile = get_provider_profile("mimo_v25")
+
+    assert profile.base_url == "https://api.xiaomimimo.com/v1"
 
 def test_mimo_profile_filters_unsupported_sampling_parameters(
     monkeypatch: pytest.MonkeyPatch,
@@ -217,8 +255,10 @@ def test_openai_compatible_provider_maps_non_retryable_errors(
 
 
 def test_missing_api_key_maps_to_provider_auth_failed(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
-    provider = OpenAICompatibleProvider(get_provider_profile("deepseek_default"), max_retries=0)
+    profile = get_provider_profile("deepseek_default")
+    # profile 加载会读取项目 .env；显式空值用于验证 adapter 的缺密钥错误映射。
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
+    provider = OpenAICompatibleProvider(profile, max_retries=0)
 
     with pytest.raises(MediDiagError) as caught:
         provider.generate(
