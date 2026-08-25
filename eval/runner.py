@@ -41,6 +41,7 @@ from medidiag.rag.retrieval import Retriever
 from medidiag.review.citation import CitationVerifier
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.schemas import KnowledgeChunk, read_jsonl
+from medidiag.workflow.assistant_pipeline import AssistantPipeline, StageContext
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -114,6 +115,7 @@ class SampleResult:
     generation_executed: bool = False
     provider_request_ids: list[str] = field(default_factory=list)
     provider_usage: dict[str, int] = field(default_factory=dict)
+    stage_artifacts: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 def _round(value: float | None, digits: int) -> float | None:
@@ -295,10 +297,21 @@ def run_evaluation(
             ),
         )
 
+    run_id = _new_run_id(config)
     cache = AgentOutputCache()
+    generation_config = config["generation"]
+    pipeline = AssistantPipeline(
+        component_version="eval-runner-v1",
+        provider_profile=str(generation_config.get("provider_profile", generation_config.get("profile", "evaluation"))),
+        stage_timeout_seconds={
+            "normalize": float(config.get("retrieval", {}).get("timeout_seconds", 60)),
+            "retrieval": float(config.get("retrieval", {}).get("timeout_seconds", 60)),
+            "generation": float(generation_config.get("timeout_seconds", 60)),
+            "review": float(config.get("judge", {}).get("timeout_seconds", 60)),
+        },
+    )
     git_commit = _git_output(["git", "rev-parse", "HEAD"])
     dirty_diff_hash = _git_diff_hash()
-    run_id = _new_run_id(config)
     run_dir = output_dir / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
     (run_dir / "config.snapshot.json").write_text(
@@ -321,6 +334,8 @@ def run_evaluation(
             llm,
             cache,
             dry_run,
+            pipeline,
+            run_id,
         )
         results[name] = result
         (run_dir / f"{name}.json").write_text(
@@ -404,6 +419,8 @@ def _run_experiment(
     llm: LLMClient | None,
     cache: AgentOutputCache,
     dry_run: bool,
+    pipeline: AssistantPipeline | None = None,
+    pipeline_run_id: str | None = None,
 ) -> ExperimentResult:
     result = ExperimentResult(experiment=name, family=family)
     local_before = (cache.hits, cache.misses)
@@ -431,6 +448,8 @@ def _run_experiment(
                 llm,
                 cache,
                 dry_run,
+                pipeline,
+                pipeline_run_id,
             )
         )
     local_hits = cache.hits - local_before[0]
@@ -487,6 +506,8 @@ def _run_sample(
     llm: LLMClient | None,
     cache: AgentOutputCache,
     dry_run: bool,
+    pipeline: AssistantPipeline | None = None,
+    pipeline_run_id: str | None = None,
 ) -> SampleResult:
     started = time.perf_counter()
     gold_ids = [str(value) for value in sample.get("gold_evidence_ids", [])]
@@ -497,25 +518,77 @@ def _run_sample(
         evidence_eligible=bool(gold_ids),
     )
     question = str(sample["question"])
+    active_pipeline = pipeline or AssistantPipeline(
+        component_version="eval-runner-v1",
+        provider_profile=str(config["generation"].get(
+            "provider_profile", config["generation"].get("profile", "evaluation")
+        )),
+    )
+    stage_context = StageContext(
+        run_id=pipeline_run_id or f"eval:{name}:{result.sample_id}",
+        case_id=result.sample_id,
+        sample_id=result.sample_id,
+        experiment=name,
+        mode="evaluation" if config["evaluation"]["mode"] == "formal" else "development",
+        prompt_version=str(config["generation"].get("prompt_version", "")),
+    )
     top_k = int(config["retrieval"]["top_k"])
     candidate_k = int(config["retrieval"]["candidate_k"])
 
     retrieval_query = question
     if rag_config["use_term_normalization"]:
-        normalize_started = time.perf_counter()
-        retrieval_query = normalizer.normalize(question).normalized
-        result.stage_latency_ms["normalize"] = _elapsed_ms(normalize_started)
-    retrieval_started = time.perf_counter()
-    search_results = retriever.search(
-        retrieval_query,
-        top_k=candidate_k if rag_config["use_rerank"] else top_k,
-        experiment_config=rag_config,
+        normalize_execution = active_pipeline.run_stage(
+            stage="normalize",
+            input_payload={"question": question},
+            operation=lambda: {
+                "normalized_query": normalizer.normalize(question).normalized,
+            },
+            context=stage_context,
+        )
+        retrieval_query = str(normalize_execution.payload["normalized_query"])
+        result.stage_latency_ms["normalize"] = normalize_execution.elapsed_ms
+        result.stage_artifacts["normalize"] = normalize_execution.artifact.to_dict()
+
+    search_results: list[Any] = []
+
+    def retrieve_stage() -> dict[str, Any]:
+        nonlocal search_results
+        search_results = retriever.search(
+            retrieval_query,
+            top_k=candidate_k if rag_config["use_rerank"] else top_k,
+            experiment_config=rag_config,
+        )
+        if rag_config["use_rerank"]:
+            rerank_started = time.perf_counter()
+            search_results = retriever.rerank(
+                retrieval_query, search_results, top_k=top_k
+            )
+            result.stage_latency_ms["rerank"] = _elapsed_ms(rerank_started)
+        return {
+            "query": retrieval_query,
+            "chunks": [
+                {
+                    **(asdict(item.chunk) if item.chunk is not None else {}),
+                    "chunk_id": item.chunk_id,
+                    "score": item.final_score,
+                }
+                for item in search_results
+            ],
+        }
+
+    retrieval_execution = active_pipeline.run_stage(
+        stage="retrieval",
+        input_payload={
+            "normalized_query": retrieval_query,
+            "top_k": top_k,
+            "candidate_k": candidate_k,
+            "experiment_config": rag_config,
+        },
+        operation=retrieve_stage,
+        context=stage_context,
     )
-    result.stage_latency_ms["retrieval"] = _elapsed_ms(retrieval_started)
-    if rag_config["use_rerank"]:
-        rerank_started = time.perf_counter()
-        search_results = retriever.rerank(retrieval_query, search_results, top_k=top_k)
-        result.stage_latency_ms["rerank"] = _elapsed_ms(rerank_started)
+    result.stage_latency_ms["retrieval"] = retrieval_execution.elapsed_ms
+    result.stage_artifacts["retrieval"] = retrieval_execution.artifact.to_dict()
 
     evidence_ids = [item.chunk_id for item in search_results]
     evidence = [item.chunk for item in search_results if item.chunk is not None]
@@ -534,23 +607,44 @@ def _run_sample(
         if fail_closed and config["judge"]["method"] == "nli"
         else None
     )
-    generation_started = time.perf_counter()
-    outputs = _generate_outputs(
-        topology,
-        experiment,
-        question,
-        evidence,
-        evidence_ids,
-        sample.get("options"),
-        normalizer,
-        config["retrieval"]["evidence_levels"],
-        llm,
-        cache,
-        result,
-        fail_closed,
-        claim_language=claim_language,
+    outputs: list[AgentOutput] = []
+
+    def generation_stage() -> dict[str, Any]:
+        nonlocal outputs
+        outputs = _generate_outputs(
+            topology,
+            experiment,
+            question,
+            evidence,
+            evidence_ids,
+            sample.get("options"),
+            normalizer,
+            config["retrieval"]["evidence_levels"],
+            llm,
+            cache,
+            result,
+            fail_closed,
+            claim_language=claim_language,
+        )
+        agents = [output.to_dict() for output in outputs]
+        return {
+            "agents": agents,
+            "claims": [claim for agent in agents for claim in agent.get("claims", [])],
+        }
+
+    generation_execution = active_pipeline.run_stage(
+        stage="generation",
+        input_payload={
+            "question": question,
+            "evidence_ids": evidence_ids,
+            "topology": topology,
+            "experiment": name,
+        },
+        operation=generation_stage,
+        context=stage_context,
     )
-    result.stage_latency_ms["generation"] = _elapsed_ms(generation_started)
+    result.stage_latency_ms["generation"] = generation_execution.elapsed_ms
+    result.stage_artifacts["generation"] = generation_execution.artifact.to_dict()
     result.agent_abstained = any(output.abstain for output in outputs)
     result.provider_request_ids = sorted(
         {
@@ -561,47 +655,68 @@ def _run_sample(
     )
     _assert_formal_response_id_provenance(config, result)
 
-    review_started = time.perf_counter()
-    reviewer = ClinicalLogicReviewer()
-    review_approved = all(reviewer.check(output).is_approved for output in outputs)
-    result.stage_latency_ms["review"] = _elapsed_ms(review_started)
+    citation_results: list[Any] = []
+    review_approved = False
+    unsupported_rate: float | None = None
 
-    claims: list[dict[str, Any]] = []
-    for output_index, output in enumerate(outputs):
-        for claim_index, claim in enumerate(output.claims):
-            claims.append(
-                {
-                    "claim_id": (
-                        f"{result.sample_id}:{output_index:02d}_{claim_index:04d}"
-                    ),
-                    "text": claim.text,
-                    "citation_chunk_ids": claim.citation_chunk_ids,
-                }
-            )
-    judge_started = time.perf_counter()
-    citation_results = verifier.verify_batch(claims, evidence) if verifier else []
-    result.stage_latency_ms["judge"] = _elapsed_ms(judge_started)
-    result.citation_results = [item.to_dict() for item in citation_results]
-    result.total_claims = len(claims)
+    def review_stage() -> dict[str, Any]:
+        nonlocal citation_results, review_approved, unsupported_rate
+        reviewer = ClinicalLogicReviewer()
+        review_approved = all(reviewer.check(output).is_approved for output in outputs)
 
-    guard = ComplianceGuard()
-    result.compliance_blocked = any(
-        guard.check_output(output.to_dict()).blocked for output in outputs
+        claims: list[dict[str, Any]] = []
+        for output_index, output in enumerate(outputs):
+            for claim_index, claim in enumerate(output.claims):
+                claims.append(
+                    {
+                        "claim_id": f"{result.sample_id}:{output_index:02d}_{claim_index:04d}",
+                        "text": claim.text,
+                        "citation_chunk_ids": claim.citation_chunk_ids,
+                    }
+                )
+        judge_started = time.perf_counter()
+        citation_results = verifier.verify_batch(claims, evidence) if verifier else []
+        result.stage_latency_ms["judge"] = _elapsed_ms(judge_started)
+        result.citation_results = [item.to_dict() for item in citation_results]
+        result.total_claims = len(claims)
+
+        guard = ComplianceGuard()
+        result.compliance_blocked = any(
+            guard.check_output(output.to_dict()).blocked for output in outputs
+        )
+        unsupported_rate = metrics.compute_unsupported_claim_rate(citation_results)
+        citation_gate = (
+            not rag_config["use_citation_review"]
+            or unsupported_rate is None
+            or unsupported_rate
+            <= config["workflow"]["review"]["unsupported_claim_threshold"]
+        )
+        approved = (
+            review_approved
+            and citation_gate
+            and not result.agent_abstained
+            and not result.compliance_blocked
+        )
+        return {
+            "verdict": "APPROVED" if approved else "REVISION_REQUIRED",
+            "citation_verdicts": result.citation_results,
+            "compliance_status": (
+                "BLOCKED" if result.compliance_blocked else "PASSED"
+            ),
+        }
+
+    review_execution = active_pipeline.run_stage(
+        stage="review",
+        input_payload={
+            "generation_output_hash": generation_execution.artifact.output_hash,
+            "use_citation_review": rag_config["use_citation_review"],
+        },
+        operation=review_stage,
+        context=stage_context,
     )
-    unsupported_rate = metrics.compute_unsupported_claim_rate(citation_results)
-    # unsupported_rate 为 None 表示本样本没有 claim（指标未定义）。没有 claim
-    # 就没有未支撑 claim，引用门禁通过；弃权本身另由 agent_abstained 拦截。
-    citation_gate = (
-        not rag_config["use_citation_review"]
-        or unsupported_rate is None
-        or unsupported_rate <= config["workflow"]["review"]["unsupported_claim_threshold"]
-    )
-    result.pipeline_approved = (
-        review_approved
-        and citation_gate
-        and not result.agent_abstained
-        and not result.compliance_blocked
-    )
+    result.stage_latency_ms["review"] = review_execution.elapsed_ms
+    result.stage_artifacts["review"] = review_execution.artifact.to_dict()
+    result.pipeline_approved = review_execution.payload["verdict"] == "APPROVED"
     result.latency_ms = _elapsed_ms(started)
     return result
 

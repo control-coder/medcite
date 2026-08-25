@@ -24,6 +24,11 @@ from medidiag.db.models import (
 from medidiag.errors import MediDiagError
 from medidiag.observability.logging import get_logger
 from medidiag.review.logic import ClinicalLogicReviewer
+from medidiag.workflow.assistant_pipeline import (
+    AssistantPipeline,
+    StageContext,
+    StageExecution,
+)
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.lease import LeaseHeartbeat
@@ -93,6 +98,7 @@ class SingleMachineWorker:
         worker_id: str = "local-worker",
         executor: WorkflowExecutor | None = None,
         call_runner: ProviderCallRunner | None = None,
+        pipeline: AssistantPipeline | None = None,
         max_review_rounds: int = 3,
         heartbeat_max_seconds: float | None = None,
     ) -> None:
@@ -103,6 +109,17 @@ class SingleMachineWorker:
         self.worker_id = worker_id
         self.executor = executor or WorkflowExecutor()
         self.call_runner = call_runner or ProviderCallRunner()
+        self.pipeline = pipeline or AssistantPipeline(
+            component_version=provider.version,
+            provider_profile=str(
+                getattr(
+                    provider,
+                    "profile_id",
+                    getattr(getattr(provider, "llm", None), "profile_id", "workflow_default"),
+                )
+            ),
+            call_runner=self.call_runner,
+        )
         self.max_review_rounds = max_review_rounds
         # None 表示用 LeaseHeartbeat 的默认上界（HEARTBEAT_MAX_LEASE_PERIODS
         # 个租约周期）。显式传参主要供测试缩短等待。
@@ -173,10 +190,7 @@ class SingleMachineWorker:
                         lambda: self.provider.normalize(case.question),
                     )
                     payload = outcome.payload
-                    artifact = self._artifact(
-                        case, task, "normalize", {"question": case.question}, payload,
-                        outcome.elapsed_ms,
-                    )
+                    artifact = self._artifact(case, task, outcome)
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
@@ -203,11 +217,7 @@ class SingleMachineWorker:
                         ),
                     )
                     payload = outcome.payload
-                    artifact = self._artifact(
-                        case, task, "retrieval",
-                        {"normalized_query": case.normalized_query}, payload,
-                        outcome.elapsed_ms,
-                    )
+                    artifact = self._artifact(case, task, outcome)
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
@@ -234,9 +244,7 @@ class SingleMachineWorker:
                         ),
                     )
                     payload = outcome.payload
-                    artifact = self._artifact(
-                        case, task, "plan", retrieval, payload, outcome.elapsed_ms
-                    )
+                    artifact = self._artifact(case, task, outcome)
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
@@ -272,7 +280,7 @@ class SingleMachineWorker:
                     payload = outcome.payload
                     latency = outcome.elapsed_ms
                     records: list[Any] = [
-                        self._artifact(case, task, "generation", plan, payload, latency)
+                        self._artifact(case, task, outcome)
                     ]
                     input_hash = compute_input_hash(
                         {"question": case.question, "retrieval": retrieval, "plan": plan}
@@ -316,10 +324,7 @@ class SingleMachineWorker:
                         lambda: self.provider.arbitrate(generation, retrieval),
                     )
                     payload = outcome.payload
-                    artifact = self._artifact(
-                        case, task, "arbitration", generation, payload,
-                        outcome.elapsed_ms,
-                    )
+                    artifact = self._artifact(case, task, outcome)
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
@@ -361,7 +366,7 @@ class SingleMachineWorker:
                         is_compliance_hit(payload.get("compliance_status"))
                     )
                     records = [
-                        self._artifact(case, task, "review", arbitration, payload, latency),
+                        self._artifact(case, task, outcome),
                         Review(
                             case_id=case.case_id,
                             review_type="workflow",
@@ -447,7 +452,7 @@ class SingleMachineWorker:
                         + 1
                     )
                     records = [
-                        self._artifact(case, task, "report", review, payload, latency),
+                        self._artifact(case, task, outcome),
                         CaseReport(
                             report_id=f"report_{uuid.uuid4().hex}",
                             case_id=case.case_id,
@@ -580,7 +585,7 @@ class SingleMachineWorker:
         task: WorkflowTask,
         stage: str,
         operation: Callable[[], dict[str, Any] | ProviderResponse],
-    ) -> ProviderCallOutcome:
+    ) -> StageExecution:
         # 心跳在整个 provider 调用（含有界重试）期间用独立会话续期，因此单个阶段
         # 长于 lease_seconds 不再导致任务被扫描器接管。DD-020。
         heartbeat = LeaseHeartbeat(
@@ -593,9 +598,18 @@ class SingleMachineWorker:
         )
         try:
             with heartbeat:
-                outcome = self.call_runner.call(
-                    stage,
-                    operation,
+                outcome = self.pipeline.run_stage(
+                    stage=stage,
+                    input_payload=self._stage_input(
+                        session, case, task, stage
+                    ),
+                    operation=operation,
+                    context=StageContext(
+                        run_id=case.trace_id,
+                        case_id=case.case_id,
+                        task_id=task.task_id,
+                        mode="worker",
+                    ),
                     on_attempt=lambda attempt: self._record_provider_attempt(
                         session, case, task, attempt
                     ),
@@ -614,6 +628,41 @@ class SingleMachineWorker:
                 context={"task_id": task.task_id, "stage": stage},
             )
         return outcome
+
+    def _stage_input(
+        self, session: Session, case: Case, task: WorkflowTask, stage: str
+    ) -> dict[str, Any]:
+        """从已提交 artifact 组装稳定输入，兼容历史 worker 执行边界。"""
+        artifacts = self._artifacts(session, case.case_id, task.task_id)
+        if stage == "normalize":
+            return {"question": case.question}
+        if stage == "retrieval":
+            return {"normalized_query": case.normalized_query}
+        if stage == "plan":
+            return artifacts["retrieval"].payload
+        if stage == "generation":
+            return {
+                "question": case.question,
+                "retrieval": artifacts["retrieval"].payload,
+                "plan": artifacts["plan"].payload,
+            }
+        if stage == "arbitration":
+            return {
+                "generation": artifacts["generation"].payload,
+                "retrieval": artifacts["retrieval"].payload,
+            }
+        if stage == "review":
+            return {
+                "generation": artifacts["generation"].payload,
+                "arbitration": artifacts["arbitration"].payload,
+            }
+        if stage == "report":
+            return {
+                "case_id": case.case_id,
+                "generation": artifacts["generation"].payload,
+                "review": artifacts["review"].payload,
+            }
+        raise ValueError(f"unsupported pipeline stage: {stage}")
 
     def _record_provider_attempt(
         self,
@@ -640,7 +689,7 @@ class SingleMachineWorker:
         session.commit()
 
     @staticmethod
-    def _provider_detail(outcome: ProviderCallOutcome) -> dict[str, Any]:
+    def _provider_detail(outcome: StageExecution) -> dict[str, Any]:
         return {
             "provider_request_id": outcome.request_id,
             "provider_retry_count": outcome.retry_count,
@@ -661,21 +710,42 @@ class SingleMachineWorker:
         self,
         case: Case,
         task: WorkflowTask,
-        stage: str,
-        input_payload: dict[str, Any],
-        output_payload: dict[str, Any],
-        latency_ms: int,
+        execution: StageExecution | ProviderCallOutcome,
     ) -> StageArtifact:
+        if isinstance(execution, StageExecution):
+            envelope = execution.artifact
+            stage = envelope.stage
+            payload = envelope.payload
+            input_hash = envelope.input_hash
+            output_hash = envelope.output_hash
+            component_version = (
+                f"{envelope.pipeline_version}:{envelope.component_version}"
+            )
+            latency_ms = envelope.latency_ms
+        else:
+            # 保留历史测试替换 ``_invoke`` 的兼容边界；生产路径始终返回
+            # StageExecution。该分支不改变租约 CAS 的失败语义。
+            stage = _STAGE_BY_STATE[CaseState(case.status)][0]
+            payload = execution.payload
+            input_payload = (
+                {"question": case.question}
+                if stage == "normalize"
+                else {"legacy_stage": stage}
+            )
+            input_hash = compute_input_hash(input_payload)
+            output_hash = compute_input_hash(payload)
+            component_version = self.provider.version
+            latency_ms = execution.elapsed_ms
         return StageArtifact(
             artifact_id=f"artifact_{uuid.uuid4().hex}",
             case_id=case.case_id,
             task_id=task.task_id,
             stage=stage,
             attempt=task.attempt,
-            payload=output_payload,
-            input_hash=compute_input_hash(input_payload),
-            output_hash=compute_input_hash(output_payload),
-            component_version=self.provider.version,
+            payload=payload,
+            input_hash=input_hash,
+            output_hash=output_hash,
+            component_version=component_version,
             latency_ms=latency_ms,
         )
 

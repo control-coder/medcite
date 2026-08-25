@@ -449,7 +449,15 @@ def test_run_evaluation_writes_experiment_results_and_manifest(
     manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["run_id"] == run_id
     assert manifest["formal_candidate"] is False
-    assert results["agent_single"].sample_results[0].generation_executed is True
+    sample = results["agent_single"].sample_results[0]
+    assert sample.generation_executed is True
+    assert set(sample.stage_artifacts) == {
+        "normalize", "retrieval", "generation", "review"
+    }
+    assert all(
+        artifact["schema_version"] == "assistant-stage-artifact-v1"
+        for artifact in sample.stage_artifacts.values()
+    )
 
 
 def test_run_evaluation_dry_run_skips_generation_entirely(
