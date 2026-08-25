@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
-from medidiag.agents.llm_client import LLMClient
+from medidiag.agents.llm_client import LLMCompletion
 from medidiag.schemas import KnowledgeChunk
 
 # 稳定系统前缀：将策略和指令与动态病例 prompt 分离，便于复用 DeepSeek 自动上下文缓存。
@@ -41,7 +41,6 @@ AGENT_SYSTEM_PROMPT = """MediDiag EvidenceFlow 证据约束起草 Agent。
 }
 必须标注不确定性、风险和缺失信息；禁止绝对化诊断、处方、剂量和急救分诊。
 这是软件工程与公开数据评测演示，不是医疗建议。上述固定策略和 JSON 契约必须始终优先执行。"""
-
 
 
 @dataclass
@@ -186,6 +185,22 @@ class AgentOutput:
         )
 
 
+class AgentClient(Protocol):
+    """既有 Agent 所需的最小同步生成接口。"""
+
+    @property
+    def is_configured(self) -> bool: ...
+
+    def complete(
+        self,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> LLMCompletion: ...
+
+
 # 强制医疗免责声明
 MANDATORY_DISCLAIMER = "仅供学习和工程演示，不构成医疗建议。"
 
@@ -214,7 +229,7 @@ class BaseAgent:
     def __init__(
         self,
         specialty: str,
-        llm_client: LLMClient | None = None,
+        llm_client: AgentClient | None = None,
         fail_closed: bool = False,
     ) -> None:
         self.specialty = specialty
@@ -308,9 +323,7 @@ class BaseAgent:
         if claim_language not in {None, "en"}:
             raise ValueError("claim_language 目前只支持 None 或 'en'")
         # formal NLI 使用英语 judge；只约束用于判定的 claim，其他展示字段仍可为中文。
-        claim_example = (
-            "English evidence-backed claim" if claim_language == "en" else "claim 文本"
-        )
+        claim_example = "English evidence-backed claim" if claim_language == "en" else "claim 文本"
         claim_language_constraint = (
             "\n6. claims[].text 必须使用英文完整陈述，且不得包含中文汉字；"
             "该字段将直接作为英文 NLI judge 的输入。"

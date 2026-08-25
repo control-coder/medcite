@@ -29,11 +29,11 @@ from typing import Any, Final
 class ErrorCategory(str, Enum):
     """错误码大类。对应 PLAN.md 的五级分类。"""
 
-    USER_INPUT = "4xx"        # 用户/输入错误
-    BUSINESS = "42x"          # 业务流程错误
-    DEPENDENCY = "52x"        # 外部依赖错误
-    DATA_QUALITY = "53x"      # 数据质量错误
-    SYSTEM = "55x"            # 系统错误
+    USER_INPUT = "4xx"  # 用户/输入错误
+    BUSINESS = "42x"  # 业务流程错误
+    DEPENDENCY = "52x"  # 外部依赖错误
+    DATA_QUALITY = "53x"  # 数据质量错误
+    SYSTEM = "55x"  # 系统错误
 
 
 @dataclass(frozen=True)
@@ -131,7 +131,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=False,
         description="模拟病例包含明显邮箱、电话或身份证格式，未通过脱敏门禁。",
     ),
-
     # ----- 42x 业务流程错误 -----
     "STATE_CONFLICT": ErrorSpec(
         code="STATE_CONFLICT",
@@ -186,7 +185,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=False,
         description="病例尚未生成结构化报告。",
     ),
-
     # ----- 52x 外部依赖错误 -----
     "RAG_TIMEOUT": ErrorSpec(
         code="RAG_TIMEOUT",
@@ -288,7 +286,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=True,
         description="外部 provider 返回值不满足阶段结构化 schema。",
     ),
-
     "PROVIDER_AUTH_FAILED": ErrorSpec(
         code="PROVIDER_AUTH_FAILED",
         http_status=502,
@@ -328,6 +325,16 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         requires_human_escalation=False,
         alert=True,
         description="provider 返回的结构化输出无法解析为约定 JSON object。",
+    ),
+    "AGENT_RUNTIME_INVALID": ErrorSpec(
+        code="AGENT_RUNTIME_INVALID",
+        http_status=502,
+        category=ErrorCategory.DATA_QUALITY,
+        retryable=False,
+        default_action="停止 Agent 阶段，保留 EvidenceBundle 与失败 trace，转人工检查。",
+        requires_human_escalation=True,
+        alert=True,
+        description="Agent topology、引用、结构化输出或 provenance 不满足运行时契约。",
     ),
     "RAG_CORPUS_INVALID": ErrorSpec(
         code="RAG_CORPUS_INVALID",
@@ -380,7 +387,6 @@ _REGISTRY: Final[dict[str, ErrorSpec]] = {
         alert=True,
         description="数据泄露校验命中：测试样本 ID 出现在知识库 chunk source/source_id/metadata.raw_id。",
     ),
-
     # ----- 55x 系统错误 -----
     "TASK_LEASE_EXPIRED": ErrorSpec(
         code="TASK_LEASE_EXPIRED",
@@ -455,7 +461,9 @@ class MediDiagError(Exception):
     所有业务错误应携带错误码，便于日志、告警和客户端处理。
     """
 
-    def __init__(self, code: str, *, detail: str | None = None, context: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, code: str, *, detail: str | None = None, context: dict[str, Any] | None = None
+    ) -> None:
         self.spec = get_error_spec(code)
         self.code = code
         self.detail = detail or self.spec.description

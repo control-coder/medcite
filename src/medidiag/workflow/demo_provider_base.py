@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from medidiag.compliance.guard import MANDATORY_DISCLAIMER, ComplianceGuard
 from medidiag.compliance.status import ComplianceStatus
+from medidiag.workflow.provider import StageResult
 
 
 class DraftClaim(BaseModel):
@@ -36,9 +37,7 @@ class DemoWorkflowSupport:
         }
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
-        chunk_id = "live_demo_" + hashlib.sha256(
-            normalized_query.encode("utf-8")
-        ).hexdigest()[:12]
+        chunk_id = "live_demo_" + hashlib.sha256(normalized_query.encode("utf-8")).hexdigest()[:12]
         return {
             "query": normalized_query,
             "top_k": 1,
@@ -71,7 +70,7 @@ class DemoWorkflowSupport:
         self,
         generation: dict[str, Any],
         retrieval: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> StageResult:
         del retrieval
         return {
             "verdict": "SINGLE_DRAFTER_LIMITED_REVIEW",
@@ -158,7 +157,7 @@ Input question:
 {question}
 
 Plan:
-{plan['objective']}
+{plan["objective"]}
 
 Allowed evidence:
 {evidence_text}

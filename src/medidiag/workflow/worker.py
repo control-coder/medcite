@@ -134,15 +134,11 @@ class SingleMachineWorker:
                 .limit(1)
             ).scalar_one_or_none()
             if task is not None:
-                if not self.executor.lease.acquire(
-                    session, task.task_id, self.worker_id
-                ):
+                if not self.executor.lease.acquire(session, task.task_id, self.worker_id):
                     return WorkerRunResult(processed=False)
                 session.expire_all()
                 task = session.execute(
-                    select(WorkflowTask).where(
-                        WorkflowTask.task_id == task.task_id
-                    )
+                    select(WorkflowTask).where(WorkflowTask.task_id == task.task_id)
                 ).scalar_one()
             else:
                 task = session.execute(
@@ -173,9 +169,7 @@ class SingleMachineWorker:
             task = session.execute(
                 select(WorkflowTask).where(WorkflowTask.task_id == task.task_id)
             ).scalar_one()
-            case = session.execute(
-                select(Case).where(Case.case_id == task.case_id)
-            ).scalar_one()
+            case = session.execute(select(Case).where(Case.case_id == task.case_id)).scalar_one()
             state = CaseState(case.status)
             if is_terminal(state) or state == CaseState.ESCALATED:
                 return WorkerRunResult(True, task.task_id, case.case_id, state.value)
@@ -186,7 +180,10 @@ class SingleMachineWorker:
                 if state == CaseState.CREATED:
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "normalize",
+                        session,
+                        case,
+                        task,
+                        "normalize",
                         lambda: self.provider.normalize(case.question),
                     )
                     payload = outcome.payload
@@ -211,10 +208,11 @@ class SingleMachineWorker:
                 if state == CaseState.NORMALIZED:
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "retrieval",
-                        lambda: self.provider.retrieve(
-                            case.normalized_query or case.question
-                        ),
+                        session,
+                        case,
+                        task,
+                        "retrieval",
+                        lambda: self.provider.retrieve(case.normalized_query or case.question),
                     )
                     payload = outcome.payload
                     artifact = self._artifact(case, task, outcome)
@@ -238,7 +236,10 @@ class SingleMachineWorker:
                     retrieval = artifacts["retrieval"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "plan",
+                        session,
+                        case,
+                        task,
+                        "plan",
                         lambda: self.provider.plan(
                             case.normalized_query or case.question, retrieval
                         ),
@@ -274,29 +275,35 @@ class SingleMachineWorker:
                     plan = artifacts["plan"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "generation",
+                        session,
+                        case,
+                        task,
+                        "generation",
                         lambda: self.provider.generate(case.question, retrieval, plan),
                     )
                     payload = outcome.payload
-                    latency = outcome.elapsed_ms
-                    records: list[Any] = [
-                        self._artifact(case, task, outcome)
-                    ]
-                    input_hash = compute_input_hash(
-                        {"question": case.question, "retrieval": retrieval, "plan": plan}
-                    )
+                    records: list[Any] = [self._artifact(case, task, outcome)]
+                    default_input = {
+                        "question": case.question,
+                        "retrieval": retrieval,
+                        "plan": plan,
+                    }
+                    default_input_hash = compute_input_hash(default_input)
                     for agent in payload.get("agents", []):
+                        # P4 runtime 会提供每个 Agent 独立的输入、耗时与 provenance；
+                        # deterministic fixture 未提供时仍保留历史兼容字段。
+                        agent_input = agent.get("input", {"plan": plan})
                         records.append(
                             AgentRun(
-                                run_id=f"run_{uuid.uuid4().hex}",
+                                run_id=agent.get("agent_run_id") or f"run_{uuid.uuid4().hex}",
                                 case_id=case.case_id,
                                 agent_name=agent["agent_name"],
-                                input_hash=input_hash,
+                                input_hash=agent.get("input_hash") or default_input_hash,
                                 attempt_group=f"{task.task_id}:{attempt}",
-                                input_payload={"plan": plan},
+                                input_payload=agent_input,
                                 output_payload=agent,
                                 status=agent.get("status", "SUCCEEDED"),
-                                latency_ms=latency,
+                                latency_ms=int(agent.get("latency_ms", outcome.elapsed_ms)),
                             )
                         )
                     self.executor.commit_stage(
@@ -320,7 +327,10 @@ class SingleMachineWorker:
                     retrieval = artifacts["retrieval"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "arbitration",
+                        session,
+                        case,
+                        task,
+                        "arbitration",
                         lambda: self.provider.arbitrate(generation, retrieval),
                     )
                     payload = outcome.payload
@@ -343,20 +353,20 @@ class SingleMachineWorker:
                     arbitration = artifacts["arbitration"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "review",
+                        session,
+                        case,
+                        task,
+                        "review",
                         lambda: self.provider.review(generation, arbitration),
                     )
                     payload = outcome.payload
-                    latency = outcome.elapsed_ms
                     verdict = payload["verdict"]
                     target = CaseState(verdict)
                     # A provider that keeps asking for revisions would otherwise
                     # cycle REVISION_REQUIRED -> PLAN_GENERATED forever.
                     round_number = case.review_round + 1
                     capped = target == CaseState.REVISION_REQUIRED and (
-                        ClinicalLogicReviewer.should_escalate(
-                            round_number, self.max_review_rounds
-                        )
+                        ClinicalLogicReviewer.should_escalate(round_number, self.max_review_rounds)
                     )
                     if capped:
                         target = CaseState.ESCALATED
@@ -376,9 +386,7 @@ class SingleMachineWorker:
                             detail=payload,
                         ),
                     ]
-                    claim_map = {
-                        item["claim_id"]: item for item in generation.get("claims", [])
-                    }
+                    claim_map = {item["claim_id"]: item for item in generation.get("claims", [])}
                     for item in payload.get("citation_verdicts", []):
                         records.append(
                             Citation(
@@ -390,9 +398,7 @@ class SingleMachineWorker:
                                 verifier_score=item.get("confidence"),
                             )
                         )
-                    complete = target in {
-                        CaseState.REVISION_REQUIRED, CaseState.ESCALATED
-                    }
+                    complete = target in {CaseState.REVISION_REQUIRED, CaseState.ESCALATED}
                     self.executor.commit_stage(
                         session,
                         task_id=task.task_id,
@@ -438,11 +444,13 @@ class SingleMachineWorker:
                     review = artifacts["review"].payload
                     self._renew(session, task)
                     outcome = self._invoke(
-                        session, case, task, "report",
+                        session,
+                        case,
+                        task,
+                        "report",
                         lambda: self.provider.report(case.case_id, generation, review),
                     )
                     payload = outcome.payload
-                    latency = outcome.elapsed_ms
                     report_version = (
                         session.execute(
                             select(func.count(CaseReport.id)).where(
@@ -503,9 +511,7 @@ class SingleMachineWorker:
                     error_code=failure.error.code,
                 )
                 self._fail_stage(session, case, task, attempt, failure)
-                return WorkerRunResult(
-                    True, task.task_id, case.case_id, CaseState.ESCALATED.value
-                )
+                return WorkerRunResult(True, task.task_id, case.case_id, CaseState.ESCALATED.value)
 
         # Only the review/revision cycle can spin, and WS3's round cap bounds it;
         # every state reachable here has a legal ESCALATED edge.
@@ -532,9 +538,7 @@ class SingleMachineWorker:
                 ),
             ),
         )
-        return WorkerRunResult(
-            True, task.task_id, case.case_id, CaseState.ESCALATED.value
-        )
+        return WorkerRunResult(True, task.task_id, case.case_id, CaseState.ESCALATED.value)
 
     def _fail_stage(
         self,
@@ -557,8 +561,7 @@ class SingleMachineWorker:
             stage=failure.stage,
             error_code=exc.code,
             error_message=(
-                f"{failure.stage} provider failed after bounded retries; "
-                "no report generated"
+                f"{failure.stage} provider failed after bounded retries; no report generated"
             ),
             detail={
                 "component_version": self.provider.version,
@@ -570,9 +573,7 @@ class SingleMachineWorker:
         )
 
     def _renew(self, session: Session, task: WorkflowTask) -> None:
-        if not self.executor.lease.renew(
-            session, task.task_id, self.worker_id, task.attempt
-        ):
+        if not self.executor.lease.renew(session, task.task_id, self.worker_id, task.attempt):
             raise MediDiagError(
                 "TASK_LEASE_LOST",
                 detail=f"cannot renew task lease: {task.task_id}",
@@ -600,9 +601,7 @@ class SingleMachineWorker:
             with heartbeat:
                 outcome = self.pipeline.run_stage(
                     stage=stage,
-                    input_payload=self._stage_input(
-                        session, case, task, stage
-                    ),
+                    input_payload=self._stage_input(session, case, task, stage),
                     operation=operation,
                     context=StageContext(
                         run_id=case.trace_id,
@@ -696,13 +695,9 @@ class SingleMachineWorker:
             **outcome.metadata,
         }
 
-    def _artifacts(
-        self, session: Session, case_id: str, task_id: str
-    ) -> dict[str, StageArtifact]:
+    def _artifacts(self, session: Session, case_id: str, task_id: str) -> dict[str, StageArtifact]:
         records = session.execute(
-            select(StageArtifact)
-            .where(StageArtifact.case_id == case_id)
-            .order_by(StageArtifact.id)
+            select(StageArtifact).where(StageArtifact.case_id == case_id).order_by(StageArtifact.id)
         ).scalars()
         return {record.stage: record for record in records}
 
@@ -718,9 +713,7 @@ class SingleMachineWorker:
             payload = envelope.payload
             input_hash = envelope.input_hash
             output_hash = envelope.output_hash
-            component_version = (
-                f"{envelope.pipeline_version}:{envelope.component_version}"
-            )
+            component_version = f"{envelope.pipeline_version}:{envelope.component_version}"
             latency_ms = envelope.latency_ms
         else:
             # 保留历史测试替换 ``_invoke`` 的兼容边界；生产路径始终返回
@@ -728,9 +721,7 @@ class SingleMachineWorker:
             stage = _STAGE_BY_STATE[CaseState(case.status)][0]
             payload = execution.payload
             input_payload = (
-                {"question": case.question}
-                if stage == "normalize"
-                else {"legacy_stage": stage}
+                {"question": case.question} if stage == "normalize" else {"legacy_stage": stage}
             )
             input_hash = compute_input_hash(input_payload)
             output_hash = compute_input_hash(payload)
@@ -767,14 +758,10 @@ class LeaseScanner:
     def scan_once(self) -> list[str]:
         reclaimed: list[str] = []
         with self.session_factory() as session:
-            task_ids = [
-                task.task_id for task in self.executor.lease.find_expired(session)
-            ]
+            task_ids = [task.task_id for task in self.executor.lease.find_expired(session)]
         for task_id in task_ids:
             with self.session_factory() as session:
-                if self.executor.lease.reclaim(
-                    session, task_id, self.recovery_worker_id
-                ):
+                if self.executor.lease.reclaim(session, task_id, self.recovery_worker_id):
                     reclaimed.append(task_id)
         if task_ids:
             _log.info(

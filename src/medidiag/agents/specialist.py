@@ -8,8 +8,7 @@
 
 from __future__ import annotations
 
-from medidiag.agents.base import BaseAgent
-from medidiag.agents.llm_client import LLMClient
+from medidiag.agents.base import AgentClient, BaseAgent
 
 
 class SpecialistAgent(BaseAgent):
@@ -26,9 +25,7 @@ class SpecialistAgent(BaseAgent):
     def __init__(
         self,
         specialty: str,
-        llm_client: LLMClient | None = None,
+        llm_client: AgentClient | None = None,
         fail_closed: bool = False,
     ) -> None:
-        super().__init__(
-            specialty=specialty, llm_client=llm_client, fail_closed=fail_closed
-        )
+        super().__init__(specialty=specialty, llm_client=llm_client, fail_closed=fail_closed)
