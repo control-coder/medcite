@@ -1,0 +1,98 @@
+default_profile: fake_offline
+
+profiles:
+  fake_offline:
+    adapter: fake
+    provider_id: fake
+    model: deterministic-v1
+    api_style: chat_completions
+    timeout_s: 5
+    temperature: 0
+    max_tokens: 512
+    require_response_id: true
+    capabilities:
+      chat_completions: true
+      structured_output: true
+      tool_calling: true
+      reasoning_mode: false
+      temperature: true
+      top_p: true
+      max_output_tokens: true
+      response_id: true
+      system_fingerprint: true
+
+  deepseek_default:
+    adapter: openai_compatible
+    provider_id: deepseek
+    base_url: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+    api_key_env: DEEPSEEK_API_KEY
+    model: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
+    api_style: chat_completions
+    temperature: 0
+    max_tokens: 1200
+    reasoning_mode: disabled
+    timeout_s: 60
+    require_response_id: false
+    capabilities:
+      chat_completions: true
+      responses: false
+      structured_output: true
+      tool_calling: true
+      reasoning_mode: true
+      temperature: true
+      top_p: true
+      streaming: false
+      max_output_tokens: true
+      response_id: true
+      system_fingerprint: false
+
+  mimo_v25:
+    adapter: openai_compatible
+    provider_id: mimo
+    base_url: ${MIMO_BASE_URL}
+    api_key_env: MIMO_API_KEY
+    model: ${MIMO_MODEL:-mimo-v2.5}
+    api_style: chat_completions
+    temperature: null
+    top_p: null
+    max_tokens: 1200
+    reasoning_mode: provider_default
+    timeout_s: 60
+    require_response_id: false
+    capabilities:
+      chat_completions: true
+      responses: true
+      structured_output: true
+      tool_calling: true
+      reasoning_mode: true
+      temperature: false
+      top_p: false
+      streaming: false
+      max_output_tokens: true
+      response_id: true
+      system_fingerprint: false
+
+  openai_compatible_custom:
+    adapter: openai_compatible
+    provider_id: custom_gateway
+    base_url: ${CUSTOM_LLM_BASE_URL}
+    api_key_env: CUSTOM_LLM_API_KEY
+    model: ${CUSTOM_LLM_MODEL}
+    api_style: chat_completions
+    temperature: 0
+    max_tokens: 1200
+    reasoning_mode: provider_default
+    timeout_s: 60
+    require_response_id: false
+    capabilities:
+      chat_completions: true
+      responses: false
+      structured_output: true
+      tool_calling: true
+      reasoning_mode: false
+      temperature: true
+      top_p: true
+      streaming: false
+      max_output_tokens: true
+      response_id: true
+      system_fingerprint: false

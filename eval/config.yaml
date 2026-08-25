@@ -8,6 +8,7 @@ evaluation:
 
 generation:
   provider: "deepseek"
+  profile: "deepseek_default"
   model: "deepseek-v4-flash"
   revision: "development-unpinned"
   base_url: "https://api.deepseek.com"

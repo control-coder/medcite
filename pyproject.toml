@@ -55,6 +55,7 @@ medidiag = [
     "api/templates/partials/*.html",
     "api/static/*.css",
     "api/static/*.js",
+    "llm/profiles.yaml",
 ]
 
 [tool.pytest.ini_options]

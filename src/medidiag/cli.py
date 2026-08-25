@@ -13,11 +13,14 @@ from sqlalchemy.orm import Session, sessionmaker
 from medidiag.config import get_settings
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.observability.logging import configure_logging
-from medidiag.workflow.deepseek_provider import DeepSeekWorkflowProvider
+from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 
-_PROVIDER_CHOICES = click.Choice(["deepseek", "deterministic"], case_sensitive=False)
+_PROVIDER_CHOICES = click.Choice(
+    ["fake_offline", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
+    case_sensitive=False,
+)
 
 
 @click.group()
@@ -61,16 +64,15 @@ def _session_factory() -> tuple[Engine, sessionmaker[Session]]:
 
 
 def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider:
-    if provider_name == "deterministic":
+    if provider_name == "fake_offline":
         return DeterministicWorkflowProvider(review_verdict=review_verdict)
-    provider = DeepSeekWorkflowProvider()
-    if not provider.client.is_configured:
+    provider = OpenAICompatibleWorkflowProvider(profile_id=provider_name)
+    if not provider.is_configured:
         raise click.UsageError(
-            "DEEPSEEK_API_KEY is required for --provider deepseek; "
-            "use --provider deterministic for the network-free fixture."
+            f"LLM profile {provider_name} 缺少 base URL、model 或 api_key_env 对应密钥；"
+            "可使用 --provider fake_offline 运行无网络 fixture。"
         )
     return provider
-
 
 @main.command()
 @click.option("--once", is_flag=True, help="Process at most one task.")
@@ -80,16 +82,16 @@ def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider
     "--provider",
     "provider_name",
     type=_PROVIDER_CHOICES,
-    default="deepseek",
+    default="deepseek_default",
     show_default=True,
-    help="Live DeepSeek drafts one constrained generation stage; deterministic is fixture-only.",
+    help="选择 LLM profile；fake_offline 为无网络 fixture。",
 )
 @click.option(
     "--review-verdict",
     type=click.Choice(["APPROVED", "REVISION_REQUIRED", "ESCALATED"]),
     default="APPROVED",
     show_default=True,
-    help="Only used by the deterministic development provider.",
+    help="仅供 fake_offline 开发 fixture 使用。",
 )
 def worker(
     once: bool, loop: bool, worker_id: str, provider_name: str, review_verdict: str
@@ -131,7 +133,7 @@ def worker(
     "--provider",
     "provider_name",
     type=_PROVIDER_CHOICES,
-    default="deepseek",
+    default="deepseek_default",
     show_default=True,
 )
 def demo(host: str, port: int, provider_name: str) -> None:
@@ -165,9 +167,9 @@ def demo(host: str, port: int, provider_name: str) -> None:
     app = create_app(session_factory=factory)
     app.state.demo_runtime = {
         "label": (
-            "DeepSeek 实时起草"
-            if provider_name == "deepseek"
-            else "确定性本地 fixture"
+            "确定性本地 fixture"
+            if provider_name == "fake_offline"
+            else f"{provider_name} 实时起草"
         ),
         "detail": (
             f"生成阶段使用 {provider.version}；检索仍为本地演示 fixture，"
