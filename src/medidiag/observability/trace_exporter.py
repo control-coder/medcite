@@ -291,6 +291,55 @@ class TraceExporter:
             "compliance_status": (
                 review.payload.get("compliance_status") if review else None
             ),
+            "reliability": {
+                "provider_attempts": [
+                    {
+                        "event_id": item["event_id"],
+                        "stage": item["stage"],
+                        "attempt": item["detail"].get("provider_attempt"),
+                        "request_id": item["detail"].get("provider_request_id"),
+                        "error_code": item["error_code"],
+                        "retryable": item["retryable"],
+                        "retry_decision": item["detail"].get("retry_decision"),
+                        "http_status": item["detail"].get("http_status"),
+                    }
+                    for item in raw_events
+                    if item["event_type"] == "provider_call"
+                ],
+                "stage_failures": [
+                    {
+                        "event_id": item["event_id"],
+                        "stage": item["stage"],
+                        "error_code": item["error_code"],
+                        "retryable": item["retryable"],
+                        "action": item["action"],
+                    }
+                    for item in raw_events
+                    if item["event_type"] == "stage_failed"
+                ],
+                "cas_retries": [
+                    {
+                        "event_id": item["event_id"],
+                        "stage": item["stage"],
+                        "retry_count": item["detail"].get(
+                            "optimistic_lock_retry_count", 0
+                        ),
+                    }
+                    for item in raw_events
+                    if item["event_type"] == "stage_completed"
+                    and item["detail"].get("optimistic_lock_retry_count", 0) > 0
+                ],
+                "lease_reclaimed_event_ids": [
+                    item["event_id"]
+                    for item in raw_events
+                    if item["event_type"] == "lease_reclaimed"
+                ],
+                "lease_lost_event_ids": [
+                    item["event_id"]
+                    for item in raw_events
+                    if item["error_code"] == "TASK_LEASE_LOST"
+                ],
+            },
             "recovery": {
                 "lease_reclaimed_event_ids": [
                     item["event_id"]

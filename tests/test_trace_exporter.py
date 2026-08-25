@@ -88,8 +88,20 @@ def test_exporter_emits_required_fields_and_redacted_links(tmp_path) -> None:
 def test_generate_reproducible_trace_scenarios(tmp_path) -> None:
     results = generate_trace_examples(tmp_path / "traces")
     by_name = {item.scenario: item for item in results}
-    assert set(by_name) == {"success", "lease_recovery", "review_escalation", "dual_specialist_negative"}
-    assert all(item.final_state == "CLOSED_SUCCESS" for item in results)
+    assert set(by_name) == {
+        "success",
+        "provider_retry_recovered",
+        "provider_timeout_escalated",
+        "lease_recovery",
+        "review_escalation",
+        "dual_specialist_negative",
+    }
+    assert by_name["provider_timeout_escalated"].final_state == "ESCALATED"
+    assert all(
+        item.final_state == "CLOSED_SUCCESS"
+        for item in results
+        if item.scenario != "provider_timeout_escalated"
+    )
 
     success = json.loads(
         by_name["success"].export.summary_path.read_text(encoding="utf-8")
@@ -97,6 +109,23 @@ def test_generate_reproducible_trace_scenarios(tmp_path) -> None:
     assert success["report"] is not None
     assert success["evidence"]
     assert success["citation_verdicts"]
+
+    retry = json.loads(
+        by_name["provider_retry_recovered"].export.summary_path.read_text(encoding="utf-8")
+    )
+    normalize_attempts = [
+        item for item in retry["reliability"]["provider_attempts"]
+        if item["stage"] == "normalize"
+    ]
+    assert [item["retry_decision"] for item in normalize_attempts] == [
+        "retry", "retry", "not_needed"
+    ]
+
+    timeout = json.loads(
+        by_name["provider_timeout_escalated"].export.summary_path.read_text(encoding="utf-8")
+    )
+    assert timeout["report"] is None
+    assert timeout["reliability"]["stage_failures"][0]["error_code"] == "LLM_TIMEOUT"
 
     recovery = json.loads(
         by_name["lease_recovery"].export.summary_path.read_text(encoding="utf-8")

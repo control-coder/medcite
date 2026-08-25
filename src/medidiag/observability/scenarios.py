@@ -8,6 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+import httpx
 from sqlalchemy import update
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -18,6 +19,7 @@ from medidiag.observability.trace_exporter import TraceExporter, TraceExportResu
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.provider import DeterministicWorkflowProvider
+from medidiag.workflow.provider_runtime import ProviderCallRunner, ProviderResponse
 from medidiag.workflow.state_machine import CaseState, TriggerSubject
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 
@@ -30,6 +32,43 @@ class ScenarioTrace:
 
 
 @dataclass
+class RetryRecoveredFixtureProvider(DeterministicWorkflowProvider):
+    """前两次 normalize 注入 429，第三次恢复。"""
+
+    version = "retry-recovered-fixture-v1"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = 0
+
+    def normalize(self, question: str) -> Any:
+        self.calls += 1
+        if self.calls < 3:
+            request = httpx.Request("POST", "https://provider.invalid/v1/call")
+            response = httpx.Response(
+                429,
+                request=request,
+                headers={"x-request-id": f"req-trace-rate-{self.calls}"},
+            )
+            raise httpx.HTTPStatusError(
+                "注入的限流故障", request=request, response=response
+            )
+        return ProviderResponse(
+            super().normalize(question), request_id="req-trace-rate-recovered"
+        )
+
+
+class TimeoutEscalationFixtureProvider(DeterministicWorkflowProvider):
+    """在 generation 阶段持续超时，用于验证失败关闭。"""
+
+    version = "timeout-escalation-fixture-v1"
+
+    def generate(
+        self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]
+    ) -> dict[str, Any]:
+        raise httpx.ReadTimeout("注入的 generation timeout")
+
+
 class DualSpecialistFixtureProvider(DeterministicWorkflowProvider):
     """为负向 trace 固定生成两个专科输出及无收益仲裁结果。"""
 
@@ -98,6 +137,8 @@ def generate_trace_examples(output_root: str | Path) -> list[ScenarioTrace]:
         try:
             case_ids = {
                 "success": _success_scenario(factory),
+                "provider_retry_recovered": _provider_retry_scenario(factory),
+                "provider_timeout_escalated": _provider_timeout_scenario(factory),
                 "lease_recovery": _lease_recovery_scenario(factory),
                 "review_escalation": _review_escalation_scenario(factory),
                 "dual_specialist_negative": _dual_specialist_scenario(factory),
@@ -148,6 +189,35 @@ def _success_scenario(factory: sessionmaker[Session]) -> str:
     ).run_once()
     if result.final_state != CaseState.CLOSED_SUCCESS.value:
         raise RuntimeError("success trace scenario did not close successfully")
+    return case_id
+
+
+def _provider_retry_scenario(factory: sessionmaker[Session]) -> str:
+    case_id, _ = _create_task(factory, "provider-retry-recovered")
+    provider = RetryRecoveredFixtureProvider()
+    result = SingleMachineWorker(
+        factory,
+        provider,
+        worker_id="trace-provider-retry-worker",
+        call_runner=ProviderCallRunner(backoff_seconds=(0, 0), sleep=lambda _: None),
+    ).run_once()
+    if result.final_state != CaseState.CLOSED_SUCCESS.value or provider.calls != 3:
+        raise RuntimeError("provider retry trace scenario did not recover")
+    return case_id
+
+
+def _provider_timeout_scenario(factory: sessionmaker[Session]) -> str:
+    case_id, _ = _create_task(factory, "provider-timeout-escalated")
+    result = SingleMachineWorker(
+        factory,
+        TimeoutEscalationFixtureProvider(),
+        worker_id="trace-provider-timeout-worker",
+        call_runner=ProviderCallRunner(
+            max_attempts=2, backoff_seconds=(0,), sleep=lambda _: None
+        ),
+    ).run_once()
+    if result.final_state != CaseState.ESCALATED.value:
+        raise RuntimeError("provider timeout trace scenario did not escalate")
     return case_id
 
 

@@ -35,7 +35,7 @@ from medidiag.workflow.state_machine import (
     validate_transition,
 )
 
-# 乐观锁重试参数（PLAN.md: 3 次退避 50/100/200ms）
+# 乐观锁最多重试 3 次；连同首次尝试共 4 次，退避 50/100/200ms。
 OPTIMISTIC_LOCK_MAX_RETRIES = 3
 OPTIMISTIC_LOCK_BACKOFF_MS: list[int] = [50, 100, 200]
 
@@ -335,7 +335,7 @@ class WorkflowExecutor:
         """
         last_error: MediDiagError | None = None
 
-        for attempt in range(OPTIMISTIC_LOCK_MAX_RETRIES):
+        for attempt in range(OPTIMISTIC_LOCK_MAX_RETRIES + 1):
             # 重读 case 状态
             case = session.execute(
                 select(Case).where(Case.case_id == case_id)
@@ -392,7 +392,7 @@ class WorkflowExecutor:
                 detail=f"version conflict on attempt {attempt + 1}",
                 context={"case_id": case_id, "attempt": attempt + 1},
             )
-            if attempt < OPTIMISTIC_LOCK_MAX_RETRIES - 1:
+            if attempt < OPTIMISTIC_LOCK_MAX_RETRIES:
                 time.sleep(OPTIMISTIC_LOCK_BACKOFF_MS[attempt] / 1000.0)
 
         # 重试耗尽
@@ -680,114 +680,142 @@ class WorkflowExecutor:
         complete_task: bool = False,
         task_result: dict[str, Any] | None = None,
     ) -> None:
-        """Atomically fence a worker and persist one workflow stage.
+        """在同一事务中完成租约 fence、病例 CAS、产物和事件写入。
 
-        The task lease predicate, case optimistic-lock predicate, stage records,
-        state transition, and event append share one transaction. External IO
-        must complete before this method is called.
+        外部 IO 必须在调用前完成。病例 version 冲突最多重试 3 次；每次重试
+        都重新校验任务租约和当前状态，失败事务不会写入 artifact 或事件。
         """
-        task = session.execute(
-            select(WorkflowTask).where(WorkflowTask.task_id == task_id)
-        ).scalar_one_or_none()
-        if task is None:
-            raise MediDiagError("TASK_LEASE_LOST", detail=f"task {task_id} not found")
+        last_error: MediDiagError | None = None
+        retry_count = 0
+        case_id: str | None = None
 
-        now = self.lease.now()
-        task_updates: dict[str, Any] = {"heartbeat_at": now}
-        if complete_task:
-            task_updates.update(status="SUCCEEDED", result=task_result or {})
-        fenced = session.execute(
-            update(WorkflowTask)
-            .where(
-                WorkflowTask.task_id == task_id,
-                WorkflowTask.lease_owner == worker_id,
-                WorkflowTask.attempt == attempt,
-                WorkflowTask.status == "RUNNING",
-                WorkflowTask.lease_until > now,
-            )
-            .values(**task_updates)
-        )
-        if rowcount(fenced) != 1:
-            session.rollback()
-            self._record_lease_lost(session, task, worker_id, attempt, stage)
-            raise MediDiagError(
-                "TASK_LEASE_LOST",
-                detail=f"worker {worker_id} lost lease on task {task_id}",
-                context={"task_id": task_id, "attempt": attempt, "stage": stage},
-            )
+        for retry_count in range(OPTIMISTIC_LOCK_MAX_RETRIES + 1):
+            task = session.execute(
+                select(WorkflowTask).where(WorkflowTask.task_id == task_id)
+            ).scalar_one_or_none()
+            if task is None:
+                raise MediDiagError("TASK_LEASE_LOST", detail=f"task {task_id} not found")
+            case_id = task.case_id
 
-        case = session.execute(
-            select(Case).where(Case.case_id == task.case_id)
-        ).scalar_one_or_none()
-        if case is None:
-            session.rollback()
-            raise MediDiagError("CASE_NOT_FOUND", detail=f"case {task.case_id} not found")
-        current_state = CaseState(case.status)
-        try:
-            validate_transition(current_state, to_state, subject)
-        except IllegalTransitionError as exc:
-            session.rollback()
-            raise MediDiagError(
-                "ILLEGAL_STATE_TRANSITION",
-                detail=str(exc),
-                context={"from": current_state.value, "to": to_state.value},
-            ) from exc
-
-        values: dict[str, Any] = {
-            "status": to_state.value,
-            "version": case.version + 1,
-            **(case_values or {}),
-        }
-        if complete_task:
-            values["active_task_id"] = None
-        advanced = session.execute(
-            update(Case)
-            .where(
-                Case.case_id == case.case_id,
-                Case.version == case.version,
-                Case.active_task_id == task_id,
+            now = self.lease.now()
+            task_updates: dict[str, Any] = {"heartbeat_at": now}
+            if complete_task:
+                task_updates.update(status="SUCCEEDED", result=task_result or {})
+            fenced = session.execute(
+                update(WorkflowTask)
+                .where(
+                    WorkflowTask.task_id == task_id,
+                    WorkflowTask.lease_owner == worker_id,
+                    WorkflowTask.attempt == attempt,
+                    WorkflowTask.status == "RUNNING",
+                    WorkflowTask.lease_until > now,
+                )
+                .values(**task_updates)
             )
-            .values(**values)
-        )
-        if rowcount(advanced) != 1:
-            session.rollback()
-            raise MediDiagError(
-                "OPTIMISTIC_LOCK_CONFLICT",
-                detail=f"stage {stage} case CAS conflict",
-                context={"case_id": case.case_id, "task_id": task_id},
-            )
+            if rowcount(fenced) != 1:
+                session.rollback()
+                self._record_lease_lost(session, task, worker_id, attempt, stage)
+                raise MediDiagError(
+                    "TASK_LEASE_LOST",
+                    detail=f"worker {worker_id} lost lease on task {task_id}",
+                    context={"task_id": task_id, "attempt": attempt, "stage": stage},
+                )
 
-        for record in records or []:
-            session.add(record)
-        session.add(
-            CaseEventLog(
+            case = session.execute(
+                select(Case).where(Case.case_id == task.case_id)
+            ).scalar_one_or_none()
+            if case is None:
+                session.rollback()
+                raise MediDiagError("CASE_NOT_FOUND", detail=f"case {task.case_id} not found")
+            current_state = CaseState(case.status)
+            try:
+                validate_transition(current_state, to_state, subject)
+            except IllegalTransitionError as exc:
+                session.rollback()
+                raise MediDiagError(
+                    "ILLEGAL_STATE_TRANSITION",
+                    detail=str(exc),
+                    context={"from": current_state.value, "to": to_state.value},
+                ) from exc
+
+            values: dict[str, Any] = {
+                "status": to_state.value,
+                "version": case.version + 1,
+                **(case_values or {}),
+            }
+            if complete_task:
+                values["active_task_id"] = None
+            advanced = session.execute(
+                update(Case)
+                .where(
+                    Case.case_id == case.case_id,
+                    Case.version == case.version,
+                    Case.active_task_id == task_id,
+                )
+                .values(**values)
+            )
+            if rowcount(advanced) != 1:
+                session.rollback()
+                last_error = MediDiagError(
+                    "OPTIMISTIC_LOCK_CONFLICT",
+                    detail=f"stage {stage} case CAS conflict on retry {retry_count}",
+                    context={
+                        "case_id": case.case_id,
+                        "task_id": task_id,
+                        "retry_count": retry_count,
+                    },
+                )
+                _log.warning(
+                    "workflow.stage_cas_conflict",
+                    case_id=case.case_id,
+                    task_id=task_id,
+                    worker_id=worker_id,
+                    stage=stage,
+                    retry_count=retry_count,
+                    error_code="OPTIMISTIC_LOCK_CONFLICT",
+                )
+                if retry_count < OPTIMISTIC_LOCK_MAX_RETRIES:
+                    time.sleep(OPTIMISTIC_LOCK_BACKOFF_MS[retry_count] / 1000.0)
+                    continue
+                break
+
+            for record in records or []:
+                session.add(record)
+            event_detail = {
+                "task_id": task_id,
+                "stage": stage,
+                "attempt": attempt,
+                "optimistic_lock_retry_count": retry_count,
+                **(detail or {}),
+            }
+            session.add(
+                CaseEventLog(
+                    case_id=case.case_id,
+                    event_type="stage_completed",
+                    from_status=current_state.value,
+                    to_status=to_state.value,
+                    trigger_subject=subject.value,
+                    trigger_entity=worker_id,
+                    detail=event_detail,
+                )
+            )
+            session.commit()
+            _log.info(
+                "workflow.stage_committed",
                 case_id=case.case_id,
-                event_type="stage_completed",
-                from_status=current_state.value,
-                to_status=to_state.value,
-                trigger_subject=subject.value,
-                trigger_entity=worker_id,
-                detail={
-                    "task_id": task_id,
-                    "stage": stage,
-                    "attempt": attempt,
-                    **(detail or {}),
-                },
+                task_id=task_id,
+                worker_id=worker_id,
+                attempt=attempt,
+                stage=stage,
+                from_state=current_state.value,
+                to_state=to_state.value,
+                optimistic_lock_retry_count=retry_count,
             )
-        )
-        session.commit()
-        # 只记录状态跳转本身：stage 名、状态、任务与 case 标识，不含任何阶段产物。
-        _log.info(
-            "workflow.stage_committed",
-            case_id=case.case_id,
-            task_id=task_id,
-            worker_id=worker_id,
-            attempt=attempt,
-            stage=stage,
-            from_state=current_state.value,
-            to_state=to_state.value,
-            trigger_subject=subject.value,
-            task_completed=complete_task,
+            return
+
+        raise last_error or MediDiagError(
+            "WORKFLOW_RETRY_EXCEEDED",
+            detail=f"stage {stage} optimistic lock retry exhausted for case {case_id}",
         )
 
     @staticmethod

@@ -413,7 +413,7 @@ def trace_export(case_id: str, output_root: Path) -> None:
     show_default=True,
 )
 def trace_examples(output_root: Path) -> None:
-    """Generate three deterministic P1-A trace scenarios."""
+    """生成包含 P7 可靠性故障的确定性 Trace 示例。"""
     from medidiag.observability.scenarios import generate_trace_examples
 
     for item in generate_trace_examples(output_root):
