@@ -110,7 +110,7 @@ def create_app(
             method=request.method,
             route=request.url.path,
         )
-        if request.url.path.startswith("/demo"):
+        if request.url.path.startswith(("/demo", "/assistant")):
             return _TEMPLATES.TemplateResponse(
                 request=request,
                 name="partials/error.html",
@@ -276,6 +276,82 @@ def create_app(
         session.expire_all()
         return _case_response(session, _case_or_404(session, case_id))
 
+    @app.get("/assistant", response_class=HTMLResponse)
+    def assistant_home(
+        request: Request, session: Session = Depends(get_session)
+    ) -> HTMLResponse:
+        recent = list(
+            session.execute(select(Case).order_by(Case.id.desc()).limit(10)).scalars()
+        )
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="assistant.html",
+            context={
+                "recent_cases": recent,
+                "demo_runtime": request.app.state.demo_runtime,
+            },
+        )
+
+    @app.post("/assistant/cases", response_class=HTMLResponse)
+    def assistant_create_case(
+        request: Request,
+        question: str = Form(...),
+        input_kind: str = Form(...),
+        source_ref: str | None = Form(default=None),
+        session: Session = Depends(get_session),
+    ) -> Response:
+        payload = _validated_form_payload(question, input_kind, source_ref)
+        _ensure_deidentified(payload)
+        nonce = uuid.uuid4().hex
+        case = app.state.executor.create_case(
+            session,
+            payload.question,
+            f"assistant-case-{nonce}",
+            "local-assistant",
+            input_kind=payload.input_kind,
+            source_ref=payload.source_ref,
+        )
+        app.state.executor.start_workflow(
+            session,
+            case.case_id,
+            "case_workflow",
+            f"assistant-workflow-{nonce}",
+            compute_input_hash(
+                {"case_id": case.case_id, "question": case.question, "version": case.version}
+            ),
+        )
+        location = f"/assistant/cases/{case.case_id}"
+        if request.headers.get("HX-Request") == "true":
+            return Response(
+                status_code=status.HTTP_204_NO_CONTENT,
+                headers={"HX-Redirect": location},
+            )
+        return RedirectResponse(location, status_code=status.HTTP_303_SEE_OTHER)
+
+    @app.get("/assistant/cases/{case_id}", response_class=HTMLResponse)
+    def assistant_case(
+        request: Request,
+        case_id: str,
+        session: Session = Depends(get_session),
+    ) -> HTMLResponse:
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="assistant_case.html",
+            context=_assistant_case_context(session, case_id),
+        )
+
+    @app.get("/assistant/cases/{case_id}/status", response_class=HTMLResponse)
+    def assistant_case_status(
+        request: Request,
+        case_id: str,
+        session: Session = Depends(get_session),
+    ) -> HTMLResponse:
+        return _TEMPLATES.TemplateResponse(
+            request=request,
+            name="partials/assistant_case_live.html",
+            context=_assistant_case_context(session, case_id),
+        )
+
     @app.get("/demo", response_class=HTMLResponse)
     def demo_home(
         request: Request, session: Session = Depends(get_session)
@@ -300,18 +376,7 @@ def create_app(
         source_ref: str | None = Form(default=None),
         session: Session = Depends(get_session),
     ) -> Response:
-        try:
-            # 表单字段是未受信的字符串，收窄到 Literal 的是 pydantic 而不是
-            # 静态类型；用 model_validate 让校验发生在它该发生的地方。
-            payload = CaseCreateRequest.model_validate(
-                {
-                    "question": question,
-                    "input_kind": input_kind,
-                    "source_ref": source_ref or None,
-                }
-            )
-        except ValidationError as exc:
-            raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
+        payload = _validated_form_payload(question, input_kind, source_ref)
         _ensure_deidentified(payload)
         nonce = uuid.uuid4().hex
         case = app.state.executor.create_case(
@@ -438,6 +503,128 @@ def create_app(
         )
 
     return app
+
+
+def _validated_form_payload(
+    question: str, input_kind: str, source_ref: str | None
+) -> CaseCreateRequest:
+    """校验服务端 HTML 表单，不在错误页面回显被拒绝的原始输入。"""
+    try:
+        return CaseCreateRequest.model_validate(
+            {
+                "question": question,
+                "input_kind": input_kind,
+                "source_ref": source_ref or None,
+            }
+        )
+    except ValidationError as exc:
+        raise MediDiagError("CASE_INVALID_INPUT", detail=str(exc)) from exc
+
+
+def _assistant_case_context(session: Session, case_id: str) -> dict[str, Any]:
+    """构造面向用户的收敛视图，不暴露内部错误详情或完整 reasoning。"""
+    case = _case_or_404(session, case_id)
+    active = (
+        session.execute(
+            select(WorkflowTask).where(WorkflowTask.task_id == case.active_task_id)
+        ).scalar_one_or_none()
+        if case.active_task_id
+        else None
+    )
+    events = list(
+        session.execute(
+            select(CaseEventLog)
+            .where(CaseEventLog.case_id == case_id)
+            .order_by(CaseEventLog.id.desc())
+            .limit(100)
+        ).scalars()
+    )
+    retrieval = session.execute(
+        select(StageArtifact)
+        .where(StageArtifact.case_id == case_id, StageArtifact.stage == "retrieval")
+        .order_by(StageArtifact.id.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    persisted_report = session.execute(
+        select(CaseReport)
+        .where(CaseReport.case_id == case_id)
+        .order_by(CaseReport.version.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    report = None
+    if (
+        case.status == CaseState.CLOSED_SUCCESS.value
+        and persisted_report is not None
+        and persisted_report.structured_report.get("schema_version")
+        == "assistant-report-v1"
+    ):
+        report = persisted_report
+    return {
+        "case": case,
+        "active_task": active,
+        "evidence": retrieval.payload.get("chunks", []) if retrieval else [],
+        "report": report,
+        "progress": _assistant_progress(case.status),
+        "status_message": _assistant_status_message(case.status),
+        "event_count": len(events),
+        "recent_event_names": [event.event_type for event in events[:5]],
+        "should_poll": active is not None and not is_terminal(CaseState(case.status)),
+    }
+
+
+def _assistant_progress(status_value: str) -> list[dict[str, str]]:
+    stages = [
+        ("已提交", {"CREATED"}),
+        ("输入归一化", {"NORMALIZED"}),
+        ("证据检索", {"EVIDENCE_RETRIEVED"}),
+        ("分析规划", {"PLAN_GENERATED"}),
+        ("专科 Agent 与仲裁", {"SPECIALIST_REVIEWING", "ARBITRATION_REVIEWING"}),
+        (
+            "引用、逻辑与合规审核",
+            {"APPROVED", "REVISION_REQUIRED", "ESCALATED"},
+        ),
+        (
+            "报告生成与关闭",
+            {
+                "REPORT_GENERATED",
+                "CLOSED_SUCCESS",
+                "CLOSED_FAILED",
+                "CLOSED_ESCALATED",
+                "CLOSED_CANCELLED",
+            },
+        ),
+    ]
+    current_index = next(
+        (index for index, (_, values) in enumerate(stages) if status_value in values),
+        0,
+    )
+    return [
+        {
+            "label": label,
+            "state": (
+                "done"
+                if index < current_index or status_value == CaseState.CLOSED_SUCCESS.value
+                else "current"
+                if index == current_index
+                else "pending"
+            ),
+        }
+        for index, (label, _) in enumerate(stages)
+    ]
+
+
+def _assistant_status_message(status_value: str) -> str:
+    messages = {
+        "ESCALATED": "当前等待人工审核，系统不会把该状态展示为成功报告。",
+        "REVISION_REQUIRED": "审核要求修订，当前没有可向用户交付的报告。",
+        "APPROVED": "审核已通过，正在等待报告生成与安全关闭。",
+        "REPORT_GENERATED": "报告已生成但工作流尚未安全关闭，暂不展示结果。",
+        "CLOSED_SUCCESS": "工程工作流已安全关闭，可查看审核后的辅助报告。",
+        "CLOSED_FAILED": "本次工作流失败，未生成可用报告。",
+        "CLOSED_ESCALATED": "本次咨询已由人工终止，未生成可用报告。",
+        "CLOSED_CANCELLED": "本次咨询已取消，未生成可用报告。",
+    }
+    return messages.get(status_value, "系统正在处理，请稍后刷新查看阶段进度。")
 
 
 def _case_or_404(session: Session, case_id: str) -> Case:

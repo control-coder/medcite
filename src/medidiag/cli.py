@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import threading
 import time
+import uuid
 from pathlib import Path
 
 import click
@@ -13,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from medidiag.agents.runtime import AgentTopologyConfig, RuntimeMedicalAgents
 from medidiag.config import get_settings, load_eval_config
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
+from medidiag.llm import LLMRequest, build_llm_provider
 from medidiag.observability.logging import configure_logging
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.review.runtime import RuntimeMedicalReview
@@ -279,7 +282,10 @@ def demo(
         "label": runtime_label,
         "detail": runtime_detail,
     }
-    click.echo(f"MediDiag 演示已启动：provider={provider.version}；访问 http://{host}:{port}/demo")
+    click.echo(
+        f"MediDiag 演示已启动：provider={provider.version}；"
+        f"用户页 http://{host}:{port}/assistant；工程页 http://{host}:{port}/demo"
+    )
     worker_thread.start()
     try:
         uvicorn.run(app, host=host, port=port, log_level="info")
@@ -299,6 +305,55 @@ def _demo_worker_loop(stop: threading.Event, runner: SingleMachineWorker) -> Non
             stop.wait(1.0)
             continue
         stop.wait(0.15 if result.processed else 0.5)
+
+
+@main.command("provider-smoke")
+@click.option(
+    "--provider",
+    "provider_name",
+    type=_PROVIDER_CHOICES,
+    required=True,
+    help="显式选择要探测的 profile；命令不会由 demo 或测试默认触发。",
+)
+@click.option("--timeout", "timeout_s", default=20.0, show_default=True, type=float)
+def provider_smoke(provider_name: str, timeout_s: float) -> None:
+    """发送一次不含医疗数据的最小 Provider 探测请求。"""
+    provider = build_llm_provider(provider_name, max_retries=0)
+    if not getattr(provider, "is_configured", True):
+        raise click.UsageError(
+            f"LLM profile {provider_name} 缺少 base URL、model 或 api_key_env 对应密钥。"
+        )
+    result = provider.generate(
+        LLMRequest(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "这是连接探测。不要提供医疗信息，只返回 JSON status=ok。",
+                },
+                {"role": "user", "content": "connection smoke test"},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0,
+            max_tokens=32,
+            prompt_version="provider-smoke-v1",
+        ),
+        timeout_s=timeout_s,
+        idempotency_key=f"provider-smoke-{uuid.uuid4().hex}",
+    )
+    safe_summary = {
+        "profile": result.profile_id,
+        "model": result.model,
+        "response_id_present": bool(result.response_id),
+        "system_fingerprint_present": bool(result.system_fingerprint),
+        "latency_ms": result.latency_ms,
+        "usage": result.usage,
+        "provenance_mode": result.provenance_mode,
+        "provider_snapshot_verifiable": bool(result.system_fingerprint),
+    }
+    click.echo(json.dumps(safe_summary, ensure_ascii=False, sort_keys=True))
+    click.echo(
+        "探测成功仅说明最小 Provider 调用可用，不代表医疗工作流、临床有效性或 formal run 成功。"
+    )
 
 
 @main.command("lease-scan")

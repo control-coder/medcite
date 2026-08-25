@@ -36,10 +36,13 @@ python -m mypy src
 python -m eval.runner --config eval/config.yaml --validate
 python -m eval.runner --config eval/config.yaml --show-config
 
-# 本地工程闭环与演示页（http://127.0.0.1:8400/demo）
+# 本地工程闭环：用户页 /assistant，工程工作台 /demo
 alembic upgrade head
-medidiag demo            # 确定性 provider，无需联网
-medidiag demo --provider deepseek   # 需 .env 配置 DEEPSEEK_API_KEY
+medidiag demo --provider fake_offline       # 确定性 fixture，无需联网
+medidiag demo --provider deepseek_default   # 需配置 DEEPSEEK_API_KEY
+
+# 显式最小连接探测；默认流程不会执行，也不会发送医疗数据
+medidiag provider-smoke --provider deepseek_default
 ```
 
 注意：必须用 conda `medidiag` 环境而不是 base（base 缺 `sentence_transformers` 与 `faiss`）。复现 CI 离线行为时设置 `HF_HUB_OFFLINE=1` 与 `TRANSFORMERS_OFFLINE=1`。
@@ -103,7 +106,7 @@ medidiag demo --provider deepseek   # 需 .env 配置 DEEPSEEK_API_KEY
 - 单机闭环：六个 FastAPI API、配置化 worker/lease scanner、阶段产物、人工升级回流、结构化报告、崩溃接管恢复。
 - Provider 调用可靠性边界：七类阶段 schema、timeout/429/瞬时 5xx 有限重试、provider request ID 与 retry decision 事件审计。
 - Trace exporter：统一 trace schema、raw/summary 反向关联、脱敏；四类确定性工程案例（含双专科无明确收益负向 fixture）。
-- 最小演示页：Jinja2 + 本地 HTMX、2 秒局部轮询、人工处置、证据/citation/审核/报告视图、无 JS fallback。
+- 双视图最小演示页：`/assistant` 提供阶段进度、证据、审核后报告和脱敏 Trace 摘要，`/demo` 保留人工处置与工程排障；Jinja2 + 本地 HTMX 支持 2 秒局部轮询和无 JavaScript fallback。
 - 医学术语归一化、BM25/embedding/证据等级组合排序、cross-encoder rerank；单 Agent / 固定双专科 / 动态双专科与仲裁实验组件。
 - 配置驱动评测门禁：实验族隔离、formal judge fail-closed、eligible 指标分母、leakage 前置检查、run provenance、双人标注/Kappa/裁决审计与报告阻断。
 

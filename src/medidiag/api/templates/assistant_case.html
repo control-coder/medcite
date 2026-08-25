@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}咨询 {{ case.case_id }} | 医疗信息助手{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/assistant">医疗信息助手</a><span>/</span><span>{{ case.case_id }}</span></nav>
+<noscript><p class="attention-band">浏览器未启用 JavaScript，请使用页面中的“刷新进度”链接手动更新。</p></noscript>
+{% include "partials/assistant_case_live.html" %}
+{% endblock %}

@@ -1,0 +1,57 @@
+<section id="assistant-case-live" class="case-live"
+  {% if should_poll %}hx-get="/assistant/cases/{{ case.case_id }}/status" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <header class="case-header">
+    <div><p class="eyebrow">咨询编号</p><h1>{{ case.case_id }}</h1></div>
+    <div class="case-status-block"><span class="status status-{{ case.status|lower }}">{{ case.status }}</span></div>
+  </header>
+
+  <section class="status-message" aria-live="polite">
+    <strong>{{ status_message }}</strong>
+    <a href="/assistant/cases/{{ case.case_id }}">刷新进度</a>
+  </section>
+
+  <ol class="progress-list" aria-label="处理进度">
+    {% for item in progress %}<li class="progress-{{ item.state }}"><span>{{ loop.index }}</span><strong>{{ item.label }}</strong><small>{{ '已完成' if item.state == 'done' else '处理中' if item.state == 'current' else '待处理' }}</small></li>{% endfor %}
+  </ol>
+
+  <div class="detail-grid">
+    <section class="data-section">
+      <div class="section-heading"><h2>证据摘要</h2><span>{{ evidence|length }} 条</span></div>
+      {% if evidence %}<div class="evidence-list">
+        {% for item in evidence %}<article class="evidence-item">
+          <div class="item-meta"><strong>{{ item.source or item.source_id or '公开证据' }}</strong><span>{{ item.evidence_level or '未分级' }}</span></div>
+          <p>{{ item.text }}</p><code>{{ item.chunk_id }}</code>
+        </article>{% endfor %}
+      </div>{% else %}<p class="empty-state">证据检索尚未完成。</p>{% endif %}
+    </section>
+
+    <section class="data-section">
+      <div class="section-heading"><h2>Trace 摘要</h2><span>已脱敏</span></div>
+      <dl class="trace-summary">
+        <div><dt>Trace ID</dt><dd>{{ case.trace_id }}</dd></div>
+        <div><dt>事件数量</dt><dd>{{ event_count }}</dd></div>
+        <div><dt>最近事件</dt><dd>{{ recent_event_names|join('、') or '暂无' }}</dd></div>
+      </dl>
+      <p class="item-meta">用户视图不展示 API key、完整 reasoning、内部事件详情或供应商原始错误。</p>
+    </section>
+  </div>
+
+  {% if report %}
+  {% set data = report.structured_report %}
+  <section class="report-band">
+    <div class="section-heading"><h2>{{ data.title }}</h2><span>审核后报告</span></div>
+    <p>{{ data.summary }}</p>
+    <div class="claim-list">{% for claim in data.claims %}<article class="claim-item">
+      <p>{{ claim.canonical_text_en or claim.text }}</p>
+      <div class="citation-row"><span class="verdict verdict-supported">{{ claim.citation_verdict or 'SUPPORTED' }}</span></div>
+      {% if claim.citations %}<ul>{% for citation in claim.citations %}<li>{{ citation.source or citation.source_id or '公开来源' }} · {{ citation.evidence_level or '未分级' }} · <code>{{ citation.chunk_id }}</code></li>{% endfor %}</ul>{% endif %}
+    </article>{% endfor %}</div>
+    <h3>风险提示</h3><ul>{% for item in data.risk_warnings %}<li>{{ item }}</li>{% endfor %}</ul>
+    <h3>局限性</h3><ul>{% for item in data.limitations %}<li>{{ item }}</li>{% endfor %}</ul>
+    <h3>建议下一步</h3><ul>{% for item in data.next_steps %}<li>{{ item }}</li>{% endfor %}</ul>
+    <p class="disclaimer">{{ data.disclaimer }}</p>
+  </section>
+  {% else %}
+  <section class="empty-state"><strong>当前没有可展示的成功报告。</strong><p>只有状态为 CLOSED_SUCCESS 且报告符合 assistant-report-v1 契约时，用户页面才会显示结果。</p></section>
+  {% endif %}
+</section>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}医疗信息助手 | MediDiag EvidenceFlow{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">医疗助手 Agent · 工程演示</p>
+    <h1>医疗信息助手</h1>
+    <p>基于公开资料或脱敏模拟输入，展示证据前置检索、受约束 Agent 分析与审核闭环。</p>
+  </div>
+  <a class="secondary-link" href="/demo">查看工程工作台</a>
+</section>
+
+<section class="scope-banner" role="note">
+  <strong>使用边界</strong>
+  <p>本页面不提供真实医疗诊断或治疗建议，不处理真实患者数据。紧急或持续不适请及时联系具备资质的医疗专业人员或当地急救服务。</p>
+</section>
+
+<div class="home-grid">
+  <section class="tool-panel" aria-labelledby="assistant-create-title">
+    <div class="section-heading"><h2 id="assistant-create-title">提交咨询</h2></div>
+    <p class="item-meta"><strong>当前运行：</strong>{{ demo_runtime.label }}<br><small>{{ demo_runtime.detail }}</small></p>
+    <p class="item-meta">姓名、手机号、邮箱和身份证号会被拒绝，且不会进入工作流。</p>
+    <form class="case-form" method="post" action="/assistant/cases" hx-post="/assistant/cases" hx-target="#form-error" hx-swap="innerHTML">
+      <label for="assistant-question">脱敏问题或公开题目</label>
+      <textarea id="assistant-question" name="question" rows="8" minlength="10" maxlength="12000" required></textarea>
+      <label for="assistant-input-kind">输入类型</label>
+      <select id="assistant-input-kind" name="input_kind">
+        <option value="deidentified_simulation">脱敏模拟</option>
+        <option value="public_dataset">公开数据集</option>
+      </select>
+      <label for="assistant-source-ref">公开来源标识</label>
+      <input id="assistant-source-ref" name="source_ref" maxlength="128" placeholder="公开数据集输入时必填">
+      <div id="form-error" aria-live="polite"></div>
+      <button class="primary-button" type="submit">提交并开始分析</button>
+    </form>
+  </section>
+
+  <section class="case-list" aria-labelledby="assistant-recent-title">
+    <div class="section-heading"><h2 id="assistant-recent-title">最近咨询</h2><span>{{ recent_cases|length }} 条</span></div>
+    {% if recent_cases %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>咨询编号</th><th>状态</th><th>更新时间</th></tr></thead>
+        <tbody>{% for item in recent_cases %}<tr>
+          <td><a href="/assistant/cases/{{ item.case_id }}">{{ item.case_id }}</a></td>
+          <td><span class="status status-{{ item.status|lower }}">{{ item.status }}</span></td>
+          <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}<p class="empty-state">暂无咨询记录</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
