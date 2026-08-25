@@ -38,6 +38,7 @@ from medidiag.agents.specialist import SpecialistAgent
 from medidiag.compliance.guard import ComplianceGuard
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import Retriever
+from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.review.citation import CitationVerifier
 from medidiag.review.logic import ClinicalLogicReviewer
 from medidiag.schemas import KnowledgeChunk, read_jsonl
@@ -246,26 +247,16 @@ def run_evaluation(
         raise click.UsageError("formal evaluation forbids --limit and --dry-run")
 
     _run_leakage_gates(config, experiment_names)
-    kb_path = _resolve(config["dataset"]["knowledge_base_path"])
-    chunks = [KnowledgeChunk(**record) for record in read_jsonl(kb_path)]
-    normalizer = TerminologyNormalizer()
+    # 评测与 worker 复用同一个版本化 corpus、泄露门禁、normalizer 与索引构建
+    # backend；各实验仍通过 Retriever 的 experiment_config 保持单变量控制。
+    rag_backend = RuntimeMedicalRAG.from_config(
+        config, root=_PROJECT_ROOT, retriever_factory=Retriever
+    )
+    normalizer = rag_backend.normalizer
+    retriever = rag_backend.retriever
     runtime = config.get("runtime", {})
     requested_device = str(runtime.get("device", "auto"))
     batch_size = int(runtime.get("batch_size", config["embedding"].get("batch_size", 32)))
-    retriever = Retriever(
-        chunks,
-        weights=config["retrieval"]["weights"],
-        evidence_level_scores=config["retrieval"]["evidence_levels"],
-        embedding_model=config["embedding"]["model"],
-        rerank_model=config["rerank"]["model"],
-        normalizer=normalizer,
-        embedding_revision=config["embedding"]["revision"],
-        rerank_revision=config["rerank"]["revision"],
-        device=requested_device,
-        embedding_batch_size=batch_size,
-        rerank_batch_size=batch_size,
-    )
-    retriever.build_index(use_bm25=True, use_embedding=True)
 
     verifier: CitationVerifier | None = None
     llm: LLMClient | None = None

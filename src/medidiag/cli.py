@@ -10,9 +10,10 @@ import click
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from medidiag.config import get_settings
+from medidiag.config import get_settings, load_eval_config
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.observability.logging import configure_logging
+from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
@@ -63,7 +64,9 @@ def _session_factory() -> tuple[Engine, sessionmaker[Session]]:
     return engine, get_session_factory(engine)
 
 
-def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider:
+def _build_provider(
+    provider_name: str, review_verdict: str, *, rag_config: str = "eval/config.yaml"
+) -> WorkflowProvider:
     if provider_name == "fake_offline":
         return DeterministicWorkflowProvider(review_verdict=review_verdict)
     provider = OpenAICompatibleWorkflowProvider(profile_id=provider_name)
@@ -72,6 +75,8 @@ def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider
             f"LLM profile {provider_name} 缺少 base URL、model 或 api_key_env 对应密钥；"
             "可使用 --provider fake_offline 运行无网络 fixture。"
         )
+    config = load_eval_config(rag_config)
+    provider.rag_stage = RuntimeMedicalRAG.from_config(config, root=Path.cwd())
     return provider
 
 @main.command()
@@ -87,6 +92,13 @@ def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider
     help="选择 LLM profile；fake_offline 为无网络 fixture。",
 )
 @click.option(
+    "--rag-config",
+    default="eval/config.yaml",
+    show_default=True,
+    type=click.Path(exists=False, dir_okay=False),
+    help="版本化医学 corpus、模型 revision、检索权重和 leakage gate 配置。",
+)
+@click.option(
     "--review-verdict",
     type=click.Choice(["APPROVED", "REVISION_REQUIRED", "ESCALATED"]),
     default="APPROVED",
@@ -94,14 +106,19 @@ def _build_provider(provider_name: str, review_verdict: str) -> WorkflowProvider
     help="仅供 fake_offline 开发 fixture 使用。",
 )
 def worker(
-    once: bool, loop: bool, worker_id: str, provider_name: str, review_verdict: str
+    once: bool,
+    loop: bool,
+    worker_id: str,
+    provider_name: str,
+    rag_config: str,
+    review_verdict: str,
 ) -> None:
     """Run one local worker with a live or deterministic provider."""
     _mode(once, loop)
     engine, factory = _session_factory()
     runner = SingleMachineWorker(
         factory,
-        _build_provider(provider_name, review_verdict),
+        _build_provider(provider_name, review_verdict, rag_config=rag_config),
         worker_id=worker_id,
         max_review_rounds=get_settings().medidiag_max_review_rounds,
     )
@@ -136,7 +153,14 @@ def worker(
     default="deepseek_default",
     show_default=True,
 )
-def demo(host: str, port: int, provider_name: str) -> None:
+@click.option(
+    "--rag-config",
+    default="eval/config.yaml",
+    show_default=True,
+    type=click.Path(exists=False, dir_okay=False),
+    help="版本化医学 corpus、模型 revision、检索权重和 leakage gate 配置。",
+)
+def demo(host: str, port: int, provider_name: str, rag_config: str) -> None:
     """Run the server-rendered demo and its local worker in one process.
 
     Open ``/demo``, submit only public/deidentified text, and the page will poll the
@@ -150,7 +174,7 @@ def demo(host: str, port: int, provider_name: str) -> None:
     engine = create_db_engine(get_settings().database_url)
     init_db(engine)
     factory = get_session_factory(engine)
-    provider = _build_provider(provider_name, "APPROVED")
+    provider = _build_provider(provider_name, "APPROVED", rag_config=rag_config)
     runner = SingleMachineWorker(
         factory,
         provider,
@@ -165,19 +189,28 @@ def demo(host: str, port: int, provider_name: str) -> None:
         daemon=True,
     )
     app = create_app(session_factory=factory)
-    app.state.demo_runtime = {
-        "label": (
-            "确定性本地 fixture"
-            if provider_name == "fake_offline"
-            else f"{provider_name} 实时起草"
-        ),
-        "detail": (
-            f"生成阶段使用 {provider.version}；检索仍为本地演示 fixture，"
+    if provider_name == "fake_offline":
+        runtime_label = "确定性本地 fixture"
+        runtime_detail = (
+            f"阶段执行使用 {provider.version}；检索与生成均为确定性测试 fixture，"
             "不构成医学 RAG 或正式评测。"
-        ),
+        )
+    else:
+        assert isinstance(provider, OpenAICompatibleWorkflowProvider)
+        assert provider.rag_stage is not None
+        runtime_label = f"{provider_name} 实时起草 + 版本化医学 RAG"
+        runtime_detail = (
+            f"生成阶段使用 {provider.version}；检索使用 corpus "
+            f"{provider.rag_stage.corpus_version} 并保存 EvidenceBundle。"
+            "当前 citation 仍是结构绑定，不代表 NLI 支持或正式评测结论。"
+        )
+    app.state.demo_runtime = {
+        "label": runtime_label,
+        "detail": runtime_detail,
     }
     click.echo(
-        f"MediDiag demo provider={provider.version}; open http://{host}:{port}/demo"
+        f"MediDiag 演示已启动：provider={provider.version}；"
+        f"访问 http://{host}:{port}/demo"
     )
     worker_thread.start()
     try:

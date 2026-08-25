@@ -1,4 +1,4 @@
-"""本地演示工作流的供应商无关阶段与结构化 schema。"""
+"""OpenAI-compatible 医疗助手起草阶段与结构化 schema。"""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class DraftPayload(BaseModel):
 
 
 class DemoWorkflowSupport:
-    """提供不访问外部 LLM 的演示阶段；检索内容明确是 fixture。"""
+    """提供规划、审核与报告骨架；真实检索由子类显式装配。"""
 
     version: str
     _guard: ComplianceGuard
@@ -131,7 +131,7 @@ class DemoWorkflowSupport:
             "summary": " ".join(item["text"] for item in generation["claims"]),
             "claims": generation["claims"],
             "limitations": [
-                "Live model output is constrained to a local demo fixture, not a medical knowledge base.",
+                "Evidence comes from the versioned runtime corpus; it is not a clinical knowledge service.",
                 "Citation verdicts are structural-only in this demo and do not represent NLI validation.",
                 "Requires review by a qualified clinician.",
             ],

@@ -1,7 +1,7 @@
 """供应商无关的 OpenAI-compatible 工作流演示适配器。
 
-P1 先解除 CLI/工作流装配对 DeepSeek 类名的绑定；P2 再把演示阶段与评测阶段
-统一到共享 AssistantPipeline。当前检索仍明确标注为本地 fixture。
+P1 解除 CLI/工作流装配对供应商类名的绑定；P2 统一阶段执行契约；P3 通过
+可注入 RuntimeMedicalRAG 接入版本化医学 corpus。
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from medidiag.errors import MediDiagError
 from medidiag.llm import LLMProvider, LLMRequest, build_llm_provider
+from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.workflow.demo_provider_base import DemoWorkflowSupport, DraftPayload
 from medidiag.workflow.provider_runtime import ProviderResponse
 
@@ -25,6 +26,7 @@ class OpenAICompatibleWorkflowProvider(DemoWorkflowSupport):
         llm: LLMProvider | None = None,
         *,
         profile_id: str | None = None,
+        rag_stage: RuntimeMedicalRAG | None = None,
     ) -> None:
         # 业务层只接收统一 LLMProvider；供应商差异由 profile 与 adapter 收敛。
         from medidiag.compliance.guard import ComplianceGuard
@@ -33,6 +35,23 @@ class OpenAICompatibleWorkflowProvider(DemoWorkflowSupport):
         model = getattr(self.llm, "model", "profile-default")
         self.version = f"{self.llm.profile_id}:{model}"
         self._guard = ComplianceGuard()
+        self.rag_stage = rag_stage
+
+    def normalize(self, question: str) -> dict[str, Any]:
+        """使用运行时医学术语归一化，不再回退到演示 fixture。"""
+        if self.rag_stage is None:
+            raise MediDiagError(
+                "RAG_CORPUS_INVALID", detail="live workflow 未装配 RuntimeMedicalRAG"
+            )
+        return self.rag_stage.normalize(question)
+
+    def retrieve(self, normalized_query: str) -> dict[str, Any]:
+        """在规划前生成可审计 EvidenceBundle。"""
+        if self.rag_stage is None:
+            raise MediDiagError(
+                "RAG_CORPUS_INVALID", detail="live workflow 未装配 RuntimeMedicalRAG"
+            )
+        return self.rag_stage.retrieve(normalized_query)
 
     @property
     def is_configured(self) -> bool:
