@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +31,8 @@ from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
 AgentTopology = Literal["single", "fixed_pair", "dynamic_pair"]
+
+_HAN_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
 @dataclass(frozen=True)
@@ -491,6 +494,22 @@ class RuntimeMedicalAgents:
                     "AGENT_RUNTIME_INVALID",
                     detail=f"{specialty} Agent 引用了未知 EvidenceBundle chunk_id",
                 )
+        invalid_language_indices = [
+            index
+            for index, claim in enumerate(output.claims, start=1)
+            if _HAN_PATTERN.search(claim.text)
+        ]
+        if invalid_language_indices:
+            # 不把中文 claim 送入固定英文 NLI judge，也不做不可审计的自动翻译。
+            # 将该 Agent 整体降级为可审计弃权，避免只保留部分 claim 造成选择偏差。
+            output.claims = []
+            output.abstain = True
+            output.abstain_reason = "claim_language_invalid"
+            output.uncertainty = "Agent 未遵守英文 claim 契约，已按 fail-closed 规则弃权。"
+            normalization_actions.append(
+                "claims:discard_non_english_and_abstain:indexes="
+                + ",".join(str(index) for index in invalid_language_indices)
+            )
         result = client.last_result
         if result is None:
             raise MediDiagError(

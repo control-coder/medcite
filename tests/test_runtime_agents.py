@@ -59,9 +59,16 @@ class RecordingProvider:
     model = "test-model"
     is_configured = True
 
-    def __init__(self, *, unknown_citation: bool = False, unknown_claim: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        unknown_citation: bool = False,
+        unknown_claim: bool = False,
+        chinese_claim: bool = False,
+    ) -> None:
         self.unknown_citation = unknown_citation
         self.unknown_claim = unknown_claim
+        self.chinese_claim = chinese_claim
         self.requests: list[LLMRequest] = []
         self._lock = threading.Lock()
 
@@ -106,7 +113,11 @@ class RecordingProvider:
                 ],
                 "claims": [
                     {
-                        "text": f"{specialty} evidence indicates a cautious assessment is warranted.",
+                        "text": (
+                            "经胃内镜检查提示需要谨慎评估。"
+                            if self.chinese_claim
+                            else f"{specialty} evidence indicates a cautious assessment is warranted."
+                        ),
                         "citation_chunk_ids": [citation],
                         "confidence": 0.6,
                     }
@@ -167,6 +178,30 @@ def test_single_topology_has_one_auditable_agent_and_no_arbitration_call() -> No
     assert arbitration["selected_claim_ids"] == arbitration["before_claim_ids"]
     assert len(provider.requests) == 1
 
+
+
+def test_non_english_claim_is_discarded_as_auditable_abstention() -> None:
+    provider = RecordingProvider(chinese_claim=True)
+    runtime = RuntimeMedicalAgents(
+        provider,
+        config=AgentTopologyConfig(topology="single"),
+    )
+
+    generated = runtime.generate("chest pain", _retrieval(), {"objective": "test"})
+    agent = generated["agents"][0]
+
+    assert generated["claims"] == []
+    assert generated["all_agents_abstained"] is True
+    assert agent["output"]["abstain"] is True
+    assert agent["output"]["abstain_reason"] == "claim_language_invalid"
+    assert agent["provider_provenance"]["response_id"] == "resp-1"
+    assert any(
+        action.startswith("claims:discard_non_english_and_abstain")
+        for action in agent["normalization_actions"]
+    )
+    arbitration = runtime.arbitrate(generated, _retrieval())
+    assert arbitration["arbitration_method"] == "abstention_no_claims"
+    assert len(provider.requests) == 1
 
 def test_fixed_pair_runs_two_agents_with_shared_evidence_and_independent_inputs() -> None:
     provider = RecordingProvider()
