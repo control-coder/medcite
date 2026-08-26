@@ -739,9 +739,15 @@ def _assert_formal_response_id_provenance(
     topology = str(generation_payload.get("topology", "single"))
     arbitration_method = str(arbitration_payload.get("arbitration_method", ""))
     if topology != "single" and arbitration_method != "abstention_no_claims":
-        arbitration_provenance = arbitration_payload.get("provider_provenance") or {}
-        if not arbitration_provenance.get("response_id"):
-            missing_calls.append("arbitration")
+        arbitration_attempts = arbitration_payload.get("provider_attempt_provenance") or []
+        if arbitration_attempts:
+            for index, provenance in enumerate(arbitration_attempts, start=1):
+                if not provenance.get("response_id"):
+                    missing_calls.append(f"arbitration_attempt_{index}")
+        else:
+            arbitration_provenance = arbitration_payload.get("provider_provenance") or {}
+            if not arbitration_provenance.get("response_id"):
+                missing_calls.append("arbitration")
 
     if not agents:
         missing_calls.append("specialist")
@@ -1072,6 +1078,7 @@ def _run_unified_runtime_sample(
             timeout_s=float(config["generation"].get("timeout_seconds", 60)),
             max_tokens=int(config["generation"].get("max_tokens", 4096)),
             reasoning_mode=cast(Any, config["generation"].get("thinking", "provider_default")),
+            allow_arbitration_fallback=config["evaluation"]["mode"] != "formal",
         ),
         normalizer=None,
         evidence_level_scores=config["retrieval"]["evidence_levels"],
@@ -1144,11 +1151,19 @@ def _run_unified_runtime_sample(
         if response_id:
             provider_ids.add(str(response_id))
         _merge_usage(usage, provenance.get("usage"))
-    arbitration_provenance = arbitration.get("provider_provenance") or {}
-    arbitration_response_id = arbitration_provenance.get("response_id")
-    if arbitration_response_id:
-        provider_ids.add(str(arbitration_response_id))
-    _merge_usage(usage, arbitration_provenance.get("usage"))
+    arbitration_attempts = arbitration.get("provider_attempt_provenance") or []
+    if arbitration_attempts:
+        for provenance in arbitration_attempts:
+            response_id = provenance.get("response_id")
+            if response_id:
+                provider_ids.add(str(response_id))
+            _merge_usage(usage, provenance.get("usage"))
+    else:
+        arbitration_provenance = arbitration.get("provider_provenance") or {}
+        arbitration_response_id = arbitration_provenance.get("response_id")
+        if arbitration_response_id:
+            provider_ids.add(str(arbitration_response_id))
+        _merge_usage(usage, arbitration_provenance.get("usage"))
     result.provider_request_ids = sorted(provider_ids)
     result.provider_usage = usage
     _assert_formal_response_id_provenance(config, result, generation, arbitration)

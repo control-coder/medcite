@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from medidiag.agents.arbitration import ArbitrationAgent
 from medidiag.agents.base import AgentOutput
@@ -46,6 +46,7 @@ class AgentTopologyConfig:
     timeout_s: float = 60.0
     max_tokens: int = 4096
     reasoning_mode: Literal["disabled", "enabled", "provider_default"] = "provider_default"
+    allow_arbitration_fallback: bool = True
 
     def __post_init__(self) -> None:
         if self.topology not in {"single", "fixed_pair", "dynamic_pair"}:
@@ -314,66 +315,91 @@ class RuntimeMedicalAgents:
         rule = ArbitrationAgent().arbitrate(outputs[0], outputs[1]).to_dict()
         fallback_reason: str | None = None
         provider_result: ProviderResult | None = None
+        provider_attempts: list[ProviderResult] = []
         constrained: dict[str, Any] | None = None
-        try:
-            provider_result = self.provider.generate(
-                LLMRequest(
-                    messages=[
+        arbitration_request = LLMRequest(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "你是受约束的医疗助手工程仲裁组件。只能从输入的 claim_id 中选择，"
+                        "不得新增、改写或补充医学 claim。verdict 只能是 APPROVED、"
+                        "REVISION_REQUIRED 或 ESCALATED。只返回一个 JSON object，且必须严格使用"
+                        "以下四个字段：selected_claim_ids（字符串数组）、conflicts（对象数组）、"
+                        "verdict（字符串）、reason（非空字符串）。禁止把 selected_claim_ids 改名为"
+                        "claim_id、selected_claim_id 或 allowed_claim_ids。"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
                         {
-                            "role": "system",
-                            "content": (
-                                "你是受约束的医疗助手工程仲裁组件。只能从输入的 claim_id 中选择，"
-                                "不得新增、改写或补充医学 claim。verdict 只能是 APPROVED、"
-                                "REVISION_REQUIRED 或 ESCALATED。只返回一个 JSON object，且必须严格使用"
-                                "以下四个字段：selected_claim_ids（字符串数组）、conflicts（对象数组）、"
-                                "verdict（字符串）、reason（非空字符串）。禁止把 selected_claim_ids 改名为"
-                                "claim_id、selected_claim_id 或 allowed_claim_ids。"
-                            ),
+                            "claims": before,
+                            "rule_baseline": rule,
+                            "routing": generation.get("routing", {}),
+                            "evidence_bundle_id": generation.get("evidence_bundle_id"),
+                            "allowed_claim_ids": before_ids,
+                            "required_output_example": {
+                                "selected_claim_ids": before_ids[:1],
+                                "conflicts": [],
+                                "verdict": "REVISION_REQUIRED",
+                                "reason": "说明选择依据与仍需人工复核的流程原因。",
+                            },
                         },
-                        {
-                            "role": "user",
-                            "content": json.dumps(
-                                {
-                                    "claims": before,
-                                    "rule_baseline": rule,
-                                    "routing": generation.get("routing", {}),
-                                    "evidence_bundle_id": generation.get("evidence_bundle_id"),
-                                    "allowed_claim_ids": before_ids,
-                                    "required_output_example": {
-                                        "selected_claim_ids": before_ids[:1],
-                                        "conflicts": [],
-                                        "verdict": "REVISION_REQUIRED",
-                                        "reason": "说明选择依据与仍需人工复核的流程原因。",
-                                    },
-                                },
-                                ensure_ascii=False,
-                                sort_keys=True,
-                            ),
-                        },
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=0.0,
-                    max_tokens=max(900, self.config.max_tokens),
-                    reasoning_mode=self.config.reasoning_mode,
-                    prompt_version=self.config.arbitration_prompt_version,
-                ),
-                timeout_s=self.config.timeout_s,
-                idempotency_key="agent-arbitration:"
-                + _stable_hash(
-                    {"claims": before, "evidence_hash": generation.get("evidence_hash")}
-                ),
-            )
-            raw = provider_result.parsed_json
-            if raw is None:
-                raise ValueError("provider 未返回 JSON object")
-            normalized_raw, normalization_actions = _normalize_arbitration_payload(raw)
-            parsed = _ConstrainedArbitrationPayload.model_validate(normalized_raw)
-            if not set(parsed.selected_claim_ids).issubset(set(before_ids)):
-                raise ValueError("仲裁选择了未知 claim_id")
-            constrained = parsed.model_dump(mode="json")
-            constrained["normalization_actions"] = normalization_actions
-        except Exception as exc:
-            fallback_reason = f"{type(exc).__name__}: {exc}"
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                },
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.0,
+            max_tokens=max(900, self.config.max_tokens),
+            reasoning_mode=self.config.reasoning_mode,
+            prompt_version=self.config.arbitration_prompt_version,
+        )
+        arbitration_idempotency_key = "agent-arbitration:" + _stable_hash(
+            {"claims": before, "evidence_hash": generation.get("evidence_hash")}
+        )
+        for contract_attempt in range(2):
+            try:
+                candidate_result = self.provider.generate(
+                    arbitration_request,
+                    timeout_s=self.config.timeout_s,
+                    idempotency_key=(
+                        arbitration_idempotency_key
+                        if contract_attempt == 0
+                        else f"{arbitration_idempotency_key}:contract-retry-1"
+                    ),
+                )
+                provider_attempts.append(candidate_result)
+                raw = candidate_result.parsed_json
+                if raw is None:
+                    raise ValueError("provider 未返回 JSON object")
+                normalized_raw, normalization_actions = _normalize_arbitration_payload(raw)
+                parsed = _ConstrainedArbitrationPayload.model_validate(normalized_raw)
+                if not set(parsed.selected_claim_ids).issubset(set(before_ids)):
+                    raise ValueError("仲裁选择了未知 claim_id")
+                constrained = parsed.model_dump(mode="json")
+                if contract_attempt:
+                    normalization_actions.insert(0, "provider_contract_retry:1")
+                constrained["normalization_actions"] = normalization_actions
+                provider_result = candidate_result
+                break
+            except MediDiagError as exc:
+                if not self.config.allow_arbitration_fallback:
+                    raise
+                fallback_reason = f"{type(exc).__name__}: {exc}"
+                break
+            except (ValidationError, TypeError, ValueError) as exc:
+                if contract_attempt == 0:
+                    continue
+                if not self.config.allow_arbitration_fallback:
+                    raise MediDiagError(
+                        "STRUCTURED_OUTPUT_INVALID",
+                        detail="仲裁输出连续两次未满足受约束 schema 或 claim_id 白名单",
+                    ) from exc
+                fallback_reason = f"{type(exc).__name__}: {exc}"
+                break
 
         if constrained is None:
             selected_ids = before_ids
@@ -403,6 +429,9 @@ class RuntimeMedicalAgents:
             "rule_baseline": rule,
             "constrained_arbitration": constrained,
             "provider_provenance": provenance,
+            "provider_attempt_provenance": [
+                _provider_provenance(item) for item in provider_attempts
+            ],
             "evidence_bundle_id": generation.get("evidence_bundle_id"),
             "evidence_hash": generation.get("evidence_hash"),
         }

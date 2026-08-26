@@ -63,10 +63,12 @@ class RecordingProvider:
         *,
         unknown_citation: bool = False,
         unknown_claim: bool = False,
+        unknown_claim_once: bool = False,
         chinese_claim: bool = False,
     ) -> None:
         self.unknown_citation = unknown_citation
         self.unknown_claim = unknown_claim
+        self.unknown_claim_once = unknown_claim_once
         self.chinese_claim = chinese_claim
         self.requests: list[LLMRequest] = []
         self._lock = threading.Lock()
@@ -85,9 +87,15 @@ class RecordingProvider:
         with self._lock:
             self.requests.append(request)
             call_number = len(self.requests)
+            arbitration_call_number = sum(
+                item.prompt_version == "arbitrator-agent-v1" for item in self.requests
+            )
         if request.prompt_version == "arbitrator-agent-v1":
             user = json.loads(str(request.messages[-1]["content"]))
-            selected = ["unknown_claim"] if self.unknown_claim else user["allowed_claim_ids"][:1]
+            invalid_selection = self.unknown_claim or (
+                self.unknown_claim_once and arbitration_call_number == 1
+            )
+            selected = ["unknown_claim"] if invalid_selection else user["allowed_claim_ids"][:1]
             payload = {
                 "selected_claim_ids": selected,
                 "conflicts": [{"type": "specialty_difference"}],
@@ -277,6 +285,31 @@ def test_unknown_evidence_id_becomes_auditable_agent_abstention() -> None:
     arbitration = runtime.arbitrate(generated, _retrieval())
     assert arbitration["arbitration_method"] == "abstention_no_claims"
     assert len(provider.requests) == 1
+
+
+def test_arbitration_contract_violation_gets_one_controlled_retry() -> None:
+    provider = RecordingProvider(unknown_claim_once=True)
+    runtime = RuntimeMedicalAgents(
+        provider,
+        config=AgentTopologyConfig(
+            topology="fixed_pair",
+            allow_arbitration_fallback=False,
+        ),
+    )
+
+    generated = runtime.generate("chest pain and dyspnea", _retrieval(), {})
+    arbitration = runtime.arbitrate(generated, _retrieval())
+
+    assert arbitration["fallback_used"] is False
+    assert arbitration["arbitration_method"] == "constrained_llm"
+    assert arbitration["stage_provider_request_id"] == "resp-4"
+    assert [
+        item["response_id"] for item in arbitration["provider_attempt_provenance"]
+    ] == ["resp-3", "resp-4"]
+    assert arbitration["constrained_arbitration"]["normalization_actions"][0] == (
+        "provider_contract_retry:1"
+    )
+    assert len(provider.requests) == 4
 
 
 def test_unknown_claim_from_arbitrator_falls_back_to_rule_baseline() -> None:
