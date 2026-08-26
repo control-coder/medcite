@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from medidiag.agents.llm_client import LLMCompletion
+from medidiag.errors import MediDiagError
 from medidiag.schemas import KnowledgeChunk
 
 # 稳定系统前缀：将策略和指令与动态病例 prompt 分离，便于复用 DeepSeek 自动上下文缓存。
@@ -273,6 +274,9 @@ class BaseAgent:
                     completion = self.llm.complete(prompt)
             except Exception as e:
                 if self.fail_closed:
+                    # 保留已分类的 Provider 错误码，供外层统一重试器按错误目录决策。
+                    if isinstance(e, MediDiagError):
+                        raise
                     raise AgentProviderError(
                         f"provider call failed for specialty={self.specialty}: "
                         f"{type(e).__name__}: {e}"

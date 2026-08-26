@@ -68,14 +68,18 @@ class OpenAICompatibleProvider:
         body, filtered = self._request_body(request)
         started = time.perf_counter()
         last_error: Exception | None = None
-        for attempt in range(self._max_retries + 1):
+        attempt = 0
+        network_retries = 0
+        structured_retries = 0
+        request_idempotency_key = idempotency_key
+        while True:
             try:
                 response = self._post(
                     f"{self.profile.base_url.rstrip('/')}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
-                        "Idempotency-Key": idempotency_key,
+                        "Idempotency-Key": request_idempotency_key,
                     },
                     json=body,
                     timeout=timeout_s,
@@ -98,12 +102,26 @@ class OpenAICompatibleProvider:
                 return result
             except (httpx.TimeoutException, httpx.RequestError, MediDiagError) as exc:
                 last_error = exc
-                if not self._retryable(exc) or attempt >= self._max_retries:
-                    mapped = self._mapped_exception(exc)
-                    if mapped is exc:
-                        raise
-                    raise mapped from exc
-                self._sleep(self._retry_delay(exc, attempt))
+                if (
+                    isinstance(exc, MediDiagError)
+                    and exc.code == "STRUCTURED_OUTPUT_INVALID"
+                    and structured_retries < 1
+                ):
+                    # JSON 契约失败属于一次新的受控生成，使用派生幂等键避免复用坏响应。
+                    structured_retries += 1
+                    attempt += 1
+                    request_idempotency_key = f"{idempotency_key}:structured-retry-1"
+                    self._sleep(self._retry_delay(exc, attempt - 1))
+                    continue
+                if self._retryable(exc) and network_retries < self._max_retries:
+                    network_retries += 1
+                    attempt += 1
+                    self._sleep(self._retry_delay(exc, attempt - 1))
+                    continue
+                mapped = self._mapped_exception(exc)
+                if mapped is exc:
+                    raise
+                raise mapped from exc
 
         raise MediDiagError("PROVIDER_UNAVAILABLE", detail=str(last_error))
 

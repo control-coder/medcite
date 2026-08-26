@@ -473,6 +473,9 @@ class RuntimeMedicalAgents:
                 routing_note=str(routing.get("reason", "")),
                 claim_language="en",
             )
+        except MediDiagError:
+            # Provider 已分类错误必须原样交给阶段重试器，不能降级成不可重试的运行时错误。
+            raise
         except Exception as exc:
             raise MediDiagError(
                 "AGENT_RUNTIME_INVALID",

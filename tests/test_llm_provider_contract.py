@@ -355,6 +355,58 @@ def test_structured_output_invalid_is_not_coerced_to_success(
     assert caught.value.code == "STRUCTURED_OUTPUT_INVALID"
 
 
+def test_structured_output_invalid_gets_one_controlled_regeneration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    responses = iter(
+        [
+            _response(
+                {
+                    "id": "bad-json-response",
+                    "choices": [{"message": {"content": "{bad-json"}}],
+                }
+            ),
+            _response(
+                {
+                    "id": "recovered-json-response",
+                    "choices": [{"message": {"content": '{"summary": "ok"}'}}],
+                }
+            ),
+        ]
+    )
+    idempotency_keys: list[str] = []
+
+    def fake_post(*args: object, **kwargs: object) -> httpx.Response:
+        headers = kwargs["headers"]
+        assert isinstance(headers, dict)
+        idempotency_keys.append(str(headers["Idempotency-Key"]))
+        return next(responses)
+
+    provider = OpenAICompatibleProvider(
+        get_provider_profile("deepseek_default"),
+        post=fake_post,
+        sleep=lambda _: None,
+        max_retries=2,
+    )
+    result = provider.generate(
+        LLMRequest(
+            messages=[{"role": "user", "content": "test"}],
+            response_format={"type": "json_object"},
+        ),
+        timeout_s=3,
+        idempotency_key="json-repair",
+    )
+
+    assert result.parsed_json == {"summary": "ok"}
+    assert result.response_id == "recovered-json-response"
+    assert result.retry_count == 1
+    assert idempotency_keys == [
+        "json-repair",
+        "json-repair:structured-retry-1",
+    ]
+
+
 def test_workflow_assembly_switches_profiles_without_agent_code_changes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
