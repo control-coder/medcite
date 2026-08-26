@@ -540,3 +540,125 @@ def test_run_evaluation_isolates_cache_between_identical_agent_arms(
         assert results[name].sample_results[0].cache_hit is False
     # 两个 arm × 双专科 = 4 次真实 provider 调用。
     assert stub_runtime.calls == 4
+
+
+
+def test_resume_reuses_complete_experiment_without_repeating_provider_calls(
+    tmp_path: Path, isolated_config: dict[str, Any], stub_runtime: _FakeLLM
+) -> None:
+    output_dir = tmp_path / "raw"
+    run_id, _ = run_evaluation(isolated_config, ["agent_single"], output_dir)
+    run_dir = output_dir / run_id
+    (run_dir / "manifest.json").unlink()
+    calls_before_resume = stub_runtime.calls
+
+    resumed_id, results = run_evaluation(
+        isolated_config,
+        ["agent_single"],
+        output_dir,
+        resume_run_id=run_id,
+        sample_workers=2,
+    )
+
+    assert resumed_id == run_id
+    assert stub_runtime.calls == calls_before_resume
+    assert len(results["agent_single"].sample_results) == 1
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["resume"]["enabled"] is True
+    assert manifest["resume"]["completed_experiments_reused"] == ["agent_single"]
+    assert manifest["resume"]["sample_workers"] == 2
+
+
+def test_resume_reuses_sample_checkpoint_without_repeating_provider_call(
+    tmp_path: Path, isolated_config: dict[str, Any], stub_runtime: _FakeLLM
+) -> None:
+    output_dir = tmp_path / "raw"
+    source_id, source_results = run_evaluation(
+        isolated_config, ["agent_single"], output_dir
+    )
+    source_sample = source_results["agent_single"].sample_results[0]
+
+    resume_id = f"resume_{source_id}"
+    run_dir = output_dir / resume_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "config.snapshot.json").write_text(
+        json.dumps(isolated_config, ensure_ascii=False, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+    runner_module._write_sample_checkpoint(
+        run_dir / "agent_single.checkpoint", 0, source_sample
+    )
+    calls_before_resume = stub_runtime.calls
+
+    _, results = run_evaluation(
+        isolated_config,
+        ["agent_single"],
+        output_dir,
+        resume_run_id=resume_id,
+        sample_workers=2,
+    )
+
+    assert stub_runtime.calls == calls_before_resume
+    assert results["agent_single"].sample_results[0].sample_id == source_sample.sample_id
+    assert not (run_dir / "agent_single.checkpoint").exists()
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["resume"]["checkpoint_samples_reused"]["agent_single"] == 1
+
+
+def test_resume_rejects_config_hash_mismatch(
+    tmp_path: Path, isolated_config: dict[str, Any], stub_runtime: _FakeLLM
+) -> None:
+    output_dir = tmp_path / "raw"
+    run_id, _ = run_evaluation(isolated_config, ["agent_single"], output_dir)
+    run_dir = output_dir / run_id
+    (run_dir / "manifest.json").unlink()
+    changed = deepcopy(isolated_config)
+    changed["evaluation"]["seed"] = 999
+
+    import click
+
+    with pytest.raises(click.UsageError, match="config hash"):
+        run_evaluation(
+            changed,
+            ["agent_single"],
+            output_dir,
+            resume_run_id=run_id,
+        )
+
+
+def test_parallel_samples_preserve_manifest_order_and_write_complete_result(
+    tmp_path: Path, isolated_config: dict[str, Any], stub_runtime: _FakeLLM
+) -> None:
+    agent_path = Path(isolated_config["dataset"]["agent_eval_set_path"])
+    manifest_path = Path(isolated_config["dataset"]["agent_sample_manifest_path"])
+    records = []
+    manifest = []
+    for index in range(3):
+        sample = _agent_sample()
+        sample["sample_id"] = f"medqa_{index:04d}"
+        sample["question"] = f"adult patient with condition a findings case {index}"
+        records.append(sample)
+        manifest.append({"sample_id": sample["sample_id"]})
+    agent_path.write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in records),
+        encoding="utf-8",
+    )
+    manifest_path.write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in manifest),
+        encoding="utf-8",
+    )
+
+    run_id, results = run_evaluation(
+        isolated_config,
+        ["agent_single"],
+        tmp_path / "raw",
+        sample_workers=2,
+    )
+
+    assert [item.sample_id for item in results["agent_single"].sample_results] == [
+        item["sample_id"] for item in records
+    ]
+    assert stub_runtime.calls == 3
+    run_dir = tmp_path / "raw" / run_id
+    assert (run_dir / "agent_single.json").exists()
+    assert not (run_dir / "agent_single.checkpoint").exists()

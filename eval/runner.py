@@ -9,12 +9,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Lock
 from typing import Any, cast
 
 import click
@@ -57,6 +61,7 @@ VALID_SELECTIONS = (*EXPERIMENTS, "rag_all", "rag_retrieval", "agent_all", "all"
 @dataclass
 class AgentOutputCache:
     _cache: dict[str, AgentOutput] = field(default_factory=dict)
+    _lock: Lock = field(default_factory=Lock, init=False, repr=False)
     hits: int = 0
     misses: int = 0
 
@@ -83,15 +88,17 @@ class AgentOutputCache:
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def get(self, input_hash: str) -> AgentOutput | None:
-        value = self._cache.get(input_hash)
-        if value is None:
-            self.misses += 1
-        else:
-            self.hits += 1
-        return value
+        with self._lock:
+            value = self._cache.get(input_hash)
+            if value is None:
+                self.misses += 1
+            else:
+                self.hits += 1
+            return value
 
     def set(self, input_hash: str, output: AgentOutput) -> None:
-        self._cache[input_hash] = output
+        with self._lock:
+            self._cache[input_hash] = output
 
     @property
     def hit_rate(self) -> float:
@@ -245,11 +252,15 @@ def run_evaluation(
     output_dir: Path,
     limit: int | None = None,
     dry_run: bool = False,
+    resume_run_id: str | None = None,
+    sample_workers: int = 1,
 ) -> tuple[str, dict[str, ExperimentResult]]:
     started_at = datetime.now(UTC)
     mode = config["evaluation"]["mode"]
     if mode == "formal" and (limit is not None or dry_run):
         raise click.UsageError("formal evaluation forbids --limit and --dry-run")
+    if sample_workers < 1:
+        raise click.UsageError("--sample-workers must be at least 1")
 
     _run_leakage_gates(config, experiment_names)
     # 评测与 worker 复用同一个版本化 corpus、泄露门禁、normalizer 与索引构建
@@ -301,7 +312,25 @@ def run_evaluation(
                 require_request_id=False,
             )
 
-    run_id = _new_run_id(config)
+    run_id = resume_run_id or _new_run_id(config)
+    run_dir = output_dir / run_id
+    config_snapshot = json.dumps(config, ensure_ascii=False, sort_keys=True, indent=2)
+    resumed = resume_run_id is not None
+    if resumed:
+        if not run_dir.is_dir():
+            raise click.UsageError(f"恢复目录不存在: {run_dir}")
+        snapshot_path = run_dir / "config.snapshot.json"
+        if not snapshot_path.is_file():
+            raise click.UsageError("恢复目录缺少 config.snapshot.json")
+        saved_config = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        if _config_hash(saved_config) != _config_hash(config):
+            raise click.UsageError("恢复配置与原 run 的 config hash 不一致")
+        if (run_dir / "manifest.json").exists():
+            raise click.UsageError("目标 run 已存在 manifest.json，不允许再次恢复")
+    else:
+        run_dir.mkdir(parents=True, exist_ok=False)
+        (run_dir / "config.snapshot.json").write_text(config_snapshot, encoding="utf-8")
+
     cache = AgentOutputCache()
     generation_config = config["generation"]
     pipeline = AssistantPipeline(
@@ -316,16 +345,34 @@ def run_evaluation(
     )
     git_commit = _git_output(["git", "rev-parse", "HEAD"])
     dirty_diff_hash = _git_diff_hash()
-    run_dir = output_dir / run_id
-    run_dir.mkdir(parents=True, exist_ok=False)
-    (run_dir / "config.snapshot.json").write_text(
-        json.dumps(config, ensure_ascii=False, sort_keys=True, indent=2),
-        encoding="utf-8",
-    )
+    retrieval_lock = Lock() if sample_workers > 1 else None
+    review_lock = Lock() if sample_workers > 1 else None
     results: dict[str, ExperimentResult] = {}
+    reused_experiments: list[str] = []
+    checkpoint_samples_reused: dict[str, int] = {}
+
     for name in experiment_names:
         family, experiment = get_experiment(config, name)
         records = _load_experiment_records(config, family, limit)
+        completed_path = run_dir / f"{name}.json"
+        if resumed and completed_path.is_file():
+            result = _load_completed_experiment(completed_path, name, family, records)
+            results[name] = result
+            reused_experiments.append(name)
+            click.echo(f"{name}: 已复用完整实验 {len(result.sample_results)} 个样本")
+            continue
+
+        checkpoint_dir = run_dir / f"{name}.checkpoint"
+        restored = _load_checkpoint_samples(checkpoint_dir, name, family, records)
+        checkpoint_samples_reused[name] = len(restored)
+
+        def save_checkpoint(
+            index: int,
+            sample_result: SampleResult,
+            target_dir: Path = checkpoint_dir,
+        ) -> None:
+            _write_sample_checkpoint(target_dir, index, sample_result)
+
         result = _run_experiment(
             name,
             family,
@@ -340,12 +387,16 @@ def run_evaluation(
             dry_run,
             pipeline,
             run_id,
+            existing_samples=restored,
+            sample_workers=sample_workers,
+            checkpoint_callback=save_checkpoint,
+            retrieval_lock=retrieval_lock,
+            review_lock=review_lock,
         )
         results[name] = result
-        (run_dir / f"{name}.json").write_text(
-            json.dumps(result.to_dict(), ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        _atomic_write_json(completed_path, result.to_dict())
+        if checkpoint_dir.exists():
+            shutil.rmtree(checkpoint_dir)
         click.echo(
             f"{name}: Recall@5={_fmt(result.evidence_recall_at_5)}, "
             f"GoldCoverage={_fmt(result.gold_evidence_coverage)}"
@@ -365,11 +416,130 @@ def run_evaluation(
         llm=llm,
         retriever=retriever,
         provider_usage=_aggregate_provider_usage(results),
+        resume={
+            "enabled": resumed,
+            "source_run_id": resume_run_id,
+            "completed_experiments_reused": reused_experiments,
+            "checkpoint_samples_reused": checkpoint_samples_reused,
+            "sample_workers": sample_workers,
+        },
     )
-    (run_dir / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _atomic_write_json(run_dir / "manifest.json", manifest)
     return run_id, results
+
+
+def _config_hash(config: dict[str, Any]) -> str:
+    """计算影响评测口径的规范化配置哈希。"""
+    return hashlib.sha256(
+        json.dumps(config, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    """先写同目录临时文件再替换，避免中断留下半个 JSON。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    temporary.replace(path)
+
+
+def _sample_result_from_dict(payload: dict[str, Any]) -> SampleResult:
+    """严格反序列化 checkpoint，schema 漂移时拒绝静默复用。"""
+    expected = {item.name for item in fields(SampleResult)}
+    actual = set(payload)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise click.UsageError(
+            f"checkpoint SampleResult schema 不一致: missing={missing}, extra={extra}"
+        )
+    return SampleResult(**payload)
+
+
+def _validate_sample_sequence(
+    samples: list[SampleResult],
+    name: str,
+    family: str,
+    records: list[dict[str, Any]],
+) -> None:
+    expected_ids = [str(record["sample_id"]) for record in records]
+    actual_ids = [sample.sample_id for sample in samples]
+    if actual_ids != expected_ids or len(set(actual_ids)) != len(actual_ids):
+        raise click.UsageError(f"{name} 的恢复样本 ID 不完整、重复或顺序不一致")
+    if any(sample.experiment != name or sample.family != family for sample in samples):
+        raise click.UsageError(f"{name} 的恢复样本 experiment/family 不一致")
+
+
+def _load_completed_experiment(
+    path: Path,
+    name: str,
+    family: str,
+    records: list[dict[str, Any]],
+) -> ExperimentResult:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("experiment") != name or payload.get("family") != family:
+        raise click.UsageError(f"完整实验文件 {path.name} 的标识不一致")
+    samples_payload = payload.get("samples")
+    if not isinstance(samples_payload, list) or payload.get("sample_count") != len(records):
+        raise click.UsageError(f"完整实验文件 {path.name} 的样本数不一致")
+    samples = [_sample_result_from_dict(dict(item)) for item in samples_payload]
+    _validate_sample_sequence(samples, name, family, records)
+    return ExperimentResult(
+        experiment=name,
+        family=family,
+        sample_results=samples,
+        cache_stats=dict(payload.get("cache_stats", {})),
+    )
+
+
+def _write_sample_checkpoint(
+    checkpoint_dir: Path, index: int, sample_result: SampleResult
+) -> None:
+    """每个样本独立原子落盘，停止后无需重复已付费 Provider 调用。"""
+    _atomic_write_json(
+        checkpoint_dir / f"{index:06d}.json",
+        {"index": index, "sample": asdict(sample_result)},
+    )
+
+
+def _load_checkpoint_samples(
+    checkpoint_dir: Path,
+    name: str,
+    family: str,
+    records: list[dict[str, Any]],
+) -> dict[int, SampleResult]:
+    if not checkpoint_dir.exists():
+        return {}
+    restored: dict[int, SampleResult] = {}
+    for path in sorted(checkpoint_dir.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        index = payload.get("index")
+        if not isinstance(index, int) or index < 0 or index >= len(records):
+            raise click.UsageError(f"checkpoint 索引越界: {path.name}")
+        if index in restored:
+            raise click.UsageError(f"checkpoint 索引重复: {index}")
+        sample = _sample_result_from_dict(dict(payload.get("sample", {})))
+        expected_id = str(records[index]["sample_id"])
+        if (
+            sample.sample_id != expected_id
+            or sample.experiment != name
+            or sample.family != family
+        ):
+            raise click.UsageError(f"checkpoint 样本标识不一致: {path.name}")
+        restored[index] = sample
+    return restored
+
+
+def _run_with_lock(
+    lock: Any | None, operation: Callable[[], dict[str, Any]]
+) -> dict[str, Any]:
+    """只串行化共享 Retriever/NLI judge；Provider 网络调用保持有限并发。"""
+    if lock is None:
+        return operation()
+    with lock:
+        return operation()
 
 
 def _run_leakage_gates(config: dict[str, Any], names: list[str]) -> None:
@@ -426,6 +596,11 @@ def _run_experiment(
     dry_run: bool,
     pipeline: AssistantPipeline | None = None,
     pipeline_run_id: str | None = None,
+    existing_samples: dict[int, SampleResult] | None = None,
+    sample_workers: int = 1,
+    checkpoint_callback: Any | None = None,
+    retrieval_lock: Any | None = None,
+    review_lock: Any | None = None,
 ) -> ExperimentResult:
     result = ExperimentResult(experiment=name, family=family)
     local_before = (cache.hits, cache.misses)
@@ -437,26 +612,60 @@ def _run_experiment(
         else config["experiments"]["rag"][experiment["retrieval_profile"]]["config"]
     )
     topology = "single" if family == "rag" else experiment["topology"]
-    for record in records:
-        result.sample_results.append(
-            _run_sample(
-                name,
-                family,
-                topology,
-                experiment,
-                rag_config,
-                record,
-                config,
-                retriever,
-                normalizer,
-                verifier,
-                llm,
-                cache,
-                dry_run,
-                pipeline,
-                pipeline_run_id,
-            )
+    restored = existing_samples or {}
+    ordered_results: dict[int, SampleResult] = dict(restored)
+    pending = [(index, record) for index, record in enumerate(records) if index not in restored]
+
+    def run_one(item: tuple[int, dict[str, Any]]) -> tuple[int, SampleResult]:
+        index, record = item
+        sample_result = _run_sample(
+            name,
+            family,
+            topology,
+            experiment,
+            rag_config,
+            record,
+            config,
+            retriever,
+            normalizer,
+            verifier,
+            llm,
+            cache,
+            dry_run,
+            pipeline,
+            pipeline_run_id,
+            retrieval_lock=retrieval_lock,
+            review_lock=review_lock,
         )
+        return index, sample_result
+
+    if sample_workers == 1:
+        completed = map(run_one, pending)
+        for index, sample_result in completed:
+            ordered_results[index] = sample_result
+            if checkpoint_callback is not None:
+                checkpoint_callback(index, sample_result)
+    else:
+        # 只保留一个并发窗口，避免单样本失败后队列仍继续发出大量付费请求。
+        with ThreadPoolExecutor(
+            max_workers=sample_workers, thread_name_prefix="formal-sample"
+        ) as executor:
+            for offset in range(0, len(pending), sample_workers):
+                batch = pending[offset : offset + sample_workers]
+                futures = [executor.submit(run_one, item) for item in batch]
+                first_error: BaseException | None = None
+                for future in as_completed(futures):
+                    try:
+                        index, sample_result = future.result()
+                    except BaseException as exc:
+                        first_error = first_error or exc
+                        continue
+                    ordered_results[index] = sample_result
+                    if checkpoint_callback is not None:
+                        checkpoint_callback(index, sample_result)
+                if first_error is not None:
+                    raise first_error
+    result.sample_results = [ordered_results[index] for index in range(len(records))]
     local_hits = cache.hits - local_before[0]
     local_misses = cache.misses - local_before[1]
     provider_after = _legacy_usage_summary(llm)
@@ -560,6 +769,8 @@ def _run_sample(
     dry_run: bool,
     pipeline: AssistantPipeline | None = None,
     pipeline_run_id: str | None = None,
+    retrieval_lock: Any | None = None,
+    review_lock: Any | None = None,
 ) -> SampleResult:
     started = time.perf_counter()
     gold_ids = [str(value) for value in sample.get("gold_evidence_ids", [])]
@@ -658,7 +869,7 @@ def _run_sample(
             "candidate_k": candidate_k,
             "experiment_config": rag_config,
         },
-        operation=retrieve_stage,
+        operation=lambda: _run_with_lock(retrieval_lock, retrieve_stage),
         context=stage_context,
     )
     result.stage_latency_ms["retrieval"] = retrieval_execution.elapsed_ms
@@ -710,6 +921,7 @@ def _run_sample(
             active_pipeline=active_pipeline,
             stage_context=stage_context,
             generation_input_hash=retrieval_execution.artifact.output_hash,
+            review_lock=review_lock,
         )
 
     outputs: list[AgentOutput] = []
@@ -815,7 +1027,7 @@ def _run_sample(
             "generation_output_hash": generation_execution.artifact.output_hash,
             "use_citation_review": rag_config["use_citation_review"],
         },
-        operation=review_stage,
+        operation=lambda: _run_with_lock(review_lock, review_stage),
         context=stage_context,
     )
     result.stage_latency_ms["review"] = review_execution.elapsed_ms
@@ -840,6 +1052,7 @@ def _run_unified_runtime_sample(
     active_pipeline: AssistantPipeline,
     stage_context: StageContext,
     generation_input_hash: str,
+    review_lock: Any | None = None,
 ) -> SampleResult:
     """使用 P4/P5 统一 runtime 完成 formal generation、仲裁与固定 NLI 审核。"""
     if verifier is None:
@@ -958,7 +1171,7 @@ def _run_unified_runtime_sample(
             "arbitration_output_hash": arbitration_execution.artifact.output_hash,
             "evidence_bundle_id": retrieval_payload.get("evidence_bundle_id"),
         },
-        operation=review_stage,
+        operation=lambda: _run_with_lock(review_lock, review_stage),
         context=stage_context,
     )
     result.stage_latency_ms["review"] = review_execution.elapsed_ms
@@ -1092,6 +1305,7 @@ def _build_manifest(
     llm: LLMClient | LLMProvider | None = None,
     retriever: Any | None = None,
     provider_usage: dict[str, int] | None = None,
+    resume: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     dataset = config["dataset"]
     formal_candidate = (
@@ -1186,6 +1400,7 @@ def _build_manifest(
         "judge_method": config["judge"]["method"],
         "limit": limit,
         "dry_run": dry_run,
+        "resume": resume or {"enabled": False, "sample_workers": 1},
         "cache": {
             "local_agent_output": {"hits": cache.hits, "misses": cache.misses},
             "provider_kv": _legacy_usage_summary(llm),
@@ -1314,6 +1529,8 @@ def _elapsed_ms(started: float) -> float:
 @click.option("--validate", is_flag=True)
 @click.option("--dry-run", is_flag=True, help="Development retrieval-only run.")
 @click.option("--limit", type=click.IntRange(min=1), default=None)
+@click.option("--resume-run-id", default=None, help="从已有未完成 run 恢复。")
+@click.option("--sample-workers", type=click.IntRange(min=1, max=8), default=1, show_default=True, help="样本级有限并发数；正式评测建议从 2 开始。")
 def cli(
     config_path: str,
     experiment: str,
@@ -1322,6 +1539,8 @@ def cli(
     validate: bool,
     dry_run: bool,
     limit: int | None,
+    resume_run_id: str | None,
+    sample_workers: int,
 ) -> None:
     config = load_config(config_path)
     issues = validate_config(config, _PROJECT_ROOT)
@@ -1335,7 +1554,8 @@ def cli(
         return
     names = select_experiments(config, experiment.lower())
     run_id, _ = run_evaluation(
-        config, names, Path(output_dir), limit=limit, dry_run=dry_run
+        config, names, Path(output_dir), limit=limit, dry_run=dry_run,
+        resume_run_id=resume_run_id, sample_workers=sample_workers,
     )
     click.echo(f"run_id: {run_id}")
 
