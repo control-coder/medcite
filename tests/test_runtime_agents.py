@@ -12,7 +12,6 @@ from sqlalchemy import select
 from medidiag.agents.runtime import AgentTopologyConfig, RuntimeMedicalAgents
 from medidiag.db.models import AgentRun, StageArtifact
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
-from medidiag.errors import MediDiagError
 from medidiag.llm import LLMRequest, ProviderCapabilities, ProviderResult
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
@@ -257,14 +256,27 @@ def test_dynamic_pair_records_routing_reason_scores_and_fallback() -> None:
     assert all(item["routing_reason"] == routing["reason"] for item in generated["agents"])
 
 
-def test_unknown_evidence_id_fails_closed() -> None:
+def test_unknown_evidence_id_becomes_auditable_agent_abstention() -> None:
+    provider = RecordingProvider(unknown_citation=True)
     runtime = RuntimeMedicalAgents(
-        RecordingProvider(unknown_citation=True),
+        provider,
         config=AgentTopologyConfig(topology="single"),
     )
-    with pytest.raises(MediDiagError) as caught:
-        runtime.generate("chest pain", _retrieval(), {})
-    assert caught.value.code == "AGENT_RUNTIME_INVALID"
+
+    generated = runtime.generate("chest pain", _retrieval(), {})
+    agent = generated["agents"][0]
+
+    assert generated["claims"] == []
+    assert generated["all_agents_abstained"] is True
+    assert agent["output"]["abstain_reason"] == "claim_citation_invalid"
+    assert agent["provider_provenance"]["response_id"] == "resp-1"
+    assert any(
+        action.startswith("claims:discard_invalid_citations_and_abstain")
+        for action in agent["normalization_actions"]
+    )
+    arbitration = runtime.arbitrate(generated, _retrieval())
+    assert arbitration["arbitration_method"] == "abstention_no_claims"
+    assert len(provider.requests) == 1
 
 
 def test_unknown_claim_from_arbitrator_falls_back_to_rule_baseline() -> None:

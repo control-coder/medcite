@@ -490,29 +490,39 @@ class RuntimeMedicalAgents:
                 normalization_actions.append(
                     f"claims[{claim_index}].citation_chunk_ids:truncate_to_3"
                 )
-            if not claim.citation_chunk_ids or not set(claim.citation_chunk_ids).issubset(
-                allowed_ids
-            ):
-                raise MediDiagError(
-                    "AGENT_RUNTIME_INVALID",
-                    detail=f"{specialty} Agent 引用了未知 EvidenceBundle chunk_id",
-                )
+        invalid_citation_indices = [
+            index
+            for index, claim in enumerate(output.claims, start=1)
+            if not claim.citation_chunk_ids
+            or not set(claim.citation_chunk_ids).issubset(allowed_ids)
+        ]
         invalid_language_indices = [
             index
             for index, claim in enumerate(output.claims, start=1)
             if _HAN_PATTERN.search(claim.text)
         ]
-        if invalid_language_indices:
-            # 不把中文 claim 送入固定英文 NLI judge，也不做不可审计的自动翻译。
-            # 将该 Agent 整体降级为可审计弃权，避免只保留部分 claim 造成选择偏差。
+        if invalid_citation_indices or invalid_language_indices:
+            # 不把未知引用或中文 claim 送入固定英文 NLI judge，也不做有利的部分保留。
+            # 任一 claim 违反契约时将该 Agent 整体降级为可审计弃权。
             output.claims = []
             output.abstain = True
-            output.abstain_reason = "claim_language_invalid"
-            output.uncertainty = "Agent 未遵守英文 claim 契约，已按 fail-closed 规则弃权。"
-            normalization_actions.append(
-                "claims:discard_non_english_and_abstain:indexes="
-                + ",".join(str(index) for index in invalid_language_indices)
-            )
+            if invalid_citation_indices and invalid_language_indices:
+                output.abstain_reason = "claim_contract_invalid"
+            elif invalid_citation_indices:
+                output.abstain_reason = "claim_citation_invalid"
+            else:
+                output.abstain_reason = "claim_language_invalid"
+            output.uncertainty = "Agent claim 未满足语言或引用契约，已按 fail-closed 规则弃权。"
+            if invalid_citation_indices:
+                normalization_actions.append(
+                    "claims:discard_invalid_citations_and_abstain:indexes="
+                    + ",".join(str(index) for index in invalid_citation_indices)
+                )
+            if invalid_language_indices:
+                normalization_actions.append(
+                    "claims:discard_non_english_and_abstain:indexes="
+                    + ",".join(str(index) for index in invalid_language_indices)
+                )
         result = client.last_result
         if result is None:
             raise MediDiagError(
