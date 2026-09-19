@@ -1,0 +1,7 @@
+name: medidiag
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+# 激活环境后执行 python -m pip install -e ".[dev]" 安装本项目依赖。
