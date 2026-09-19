@@ -1,8 +1,7 @@
-"""Human citation-review sampling, agreement audit, and formal-report gate.
+"""人工引用审核抽样、一致性审计和正式报告门禁。
 
-This module intentionally creates review templates from a completed formal run but
-never fabricates labels. Two independently authored label files and, when needed,
-an explicit adjudication file are required before a result can be reported.
+本模块只从已完成的正式运行生成审核模板，从不伪造标签。
+只有两份独立编写的标签文件，以及必要时的明确裁决文件，才能支持生成正式结果。
 """
 
 from __future__ import annotations
@@ -50,7 +49,7 @@ _REQUIRED_ADJUDICATION_FIELDS = {
 
 
 class AnnotationAuditError(ValueError):
-    """Raised when human-review artifacts cannot support a formal report."""
+    """当人工审核产物不足以支持正式报告时抛出。"""
 
 
 @dataclass(frozen=True)
@@ -94,11 +93,10 @@ def prepare_annotation_sample(
     ratio: float = 0.20,
     seed: int = 42,
 ) -> dict[str, Any]:
-    """Create a deterministic, verdict-stratified double-review template.
+    """创建确定性的、按裁决结果分层的双人审核模板。
 
-    The output contains public evidence text and judge provenance so annotators
-    can assess the exact claim-citation pair. It deliberately contains no human
-    labels. A sidecar manifest binds the template to the originating raw run.
+    输出包含公开证据文本和审核模型溯源信息，便于标注人员检查精确的主张—引用对。
+    模板刻意不包含人工标签；旁车清单将模板绑定到原始运行记录。
     """
     if not 0 < ratio <= 1:
         raise AnnotationAuditError("ratio must be in (0, 1]")
@@ -136,7 +134,7 @@ def audit_annotation_package(
     adjudication_path: str | Path,
     output_path: str | Path,
 ) -> dict[str, Any]:
-    """Validate dual labels and adjudication, then write a report-gate artifact."""
+    """校验双人标签和裁决结果，然后写入报告门禁产物。"""
     run_path = Path(run_dir)
     pairs, run_manifest = _load_citation_pairs(run_path)
     sample = _load_sample(sample_path, pairs, run_manifest, _sha256_file(run_path / "manifest.json"))
@@ -518,7 +516,7 @@ def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
 
 @click.group()
 def cli() -> None:
-    """Prepare and audit manual citation calibration artifacts."""
+    """准备并审计人工引用校准产物。"""
 
 
 @cli.command("prepare")
@@ -527,7 +525,7 @@ def cli() -> None:
 @click.option("--ratio", type=float, default=0.20, show_default=True)
 @click.option("--seed", type=int, default=42, show_default=True)
 def prepare_command(run_dir: Path, output: Path, ratio: float, seed: int) -> None:
-    """Create an unlabeled 20% double-review citation sample."""
+    """创建未标注的 20% 双人引用审核样本。"""
     result = prepare_annotation_sample(run_dir, output, ratio=ratio, seed=seed)
     click.echo(f"prepared={result['selected_pair_count']} population={result['all_pair_count']} sample={output}")
 
@@ -540,7 +538,7 @@ def prepare_command(run_dir: Path, output: Path, ratio: float, seed: int) -> Non
 @click.option("--adjudication", type=click.Path(path_type=Path, exists=True), required=True)
 @click.option("--output", type=click.Path(path_type=Path), required=True)
 def audit_command(run_dir: Path, sample: Path, annotator_a: Path, annotator_b: Path, adjudication: Path, output: Path) -> None:
-    """Validate double labels, Kappa, and all disagreement adjudications."""
+    """校验双人标签、Kappa 以及所有分歧裁决。"""
     result = audit_annotation_package(run_dir, sample, annotator_a, annotator_b, adjudication, output)
     click.echo(f"status={result['status']} kappa={result['agreement']['cohen_kappa']:.4f} output={output}")
 
@@ -550,7 +548,7 @@ def audit_command(run_dir: Path, sample: Path, annotator_a: Path, annotator_b: P
 @click.option("--audit", type=click.Path(path_type=Path, exists=True), required=True)
 @click.option("--output", type=click.Path(path_type=Path), required=True)
 def report_command(run_dir: Path, audit: Path, output: Path) -> None:
-    """Render the formal Markdown report after the audit gate passes."""
+    """在报告门禁通过后渲染正式 Markdown 报告。"""
     from eval.report import write_baseline_report, write_report
 
     manifest = _read_json(run_dir / "manifest.json")

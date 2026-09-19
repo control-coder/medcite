@@ -1,4 +1,4 @@
-"""Single-machine workflow worker and lease scanner."""
+"""单机工作流 worker 和租约扫描器。"""
 
 from __future__ import annotations
 
@@ -50,9 +50,9 @@ class WorkerRunResult:
     final_state: str | None = None
 
 
-# The stage each state drives, and the trigger subject authorised to move that
-# state on. Single source of truth for both the success and the failure edge, so
-# a stage can never be escalated under a subject the state machine rejects.
+# 每个状态驱动的阶段，以及获准推进该状态的触发主体。
+# 成功边与失败边共享这份定义，
+# 确保阶段不会使用状态机拒绝的主体升级处理。
 _STAGE_BY_STATE: dict[CaseState, tuple[str, TriggerSubject]] = {
     CaseState.CREATED: ("normalize", TriggerSubject.WORKER),
     CaseState.NORMALIZED: ("retrieval", TriggerSubject.WORKER),
@@ -74,11 +74,9 @@ _log = get_logger(__name__)
 
 
 class _StageFailure(Exception):
-    """A provider stage that exhausted ProviderCallRunner's bounded retries.
+    """Provider 阶段耗尽 ProviderCallRunner 有界重试后产生的异常。
 
-    Raised only by ``_invoke`` so that lease errors from ``_renew`` -- which mean
-    another worker owns the task and this one must not write -- keep propagating
-    instead of being mistaken for a stage failure.
+    该异常只由 ``_invoke`` 抛出；``_renew`` 的租约错误意味着另一个 worker 已经拥有任务，当前 worker 必须继续传播该错误而不能写入，因此不能把它误判为阶段失败。
     """
 
     def __init__(self, stage: str, error: MediDiagError) -> None:
@@ -88,7 +86,7 @@ class _StageFailure(Exception):
 
 
 class SingleMachineWorker:
-    """Execute one full case workflow while retaining a database lease."""
+    """在保留数据库租约的同时执行一个完整病例工作流。"""
 
     def __init__(
         self,
@@ -363,8 +361,8 @@ class SingleMachineWorker:
                     payload = outcome.payload
                     verdict = payload["verdict"]
                     target = CaseState(verdict)
-                    # A provider that keeps asking for revisions would otherwise
-                    # cycle REVISION_REQUIRED -> PLAN_GENERATED forever.
+                    # 如果 Provider 持续要求修订，流程本来会无限
+                    # 循环 REVISION_REQUIRED -> PLAN_GENERATED。
                     round_number = case.review_round + 1
                     capped = target == CaseState.REVISION_REQUIRED and (
                         ClinicalLogicReviewer.should_escalate(round_number, self.max_review_rounds)
@@ -521,8 +519,8 @@ class SingleMachineWorker:
                 self._fail_stage(session, case, task, attempt, failure)
                 return WorkerRunResult(True, task.task_id, case.case_id, CaseState.ESCALATED.value)
 
-        # Only the review/revision cycle can spin, and WS3's round cap bounds it;
-        # every state reachable here has a legal ESCALATED edge.
+        # 只有审核/修订循环可能重复，WS3 的轮次上限会限制它；
+        # 这里可达的每个状态都有合法的 ESCALATED 边。
         stage, _ = _STAGE_BY_STATE[state]
         _log.error(
             "worker.stage_limit_exceeded",
@@ -556,7 +554,7 @@ class SingleMachineWorker:
         attempt: int,
         failure: _StageFailure,
     ) -> None:
-        """Escalate a stage that failed after ProviderCallRunner has retried."""
+        """升级一个在 ProviderCallRunner 重试后仍失败的阶段。"""
         exc = failure.error
         provider_attempt = exc.context.get("provider_attempt", {})
         self.executor.fail_stage(
@@ -751,7 +749,7 @@ class SingleMachineWorker:
 
 
 class LeaseScanner:
-    """Atomically reclaim expired tasks for the local recovery worker."""
+    """以原子方式回收本地恢复 worker 的过期任务。"""
 
     def __init__(
         self,

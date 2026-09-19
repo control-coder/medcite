@@ -1,7 +1,6 @@
-"""Provider boundary for the single-machine workflow.
+"""单机工作流的 Provider 边界。
 
-The deterministic provider is for tests and local engineering demonstrations.
-It never produces a diagnosis and makes no network calls.
+确定性 Provider 用于测试和本地工程演示；它从不生成诊断，也不会发起网络请求。
 """
 
 from __future__ import annotations
@@ -13,10 +12,10 @@ from typing import Any, Protocol
 from medidiag.compliance.status import ComplianceStatus
 from medidiag.workflow.provider_runtime import ProviderResponse
 
-# ProviderCallRunner.call accepts either shape from every stage: a bare payload,
-# or a ProviderResponse carrying the request ID and provider counters needed for
-# audit. DeepSeekWorkflowProvider.generate already returns the latter, so the
-# Protocol has to admit both or it contradicts its only live implementation.
+# ProviderCallRunner.call 接受每个阶段的两种返回形态：裸载荷，
+# 或带有请求 ID 和 Provider 计数器的 ProviderResponse，后者用于
+# 审计。DeepSeekWorkflowProvider.generate 已经返回后一种形态，因此
+# Protocol 必须同时允许两者，否则会与唯一的在线实现矛盾。
 StageResult = dict[str, Any] | ProviderResponse
 
 
@@ -45,7 +44,7 @@ class WorkflowProvider(Protocol):
 
 @dataclass
 class DeterministicWorkflowProvider:
-    """Network-free provider with cautious, non-diagnostic fixture output."""
+    """无网络、谨慎且不作诊断的 fixture Provider。"""
 
     review_verdict: str = "APPROVED"
     version: str = "deterministic-provider-v1"

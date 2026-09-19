@@ -1,4 +1,4 @@
-"""Claim-citation verification with explicit formal/development behavior."""
+"""带有明确正式/开发模式行为的主张—引用核验。"""
 
 from __future__ import annotations
 
@@ -18,11 +18,11 @@ class CitationVerdict(str, Enum):
 
 
 class JudgeInitializationError(RuntimeError):
-    """Raised when the configured formal judge cannot be loaded."""
+    """配置的正式审核模型无法加载时抛出。"""
 
 
 class JudgeInferenceError(RuntimeError):
-    """Raised when formal judge inference fails."""
+    """正式审核模型推理失败时抛出。"""
 
 
 class JudgeInputLanguageError(RuntimeError):
@@ -31,7 +31,7 @@ class JudgeInputLanguageError(RuntimeError):
 
 @dataclass
 class CitationResult:
-    """Auditable verdict for one claim-citation pair (or an uncited claim)."""
+    """单个主张—引用对（或无引用主张）的可审计裁决。"""
 
     claim_id: str
     claim_text: str
@@ -113,11 +113,10 @@ def validate_nli_label_set(id2label: object, judge_ref: str) -> dict[int, str]:
 
 
 class CitationVerifier:
-    """Verify citations using a fixed NLI judge or an explicit dev fallback.
+    """使用固定 NLI 审核模型或明确的开发回退规则核验引用。
 
-    ``method=nli`` is fail-closed: loading or inference errors raise and abort
-    the run. ``method=rule_fallback`` never claims to be NLI and is allowed
-    only by the evaluation configuration's development mode.
+    ``method=nli`` 采用失败即关闭策略：加载或推理出错会抛出异常并中止运行。
+    ``method=rule_fallback`` 从不声称自己是 NLI，且只有评测配置处于开发模式时才允许使用。
     """
 
     def __init__(
@@ -143,7 +142,7 @@ class CitationVerifier:
         self._nli_pipeline: Any = None
 
     def initialize(self) -> None:
-        """Eagerly load the formal judge so a run fails before producing output."""
+        """预先加载正式审核模型，使运行在产生输出前就失败。"""
         if self.method == "rule_fallback" or self._nli_pipeline is not None:
             return
         try:
@@ -163,7 +162,7 @@ class CitationVerifier:
         return f"{self.model_name}@{self.model_revision}"
 
     def _load_pipeline(self) -> object:
-        """Load the fixed judge. Overridden in tests to avoid a model download."""
+        """加载固定的审核模型；测试会覆盖该方法，以避免下载模型。"""
         from transformers import pipeline
 
         return pipeline(

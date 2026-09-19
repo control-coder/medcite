@@ -118,8 +118,8 @@ class WorkflowExecutor:
             session.commit()
             return case
         except IntegrityError:
-            # The database constraint is the final arbiter for concurrent
-            # requests that both missed the initial read.
+            # 当并发请求都错过首次读取时，
+            # 数据库约束作为最终裁决依据。
             session.rollback()
             existing = session.execute(
                 select(Case).where(
@@ -182,7 +182,7 @@ class WorkflowExecutor:
             if existing.status in ("SUCCEEDED", "RUNNING", "PENDING"):
                 return existing  # 返回已有任务（幂等）
 
-        # active_task_id covers both PENDING and RUNNING tasks.
+        # active_task_id 同时覆盖 PENDING 和 RUNNING 任务。
         expected_active_task_id: str | None = None
         if case.active_task_id:
             active = session.execute(
@@ -525,7 +525,7 @@ class WorkflowExecutor:
     def _record_rejected_stale_write(
         session: Session, task_id: str, worker_id: str, attempt: int
     ) -> None:
-        """Record the rejected stale write in a separate transaction."""
+        """记录被拒绝的过期写入，并使用独立事务。"""
         task = session.execute(
             select(WorkflowTask).where(WorkflowTask.task_id == task_id)
         ).scalar_one_or_none()
@@ -560,11 +560,9 @@ class WorkflowExecutor:
         error_message: str,
         detail: dict[str, Any] | None = None,
     ) -> None:
-        """Atomically stop a leased task and preserve a human-reviewable failure.
+        """原子地停止一个带租约任务，并保留可供人工审核的失败结果。
 
-        This is intentionally a terminal task write, not a retry mechanism. It is
-        used after the provider runtime has exhausted its bounded retries; no
-        external result is persisted.
+        这是一个有意设计为终态的任务写入，不是重试机制。它用于 Provider 运行时耗尽有界重试后；不会持久化任何外部结果。
         """
         task = session.execute(
             select(WorkflowTask).where(WorkflowTask.task_id == task_id)

@@ -1,4 +1,4 @@
-"""P1-A structured trace exporter and scenario tests."""
+"""P1-A 结构化 Trace 导出器和场景测试。"""
 
 from __future__ import annotations
 

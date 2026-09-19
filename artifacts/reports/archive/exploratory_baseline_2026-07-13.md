@@ -64,6 +64,6 @@
 
 ## 复现命令
 ```bash
-python -m eval.runner --config eval/config.yaml --group all --output reports/raw/
+python -m eval.runner --config eval/config.yaml --group all --output artifacts/reports/raw/
 python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set.jsonl --kb eval/datasets/knowledge_chunks.jsonl
 ```

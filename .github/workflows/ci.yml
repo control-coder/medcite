@@ -13,9 +13,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      # The retrieval tests inject a deterministic token-hashing encoder, so no
-      # model download is expected. These flags turn any unexpected Hugging Face
-      # fetch into a loud failure instead of a slow, network-dependent pass.
+      # 检索测试注入确定性编码器，无需下载模型。开启离线标志，
+      # 让意外的模型下载直接失败，避免检查依赖网络且耗时不可控。
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
 
@@ -28,24 +27,21 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: Install
+      - name: 安装项目依赖
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          python -m pip install -e ".[dev]"
 
       - name: Ruff
         run: ruff check .
 
-      # Coverage is reported, not gated. A threshold is a policy decision about
-      # which code must be tested; adding one here would fail the build on
-      # untested CLI entry points that are deliberately exercised by hand.
+      # 仅展示覆盖率，不增加覆盖率门槛；部分 CLI 入口保留人工演示验证。
       - name: Pytest
         run: >
           python -m pytest -q
           --cov=medidiag --cov=eval --cov-report=term-missing
 
-      # Blocking since 2026-07-26: the backlog reached zero (97 -> 14 -> 0), so
-      # `strict = true` in pyproject.toml is now enforced rather than aspirational.
-      # New untyped code should fail here instead of quietly re-growing the backlog.
+      # 自 2026-07-26 起，历史类型问题已从 97 项降至 14 项再归零。
+      # 保留已启用的严格类型检查，防止已有问题重新累积，不新增审查门槛。
       - name: Mypy
         run: mypy src

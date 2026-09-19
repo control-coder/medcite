@@ -1,4 +1,4 @@
-"""Provider timeout, HTTP error, retry, and schema boundary tests."""
+"""Provider 超时、HTTP 错误、重试和结构边界测试。"""
 
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ def test_non_retryable_http_error_is_rejected_immediately() -> None:
     ],
 )
 def test_transport_errors_are_classified_and_retried(error: httpx.RequestError) -> None:
-    """Transport failures never reach an HTTP response, so they need their own code."""
+    """传输失败不会到达 HTTP 响应层，因此需要使用独立错误码。"""
     calls = 0
     audit = []
 
@@ -155,12 +155,12 @@ def test_transport_errors_are_classified_and_retried(error: httpx.RequestError) 
     assert [item.retry_decision for item in audit] == ["retry", "retry", "exhausted"]
     assert all(item.error_code == "PROVIDER_NETWORK_ERROR" for item in audit)
     assert all(item.retryable is True for item in audit)
-    # No response was received, so there is nothing to correlate or report.
+    # 没有收到响应，因此没有内容可以关联或报告。
     assert all(item.http_status is None and item.request_id is None for item in audit)
 
 
 def test_timeout_is_classified_before_the_generic_transport_branch() -> None:
-    """TimeoutException subclasses RequestError; the timeout mapping must still win."""
+    """TimeoutException 是 RequestError 的子类，但超时映射仍必须优先。"""
 
     def operation():
         raise httpx.ConnectTimeout("timed out while connecting")

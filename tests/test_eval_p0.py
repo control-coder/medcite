@@ -1,4 +1,4 @@
-"""P0-A evaluation truthfulness and configuration gates."""
+"""P0-A 评测真实性和配置门禁。"""
 
 from __future__ import annotations
 

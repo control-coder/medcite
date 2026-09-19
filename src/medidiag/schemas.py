@@ -100,12 +100,12 @@ class KnowledgeChunk:
 
 
 def sample_to_dict(sample: EvalSample) -> dict[str, Any]:
-    """EvalSample -> dict。"""
+    """将 EvalSample 转换为字典。"""
     return asdict(sample)
 
 
 def chunk_to_dict(chunk: KnowledgeChunk) -> dict[str, Any]:
-    """KnowledgeChunk -> dict。"""
+    """将 KnowledgeChunk 转换为字典。"""
     return asdict(chunk)
 
 

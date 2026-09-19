@@ -194,15 +194,15 @@ def run_sensitivity(diagnostics: dict[str, Any]) -> dict[str, Any]:
 @click.command()
 @click.option(
     "--manifest-diagnostics",
-    default="reports/routing_diagnostics_manifest_rule4_removed.json",
+    default="artifacts/reports/routing_diagnostics_manifest_rule4_removed.json",
     show_default=True,
 )
 @click.option(
     "--holdout-diagnostics",
-    default="reports/routing_diagnostics_holdout_rule4_removed.json",
+    default="artifacts/reports/routing_diagnostics_holdout_rule4_removed.json",
     show_default=True,
 )
-@click.option("--output", default="reports/threshold_sensitivity.json", show_default=True)
+@click.option("--output", default="artifacts/reports/threshold_sensitivity.json", show_default=True)
 def cli(
     manifest_diagnostics: str, holdout_diagnostics: str, output: str
 ) -> None:

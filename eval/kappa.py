@@ -67,7 +67,7 @@ def cohen_kappa(
     counter_b = Counter(ann_b[sid] for sid in common_ids)
     pe = sum((counter_a[label] / n) * (counter_b[label] / n) for label in labels)
 
-    # Kappa
+    # Kappa 一致性系数
     if pe >= 1.0:
         kappa = 1.0
     else:

@@ -210,6 +210,6 @@ metrics:
 
 reproduction:
   validate_command: "python -m eval.runner --config eval/config.yaml --validate"
-  rag_command: "python -m eval.runner --config eval/config.yaml --experiment rag_retrieval --output reports/raw/"
-  agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output reports/raw/"
+  rag_command: "python -m eval.runner --config eval/config.yaml --experiment rag_retrieval --output artifacts/reports/raw/"
+  agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output artifacts/reports/raw/"
   leakage_check_command: "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl"

@@ -1,9 +1,6 @@
-"""Live DeepSeek-backed provider for the minimal local demonstration.
+"""用于最小本地演示的在线 DeepSeek Provider。
 
-This adapter deliberately uses one external call only at the structured drafting stage.
-Normalization, retrieval and review remain deterministic so the presentation flow is
-fast, bounded, and auditable. The retrieval payload is explicitly a local demo fixture,
-not a medical knowledge base or a formal RAG evaluation.
+该适配器只在结构化起草阶段发起一次外部调用。归一化、检索和审核保持确定性，使演示流程快速、有界且可审计。检索载荷明确是本地演示 fixture，不是医学知识库或正式 RAG 评测。
 """
 
 from __future__ import annotations
@@ -33,19 +30,17 @@ class _DraftPayload(BaseModel):
 
 
 class DeepSeekWorkflowProvider:
-    """Use a live DeepSeek-compatible completion for conservative evidence drafting.
+    """使用在线 DeepSeek 兼容补全服务完成保守的证据起草。
 
-    It is intentionally **not** a clinical diagnosis provider. The output is a draft
-    bound to the local demonstration evidence and is labeled as structural-only review
-    because the formal fixed-NLI citation evaluation is outside this demo path.
+    它刻意不是临床诊断 Provider。输出受本地演示证据约束，并标记为仅作结构审核，因为固定 NLI 引用评测不属于该演示路径。
     """
 
     def __init__(self, client: LLMClient | None = None) -> None:
-        # This provider is always driven by ProviderCallRunner, which owns the
-        # bounded retry budget and writes one audited provider_call event per
-        # attempt. Leaving LLMClient's own retries enabled would multiply the two
-        # layers (3 x 3 = 9 upstream calls) and hide the inner attempts from the
-        # audit log, so the default client retries zero times.
+        # 该 Provider 始终由 ProviderCallRunner 驱动，后者负责
+        # 有界重试预算，并为每次尝试写入一个可审计的 provider_call 事件。
+        # 如果继续启用 LLMClient 自身的重试，两层重试会相乘
+        # （3 x 3 = 9 次上游调用），并且内层尝试会从审计日志中隐藏；
+        # 因此默认客户端重试次数为零。
         self.client = client or LLMClient(max_retries=0)
         self.version = f"deepseek-live-demo:{self.client.model}"
         self._guard = ComplianceGuard()

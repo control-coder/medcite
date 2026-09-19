@@ -1,86 +1,68 @@
-# ===== Python =====
+# Python 编译、构建与本地环境
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
-
-# ===== Virtual envs =====
+.eggs/
 .venv/
 venv/
 env/
 ENV/
 
-# ===== IDE =====
+# 编辑器与操作系统临时文件
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
 
-# ===== Project secrets =====
+# 本地密钥与机器专用配置
 .env
 .env.local
 .env.*.local
+eval/config.formal.yaml
 
-# ===== Database =====
+# 持久数据库不入库，但不能当缓存删除
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite-journal
-medidiag.db
+*.sqlite-wal
+*.sqlite-shm
 
-# ===== Caches =====
+# 缓存与临时运行；模型缓存清理需要单独确认
 .cache/
 .pytest_cache/
-# Ad-hoc pytest basetemp dirs. Ignored so that eval.runner._git_diff_hash, which
-# hashes every untracked non-ignored file into a formal run's dirty_diff_hash,
-# can never fold leftover test scratch data into run provenance.
 .pytest-tmp*/
 .mypy_cache/
 .ruff_cache/
-.cache/huggingface/
+.ipynb_checkpoints/
+.tmp/
 
-# Local formal config may contain provider-specific run metadata.
-eval/config.formal.yaml
-
-# ===== Evaluation artifacts =====
-# Keep directory structure via .gitkeep, but ignore raw outputs
-reports/raw/**
-!reports/raw/.gitkeep
-# 人工审阅界面生成目录，不属于 formal 标注产物
+# 运行产物；已有版本化历史记录仍保留
+artifacts/visual/
+artifacts/reports/raw/**
+!artifacts/reports/raw/.gitkeep
+artifacts/traces/raw/*.jsonl
+artifacts/traces/summary/*.json
 eval/annotations_ui/
-traces/raw/*.jsonl
-traces/summary/*.json
-
-# 原始下载数据（太大，不进 git；可由 scripts/ 重新下载）
 eval/datasets/raw/
 
-# ===== Build / docs =====
+# 覆盖率、构建与前端依赖
 site/
 htmlcov/
 .coverage
 .coverage.*
 coverage.xml
 *.cover
+node_modules/
 
-# Local command captures used for verification
+# 历史命令截获文件，不作为项目资料
 pytest-output.txt
 eval-validate-output.txt
 leakage-output.txt
@@ -91,6 +73,3 @@ p1a-trace-test-output.txt
 p1a-trace-cli-output.txt
 p1b-*-output.txt
 p1b-server-error.txt
-
-# 本地测试临时目录
-.tmp/

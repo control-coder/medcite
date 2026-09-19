@@ -2,7 +2,6 @@
 # 当 generation provider 不提供不变 snapshot 时，可使用 provider_response_id 溯源模式。
 # 该模式必须在每条 Agent 样本中保存 response.id，且报告必须明示不具备不变模型快照。
 # MediDiag-Agent EvidenceFlow 评测配置。
-# MediDiag-Agent EvidenceFlow 评测配置。
 # 任一模型、数据集、提示词、权重或 judge 变更后都必须创建新的 run ID。
 
 evaluation:
@@ -215,6 +214,6 @@ metrics:
 
 reproduction:
   validate_command: "python -m eval.runner --config eval/config.yaml --validate"
-  rag_command: "python -m eval.runner --config eval/config.formal.yaml --experiment rag_retrieval --output reports/raw/"
-  agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output reports/raw/"
+  rag_command: "python -m eval.runner --config eval/config.formal.yaml --experiment rag_retrieval --output artifacts/reports/raw/"
+  agent_command: "python -m eval.runner --config eval/config.yaml --experiment agent_all --output artifacts/reports/raw/"
   leakage_check_command: "python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl"

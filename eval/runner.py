@@ -1,8 +1,6 @@
-"""Configuration-driven MediDiag evaluation runner.
+"""配置驱动的 MediDiag 评测执行器。
 
-RAG and Agent experiments use separate namespaces. Development runs are
-explicitly non-reportable when they use a limit, dry-run, unpinned models, or
-the rule fallback judge.
+RAG 和 Agent 实验使用相互独立的命名空间。当开发运行使用数量限制、试运行、未固定模型或规则回退审核器时，明确不得生成正式报告。
 """
 
 from __future__ import annotations
@@ -73,12 +71,9 @@ class AgentOutputCache:
         specialty: str,
         claim_language: str | None = None,
     ) -> str:
-        """Key on the experiment as well as the sample.
+        """同时使用实验名和样本作为键。
 
-        The agent arms share one retrieval profile, so a key without the
-        experiment name lets the second and third arm answer almost entirely
-        from cache. Their ``stage_latency_ms["generation"]`` would then measure
-        dictionary lookups, invalidating the topology comparison.
+        各 Agent 实验臂共享同一个检索配置；如果键中不包含实验名，第二、第三实验臂几乎会完全从缓存回答。此时 ``stage_latency_ms["generation"]`` 测量的将是字典查找，而不是生成耗时，从而使拓扑对照失效。
         """
         # claim 语言会改变 prompt 和 judge 输入，不能复用旧语言策略的生成缓存。
         payload = (
@@ -132,12 +127,12 @@ class SampleResult:
 
 
 def _round(value: float | None, digits: int) -> float | None:
-    """Round a metric, preserving None for metrics with an empty denominator."""
+    """对指标进行四舍五入；分母为空时保留 None。"""
     return None if value is None else round(value, digits)
 
 
 def _fmt(value: float | None) -> str:
-    """Render a metric for the console, distinguishing undefined from 0.0."""
+    """为控制台渲染指标，并区分未定义和 0.0。"""
     return "N/A" if value is None else f"{value:.4f}"
 
 
@@ -197,13 +192,13 @@ class ExperimentResult:
             "family": self.family,
             "sample_count": len(self.sample_results),
             "metrics": {
-                # None means the metric is undefined for this run (empty
-                # denominator), which is not the same as a measured 0.0.
+                # None 表示本次运行的指标未定义（分母为空），
+                # 这与测得的 0.0 不同。
                 "evidence_recall_at_5": _round(self.evidence_recall_at_5, 4),
                 "gold_evidence_coverage": _round(self.gold_evidence_coverage, 4),
                 "citation_precision": _round(self.citation_precision, 4),
                 "unsupported_claim_rate": _round(self.unsupported_claim_rate, 4),
-                # This is a reviewer-pipeline metric, not CLOSED_SUCCESS.
+                # 这是审核流水线指标，不是 CLOSED_SUCCESS 状态。
                 "pipeline_approval_rate": _round(self.pipeline_approval_rate, 4),
                 "workflow_success_rate": None,
                 "p95_latency_ms": _round(self.p95_latency_ms, 2),
@@ -1334,8 +1329,8 @@ def _build_manifest(
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "command": " ".join(sys.argv),
-        # A completed formal run is only a candidate. It becomes reportable after
-        # eval.annotation_audit validates a 20% independent human-review sample.
+        # 完成的正式运行只是候选结果。只有在
+        # eval.annotation_audit 校验通过 20% 的独立人工审核样本后，
         "formal_candidate": formal_candidate,
         "report_eligible": False,
         "non_reportable_reasons": _non_reportable_reasons(config, limit, dry_run),
@@ -1472,12 +1467,10 @@ _PROVENANCE_DISTRIBUTIONS = (
 
 
 def _resolved_package_versions() -> dict[str, str]:
-    """Record the versions actually installed at run time.
+    """记录运行时实际安装的版本。
 
-    This is the dependency provenance a range specification cannot provide.
-    Distributions absent from the environment are recorded as ``not_installed``
-    rather than omitted, so a missing accelerator stack is visible in the
-    manifest instead of silently indistinguishable from an unrecorded field.
+    范围声明无法提供这种依赖溯源。
+    环境中不存在的发行版记录为 ``not_installed``，而不是直接省略；这样缺失的加速栈会在清单中显式可见，不会与未记录的字段混淆。
     """
     from importlib.metadata import PackageNotFoundError, version
 
@@ -1539,7 +1532,7 @@ def _elapsed_ms(started: float) -> float:
     default="all",
     show_default=True,
 )
-@click.option("--output", "output_dir", default="reports/raw/", show_default=True)
+@click.option("--output", "output_dir", default="artifacts/reports/raw/", show_default=True)
 @click.option("--show-config", is_flag=True)
 @click.option("--validate", is_flag=True)
 @click.option("--dry-run", is_flag=True, help="Development retrieval-only run.")

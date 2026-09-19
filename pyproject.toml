@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "medidiag"
 version = "0.1.0"
-description = "MediDiag-Agent EvidenceFlow: 医疗循证诊断多 Agent 工作流平台（模拟，仅用于工程演示与公开数据评测）"
+description = "MediDiag：带证据引用的医疗信息辅助分析原型（仅公开与模拟数据）"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -56,6 +56,7 @@ medidiag = [
     "api/static/*.css",
     "api/static/*.js",
     "llm/profiles.yaml",
+    "rag/medical_terms/*.json",
 ]
 
 [tool.pytest.ini_options]
@@ -72,19 +73,16 @@ target-version = "py311"
 select = ["E", "F", "W", "I", "B", "UP"]
 ignore = [
     "E501",
-    # UP042: `class X(str, Enum)` -> StrEnum. These enum values are persisted in
-    # the database and compared against stored strings; StrEnum changes what
-    # str(member) returns, so the migration is not a safe mechanical rewrite.
+    # UP042：枚举值已持久化，并与数据库字符串比较；改成 StrEnum 会改变
+    # str(member) 的结果，因此不能直接按规则批量替换。
     "UP042",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# B008: FastAPI resolves Depends() in argument defaults by design. Moving the
-# call into the body would break dependency injection.
+# B008：FastAPI 需要在参数默认值处解析 Depends()；移入函数体会破坏依赖注入。
 "src/medidiag/api/app.py" = ["B008"]
-# B023: the stage lambdas close over loop variables, but ProviderCallRunner
-# invokes each one synchronously inside the same iteration, so the late-binding
-# hazard the rule warns about cannot occur here.
+# B023：阶段 lambda 虽然捕获循环变量，但 ProviderCallRunner 会在本轮迭代内
+# 同步调用，不存在规则警告的延迟绑定风险。
 "src/medidiag/workflow/worker.py" = ["B023"]
 
 [tool.mypy]

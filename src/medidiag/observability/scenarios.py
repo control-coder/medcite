@@ -1,4 +1,4 @@
-"""Deterministic scenarios used to produce reproducible trace examples."""
+"""用于生成可复现 Trace 示例的确定性场景。"""
 
 from __future__ import annotations
 

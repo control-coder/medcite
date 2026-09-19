@@ -1,7 +1,6 @@
-"""Evaluation configuration loading and validation.
+"""评测配置的加载与校验。
 
-The YAML file is the only source of truth for experiment switches, model
-identifiers, retrieval weights, dataset paths, and execution mode.
+YAML 文件是实验开关、模型标识、检索权重、数据集路径和执行模式的唯一事实来源。
 """
 
 from __future__ import annotations
@@ -44,7 +43,7 @@ _GENERATION_PROVENANCE_MODES = {"provider_snapshot", "provider_response_id"}
 
 
 def _is_formal_placeholder(value: object) -> bool:
-    """Return whether a formal-lock value is missing or clearly non-verifiable."""
+    """判断正式锁定字段是否缺失或明显不可核验。"""
     normalized = str(value or "").strip().lower()
     return normalized in _UNPINNED_REVISIONS or any(
         marker in normalized for marker in _FORMAL_PLACEHOLDER_MARKERS
@@ -52,7 +51,7 @@ def _is_formal_placeholder(value: object) -> bool:
 
 
 def _is_full_hf_commit_sha(revision: str) -> bool:
-    """Hugging Face revisions are reproducible only when pinned to a full commit."""
+    """只有固定到完整提交版本时，Hugging Face 修订版本才具备可复现性。"""
     return bool(_HF_COMMIT_SHA_PATTERN.fullmatch(revision))
 
 
@@ -213,10 +212,10 @@ def validate_config(
         annotation = dataset.get("annotation", {})
         if annotation.get("double_check_ratio") != 0.20:
             issues.append("formal mode requires dataset.annotation.double_check_ratio=0.20")
-        # Human labels are created after the formal run from its exact emitted
-        # citation pairs. Paths are still required so the post-run audit has a
-        # declared destination, but requiring files here would make that run
-        # impossible. report.py enforces the completed audit instead.
+        # 人工标签在正式运行完成后，根据实际输出的
+        # 引用对创建。这里仍要求填写路径，以便运行后的审计拥有
+        # 声明的目标位置；但如果在运行前强制要求文件存在，运行会变得
+        # 不可能。完成后的审计由 report.py 强制执行。
         for field in (
             "citation_sample_path",
             "annotator_a_path",

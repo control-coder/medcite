@@ -27,7 +27,7 @@ conda run -n medidiag python -m pytest -p no:cacheprovider tests/test_reliabilit
 conda run -n medidiag python -m medidiag.cli trace-examples --output-root traces
 ```
 
-`traces/raw/*.jsonl` 与 `traces/summary/*.json` 默认被 Git 忽略，应在本地按需生成。summary 只保存脱敏可靠性元数据；不得提交 API key、问题原文、完整 reasoning 或 provider 原始错误 body。
+`artifacts/traces/raw/*.jsonl` 与 `artifacts/traces/summary/*.json` 默认被 Git 忽略，应在本地按需生成。summary 只保存脱敏可靠性元数据；不得提交 API key、问题原文、完整 reasoning 或 provider 原始错误 body。
 
 ## 边界
 

@@ -1,8 +1,6 @@
-"""OpenAI-compatible DeepSeek client used by the live demo provider.
+"""供在线演示 Provider 使用的 OpenAI 兼容 DeepSeek 客户端。
 
-The client intentionally exposes a small synchronous boundary because the single-machine
-worker is synchronous. It sends no case data to a provider until the caller explicitly
-selects the live provider and supplies ``DEEPSEEK_API_KEY``.
+由于单机 worker 是同步的，客户端刻意提供小型同步边界。只有调用方明确选择在线 Provider 并提供 ``DEEPSEEK_API_KEY`` 后，病例数据才会发送给外部 Provider。
 """
 
 from __future__ import annotations
@@ -27,7 +25,7 @@ SEED_SENT_TO_PROVIDER = False
 
 @dataclass(frozen=True)
 class LLMCompletion:
-    """A completion payload plus the provider request identifier for trace correlation."""
+    """完成响应载荷和用于追踪关联的 Provider 请求标识。"""
 
     content: str
     request_id: str | None
@@ -37,10 +35,9 @@ class LLMCompletion:
 
 
 class LLMClient:
-    """Minimal DeepSeek/OpenAI-compatible chat-completions client.
+    """最小化的 DeepSeek/OpenAI 兼容聊天补全客户端。
 
-    ``post`` is injectable so tests can assert request construction without performing
-    external network calls. The API key is intentionally never included in returned data.
+    ``post`` 可注入，测试可以在不发起外部网络请求的情况下断言请求构造。返回数据刻意不包含 API 密钥。
     """
 
     def __init__(
@@ -81,7 +78,7 @@ class LLMClient:
 
     @property
     def is_configured(self) -> bool:
-        """Whether a non-empty API key is available."""
+        """判断是否存在非空 API 密钥。"""
         return bool(self.api_key.strip())
 
     def complete(
@@ -92,11 +89,10 @@ class LLMClient:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> LLMCompletion:
-        """Call ``/chat/completions`` and preserve a safe request identifier.
+        """调用 ``/chat/completions``，并保留安全的请求标识。
 
-        HTTP and timeout exceptions are deliberately propagated for ``ProviderCallRunner``
-        to classify, retry, and audit. Malformed completion bodies are normalized to the
-        existing ``LLM_JSON_INVALID`` dependency error.
+        HTTP 异常和超时异常刻意向上抛出，由 ``ProviderCallRunner`` 负责分类、重试和审计。
+        格式错误的完成响应体会被归一化为已有的 ``LLM_JSON_INVALID`` 依赖错误。
         """
         if not self.is_configured:
             raise MediDiagError(
@@ -198,7 +194,7 @@ class LLMClient:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> str:
-        """Compatibility helper returning only the generated text."""
+        """只返回生成文本的兼容性辅助函数。"""
         return self.complete(
             prompt,
             system_prompt=system_prompt,
@@ -208,7 +204,7 @@ class LLMClient:
 
     @staticmethod
     def parse_json_object(content: str) -> dict[str, Any]:
-        """Parse a JSON object, tolerating one Markdown code fence from a provider."""
+        """解析 JSON 对象，并容忍 Provider 返回的一层 Markdown 代码围栏。"""
         candidate = content.strip()
         if candidate.startswith("```") and candidate.endswith("```"):
             candidate = candidate.split("\n", 1)[1] if "\n" in candidate else ""
@@ -229,11 +225,10 @@ class LLMClient:
 
 
 def _usage_snapshot(value: Any) -> dict[str, int]:
-    """Extract DeepSeek token counters without persisting arbitrary provider data.
+    """提取 DeepSeek token 计数，不持久化任意 Provider 数据。
 
-    DeepSeek returns ``prompt_cache_hit_tokens`` and ``prompt_cache_miss_tokens``
-    in ``usage``. Keeping the counters in the completion object lets the worker
-    write cache telemetry to the trace without logging prompts or API secrets.
+    DeepSeek 会在 ``usage`` 中返回 ``prompt_cache_hit_tokens`` 和 ``prompt_cache_miss_tokens``。
+    将这些计数保存在完成对象中，可以让 worker 把缓存遥测写入 trace，同时不记录提示词或 API 密钥。
     """
     if not isinstance(value, dict):
         return {}

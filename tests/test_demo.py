@@ -1,4 +1,4 @@
-"""P1-B server-rendered demo and HTMX behavior tests."""
+"""P1-B 服务端渲染演示和 HTMX 行为测试。"""
 
 from __future__ import annotations
 

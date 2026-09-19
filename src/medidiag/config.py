@@ -4,7 +4,7 @@
 1. 环境变量（pydantic-settings）：API key、数据库 URL、运行时参数。
 2. 评测配置（eval/config.yaml）：锁定模型、温度、seed、数据集版本、检索权重、运行命令。
 
-评测配置必须可复现，换任何字段需重跑全部评测。
+评测配置用于记录研究条件；修改后只重跑受影响的对照，不阻塞应用交付。
 """
 
 from __future__ import annotations
@@ -26,20 +26,20 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # LLM
+    # 大语言模型
     deepseek_api_key: str = ""
     # DeepSeek 官方 OpenAI-compatible API。
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-v4-flash"
     deepseek_timeout_seconds: int = 60
 
-    # Database
+    # 数据库
     database_url: str = "sqlite:///./medidiag.db"
 
-    # HuggingFace
+    # Hugging Face 模型缓存
     hf_home: str = ".cache/huggingface"
 
-    # Workflow runtime
+    # 工作流运行时
     medidiag_lease_seconds: int = 60
     medidiag_heartbeat_seconds: int = 20
     medidiag_lease_scan_seconds: int = 30
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     # 依赖。改动其一时需同步另一处。
     medidiag_max_review_rounds: int = 3
 
-    # Logging
+    # 日志
     log_level: str = "INFO"
     structlog_dev: int = 1
 
@@ -63,7 +63,7 @@ def get_settings() -> Settings:
 def load_eval_config(path: str | Path) -> dict[str, Any]:
     """加载评测配置 YAML。
 
-    评测配置是可复现性的核心，任何字段变更都意味着需要重跑 baseline + 消融。
+    评测配置用于复现研究条件，是否重跑基线与消融由本次改动范围决定。
     """
     path = Path(path)
     if not path.exists():

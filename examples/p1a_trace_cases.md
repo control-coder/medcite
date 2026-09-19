@@ -10,8 +10,8 @@ conda run -n medidiag python -m medidiag.cli trace-examples --output-root traces
 
 命令生成：
 
-- `traces/raw/<trace_id>.jsonl`：逐事件结构化 trace。
-- `traces/summary/<trace_id>.json`：不含病例原文和证据文本的脱敏摘要。
+- `artifacts/traces/raw/<trace_id>.jsonl`：逐事件结构化 trace。
+- `artifacts/traces/summary/<trace_id>.json`：不含病例原文和证据文本的脱敏摘要。
 
 ## 案例与验收点
 

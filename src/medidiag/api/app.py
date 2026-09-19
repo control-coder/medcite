@@ -1,4 +1,4 @@
-"""FastAPI MVP for cases, workflow control, events, reports, and human decisions."""
+"""用于病例、工作流控制、事件、报告和人工决策的 FastAPI MVP 接口。"""
 
 from __future__ import annotations
 
@@ -84,8 +84,8 @@ def create_app(
         app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.executor = WorkflowExecutor()
-    # ``medidiag demo`` overrides this after attaching its in-process worker.
-    # A plain uvicorn process can still be paired with ``medidiag worker``.
+    # ``medidiag demo`` 在附加进程内 worker 后会覆盖该配置。
+    # 普通的 uvicorn 进程也可以与 ``medidiag worker`` 配合运行。
     app.state.demo_runtime = {
         "label": "独立 worker 模式",
         "detail": "当前 Web 进程未附加同进程 worker；请另行启动 medidiag worker。",

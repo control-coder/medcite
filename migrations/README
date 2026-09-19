@@ -1,0 +1,4 @@
+数据库迁移目录。
+
+从项目根目录运行 python -m alembic upgrade head，配置入口为根目录 alembic.ini。
+迁移版本标识保持不变；文件夹迁移不会生成新的数据库迁移或改写已有数据库。

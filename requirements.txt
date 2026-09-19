@@ -1,4 +1,4 @@
-# MediDiag-Agent EvidenceFlow dependencies
+# MediDiag-Agent EvidenceFlow 依赖声明
 #
 # 这是最低版本声明，不是锁定文件。每行都是 `>=` 范围，对它求哈希不能证明
 # 任何两次运行使用了相同依赖。评测的依赖溯源改由 manifest 的
@@ -24,7 +24,7 @@ pyyaml>=6.0
 click>=8.1
 structlog>=24.1
 
-# Dev / test
+# 开发与测试依赖
 pytest>=8.0
 pytest-asyncio>=0.23
 pytest-cov>=5.0

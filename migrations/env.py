@@ -12,9 +12,8 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config, pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # 添加 src 到 sys.path，让 medidiag 包可 import
 _SRC = Path(__file__).resolve().parent.parent / "src"

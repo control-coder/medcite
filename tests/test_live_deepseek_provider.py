@@ -1,4 +1,4 @@
-"""Unit coverage for the live DeepSeek-compatible minimal demo adapter."""
+"""在线 DeepSeek 兼容最小演示适配器的单元测试覆盖。"""
 
 from __future__ import annotations
 

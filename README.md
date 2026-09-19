@@ -1,117 +1,79 @@
-# MediDiag-Agent EvidenceFlow
+# MediDiag：医疗信息辅助分析助手
 
-医疗循证诊断多 Agent 工作流平台（工程原型）。核心不是医疗 prompt 换皮，而是**证据前置检索、医学 RAG 单变量消融、状态机一致性、任务租约恢复、审核驳回闭环、合规输出管控和公开基准评测**。
+面向公开资料与脱敏模拟输入的应用工程原型。用户提交症状与背景，系统先检索证据，再生成带引用、局限说明与风险提示的辅助分析。
 
-> 模拟项目：只用于公开数据评测、脱敏模拟输入和软件工程演示，**不用于真实医疗诊断、治疗决策或患者服务**。
+> 仅用于软件工程演示与公开数据研究，不用于真实患者诊断、处方、治疗决策或患者服务。
 
-## Scope 声明
+## 当前与目标
 
-第一阶段只承诺：单机 MVP、可复现评测、任务崩溃恢复、结构化日志，以及 FastAPI + Jinja2 + HTMX 最小演示页。
+当前可运行：FastAPI、SQLite、状态机与单机 worker、离线模拟 Provider、医学 RAG/引用审核组件，以及 /assistant 用户页和 /demo 工程工作台。
 
-二期预留或明确不在范围内：多 worker 横向扩展、生产级告警平台、真实医疗合规认证、真实患者数据、容器级隔离、生产 Dashboard、WebSocket 实时推送、全量公开基准跑分。
+下一步：React + TypeScript + Vite 用户界面、PostgreSQL、Redis/Celery 派发与补偿、用户归属过滤。它们是 [实施计划](项目实施计划.md) 中的后续任务，不是本轮已经完成的功能。
 
-**当前状态**：工程门禁全绿（456 测试通过、ruff/mypy 阻断级通过）；首次 formal run 已完成（2026-07-29，9 组实验、1100 次付费调用、实测 1.7509 元），并已完成 562 条真实双人 citation 标注与 147 条第三人裁决。审计结果为 `report_eligible: true`、Cohen's Kappa `0.6049`，正式报告已生成；但项目仍需完成拓扑结论、judge 误差分析和最终一致性审查，**暂不把指标直接写入简历或表述为医学效果**。详见 [doc/status.md](doc/status.md) 与 [reports/final_eval.md](reports/final_eval.md)。
-
-## 核心特性
-
-- **证据前置工作流**：14 状态状态机（`CREATED → NORMALIZED → EVIDENCE_RETRIEVED → PLAN_GENERATED → SPECIALIST_REVIEWING → ARBITRATION_REVIEWING → APPROVED/REVISION_REQUIRED/ESCALATED → REPORT_GENERATED → CLOSED_*`），诊断规划前必须先检索证据。
-- **一致性机制**：状态变更与事件日志同事务；外部 IO 在事务外；乐观锁 + 幂等键 + 任务租约（心跳续期、超时接管、迟到写入拒绝并记 `TASK_LEASE_LOST`）。
-- **医学 RAG**：术语归一化、BM25 + embedding + 证据等级加权 + cross-encoder rerank，组件级单变量消融。
-- **审核闭环**：每个 claim 绑定 citation，固定 NLI judge 判定 `SUPPORTED / PARTIAL / UNSUPPORTED`；连续审核失败进入人工升级，人工从 `ESCALATED` 三向回流。
-- **合规管控**：超范围拒答、绝对化措辞拦截、强制风险提示，合规命中写入 trace/event log。
-- **可复现评测**：配置唯一事实源、leakage 前置硬门禁、raw provenance（config/dataset/Git hash、模型 revision、response ID）、双人标注 + Cohen's Kappa + 分歧裁决通过后才允许生成正式报告。
+历史研究评测独立保留。人工标注不再阻塞应用交付；旧报告的语言兼容性问题、report_eligible=false 和混合实现版本事实不改写，也不把历史分数当成医学有效性证据。
 
 ## 快速开始
 
-```powershell
+在项目根目录执行：
+
+~~~powershell
 conda activate medidiag
-pip install -e ".[dev]"
+python -c "import sys; print(sys.executable)"
+# 初次安装或依赖声明变化后执行，禁止安装到 base。
+python -m pip install -e ".[dev]"
 
-# 测试与静态检查（与 CI 三步一一对应）
-python -m ruff check .
-python -m pytest -q --cov=medidiag --cov=eval --cov-report=term-missing
-python -m mypy src
+# 迁移现有配置指定的数据库。默认保留根目录 medidiag.db。
+python -m alembic upgrade head
 
-# 评测配置校验（development 模式，输出不可用于正式报告）
-python -m eval.runner --config eval/config.yaml --validate
-python -m eval.runner --config eval/config.yaml --show-config
+# 本地离线演示，不下载模型、不调用付费接口。
+medidiag demo --provider fake_offline
+~~~
 
-# 本地工程闭环：用户页 /assistant，工程工作台 /demo
-alembic upgrade head
-medidiag demo --provider fake_offline       # 确定性 fixture，无需联网
-medidiag demo --provider deepseek_default   # 需配置 DEEPSEEK_API_KEY
+访问 http://127.0.0.1:8400/assistant；工程排障入口为 /demo。程序启动参数以 `medidiag demo --help` 为准。不要在共享网络上公开此工程演示服务。
 
-# 显式最小连接探测；默认流程不会执行，也不会发送医疗数据
-medidiag provider-smoke --provider deepseek_default
-```
+更多环境、独立 worker、可选研究命令与故障说明见 [运行手册](docs/development/runbook.md)。新机器先用 `conda env create -f environment.yml` 创建环境；本机已有 medidiag 时直接激活，不重复创建。
 
-注意：必须用 conda `medidiag` 环境而不是 base（base 缺 `sentence_transformers` 与 `faiss`）。复现 CI 离线行为时设置 `HF_HUB_OFFLINE=1` 与 `TRANSFORMERS_OFFLINE=1`。
+## 按改动验证
 
-更多命令（leakage gate、prompt 体积、路由诊断、费用折算、trace 导出、人工审计）见 [doc/handoff.md](doc/handoff.md) 与 [doc/evaluation_protocol.md](doc/evaluation_protocol.md)。
+~~~powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
+python -m pytest tests/test_api.py tests/test_assistant_ui.py tests/test_cli.py tests/test_migrations.py -q
+~~~
 
-## MVP API
+修改检索、任务租约或 Provider 时运行对应现有测试；不要求每轮都执行全量研究评测、人工标注或大规模新增测试。
 
-| Method | Path | 作用 |
-|---|---|---|
-| POST | `/api/v1/cases` | 使用 `Idempotency-Key` 创建公开/脱敏模拟病例 |
-| POST | `/api/v1/cases/{case_id}/workflow` | 幂等启动或恢复工作流 |
-| GET | `/api/v1/cases/{case_id}` | 查询 version、active task 和人工动作 |
-| GET | `/api/v1/cases/{case_id}/events` | 使用稳定 event ID cursor 分页 |
-| GET | `/api/v1/cases/{case_id}/report` | 获取已生成的结构化报告 |
-| POST | `/api/v1/cases/{case_id}/human-decisions` | 仅从 `ESCALATED` 执行三类人工决策 |
+## 目录导航
 
-## 文档导航
+| 路径 | 职责 |
+| --- | --- |
+| src/medidiag/ | 应用业务源码，已有 api、rag、workflow、llm、db 等职责模块 |
+| tests/ | 自动化测试 |
+| migrations/ | 数据库迁移，保留原 revision 标识 |
+| eval/ | 独立研究评测程序、公开数据、配置与标注 |
+| docs/ | 当前结构、运行说明与开发记录 |
+| docs/archive/research/ | 旧章程、研究协议、计划、日志与历史状态 |
+| artifacts/reports/ | 历史报告和评测产物 |
+| artifacts/traces/ | 脱敏运行追踪 |
+| scripts/、examples/ | 辅助脚本与模拟输入 |
 
-| 文档 | 内容 |
-|---|---|
-| [doc/charter.md](doc/charter.md) | 项目章程：定位、范围、质量底线、评测与合规规则 |
-| [doc/structure.md](doc/structure.md) | 项目结构详解：目录、架构图、状态机、事务边界 |
-| [doc/progress.md](doc/progress.md) | 项目进度：阶段路线图与各切片完成状态 |
-| [doc/status.md](doc/status.md) | 项目状态：当前验收快照、formal run 结果、未验收项 |
-| [doc/log.md](doc/log.md) | 项目日志与决策记录：时间线 + DD-001~DD-029 |
-| [doc/handoff.md](doc/handoff.md) | 续作交接：当前基线、环境、后续执行顺序 |
-| [doc/evaluation_protocol.md](doc/evaluation_protocol.md) | 正式评测与人工 citation 复核协议 |
-| [reports/README.md](reports/README.md) | 评测产物目录说明（raw/archive/诊断产物口径） |
-| [eval/annotations/README.md](eval/annotations/README.md) | 人工标注文件 schema 与填写规则 |
-| [examples/p1a_trace_cases.md](examples/p1a_trace_cases.md) | 可复现 trace 工程案例 |
-| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | vendored 前端资产版本、哈希与许可证 |
+frontend/ 在 React 实施轮次创建；根目录现有 medidiag.db 暂保留以兼容本地配置，不自动删除或移动。详细职责见 [目录说明](docs/structure.md)。
 
-## Upstream Reference
+## 当前 API
 
-- `../edict/`：只参考事件驱动工作流、事件日志和可回放 trace 的工程组织思想，未把其代码或已有能力列为个人贡献。
-- MedQA / PubMedQA：公开评测数据来源。PubMedQA 用于 evidence retrieval/citation；没有 gold evidence 的 MedQA 样本不进入 Evidence Recall 分母。
-- MeSH：公开医学术语来源。当前词表包含轻量词典和数据集派生条目，不宣称具备 UMLS 级覆盖。
+- POST /api/v1/cases：创建公开或模拟病例，使用 Idempotency-Key。
+- POST /api/v1/cases/{case_id}/workflow：启动或恢复任务。
+- GET /api/v1/cases/{case_id}：查询任务与阶段状态。
+- GET /api/v1/cases/{case_id}/events：分页查询事件。
+- GET /api/v1/cases/{case_id}/report：读取结构化报告。
+- POST /api/v1/cases/{case_id}/human-decisions：现有工程升级处置入口，不代表临床审核。
 
-## Third-party Components
+## 开发入口
 
-| 类别 | 组件 | 边界 |
-|---|---|---|
-| Generation | DeepSeek OpenAI-compatible API（`deepseek-v4-flash`） | 第三方模型调用与集成；provider snapshot 不可核验，使用 `provider_response_id` 受限溯源 |
-| Embedding | `sentence-transformers/all-MiniLM-L6-v2` | 第三方向量模型（HF commit SHA 锁定） |
-| Rerank | `cross-encoder/ms-marco-MiniLM-L-6-v2` | 第三方 cross-encoder（HF commit SHA 锁定） |
-| Judge | `cross-encoder/nli-MiniLM2-L6-H768` | 固定 NLI judge（HF commit SHA 锁定） |
-| Retrieval | FAISS、`rank-bm25` | 第三方索引和检索库 |
-| Backend | FastAPI、SQLAlchemy、Alembic | 第三方框架 |
-| Demo UI | Jinja2、HTMX 2.0.4 | 服务端模板与局部刷新；HTMX 以固定本地 BSD 2-Clause 资产集成 |
-| Test/config | pytest、PyYAML | 测试与配置工具 |
+- [AGENTS.md](AGENTS.md)：中文、独立环境、分轮验证提交、清理与审查尺度。
+- [项目实施计划](项目实施计划.md)：当前交付范围与分轮验收。
+- [实际状态](docs/status.md)：当前完成与未完成事项。
+- [历史研究状态](docs/archive/research/status.md)：历史结果及限制，不能当成当前排期。
+- [历史评测报告](artifacts/reports/final_eval.md)：仅作原始研究记录，不作医学效果宣传。
 
-第三方模型、框架和数据集只算集成，不算核心创新。
-
-## My Contributions
-
-以下每一项均可被源码、测试或评测产物验证（完成度以 [doc/status.md](doc/status.md) 为准）：
-
-- 14 状态执行器、触发主体与非法跳转校验；状态与事件同事务、幂等、乐观锁重试、任务租约（含心跳与 `TASK_LEASE_LOST` 脑裂防护）。
-- 数据库一致性补强：复合唯一约束、`active_task_id + version` 启动 CAS、原子 reclaim/result CAS。
-- 单机闭环：六个 FastAPI API、配置化 worker/lease scanner、阶段产物、人工升级回流、结构化报告、崩溃接管恢复。
-- Provider 调用可靠性边界：七类阶段 schema、timeout/429/瞬时 5xx 有限重试、provider request ID 与 retry decision 事件审计。
-- Trace exporter：统一 trace schema、raw/summary 反向关联、脱敏；四类确定性工程案例（含双专科无明确收益负向 fixture）。
-- 双视图最小演示页：`/assistant` 提供阶段进度、证据、审核后报告和脱敏 Trace 摘要，`/demo` 保留人工处置与工程排障；Jinja2 + 本地 HTMX 支持 2 秒局部轮询和无 JavaScript fallback。
-- 医学术语归一化、BM25/embedding/证据等级组合排序、cross-encoder rerank；单 Agent / 固定双专科 / 动态双专科与仲裁实验组件。
-- 配置驱动评测门禁：实验族隔离、formal judge fail-closed、eligible 指标分母、leakage 前置检查、run provenance、双人标注/Kappa/裁决审计与报告阻断。
-
-在独立实验支持收益前，只称为"流水线式 Agent 编排 + 双专科仲裁实验"，不称为多 Agent 协作系统。
-
-## License
-
-MIT，全文见 [LICENSE](LICENSE)。仅用于工程演示与公开数据评测。
+许可证为 MIT，原文见 LICENSE；第三方通知见 THIRD_PARTY_NOTICES.md。

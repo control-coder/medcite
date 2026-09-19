@@ -83,9 +83,9 @@ class Case(Base):
         default=lambda: f"trace_{uuid.uuid4().hex}",
     )
     review_round: Mapped[int] = mapped_column(Integer, default=0)
-    # Logical reference to workflow_tasks.task_id. It intentionally has no FK
-    # because workflow_tasks already references cases, and SQLite cannot add
-    # the resulting circular FK without rebuilding both tables.
+    # 指向 workflow_tasks.task_id 的逻辑引用。这里刻意不设置外键，
+    # 因为 workflow_tasks 已引用 cases，而 SQLite 无法在不重建两张表的情况下
+    # 添加由此产生的循环外键。
     active_task_id: Mapped[str | None] = mapped_column(
         String(64), nullable=True, index=True
     )
@@ -126,9 +126,9 @@ class WorkflowTask(Base):
         String(64), ForeignKey("cases.case_id"), index=True
     )
     task_type: Mapped[str] = mapped_column(String(32), index=True)
-    # normalize / retrieve / plan / review / arbitrate / report
+    # normalize / retrieve / plan / review / arbitrate / report：标准阶段名
     status: Mapped[str] = mapped_column(String(16), default="PENDING", index=True)
-    # PENDING / RUNNING / SUCCEEDED / FAILED / STALE
+    # PENDING / RUNNING / SUCCEEDED / FAILED / STALE：任务状态
     lease_owner: Mapped[str | None] = mapped_column(String(128), nullable=True)
     lease_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -163,11 +163,11 @@ class CaseEventLog(Base):
         String(64), ForeignKey("cases.case_id"), index=True
     )
     event_type: Mapped[str] = mapped_column(String(32), index=True)
-    # state_transition / lease_acquire / lease_release / lease_lost / error / ...
+    # state_transition / lease_acquire / lease_release / lease_lost / error / ...：事件类型
     from_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     to_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     trigger_subject: Mapped[str] = mapped_column(String(32))
-    # api / worker / agent_worker / reviewer_worker / human / system
+    # api / worker / agent_worker / reviewer_worker / human / system：事件主体
     trigger_entity: Mapped[str | None] = mapped_column(String(128), nullable=True)
     detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
@@ -205,13 +205,13 @@ class AgentRun(Base):
         String(64), ForeignKey("cases.case_id"), index=True
     )
     agent_name: Mapped[str] = mapped_column(String(64), index=True)
-    # normalize / retrieve / diagnosis / diagnosis_cardiology / diagnosis_respiratory / arbitration
+    # normalize / retrieve / diagnosis / diagnosis_cardiology / diagnosis_respiratory / arbitration：产物阶段
     input_hash: Mapped[str] = mapped_column(String(64))  # 幂等
     attempt_group: Mapped[str] = mapped_column(String(64))
     input_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     output_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="PENDING")
-    # PENDING / RUNNING / SUCCEEDED / FAILED
+    # PENDING / RUNNING / SUCCEEDED / FAILED：产物状态
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -235,7 +235,7 @@ class Citation(Base):
     claim_text: Mapped[str] = mapped_column(Text)
     chunk_id: Mapped[str] = mapped_column(String(64), index=True)
     verdict: Mapped[str] = mapped_column(String(16))
-    # SUPPORTED / PARTIAL / UNSUPPORTED
+    # SUPPORTED / PARTIAL / UNSUPPORTED：引用审核结果
     verifier_model: Mapped[str] = mapped_column(String(128))
     verifier_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     human_reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -258,10 +258,10 @@ class Review(Base):
         String(64), ForeignKey("cases.case_id"), index=True
     )
     review_type: Mapped[str] = mapped_column(String(32), index=True)
-    # citation / logic / compliance / arbitration
+    # citation / logic / compliance / arbitration：审核类型
     reviewer: Mapped[str] = mapped_column(String(128))
     result: Mapped[str] = mapped_column(String(32))
-    # APPROVED / REVISION_REQUIRED / ESCALATED
+    # APPROVED / REVISION_REQUIRED / ESCALATED：审核状态
     round: Mapped[int] = mapped_column(Integer, default=1)
     detail: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
@@ -274,7 +274,7 @@ class Review(Base):
 
 
 class StageArtifact(Base):
-    """Persisted output for a single worker stage."""
+    """单个 worker 阶段的持久化输出。"""
 
     __tablename__ = "stage_artifacts"
     __table_args__ = (
@@ -303,7 +303,7 @@ class StageArtifact(Base):
 
 
 class CaseReport(Base):
-    """Versioned structured report generated after approval."""
+    """审批后生成的版本化结构化报告。"""
 
     __tablename__ = "case_reports"
     __table_args__ = (

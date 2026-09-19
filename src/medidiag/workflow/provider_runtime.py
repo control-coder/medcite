@@ -1,4 +1,4 @@
-"""Reliable execution boundary for external workflow providers."""
+"""外部工作流 Provider 的可靠执行边界。"""
 
 from __future__ import annotations
 
@@ -81,11 +81,11 @@ _TIMEOUT_CODES = {
 
 @dataclass(frozen=True)
 class ProviderResponse:
-    """Provider payload plus transport metadata safe for audit logs."""
+    """可安全写入审计日志的 Provider 载荷和传输元数据。"""
 
     payload: dict[str, Any]
     request_id: str | None = None
-    # Non-sensitive provider counters, e.g. DeepSeek prompt-cache usage.
+    # 非敏感的 Provider 计数器，例如 DeepSeek 提示缓存使用量。
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -127,7 +127,7 @@ class ProviderCallOutcome:
 
 
 class ProviderCallRunner:
-    """Execute one provider stage with bounded, auditable retries."""
+    """执行一个带有界、可审计重试的 Provider 阶段。"""
 
     def __init__(
         self,
@@ -165,8 +165,8 @@ class ProviderCallRunner:
             except (
                 MediDiagError,
                 httpx.HTTPStatusError,
-                # RequestError covers every transport failure, including
-                # TimeoutException; _classify keeps the timeout branch first.
+                # RequestError 覆盖所有传输失败，包括
+                # TimeoutException；_classify 必须优先处理超时分支。
                 httpx.RequestError,
                 ValidationError,
             ) as exc:
@@ -266,13 +266,13 @@ class ProviderCallRunner:
             return exc.code, None, None
         if isinstance(exc, ValidationError):
             return "PROVIDER_SCHEMA_INVALID", None, None
-        # TimeoutException is a RequestError subclass, so it must be matched
-        # before the generic transport branch below.
+        # TimeoutException 是 RequestError 的子类，因此必须在
+        # 下面的通用传输分支之前匹配。
         if isinstance(exc, httpx.TimeoutException):
             return _TIMEOUT_CODES.get(stage, "LLM_TIMEOUT"), None, None
         if isinstance(exc, httpx.RequestError):
-            # ConnectError / ReadError / RemoteProtocolError / ... — no HTTP
-            # response was received, so there is no status or request ID.
+            # ConnectError / ReadError / RemoteProtocolError / ...：没有收到 HTTP
+            # 响应，因此不存在状态码或请求 ID。
             return "PROVIDER_NETWORK_ERROR", None, None
 
         response = exc.response

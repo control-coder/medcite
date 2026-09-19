@@ -81,7 +81,7 @@ class SpecialtyScore:
         """转为字典（用于日志/trace）。
 
         2026-07-27 起不再输出 `plan_hint_score`（分项已删除，DD-023）。历史
-        `reports/routing_diagnostics_*_{before,after}.json` 里仍带该键。
+        `artifacts/reports/routing_diagnostics_*_{before,after}.json` 里仍带该键。
         """
         return {
             "specialty": self.specialty,
@@ -149,8 +149,8 @@ class SpecialistRouter:
         evidence_level_scores: dict[str, float] | None = None,
     ) -> None:
         self.normalizer = normalizer
-        # Evaluation callers pass the locked YAML mapping. The neutral default
-        # keeps this runtime component usable without importing eval config.
+        # 评测调用方传入锁定后的 YAML 映射。中性的默认值使
+        # 该运行时组件可以在不导入评测配置的情况下独立使用。
         self.evidence_level_scores = evidence_level_scores or {}
 
     def route(

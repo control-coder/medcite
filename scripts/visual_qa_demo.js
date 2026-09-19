@@ -1,8 +1,10 @@
 const { chromium } = require("playwright");
 const path = require("path");
+const fs = require("fs");
 
-const baseUrl = process.env.MEDIDIAG_DEMO_URL || "http://127.0.0.1:8000";
-const outputDir = process.env.MEDIDIAG_VISUAL_OUTPUT || process.cwd();
+const baseUrl = process.env.MEDIDIAG_DEMO_URL || "http://127.0.0.1:8400";
+// 截图按职责写入产物目录，避免默认污染项目根目录。
+const outputDir = process.env.MEDIDIAG_VISUAL_OUTPUT || path.resolve(__dirname, "../artifacts/visual");
 const executablePath = process.env.MEDIDIAG_CHROME_EXECUTABLE;
 const existingCaseUrl = process.env.MEDIDIAG_CASE_URL;
 const scenario = process.env.MEDIDIAG_VISUAL_SCENARIO || "active";
@@ -19,6 +21,7 @@ async function layoutMetrics(page) {
 }
 
 (async () => {
+  fs.mkdirSync(outputDir, { recursive: true });
   const browser = await chromium.launch({
     headless: true,
     ...(executablePath ? { executablePath } : {}),

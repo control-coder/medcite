@@ -120,7 +120,7 @@ def run_diagnostics(
 @click.option("--config", default="eval/config.formal.yaml", show_default=True)
 @click.option("--experiment", default="rag_embedding", show_default=True)
 @click.option("--limit", type=click.IntRange(min=1), default=None)
-@click.option("--output", default="reports/retrieval_diagnostics.json", show_default=True)
+@click.option("--output", default="artifacts/reports/retrieval_diagnostics.json", show_default=True)
 def cli(config: str, experiment: str, limit: int | None, output: str) -> None:
     loaded = load_config(config)
     issues = validate_config(loaded, ROOT)

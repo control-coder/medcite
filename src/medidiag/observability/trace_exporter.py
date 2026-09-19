@@ -1,4 +1,4 @@
-"""Export database events as redacted, reproducible trace artifacts."""
+"""将数据库事件导出为脱敏且可复现的 Trace 产物。"""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class TraceExportResult:
 
 
 class TraceExporter:
-    """Join append-only events with stage metadata and write redacted traces."""
+    """合并追加式事件与阶段元数据，并写入脱敏 Trace。"""
 
     def export_case(
         self,
@@ -395,12 +395,12 @@ class TraceExporter:
 
     @classmethod
     def _sanitize(cls, value: Any, key: str | None = None) -> Any:
-        """Delegate to the shared contract in ``medidiag.observability.redaction``."""
+        """委托给 ``medidiag.observability.redaction`` 中的共享契约。"""
         return sanitize(value, key)
 
     @classmethod
     def _sanitize_mapping(cls, value: dict[str, Any]) -> dict[str, Any]:
-        """Same contract, but keeps the mapping type for record builders."""
+        """保持记录构造器所需的映射类型，但使用相同的脱敏契约。"""
         return sanitize_mapping(value)
 
     @staticmethod

@@ -1,18 +1,17 @@
-"""Alembic migration round-trip tests on an isolated SQLite database."""
+"""在隔离 SQLite 数据库上进行 Alembic 迁移往返测试。"""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect
-
-from alembic import command
 
 
 def _config(project_root: Path) -> Config:
     config = Config(str(project_root / "alembic.ini"))
-    config.set_main_option("script_location", str(project_root / "alembic"))
+    config.set_main_option("script_location", str(project_root / "migrations"))
     return config
 
 

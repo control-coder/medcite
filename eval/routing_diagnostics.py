@@ -15,7 +15,7 @@
 
 2026-07-28（DD-025）起规则只有三条：原规则 4 按歧义比值兜底，方向颠倒，已删除。
 输出中 ``branch_counts`` 不再含 ``rule_4_low_confidence``，``rule_4_with_both_
-scores_eligible`` 字段一并移除；历史 ``reports/routing_diagnostics_*_fixed.json``
+scores_eligible`` 字段一并移除；历史 ``artifacts/reports/routing_diagnostics_*_fixed.json``
 仍带这两项。歧义比值仍在 ``confidence_distribution`` 中报告。
 
 用法::
@@ -258,7 +258,7 @@ def run_routing_diagnostics(
     help="改为测量 agent eval set 中不在 manifest 里的样本（词表泛化对照）。",
 )
 @click.option(
-    "--output", default="reports/routing_diagnostics.json", show_default=True
+    "--output", default="artifacts/reports/routing_diagnostics.json", show_default=True
 )
 def cli(config: str, limit: int | None, holdout: bool, output: str) -> None:
     loaded = load_config(config)

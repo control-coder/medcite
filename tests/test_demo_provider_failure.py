@@ -1,4 +1,4 @@
-"""Live-provider failure behavior for the server-rendered demo."""
+"""服务端渲染演示的在线 Provider 失败行为。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from medidiag.workflow.worker import SingleMachineWorker
 
 
 class UnavailableGenerationProvider(DeterministicWorkflowProvider):
-    """Keep local demo stages deterministic and fail only the live boundary."""
+    """保持本地演示阶段确定，只让在线边界失败。"""
 
     version = "deepseek-live-demo:test-unavailable"
 

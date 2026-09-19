@@ -7,7 +7,7 @@ run 的 `manifest.json`（实测 token 数）。
 三条口径必须分清，输出 JSON 也按这三条分层：
 
 1. **字符数是实测值** —— 真实检索 + 真实 `build_prompt` 的结果，来自
-   `reports/prompt_size_diagnostics.json`。
+   `artifacts/reports/prompt_size_diagnostics.json`。
 2. **token 数是估算值** —— 由字符数除以 3.0–4.5 的字符/token 假设得到，未经
    tokenizer 核实。DeepSeek 未公开可离线复现的 tokenizer，因此这一层无法消除。
 3. **输出 token 用的是上限** —— `max_tokens × 调用次数`。实际输出长度**从未被
@@ -18,7 +18,7 @@ run 的 `manifest.json`（实测 token 数）。
 用法::
 
     python -m eval.cost_estimate
-    python -m eval.cost_estimate --run-dir reports/raw/<run_id>
+    python -m eval.cost_estimate --run-dir artifacts/reports/raw/<run_id>
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ def cache_hit_tokens_ceiling(calls: int, system_prompt_chars: int, ratio: float)
     """本工作负载**最多**能命中的缓存 token 数（上限，不是实测）。
 
     唯一的稳定公共前缀是 `AGENT_SYSTEM_PROMPT`；用户消息从第一句起就逐样本不同
-    （历史估算与实测修正见 `doc/log.md` 2026-07-29 条）。DeepSeek 自动缓存按
+    （历史估算与实测修正见 `docs/archive/research/log.md` 2026-07-29 条）。DeepSeek 自动缓存按
     `CACHE_BLOCK_TOKENS` 粒度命中，因此每次调用的命中量向下取整到整块。
 
     这是上限而非期望值，两个原因：首次调用必然全 miss，且缓存条目有存活期，
@@ -249,7 +249,7 @@ def build_cost_report(
                 "knowledge_base_chunk_count"
             ),
             "system_prompt_chars": system_chars,
-            "source": "reports/prompt_size_diagnostics.json",
+            "source": "artifacts/reports/prompt_size_diagnostics.json",
         },
         "experiments": {
             name: scope(block) for name, block in diagnostics["experiments"].items()
@@ -272,7 +272,7 @@ def build_cost_report(
 @click.command()
 @click.option(
     "--diagnostics",
-    default="reports/prompt_size_diagnostics.json",
+    default="artifacts/reports/prompt_size_diagnostics.json",
     show_default=True,
     help="eval.prompt_size_diagnostics 写出的 JSON（提供实测 prompt 字符数）",
 )
@@ -284,7 +284,7 @@ def build_cost_report(
 @click.option("--price-input-cache-hit", type=float, default=PRICE_INPUT_CACHE_HIT, show_default=True)
 @click.option("--price-input-cache-miss", type=float, default=PRICE_INPUT_CACHE_MISS, show_default=True)
 @click.option("--price-output", type=float, default=PRICE_OUTPUT, show_default=True)
-@click.option("--output", default="reports/cost_estimate.json", show_default=True)
+@click.option("--output", default="artifacts/reports/cost_estimate.json", show_default=True)
 def cli(
     diagnostics: str,
     run_dir: str | None,

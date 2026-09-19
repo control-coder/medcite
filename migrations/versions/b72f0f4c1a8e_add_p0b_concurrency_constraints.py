@@ -1,14 +1,13 @@
-"""add P0-B concurrency constraints
+"""增加 P0-B 并发约束
 
-Revision ID: b72f0f4c1a8e
-Revises: a146135f3dc0
-Create Date: 2026-07-14
+迁移版本：b72f0f4c1a8e
+前置版本：a146135f3dc0
+创建时间：2026-07-14
 """
 
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 revision: str = "b72f0f4c1a8e"

@@ -95,7 +95,7 @@ class TerminologyNormalizer:
         self._synonym_map: dict[str, str] = {}
         # 所有已知术语（第 2+3 层，用于术语识别）
         self._term_set: set[str] = set()
-        # term -> source
+        # 术语 -> 来源
         self._term_sources: dict[str, str] = {}
 
         self._load_lightweight()

@@ -1,4 +1,4 @@
-"""P0-C FastAPI contract and end-to-end tests."""
+"""P0-C FastAPI 契约与端到端测试。"""
 
 from __future__ import annotations
 

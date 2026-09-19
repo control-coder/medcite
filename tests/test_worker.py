@@ -1,4 +1,4 @@
-"""P0-C single-machine worker and recovery tests."""
+"""P0-C 单机 worker 和恢复测试。"""
 
 from __future__ import annotations
 
@@ -277,7 +277,7 @@ def test_provider_crash_after_normalize_recovers_from_persisted_stage(runtime) -
 
 
 def test_generation_transport_error_escalates_with_network_error_code(runtime) -> None:
-    """A DNS/connection failure must be classified, not propagated as a raw httpx error."""
+    """DNS/连接失败必须被分类，不能作为原始 httpx 错误直接传播。"""
 
     class UnreachableGenerationProvider(DeterministicWorkflowProvider):
         def generate(self, question: str, retrieval: dict, plan: dict):
@@ -348,7 +348,7 @@ _STAGE_METHODS = {
 
 @pytest.mark.parametrize("stage", sorted(_STAGE_METHODS))
 def test_every_stage_failure_escalates_without_killing_the_worker(runtime, stage) -> None:
-    """No stage may propagate a provider failure out of run_once()."""
+    """任何阶段都不能让 Provider 失败从 run_once() 直接传播出去。"""
     method = _STAGE_METHODS[stage]
 
     class FailingStageProvider(DeterministicWorkflowProvider):
@@ -394,7 +394,7 @@ def test_every_stage_failure_escalates_without_killing_the_worker(runtime, stage
 
 
 def test_lease_loss_is_not_swallowed_as_a_stage_failure(runtime) -> None:
-    """A lost lease means another worker owns the task; it must not escalate here."""
+    """租约丢失意味着另一个 worker 已拥有任务；当前路径不能在此处升级任务。"""
     from medidiag.errors import MediDiagError
 
     _, factory = runtime
@@ -410,7 +410,7 @@ def test_lease_loss_is_not_swallowed_as_a_stage_failure(runtime) -> None:
 
 
 def test_review_rounds_are_capped_and_escalate(runtime) -> None:
-    """A provider stuck on REVISION_REQUIRED must escalate, not loop forever."""
+    """卡在 REVISION_REQUIRED 的 Provider 必须升级，不能无限循环。"""
     _, factory = runtime
     case_id, task_id = _create_task(factory, "review-round-cap")
     executor = WorkflowExecutor()
@@ -423,7 +423,7 @@ def test_review_rounds_are_capped_and_escalate(runtime) -> None:
             max_review_rounds=3,
         ).run_once().final_state
 
-    # Rounds 1 and 2 park the case for revision; each needs a fresh workflow task.
+    # 第 1、2 轮将病例暂停为待修订；每轮都需要新的工作流任务。
     for round_number in (1, 2):
         assert _run() == "REVISION_REQUIRED"
         with factory() as session:
@@ -436,7 +436,7 @@ def test_review_rounds_are_capped_and_escalate(runtime) -> None:
                 f"review-round-cap-{round_number}", "input-hash",
             )
 
-    # Round 3 reaches the cap and escalates instead of requesting revision again.
+    # 第 3 轮达到上限，升级而不是再次请求修订。
     assert _run() == "ESCALATED"
 
     with factory() as session:
@@ -459,12 +459,12 @@ def test_review_rounds_are_capped_and_escalate(runtime) -> None:
         assert len(capped) == 1
         assert capped[0]["review_round"] == 3
         assert capped[0]["max_review_rounds"] == 3
-        # The provider still said REVISION_REQUIRED; only the target was redirected.
+        # Provider 仍然返回 REVISION_REQUIRED；这里只重定向目标主体。
         assert capped[0]["verdict"] == "REVISION_REQUIRED"
 
 
 def test_review_round_cap_is_configurable(runtime) -> None:
-    """max_review_rounds=1 escalates on the very first revision request."""
+    """max_review_rounds=1 时，第一次修订请求就应升级。"""
     _, factory = runtime
     case_id, _ = _create_task(factory, "review-round-cap-1")
     result = SingleMachineWorker(

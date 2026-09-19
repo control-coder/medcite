@@ -1,14 +1,13 @@
-"""add P0-C workflow artifacts and reports
+"""增加 P0-C 工作流产物和报告
 
-Revision ID: c91d8e2f6b4a
-Revises: b72f0f4c1a8e
-Create Date: 2026-07-14
+迁移版本：c91d8e2f6b4a
+前置版本：b72f0f4c1a8e
+创建时间：2026-07-14
 """
 
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 revision: str = "c91d8e2f6b4a"
@@ -34,8 +33,8 @@ def upgrade() -> None:
         )
         batch_op.create_index("ix_cases_trace_id", ["trace_id"], unique=True)
 
-    # Backfill existing rows before enforcing NOT NULL. SQLite randomblob keeps
-    # the migration offline and does not expose case content.
+    # 在施加 NOT NULL 约束前回填已有记录。SQLite 的 randomblob 可保持
+    # 迁移离线执行，并且不会暴露病例内容。
     op.execute(
         "UPDATE cases SET trace_id = 'trace_' || lower(hex(randomblob(16))) "
         "WHERE trace_id IS NULL"

@@ -1,4 +1,4 @@
-"""Pydantic schemas for the MVP API."""
+"""MVP API 使用的 Pydantic 数据结构。"""
 
 from __future__ import annotations
 

@@ -28,8 +28,8 @@ class TestNormalizer:
     def test_load_lightweight_dict(self, normalizer: TerminologyNormalizer) -> None:
         """第 1 层轻量词典加载。"""
         assert normalizer.synonym_count > 50  # 至少 50 个同义词映射
-        assert "mi" in normalizer._synonym_map  # MI -> myocardial infarction
-        assert "chf" in normalizer._synonym_map  # CHF -> congestive heart failure
+        assert "mi" in normalizer._synonym_map  # MI -> 心肌梗死
+        assert "chf" in normalizer._synonym_map  # CHF -> 充血性心力衰竭
 
     def test_normalize_synonym_replacement(
         self, normalizer: TerminologyNormalizer
@@ -302,10 +302,10 @@ def test_rerank_scores_stay_aligned_when_a_candidate_has_no_chunk() -> None:
     retriever = _bare_retriever(reranker)
 
     candidates = [
-        _result("c1", "a"),          # len 1
+        _result("c1", "a"),          # 长度为 1
         _result("c2", None),         # 无 chunk，无法打分
-        _result("c3", "bbbbbbb"),    # len 7
-        _result("c4", "cccc"),       # len 4
+        _result("c3", "bbbbbbb"),    # 长度为 7
+        _result("c4", "cccc"),       # 长度为 4
     ]
 
     ranked = retriever.rerank("query", candidates, top_k=5)

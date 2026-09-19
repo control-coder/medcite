@@ -85,7 +85,7 @@ class LeaseManager:
             raise ValueError("scan_interval_seconds must be at least 1")
 
     def now(self) -> datetime:
-        """Return the database-comparable UTC timestamp used by CAS predicates."""
+        """返回 CAS 条件使用的、可与数据库比较的 UTC 时间戳。"""
         return _utcnow()
 
     def acquire(

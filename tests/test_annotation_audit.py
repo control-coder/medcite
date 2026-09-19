@@ -1,7 +1,6 @@
-"""Tests for the post-run human citation-review gate.
+"""运行后人工引用审核门禁的测试。
 
-The fixtures are synthetic only to test audit mechanics; they are never used as
-medical evaluation results or included in reports/raw.
+fixture 仅用于测试审计机制，从不作为医学评测结果使用，也不纳入 artifacts/reports/raw。
 """
 
 from __future__ import annotations
@@ -83,7 +82,7 @@ def _label_records(sample_path: Path, annotator: str, labels: list[str]) -> list
 
 
 def _write_review_package(tmp_path: Path, sample_path: Path, *, include_adjudication: bool = True) -> tuple[Path, Path, Path]:
-    # 8/2 vs 7/3 gives Kappa in [0.6, 0.8); the one disagreement must be adjudicated.
+    # 8/2 与 7/3 会得到 [0.6, 0.8) 区间内的 Kappa；这一个分歧必须裁决。
     labels_a = ["SUPPORTED"] * 8 + ["PARTIAL"] * 2
     labels_b = ["SUPPORTED"] * 7 + ["PARTIAL"] * 3
     a_path = tmp_path / "annotator-a.jsonl"

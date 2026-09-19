@@ -23,7 +23,7 @@
 **三代知识库的语料都不同，因此 Recall@5、GoldCoverage、prompt 体积跨代不可比。**
 当前有效结果是 12,728-chunk 语料上的 run `20260728T121950082650Z_ded91c0c061e`；
 1928-chunk 那一代的数字（`rag_embedding=0.7357` 等）是在削减后的索引上测的，干扰项
-少、分数偏高，同样不应引用。三代数字的并列见 `doc/status.md` 与 `doc/log.md`。
+少、分数偏高，同样不应引用。三代数字的并列见 `docs/archive/research/status.md` 与 `docs/archive/research/log.md`。
 
 ## 目录内容
 
@@ -43,4 +43,4 @@
 指向 git `HEAD:eval/datasets/knowledge_chunks.jsonl` 导出的旧知识库重测得到的，
 不是 2026-07-26 那次临时脚本的原始输出。它复现了旧文档记录的 p50 与 max，但
 `agent_single` 的 p90 测得 709,960 而旧文档记为 727,501，差异未追查（旧临时脚本
-已不存在）。这一点在 `doc/log.md`（2026-07-27 条）中如实记录，没有取其一了事。
+已不存在）。这一点在 `docs/archive/research/log.md`（2026-07-27 条）中如实记录，没有取其一了事。

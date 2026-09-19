@@ -1,4 +1,4 @@
-"""MediDiag command-line entry points."""
+"""MediDiag 命令行入口。"""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ _PROVIDER_CHOICES = click.Choice(
 
 @click.group()
 def main() -> None:
-    """MediDiag-Agent EvidenceFlow CLI."""
+    """MediDiag-Agent EvidenceFlow 命令行接口。"""
     # 尽早配置，使子命令的第一条日志也经过脱敏处理器。
     configure_logging()
 
@@ -156,7 +156,7 @@ def worker(
     specialist_pair: str,
     review_verdict: str,
 ) -> None:
-    """Run one local worker with a live or deterministic provider."""
+    """运行一个使用在线或确定性 Provider 的本地 worker。"""
     _mode(once, loop)
     engine, factory = _session_factory()
     runner = SingleMachineWorker(
@@ -175,7 +175,7 @@ def worker(
         while True:
             try:
                 result = runner.run_once()
-            except Exception as exc:  # a single bad task must not kill the worker
+            except Exception as exc:  # 单个异常任务不能终止 worker
                 click.echo(f"worker error: {exc}", err=True)
                 if once:
                     raise click.exceptions.Exit(1) from exc
@@ -229,11 +229,10 @@ def demo(
     agent_topology: str,
     specialist_pair: str,
 ) -> None:
-    """Run the server-rendered demo and its local worker in one process.
+    """在同一进程中运行服务端渲染的演示和本地 worker。
 
-    Open ``/demo``, submit only public/deidentified text, and the page will poll the
-    task until the worker persists its final report. This is a local engineering demo;
-    it does not expose a production worker service or real patient workflow.
+    打开 ``/demo``，只提交公开或已脱敏文本；页面会轮询任务，直到 worker 持久化最终报告。
+    这是本地工程演示，不提供生产级 worker 服务或真实患者工作流。
     """
     import uvicorn
 
@@ -296,11 +295,11 @@ def demo(
 
 
 def _demo_worker_loop(stop: threading.Event, runner: SingleMachineWorker) -> None:
-    """Bounded polling loop for the single-process presentation command."""
+    """单进程演示命令使用的有界轮询循环。"""
     while not stop.is_set():
         try:
             result = runner.run_once()
-        except Exception as exc:  # demo must stay available for an operator to inspect events
+        except Exception as exc:  # 演示必须保持可用，便于操作人员检查事件
             click.echo(f"demo-worker error: {exc}", err=True)
             stop.wait(1.0)
             continue
@@ -361,7 +360,7 @@ def provider_smoke(provider_name: str, timeout_s: float) -> None:
 @click.option("--loop", is_flag=True, help="Continuously scan expired tasks.")
 @click.option("--worker-id", default="local-worker", show_default=True)
 def lease_scan(once: bool, loop: bool, worker_id: str) -> None:
-    """Reclaim expired attempts for the local recovery worker."""
+    """回收本地恢复 worker 中已过期的任务尝试。"""
     _mode(once, loop)
     engine, factory = _session_factory()
     scanner = LeaseScanner(factory, recovery_worker_id=worker_id)
@@ -381,11 +380,11 @@ def lease_scan(once: bool, loop: bool, worker_id: str) -> None:
 @click.option(
     "--output-root",
     type=click.Path(path_type=Path),
-    default=Path("traces"),
+    default=Path("artifacts/traces"),
     show_default=True,
 )
 def trace_export(case_id: str, output_root: Path) -> None:
-    """Export one persisted case as raw JSONL and a redacted JSON summary."""
+    """将一个已持久化病例导出为原始 JSONL 和脱敏 JSON 摘要。"""
     from medidiag.observability.trace_exporter import TraceExporter
 
     engine, factory = _session_factory()
@@ -409,7 +408,7 @@ def trace_export(case_id: str, output_root: Path) -> None:
 @click.option(
     "--output-root",
     type=click.Path(path_type=Path),
-    default=Path("traces"),
+    default=Path("artifacts/traces"),
     show_default=True,
 )
 def trace_examples(output_root: Path) -> None:
