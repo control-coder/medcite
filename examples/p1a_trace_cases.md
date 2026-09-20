@@ -5,7 +5,7 @@
 ## 生成命令
 
 ```powershell
-conda run -n medidiag python -m medidiag.cli trace-examples --output-root traces
+conda run --no-capture-output -n medidiag python -m medidiag.cli trace-examples --output-root artifacts/traces
 ```
 
 命令生成：

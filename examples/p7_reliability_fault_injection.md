@@ -2,6 +2,8 @@
 
 ## 定位
 
+P7/P8 为历史研究阶段编号，不是当前实施计划的第 7/8 轮；下表是离线故障注入配置，不是 8B 真实 MiMo 的零自动重试预算。
+
 本组场景用于验证单机医疗助手 Agent 工作流的确定性故障处理，不是生产级 chaos engineering，也不用于证明真实 Provider SLA 或临床可靠性。
 
 ## 覆盖矩阵
@@ -23,9 +25,10 @@
 ## 复现命令
 
 ```powershell
-conda run -n medidiag python -m pytest -p no:cacheprovider tests/test_reliability_fault_injection.py -q
-conda run -n medidiag python -m medidiag.cli trace-examples --output-root traces
+conda run --no-capture-output -n medidiag python -m pytest -p no:cacheprovider tests/test_reliability_fault_injection.py -q
 ```
+
+Trace 生成命令统一见 [案例说明](p1a_trace_cases.md#生成命令)。
 
 `artifacts/traces/raw/*.jsonl` 与 `artifacts/traces/summary/*.json` 默认被 Git 忽略，应在本地按需生成。summary 只保存脱敏可靠性元数据；不得提交 API key、问题原文、完整 reasoning 或 provider 原始错误 body。
 
