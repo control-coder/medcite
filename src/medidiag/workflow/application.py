@@ -34,12 +34,27 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
 
 def build_application_provider(mode: str = "fake_offline", *,
                                app_config: str = "configs/application.yaml",
-                               root: str | Path = ".", review_verdict: str = "APPROVED") -> WorkflowProvider:
+                               root: str | Path = ".", review_verdict: str = "APPROVED",
+                               live_budget: str | Path | None = None) -> WorkflowProvider:
     """CLI 和 Celery 共享相同安全模式，不根据密钥是否存在切换在线服务。"""
     if mode == "fake_offline":
         return DeterministicWorkflowProvider(review_verdict=review_verdict)
-    if mode != "retrieval_mock":
-        raise ValueError("应用模式只能是 fake_offline 或 retrieval_mock。")
+    if mode not in {"retrieval_mock", "mimo_grounded"}:
+        raise ValueError("应用模式只能是 fake_offline、retrieval_mock 或 mimo_grounded。")
+    if mode == "mimo_grounded" and not live_budget:
+        raise ValueError("真实应用必须显式指定 --live-budget 持久账本；选择该模式表示已授权调用。")
     path = Path(app_config)
     config = load_application_config(path if path.is_absolute() else Path(root) / path)
-    return RetrievalMockWorkflowProvider(RuntimeMedicalRAG.from_config(config, root=root))
+    rag = RuntimeMedicalRAG.from_config(config, root=root)
+    if mode == "retrieval_mock":
+        return RetrievalMockWorkflowProvider(rag)
+    from medidiag.llm.budget import BudgetedTransport
+    from medidiag.llm.openai_compatible import OpenAICompatibleProvider
+    from medidiag.llm.profiles import get_provider_profile
+    from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
+
+    llm = OpenAICompatibleProvider(get_provider_profile("mimo_v25"),
+        post=BudgetedTransport(live_budget), max_retries=0, max_structured_retries=0)
+    if not llm.is_configured:
+        raise ValueError("mimo_v25 配置不完整，请通过安全环境配置凭据。")
+    return MimoGroundedWorkflowProvider(rag, llm=llm)

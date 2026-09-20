@@ -106,7 +106,7 @@ class SingleMachineWorker:
         self.provider = provider
         self.worker_id = worker_id
         self.executor = executor or WorkflowExecutor()
-        self.call_runner = call_runner or ProviderCallRunner()
+        self.call_runner = call_runner or ProviderCallRunner(max_attempts=getattr(provider, "max_stage_attempts", 3))
         self.pipeline = pipeline or AssistantPipeline(
             component_version=provider.version,
             provider_profile=str(

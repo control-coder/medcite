@@ -27,7 +27,7 @@ from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 _AGENT_TOPOLOGY_CHOICES = click.Choice(["single", "fixed_pair", "dynamic_pair"])
 
 _PROVIDER_CHOICES = click.Choice(
-    ["fake_offline", "retrieval_mock", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
+    ["fake_offline", "retrieval_mock", "mimo_grounded", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
     case_sensitive=False,
 )
 
@@ -78,11 +78,16 @@ def _build_provider(
     *,
     rag_config: str = "eval/config.yaml",
     app_config: str = "configs/application.yaml",
+    live_budget: str | None = None,
     agent_topology: str = "dynamic_pair",
     specialist_pair: str = "cardiology,respiratory",
 ) -> WorkflowProvider:
-    if provider_name in {"fake_offline", "retrieval_mock"}:
-        return build_application_provider(provider_name, app_config=app_config, review_verdict=review_verdict)
+    if provider_name in {"fake_offline", "retrieval_mock", "mimo_grounded"}:
+        try:
+            return build_application_provider(provider_name, app_config=app_config,
+                                              review_verdict=review_verdict, live_budget=live_budget)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
     provider = OpenAICompatibleWorkflowProvider(profile_id=provider_name)
     if not provider.is_configured:
         raise click.UsageError(
@@ -121,6 +126,8 @@ def _build_provider(
     show_default=True,
     help="显式选择模式；fake_offline 为 fixture，retrieval_mock 为真实检索/模拟生成。",
 )
+@click.option("--live-budget", type=click.Path(dir_okay=False), default=None,
+              help="mimo_grounded 必填：已授权的持久调用账本；整轮最多8次，45秒，零自动重试。")
 @click.option("--app-config", default="configs/application.yaml", show_default=True,
               help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
 @click.option(
@@ -157,6 +164,7 @@ def worker(
     provider_name: str,
     rag_config: str,
     app_config: str,
+    live_budget: str | None,
     agent_topology: str,
     specialist_pair: str,
     review_verdict: str,
@@ -169,7 +177,7 @@ def worker(
         _build_provider(
             provider_name,
             review_verdict,
-            rag_config=rag_config, app_config=app_config,
+            rag_config=rag_config, app_config=app_config, live_budget=live_budget,
             agent_topology=agent_topology,
             specialist_pair=specialist_pair,
         ),
@@ -206,6 +214,8 @@ def worker(
     default="deepseek_default",
     show_default=True,
 )
+@click.option("--live-budget", type=click.Path(dir_okay=False), default=None,
+              help="mimo_grounded 必填：已授权的持久调用账本；整轮最多8次，45秒，零自动重试。")
 @click.option("--app-config", default="configs/application.yaml", show_default=True,
               help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
 @click.option(
@@ -234,6 +244,7 @@ def demo(
     provider_name: str,
     rag_config: str,
     app_config: str,
+    live_budget: str | None,
     agent_topology: str,
     specialist_pair: str,
 ) -> None:
@@ -252,7 +263,7 @@ def demo(
     provider = _build_provider(
         provider_name,
         "APPROVED",
-        rag_config=rag_config, app_config=app_config,
+        rag_config=rag_config, app_config=app_config, live_budget=live_budget,
         agent_topology=agent_topology,
         specialist_pair=specialist_pair,
     )
@@ -276,6 +287,10 @@ def demo(
             f"阶段执行使用 {provider.version}；检索与生成均为确定性测试 fixture，"
             "不构成医学 RAG 或正式评测。"
         )
+    elif provider_name in {"retrieval_mock", "mimo_grounded"}:
+        runtime_label = ("真实检索 / 模拟生成" if provider_name == "retrieval_mock"
+                         else "真实检索 / MiMo 单路受约束摘录")
+        runtime_detail = f"{provider.version}；仅完整短引与引用关联检查，未运行 NLI，不证明医学正确。"
     else:
         assert isinstance(provider, OpenAICompatibleWorkflowProvider)
         assert provider.rag_stage is not None

@@ -27,6 +27,7 @@ class OpenAICompatibleProvider:
         post: PostCallable | None = None,
         sleep: SleepCallable = time.sleep,
         max_retries: int = 2,
+        max_structured_retries: int = 1,
         retry_backoff_seconds: float = 0.5,
     ) -> None:
         if profile.adapter != "openai_compatible":
@@ -40,6 +41,7 @@ class OpenAICompatibleProvider:
         self._post = post or httpx.post
         self._sleep = sleep
         self._max_retries = max(0, max_retries)
+        self._max_structured_retries = max(0, min(1, max_structured_retries))
         self._retry_backoff_seconds = max(0.0, retry_backoff_seconds)
 
     def capabilities(self) -> ProviderCapabilities:
@@ -86,7 +88,10 @@ class OpenAICompatibleProvider:
                 )
                 if response.status_code >= 400:
                     self._raise_http_error(response)
-                payload = response.json()
+                try:
+                    payload = response.json()
+                except ValueError as exc:
+                    raise MediDiagError("PROVIDER_SCHEMA_INVALID", detail="provider 响应不是 JSON") from exc
                 if not isinstance(payload, dict):
                     raise MediDiagError("PROVIDER_SCHEMA_INVALID", detail="provider 响应必须是 JSON object")
                 result = self._normalize_response(
@@ -105,7 +110,7 @@ class OpenAICompatibleProvider:
                 if (
                     isinstance(exc, MediDiagError)
                     and exc.code == "STRUCTURED_OUTPUT_INVALID"
-                    and structured_retries < 1
+                    and structured_retries < self._max_structured_retries
                 ):
                     # JSON 契约失败属于一次新的受控生成，使用派生幂等键避免复用坏响应。
                     structured_retries += 1

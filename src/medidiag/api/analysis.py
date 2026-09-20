@@ -35,7 +35,7 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
     result = AnalysisResponse(case_id=case.case_id, status=case.status,
                               outcome="processing", message="正在处理，请稍后查看。", evidence=evidence)
     mode = artifact.payload.get("execution_mode") if artifact else None
-    if mode in {"fake_offline", "retrieval_mock", "model_pipeline"}:
+    if mode in {"fake_offline", "retrieval_mock", "mimo_grounded", "model_pipeline"}:
         result.execution_mode = mode
     result.observation = build_observation(session, case.case_id, task.task_id if task else None)
     if case.status == "CLOSED_CANCELLED":
@@ -66,7 +66,7 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
         if not evidence or not result.claims:
             result.outcome = "insufficient_evidence"
             result.message = "证据不足：没有可追踪的支持引用，不输出确定性分析。"
-            result.limitations.append("检索为空或引用无法关联到本任务的证据片段。")
+            result.limitations.append("检索为空、模型未选择直接答题的摘录，或引用无法关联到本任务证据。")
         else:
             result.outcome, result.message = "ready", "辅助分析已完成；引用关联不等于医学正确性核验。"
             # 自由摘要可能带有已被过滤的无引用结论，只从可关联 claim 生成展示摘要。

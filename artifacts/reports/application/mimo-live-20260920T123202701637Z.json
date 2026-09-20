@@ -1,0 +1,420 @@
+{
+  "schema_version": "mimo-application-acceptance-v1",
+  "created_at": "20260920T123202701637Z",
+  "success": true,
+  "mode": "mimo_grounded",
+  "model": "mimo-v2.5",
+  "provider": "mimo_v25",
+  "baseline_commit": "5b284a4104e0423cec481054e1cbfe5d8ee801af",
+  "implementation_state": "本轮源码在基线上未提交；随本报告提交，文件摘要用于定位验收实现。",
+  "file_sha256": {
+    "configs/application.yaml": "8ec60dc66d1ad52edeec4db5c01fc26595d56053b22d355719eaa0630f9e6d0b",
+    "examples/public_health/sources.json": "78538a9f6500b6db80d6f660d6b8fbdd849eb8fcc1a320dac71083f747ca3c84",
+    "examples/public_health/chunks.jsonl": "d4e514858461814b176776187f0cad60de67d1ac7b069da6e6fd11fc03fa4254",
+    "src/medidiag/workflow/mimo_grounded.py": "fdf98112b23a16079e69f18f804ab3dbd0979eea1e7bfd1bab25ae0cbaf34b20",
+    "src/medidiag/llm/budget.py": "74dc11719424b26f1c6014ac74268c52d014d612b8d0bac052382c2e178cb451"
+  },
+  "limits": {
+    "max_calls_total": 8,
+    "request_timeout_s": 45,
+    "automatic_retries": 0,
+    "max_output_tokens_per_call": 2048,
+    "max_input_characters": 12000
+  },
+  "timeout_boundary": "httpx 各网络操作超时45秒；不是完整工作流的45秒硬截止。",
+  "calls_before": 3,
+  "calls_after": 6,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "transport_error",
+      "elapsed_ms": 149,
+      "http_status": null,
+      "model": null,
+      "response_id": null,
+      "usage": null,
+      "error_type": "ConnectError"
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 1141,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "5a6df285-533e-4da1-aa80-ffdfda8203c8_bf6c1127027844b8a487ca7310020c78",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 271,
+        "total_tokens": 277
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 2762,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "20384820-9fba-4076-95e6-990f7da5ea34_6eb79b0b8dfc44b3892210f461722877",
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 269,
+        "total_tokens": 279
+      },
+      "error_type": null
+    },
+    {
+      "id": 4,
+      "state": "response",
+      "elapsed_ms": 2067,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "2b352087-bdb9-4a93-865f-39cb0bdd2459_6bd5ec56a01e4c7992c765dc98f8f0bb",
+      "usage": {
+        "completion_tokens": 49,
+        "prompt_tokens": 236,
+        "total_tokens": 285
+      },
+      "error_type": null
+    },
+    {
+      "id": 5,
+      "state": "response",
+      "elapsed_ms": 4110,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "d059afab-fedf-4059-acba-9e98918439f3_df6ec7e722cb4dbf8499941c9c03c620",
+      "usage": {
+        "completion_tokens": 65,
+        "prompt_tokens": 264,
+        "total_tokens": 329
+      },
+      "error_type": null
+    },
+    {
+      "id": 6,
+      "state": "response",
+      "elapsed_ms": 869,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "2d717e9e-33a3-4097-ae3f-54f94126d79d_f9232347e14e4954a6335dc9b98b2c31",
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 229,
+        "total_tokens": 239
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "id": "ventilation",
+      "question": "公开资料如何定义通风？",
+      "expected_outcome": "ready",
+      "elapsed_ms": 3054,
+      "case_id": "case_c8751f77b2d5",
+      "task_id": "task_4327f8d28700",
+      "analysis": {
+        "schema_version": "consultation-v1",
+        "case_id": "case_c8751f77b2d5",
+        "status": "CLOSED_SUCCESS",
+        "execution_mode": "mimo_grounded",
+        "outcome": "ready",
+        "message": "辅助分析已完成；引用关联不等于医学正确性核验。",
+        "summary": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。",
+        "observation": {
+          "recorded_stage_latency_ms": 2098,
+          "provider_attempts": 7,
+          "recorded_input_tokens": 236,
+          "recorded_output_tokens": 49,
+          "usage_status": "partial",
+          "cost_usd": null,
+          "note": "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+        },
+        "claims": [
+          {
+            "claim_id": "excerpt_0001",
+            "text": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。",
+            "evidence_ids": [
+              "kb_covid_ventilation_01"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "chunk_id": "kb_covid_ventilation_01",
+            "text": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。",
+            "source": "世界卫生组织｜2019冠状病毒病（COVID-19）：通风和空气调节",
+            "source_id": "covid_ventilation",
+            "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19-ventilation-and-air-conditioning",
+            "evidence_level": "level_5_other"
+          }
+        ],
+        "limitations": [
+          "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。",
+          "仅八篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"
+        ],
+        "risk_warnings": [
+          "不能用于真实医疗决策。"
+        ],
+        "next_steps": [
+          "请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"
+        ],
+        "failure_code": null,
+        "retry_action": "none",
+        "disclaimer": "仅供公开资料与模拟数据的工程演示，不构成诊断、处方或治疗建议。"
+      },
+      "generation_audit": [
+        {
+          "task_id": "task_4327f8d28700",
+          "stage": "generation",
+          "provider_request_id": "2b352087-bdb9-4a93-865f-39cb0bdd2459_6bd5ec56a01e4c7992c765dc98f8f0bb",
+          "provider_retry_count": 0,
+          "usage": {
+            "input_tokens": 236,
+            "output_tokens": 49,
+            "total_tokens": 285
+          },
+          "model": "mimo-v2.5",
+          "retry_count": 0,
+          "prompt_version": "mimo-grounded-v1",
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "heat",
+      "question": "高温时可以把孩子留在停放的车辆中吗？",
+      "expected_outcome": "ready",
+      "elapsed_ms": 5565,
+      "case_id": "case_858c327f4c9a",
+      "task_id": "task_885de9a694af",
+      "analysis": {
+        "schema_version": "consultation-v1",
+        "case_id": "case_858c327f4c9a",
+        "status": "CLOSED_SUCCESS",
+        "execution_mode": "mimo_grounded",
+        "outcome": "ready",
+        "message": "辅助分析已完成；引用关联不等于医学正确性核验。",
+        "summary": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。",
+        "observation": {
+          "recorded_stage_latency_ms": 4139,
+          "provider_attempts": 7,
+          "recorded_input_tokens": 264,
+          "recorded_output_tokens": 65,
+          "usage_status": "partial",
+          "cost_usd": null,
+          "note": "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+        },
+        "claims": [
+          {
+            "claim_id": "excerpt_0001",
+            "text": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。",
+            "evidence_ids": [
+              "kb_heat_children_01"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "chunk_id": "kb_heat_children_01",
+            "text": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。",
+            "source": "世界卫生组织｜热浪：如何保持凉爽",
+            "source_id": "heat_children",
+            "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/heatwaves-how-to-stay-cool",
+            "evidence_level": "level_5_other"
+          },
+          {
+            "chunk_id": "kb_covid_masks_01",
+            "text": "因此，口罩可以为佩戴者及其周围的人提供保护。",
+            "source": "世界卫生组织｜2019冠状病毒病（COVID-19）：口罩",
+            "source_id": "covid_masks",
+            "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19-masks",
+            "evidence_level": "level_5_other"
+          }
+        ],
+        "limitations": [
+          "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。",
+          "仅八篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"
+        ],
+        "risk_warnings": [
+          "不能用于真实医疗决策。"
+        ],
+        "next_steps": [
+          "请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"
+        ],
+        "failure_code": null,
+        "retry_action": "none",
+        "disclaimer": "仅供公开资料与模拟数据的工程演示，不构成诊断、处方或治疗建议。"
+      },
+      "generation_audit": [
+        {
+          "task_id": "task_885de9a694af",
+          "stage": "generation",
+          "provider_request_id": "d059afab-fedf-4059-acba-9e98918439f3_df6ec7e722cb4dbf8499941c9c03c620",
+          "provider_retry_count": 0,
+          "usage": {
+            "input_tokens": 264,
+            "output_tokens": 65,
+            "total_tokens": 329
+          },
+          "model": "mimo-v2.5",
+          "retry_count": 0,
+          "prompt_version": "mimo-grounded-v1",
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "unsupported",
+      "question": "疫苗抗体滴度的具体阈值",
+      "expected_outcome": "insufficient_evidence",
+      "elapsed_ms": 1912,
+      "case_id": "case_5d95bd2e513c",
+      "task_id": "task_06b29b5741b6",
+      "analysis": {
+        "schema_version": "consultation-v1",
+        "case_id": "case_5d95bd2e513c",
+        "status": "CLOSED_SUCCESS",
+        "execution_mode": "mimo_grounded",
+        "outcome": "insufficient_evidence",
+        "message": "证据不足：没有可追踪的支持引用，不输出确定性分析。",
+        "summary": null,
+        "observation": {
+          "recorded_stage_latency_ms": 898,
+          "provider_attempts": 7,
+          "recorded_input_tokens": 229,
+          "recorded_output_tokens": 10,
+          "usage_status": "partial",
+          "cost_usd": null,
+          "note": "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+        },
+        "claims": [],
+        "evidence": [
+          {
+            "chunk_id": "kb_covid_risk_01",
+            "text": "老年人、有基础疾病的人和未接种疫苗的人患重症风险更高。",
+            "source": "世界卫生组织｜冠状病毒病（COVID-19）",
+            "source_id": "covid_risk",
+            "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/coronavirus-disease-(covid-19)",
+            "evidence_level": "level_5_other"
+          }
+        ],
+        "limitations": [
+          "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。",
+          "仅八篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。",
+          "检索为空、模型未选择直接答题的摘录，或引用无法关联到本任务证据。"
+        ],
+        "risk_warnings": [
+          "不能用于真实医疗决策。"
+        ],
+        "next_steps": [
+          "请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"
+        ],
+        "failure_code": null,
+        "retry_action": "none",
+        "disclaimer": "仅供公开资料与模拟数据的工程演示，不构成诊断、处方或治疗建议。"
+      },
+      "generation_audit": [
+        {
+          "task_id": "task_06b29b5741b6",
+          "stage": "generation",
+          "provider_request_id": "2d717e9e-33a3-4097-ae3f-54f94126d79d_f9232347e14e4954a6335dc9b98b2c31",
+          "provider_retry_count": 0,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 10,
+            "total_tokens": 239
+          },
+          "model": "mimo-v2.5",
+          "retry_count": 0,
+          "prompt_version": "mimo-grounded-v1",
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "question": "模拟提问：量子纠缠计算芯片",
+      "expected_outcome": "insufficient_evidence",
+      "elapsed_ms": 903,
+      "case_id": "case_5f484bdf78c8",
+      "task_id": "task_58c9a935b76d",
+      "analysis": {
+        "schema_version": "consultation-v1",
+        "case_id": "case_5f484bdf78c8",
+        "status": "CLOSED_SUCCESS",
+        "execution_mode": "mimo_grounded",
+        "outcome": "insufficient_evidence",
+        "message": "证据不足：没有可追踪的支持引用，不输出确定性分析。",
+        "summary": null,
+        "observation": {
+          "recorded_stage_latency_ms": 8,
+          "provider_attempts": 7,
+          "recorded_input_tokens": null,
+          "recorded_output_tokens": null,
+          "usage_status": "not_recorded",
+          "cost_usd": null,
+          "note": "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+        },
+        "claims": [],
+        "evidence": [],
+        "limitations": [
+          "未检索到支持证据；未调用生成模型。",
+          "检索为空、模型未选择直接答题的摘录，或引用无法关联到本任务证据。"
+        ],
+        "risk_warnings": [
+          "不能用于真实医疗决策。"
+        ],
+        "next_steps": [
+          "请补充公开来源或模拟背景；真实健康问题请咨询专业人员。"
+        ],
+        "failure_code": null,
+        "retry_action": "none",
+        "disclaimer": "仅供公开资料与模拟数据的工程演示，不构成诊断、处方或治疗建议。"
+      },
+      "generation_audit": [
+        {
+          "task_id": "task_58c9a935b76d",
+          "stage": "generation",
+          "provider_request_id": null,
+          "provider_retry_count": 0
+        }
+      ]
+    }
+  ],
+  "cost_usd": null,
+  "work_directory": ".cache/implementation/mimo-live-63e379b9111f",
+  "boundary": "既有环境、新SQLite、独立API/worker和Edge；不是新机安装、临床有效性或生产部署验收。",
+  "fault_evidence": "超时、429、错误JSON、未知引用和改写由 tests/test_mimo_grounded.py 离线注入，不是真实服务故障。",
+  "metadata_note": "验收结束后，从本次只读SQLite补齐task_id及generation事件的请求标识/用量；不改变模型输出和通过状态。",
+  "prior_failed_run": "mimo-live-20260920T123017162883Z.json",
+  "engineering_review": [
+    {
+      "classification": "supported",
+      "case": "ventilation",
+      "note": "完整原文定义与直接定义问题对应；仅本次工程抽查，不是医学金标。"
+    },
+    {
+      "classification": "supported",
+      "case": "heat",
+      "note": "选中的完整短引直接涉及停放车辆中的儿童；未添加源外说法。"
+    },
+    {
+      "classification": "unsupported_question",
+      "case": "unsupported",
+      "note": "命中片段没有抗体滴度阈值，模型实际弃答，没有输出不受支持的阈值。"
+    },
+    {
+      "classification": "uncertain_or_overabstention",
+      "case": "prior_failed_run/ventilation",
+      "note": "原问题问通风如何改善空气，相关定义片段已命中但模型弃答；一例不足以判断原因或稳定性。"
+    }
+  ],
+  "verification": {
+    "offline_pytest": "68 passed; TestClient/httpx既有弃用警告1条",
+    "frontend_build": "TypeScript/Vite通过",
+    "browser": "Edge实际4流程通过；桌面成功和390px空检索截图已查看",
+    "faults": "离线注入，不属于真实模型故障"
+  }
+}

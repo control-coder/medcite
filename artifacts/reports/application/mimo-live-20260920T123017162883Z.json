@@ -1,0 +1,150 @@
+{
+  "schema_version": "mimo-application-acceptance-v1",
+  "created_at": "20260920T123017162883Z",
+  "success": false,
+  "mode": "mimo_grounded",
+  "model": "mimo-v2.5",
+  "provider": "mimo_v25",
+  "baseline_commit": "5b284a4104e0423cec481054e1cbfe5d8ee801af",
+  "implementation_state": "本轮源码在基线上未提交；随本报告提交，文件摘要用于定位验收实现。",
+  "file_sha256": {
+    "configs/application.yaml": "8ec60dc66d1ad52edeec4db5c01fc26595d56053b22d355719eaa0630f9e6d0b",
+    "examples/public_health/sources.json": "78538a9f6500b6db80d6f660d6b8fbdd849eb8fcc1a320dac71083f747ca3c84",
+    "examples/public_health/chunks.jsonl": "d4e514858461814b176776187f0cad60de67d1ac7b069da6e6fd11fc03fa4254",
+    "src/medidiag/workflow/mimo_grounded.py": "fdf98112b23a16079e69f18f804ab3dbd0979eea1e7bfd1bab25ae0cbaf34b20",
+    "src/medidiag/llm/budget.py": "74dc11719424b26f1c6014ac74268c52d014d612b8d0bac052382c2e178cb451"
+  },
+  "limits": {
+    "max_calls_total": 8,
+    "request_timeout_s": 45,
+    "automatic_retries": 0,
+    "max_output_tokens_per_call": 2048,
+    "max_input_characters": 12000
+  },
+  "timeout_boundary": "httpx 各网络操作超时45秒；不是完整工作流的45秒硬截止。",
+  "calls_before": 2,
+  "calls_after": 3,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "transport_error",
+      "elapsed_ms": 149,
+      "http_status": null,
+      "model": null,
+      "response_id": null,
+      "usage": null,
+      "error_type": "ConnectError"
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 1141,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "5a6df285-533e-4da1-aa80-ffdfda8203c8_bf6c1127027844b8a487ca7310020c78",
+      "usage": {
+        "completion_tokens": 6,
+        "prompt_tokens": 271,
+        "total_tokens": 277
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 2762,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "20384820-9fba-4076-95e6-990f7da5ea34_6eb79b0b8dfc44b3892210f461722877",
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 269,
+        "total_tokens": 279
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "id": "ventilation",
+      "question": "通风如何改善室内空气质量？",
+      "expected_outcome": "ready",
+      "elapsed_ms": 3606,
+      "case_id": "case_a1f350b46746",
+      "analysis": {
+        "schema_version": "consultation-v1",
+        "case_id": "case_a1f350b46746",
+        "status": "CLOSED_SUCCESS",
+        "execution_mode": "mimo_grounded",
+        "outcome": "insufficient_evidence",
+        "message": "证据不足：没有可追踪的支持引用，不输出确定性分析。",
+        "summary": null,
+        "observation": {
+          "recorded_stage_latency_ms": 2787,
+          "provider_attempts": 7,
+          "recorded_input_tokens": 269,
+          "recorded_output_tokens": 10,
+          "usage_status": "partial",
+          "cost_usd": null,
+          "note": "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+        },
+        "claims": [],
+        "evidence": [
+          {
+            "chunk_id": "kb_covid_ventilation_01",
+            "text": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。",
+            "source": "世界卫生组织｜2019冠状病毒病（COVID-19）：通风和空气调节",
+            "source_id": "covid_ventilation",
+            "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19-ventilation-and-air-conditioning",
+            "evidence_level": "level_5_other"
+          },
+          {
+            "chunk_id": "kb_heat_home_01",
+            "text": "天黑后，当室外温度低于室内温度时，打开窗户，利用夜间的空气给家中降温。",
+            "source": "世界卫生组织｜高温与健康",
+            "source_id": "heat_home",
+            "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/climate-change-heat-and-health",
+            "evidence_level": "level_5_other"
+          }
+        ],
+        "limitations": [
+          "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。",
+          "仅八篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。",
+          "检索为空、模型未选择直接答题的摘录，或引用无法关联到本任务证据。"
+        ],
+        "risk_warnings": [
+          "不能用于真实医疗决策。"
+        ],
+        "next_steps": [
+          "请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"
+        ],
+        "failure_code": null,
+        "retry_action": "none",
+        "disclaimer": "仅供公开资料与模拟数据的工程演示，不构成诊断、处方或治疗建议。"
+      },
+      "task_id": "task_1dc75526b06c",
+      "generation_audit": [
+        {
+          "task_id": "task_1dc75526b06c",
+          "stage": "generation",
+          "provider_request_id": "20384820-9fba-4076-95e6-990f7da5ea34_6eb79b0b8dfc44b3892210f461722877",
+          "provider_retry_count": 0,
+          "usage": {
+            "input_tokens": 269,
+            "output_tokens": 10,
+            "total_tokens": 279
+          },
+          "model": "mimo-v2.5",
+          "retry_count": 0,
+          "prompt_version": "mimo-grounded-v1",
+          "finish_reason": "stop"
+        }
+      ]
+    }
+  ],
+  "cost_usd": null,
+  "work_directory": ".cache/implementation/mimo-live-a8d20ab57874",
+  "boundary": "既有环境、新SQLite、独立API/worker和Edge；不是新机安装、临床有效性或生产部署验收。",
+  "fault_evidence": "超时、429、错误JSON、未知引用和改写由 tests/test_mimo_grounded.py 离线注入，不是真实服务故障。",
+  "metadata_note": "验收结束后，从本次只读SQLite补齐task_id及generation事件的请求标识/用量；不改变模型输出和通过状态。"
+}
