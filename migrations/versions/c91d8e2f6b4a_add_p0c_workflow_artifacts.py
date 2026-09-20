@@ -33,12 +33,13 @@ def upgrade() -> None:
         )
         batch_op.create_index("ix_cases_trace_id", ["trace_id"], unique=True)
 
-    # 在施加 NOT NULL 约束前回填已有记录。SQLite 的 randomblob 可保持
-    # 迁移离线执行，并且不会暴露病例内容。
-    op.execute(
-        "UPDATE cases SET trace_id = 'trace_' || lower(hex(randomblob(16))) "
-        "WHERE trace_id IS NULL"
+    # 保留历史 revision；按方言生成不含病例内容的唯一 trace 标识。
+    expression = (
+        "md5(random()::text || clock_timestamp()::text)"
+        if op.get_context().dialect.name == "postgresql"
+        else "lower(hex(randomblob(16)))"
     )
+    op.execute(f"UPDATE cases SET trace_id = 'trace_' || {expression} WHERE trace_id IS NULL")
     with op.batch_alter_table("cases", schema=None) as batch_op:
         batch_op.alter_column("trace_id", existing_type=sa.String(64), nullable=False)
 

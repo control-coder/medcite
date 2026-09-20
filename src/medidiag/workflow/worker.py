@@ -161,6 +161,31 @@ class SingleMachineWorker:
             )
             return self._process(session, task)
 
+    def run_task(self, task_id: str) -> WorkerRunResult:
+        """队列只传标识；重复投递须重新经过数据库领取，不能沿用已有租约。"""
+        with self.session_factory() as session:
+            acquired = self.executor.lease.acquire(session, task_id, self.worker_id)
+            if not acquired:
+                acquired = self.executor.lease.reclaim(session, task_id, self.worker_id)
+            if not acquired:
+                return WorkerRunResult(False, task_id=task_id)
+            session.expire_all()
+            task = session.scalar(select(WorkflowTask).where(WorkflowTask.task_id == task_id))
+            assert task is not None
+            if task.attempt >= 3 and session.scalar(
+                select(Case.status).where(Case.case_id == task.case_id)
+            ) != CaseState.REPORT_GENERATED.value:
+                case = session.scalar(select(Case).where(Case.case_id == task.case_id))
+                assert case is not None
+                stage, subject = _STAGE_BY_STATE[CaseState(case.status)]
+                self.executor.fail_stage(
+                    session, task_id=task_id, worker_id=self.worker_id, attempt=task.attempt,
+                    to_state=CaseState.ESCALATED, subject=subject, stage=stage,
+                    error_code="WORKFLOW_RETRY_EXCEEDED", error_message="worker 中断恢复次数达到上限。",
+                )
+                return WorkerRunResult(True, task_id, task.case_id, "ESCALATED")
+            return self._process(session, task)
+
     def _process(self, session: Session, task: WorkflowTask) -> WorkerRunResult:
         for _ in range(16):
             session.expire_all()
@@ -599,7 +624,8 @@ class SingleMachineWorker:
         if retrieval is not None and not retrieval.payload.get("chunks"):
             from medidiag.workflow.abstention import abstention_payload
 
-            operation = lambda: abstention_payload(stage, case.case_id)
+            def operation() -> dict[str, Any]:
+                return abstention_payload(stage, case.case_id)
         # 心跳在整个 provider 调用（含有界重试）期间用独立会话续期，因此单个阶段
         # 长于 lease_seconds 不再导致任务被扫描器接管。DD-020。
         heartbeat = LeaseHeartbeat(
@@ -610,11 +636,14 @@ class SingleMachineWorker:
             attempt=task.attempt,
             max_seconds=self.heartbeat_max_seconds,
         )
+        input_payload = self._stage_input(session, case, task, stage)
+        # 结束阶段读取产生的隐式事务，外部 Provider IO 不占用数据库事务。
+        session.commit()
         try:
             with heartbeat:
                 outcome = self.pipeline.run_stage(
                     stage=stage,
-                    input_payload=self._stage_input(session, case, task, stage),
+                    input_payload=input_payload,
                     operation=operation,
                     context=StageContext(
                         run_id=case.trace_id,
