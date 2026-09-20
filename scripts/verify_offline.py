@@ -18,6 +18,17 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def run_browser(spec: str, env: dict[str, str], work: Path, flags: int) -> None:
+    """显式保存浏览器输出，避免 Windows 隐藏子进程吞掉失败原因。"""
+    path = work / (spec + ".log")
+    with path.open("w", encoding="utf-8") as log:
+        result = subprocess.run([shutil.which("node"), "node_modules/@playwright/test/cli.js", "test", spec],
+                                cwd=ROOT / "frontend", env=env, stdout=log, stderr=log, creationflags=flags)
+    if result.returncode:
+        raise RuntimeError(f"浏览器验收失败，请查看本次日志：{path}")
+    print(f"浏览器验收通过：{spec}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=["fake_offline", "retrieval_mock"], default="fake_offline")
@@ -108,10 +119,18 @@ def main() -> None:
                 if args.browser:
                     browser_env = {**env, "MEDIDIAG_WEB_URL": str(client.base_url), "MEDIDIAG_TEST_PROVIDER": args.provider}
                     spec = "public-rag.spec.ts" if args.provider == "retrieval_mock" else "flow.spec.ts"
-                    subprocess.run([shutil.which("node"), "node_modules/@playwright/test/cli.js", "test", spec],
-                                   cwd=ROOT / "frontend", env=browser_env, check=True, creationflags=flags)
+                    run_browser(spec, browser_env, work, flags)
+                    # 正常闭环结束后停止本次 worker，避免快速离线处理与取消按钮竞争。
+                    # 此处只验证待领取任务的真实 API/浏览器取消，不伪称慢模型或运行中中断。
+                    processes[1].terminate()
+                    processes[1].wait(timeout=10)
+                    browser_env["MEDIDIAG_TEST_WORKER_PAUSED"] = "1"
+                    run_browser("lifecycle.spec.ts", browser_env, work, flags)
                 summary = {"case_id": case_id, "provider": args.provider, "status": analysis["status"], "evidence_count": len(evidence_ids),
-                           "browser_verified": args.browser, "separate_api_and_worker": True, "new_database": True, "cross_owner_denied": True,
+                           "browser_verified": args.browser, "browser_lifecycle_verified": args.browser,
+                           "cancellation_boundary": ("浏览器待领取取消；运行中迟到写入另由单元测试覆盖。"
+                                                     if args.browser else "本次未运行浏览器取消验收。"),
+                           "separate_api_and_worker": True, "new_database": True, "cross_owner_denied": True,
                            "conda_environment": "medidiag", "python_version": sys.version.split()[0],
                            "boundary": "现有指定环境、新数据库与独立进程；不是全新机器或临床验收。"}
                 (work / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

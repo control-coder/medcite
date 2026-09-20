@@ -13,7 +13,9 @@ const states: Record<string, string> = { CREATED: '已提交', NORMALIZED: '检�
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch('/api/v1' + path, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
   const data = await response.json();
-  if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : '输入不符合要求，请检查必填项和公开来源。');
+  if (!response.ok) throw new Error(data.code === 'CASE_NOT_FOUND'
+    ? '任务不存在或不属于当前匿名会话。清除 Cookie 或换浏览器后无法找回旧记录；请返回咨询记录或开始新咨询。'
+    : typeof data.detail === 'string' ? data.detail : '输入不符合要求，请检查必填项和公开来源。');
   return data as T;
 }
 const go = (path: string) => { location.hash = path; };
@@ -59,8 +61,8 @@ function Task({id, result}: {id: string; result: boolean}) {
     return () => { stopped = true; clearTimeout(timer); };
   }, [id]);
   return <><a className="back" href="#/history">← 咨询记录</a><p className="eyebrow">{result ? '03 / 结果与证据' : '02 / 任务进度'}</p><h1>{result ? '理解结论，也理解局限。' : '从问题到证据，逐步可见。'}</h1><p className="muted">任务 {id}</p>{error && <div role="alert" className="error">{error}<button onClick={() => location.reload()}>重新连接</button></div>}
-    {!analysis ? <p role="status">正在读取任务…</p> : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className="badge">{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p><p className="notice">{modes[analysis.execution_mode] || modes.unknown}</p>
-    {!result && <><ol className="steps">{['提交', '检索', '分析', '审核', '结果'].map((label, i) => <li key={label}><b>0{i + 1}</b>{label}</li>)}</ol><p className="muted">可以刷新或关闭此页，再从咨询记录返回。任务由后端持续执行。</p></>}
+    {!analysis ? (!error && <p role="status">正在读取任务…</p>) : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className="badge">{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p><p className="notice">{modes[analysis.execution_mode] || modes.unknown}</p>
+    {!result && <><ol className="steps">{['提交', '检索', '分析', '审核', '结果'].map((label, i) => <li key={label}><b>0{i + 1}</b>{label}</li>)}</ol><p className="muted">{analysis.outcome === 'processing' ? '可以刷新或关闭此页，再从咨询记录返回。任务由后端持续执行。' : '任务已结束，可从咨询记录返回；刷新不会重新执行。'}</p></>}
     {analysis.outcome === 'processing' && <button className="secondary" onClick={async () => {try {await api('/cases/' + id + '/cancel', {method: 'POST'}); location.reload();} catch(e) {setError((e as Error).message);}}}>取消本次任务</button>}
     {analysis.outcome !== 'processing' && !result && <a className="button" href={'#/cases/' + id + '/result'}>查看结果与证据 →</a>}
     {analysis.outcome === 'failed' && <><p>错误标识：{analysis.failure_code || '需要维护者检查'}</p><a href="#/">重新提交新的咨询 →</a></>}
