@@ -55,6 +55,34 @@ class WorkflowExecutor:
     def __init__(self, lease_manager: LeaseManager | None = None) -> None:
         self.lease = lease_manager or LeaseManager()
 
+    def cancel_case(self, session: Session, case_id: str) -> None:
+        """取消与租约失效同事务提交，避免迟到的外部调用覆盖用户取消。"""
+        case = session.scalar(select(Case).where(Case.case_id == case_id))
+        if case is None:
+            raise MediDiagError("CASE_NOT_FOUND")
+        if case.status == CaseState.CLOSED_CANCELLED.value:
+            return
+        try:
+            validate_transition(CaseState(case.status), CaseState.CLOSED_CANCELLED, TriggerSubject.API)
+        except IllegalTransitionError as exc:
+            raise MediDiagError("ILLEGAL_STATE_TRANSITION", detail="当前状态不能取消。") from exc
+        old_status, old_version = case.status, case.version
+        if case.active_task_id:
+            session.execute(update(WorkflowTask).where(
+                WorkflowTask.task_id == case.active_task_id,
+                WorkflowTask.status.in_(["PENDING", "RUNNING"]),
+            ).values(status="CANCELLED", attempt=WorkflowTask.attempt + 1,
+                     lease_until=self.lease.now()))
+        result = session.execute(update(Case).where(Case.case_id == case_id, Case.version == old_version)
+                                 .values(status=CaseState.CLOSED_CANCELLED.value,
+                                         active_task_id=None, version=old_version + 1))
+        if rowcount(result) != 1:
+            session.rollback()
+            raise MediDiagError("STATE_CONFLICT", detail="任务状态已变化，请刷新后重试取消。")
+        session.add(CaseEventLog(case_id=case_id, event_type="case_cancelled", from_status=old_status,
+                                to_status=CaseState.CLOSED_CANCELLED.value, trigger_subject="api"))
+        session.commit()
+
     # ===== 创建病例（幂等）=====
 
     def create_case(
@@ -66,6 +94,7 @@ class WorkflowExecutor:
         gold_answer: str | None = None,
         input_kind: str = "deidentified_simulation",
         source_ref: str | None = None,
+        owner_id: str | None = None,
     ) -> Case:
         """幂等创建病例。
 
@@ -98,6 +127,7 @@ class WorkflowExecutor:
             status=CaseState.CREATED.value,
             version=1,
             question=question,
+            owner_id=owner_id,
             gold_answer=gold_answer,
             input_kind=input_kind,
             source_ref=source_ref,

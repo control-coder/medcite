@@ -188,14 +188,14 @@ class TestIllegalTransitions:
                 TriggerSubject.WORKER,
             )
 
-    def test_api_cannot_cancel_after_created(self) -> None:
-        """CLOSED_CANCELLED 只能从 CREATED 触发。"""
-        with pytest.raises(IllegalTransitionError):
-            validate_transition(
-                CaseState.NORMALIZED,
-                CaseState.CLOSED_CANCELLED,
-                TriggerSubject.API,
-            )
+    def test_api_cancel_automatic_processing_only(self) -> None:
+        """用户可取消自动处理，不能借取消绕过人工升级与终态边界。"""
+        for state in CaseState:
+            if state in TERMINAL_STATES or state == CaseState.ESCALATED:
+                with pytest.raises(IllegalTransitionError):
+                    validate_transition(state, CaseState.CLOSED_CANCELLED, TriggerSubject.API)
+            else:
+                validate_transition(state, CaseState.CLOSED_CANCELLED, TriggerSubject.API)
 
     def test_revision_required_wrong_subject(self) -> None:
         """REVISION_REQUIRED -> PLAN_GENERATED 只能由 REVIEWER_WORKER 或 HUMAN。"""

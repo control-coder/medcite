@@ -151,6 +151,14 @@ TRANSITIONS: dict[CaseState, dict[TriggerSubject, list[CaseState]]] = {
 }
 
 
+# 用户可取消尚未结束的自动处理；人工升级仍只能由 HUMAN 回流，不能绕过。
+for _state, _rules in TRANSITIONS.items():
+    if _state not in TERMINAL_STATES and _state != CaseState.ESCALATED:
+        _api_targets = _rules.setdefault(TriggerSubject.API, [])
+        if CaseState.CLOSED_CANCELLED not in _api_targets:
+            _api_targets.append(CaseState.CLOSED_CANCELLED)
+
+
 # ===== 异常 =====
 
 

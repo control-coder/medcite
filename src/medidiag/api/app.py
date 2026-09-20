@@ -15,13 +15,15 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from medidiag.api.analysis import build_analysis
+from medidiag.api.identity import identity_middleware
 from medidiag.api.schemas import (
     AnalysisResponse,
-    ConsultationCreateRequest,
     CaseCreateRequest,
     CaseResponse,
+    ConsultationCreateRequest,
     ErrorResponse,
     EventPage,
     EventResponse,
@@ -91,6 +93,8 @@ def create_app(
         app.state.engine = engine
     app.state.session_factory = session_factory
     app.state.executor = WorkflowExecutor()
+    app.middleware("http")(identity_middleware)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=get_settings().medidiag_allowed_hosts)
     # ``medidiag demo`` 在附加进程内 worker 后会覆盖该配置。
     # 普通的 uvicorn 进程也可以与 ``medidiag worker`` 配合运行。
     app.state.demo_runtime = {
@@ -100,6 +104,7 @@ def create_app(
 
     def get_session(request: Request) -> Generator[Session, None, None]:
         with request.app.state.session_factory() as session:
+            session.info["owner_id"] = request.state.owner_id
             yield session
 
     @app.exception_handler(MediDiagError)
@@ -134,6 +139,23 @@ def create_app(
             ).model_dump(),
         )
 
+    @app.get("/api/v1/session")
+    def current_identity(request: Request) -> dict[str, str]:
+        return {"owner_id": request.state.owner_id, "mode": "anonymous_session"}
+
+    @app.get("/api/v1/cases")
+    def list_cases(
+        before: int | None = Query(default=None, ge=1),
+        limit: int = Query(default=20, ge=1, le=100),
+        session: Session = Depends(get_session),
+    ) -> dict[str, Any]:
+        query = select(Case).where(Case.owner_id == session.info["owner_id"])
+        if before is not None:
+            query = query.where(Case.id < before)
+        records = list(session.scalars(query.order_by(Case.id.desc()).limit(limit + 1)))
+        return {"items": [_case_response(session, item).model_dump() for item in records[:limit]],
+                "next_cursor": records[limit - 1].id if len(records) > limit else None}
+
     @app.post(
         "/api/v1/cases",
         response_model=CaseResponse,
@@ -142,7 +164,6 @@ def create_app(
     def create_case(
         payload: CaseCreateRequest,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-        user_scope: str = Header(default="local-demo", alias="X-User-Scope"),
         session: Session = Depends(get_session),
     ) -> CaseResponse:
         if not idempotency_key:
@@ -152,7 +173,8 @@ def create_app(
             session,
             payload.question,
             idempotency_key,
-            user_scope,
+            session.info["owner_id"],
+            owner_id=session.info["owner_id"],
             input_kind=payload.input_kind,
             source_ref=payload.source_ref,
         )
@@ -162,10 +184,9 @@ def create_app(
     def create_consultation(
         payload: ConsultationCreateRequest,
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-        user_scope: str = Header(default="local-demo", alias="X-User-Scope"),
         session: Session = Depends(get_session),
     ) -> CaseResponse:
-        return create_case(payload.as_case(), idempotency_key, user_scope, session)
+        return create_case(payload.as_case(), idempotency_key, session)
 
     @app.get("/api/v1/cases/{case_id}/analysis", response_model=AnalysisResponse)
     def get_analysis(case_id: str, session: Session = Depends(get_session)) -> AnalysisResponse:
@@ -200,6 +221,13 @@ def create_app(
             ),
         )
         return _task_response(task)
+
+    @app.post("/api/v1/cases/{case_id}/cancel", response_model=CaseResponse)
+    def cancel_case(case_id: str, session: Session = Depends(get_session)) -> CaseResponse:
+        case = _case_or_404(session, case_id)
+        app.state.executor.cancel_case(session, case.case_id)
+        session.expire_all()
+        return _case_response(session, _case_or_404(session, case_id))
 
     @app.get("/api/v1/cases/{case_id}", response_model=CaseResponse)
     def get_case(
@@ -301,7 +329,7 @@ def create_app(
         request: Request, session: Session = Depends(get_session)
     ) -> HTMLResponse:
         recent = list(
-            session.execute(select(Case).order_by(Case.id.desc()).limit(10)).scalars()
+            session.execute(select(Case).where(Case.owner_id == session.info["owner_id"]).order_by(Case.id.desc()).limit(10)).scalars()
         )
         return _TEMPLATES.TemplateResponse(
             request=request,
@@ -327,7 +355,8 @@ def create_app(
             session,
             payload.question,
             f"assistant-case-{nonce}",
-            "local-assistant",
+            session.info["owner_id"],
+            owner_id=session.info["owner_id"],
             input_kind=payload.input_kind,
             source_ref=payload.source_ref,
         )
@@ -377,7 +406,7 @@ def create_app(
         request: Request, session: Session = Depends(get_session)
     ) -> HTMLResponse:
         recent = list(
-            session.execute(select(Case).order_by(Case.id.desc()).limit(20)).scalars()
+            session.execute(select(Case).where(Case.owner_id == session.info["owner_id"]).order_by(Case.id.desc()).limit(20)).scalars()
         )
         return _TEMPLATES.TemplateResponse(
             request=request,
@@ -403,7 +432,8 @@ def create_app(
             session,
             payload.question,
             f"demo-case-{nonce}",
-            "local-demo",
+            session.info["owner_id"],
+            owner_id=session.info["owner_id"],
             input_kind=payload.input_kind,
             source_ref=payload.source_ref,
         )
@@ -649,7 +679,7 @@ def _assistant_status_message(status_value: str) -> str:
 
 def _case_or_404(session: Session, case_id: str) -> Case:
     case = session.execute(
-        select(Case).where(Case.case_id == case_id)
+        select(Case).where(Case.case_id == case_id, Case.owner_id == session.info.get("owner_id", ""))
     ).scalar_one_or_none()
     if case is None:
         raise MediDiagError("CASE_NOT_FOUND", detail=f"case {case_id} not found")

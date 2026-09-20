@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     # 数据库
     database_url: str = "sqlite:///./medidiag.db"
 
+    medidiag_allowed_hosts: list[str] = ["127.0.0.1", "localhost", "[::1]", "testserver"]
+
     # 队列只保存任务标识，独立扫描器负责提交与派发窗口的补偿。
     medidiag_broker_url: str = "redis://127.0.0.1:16379/0"
     medidiag_dispatch_seconds: int = 5

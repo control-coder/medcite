@@ -15,8 +15,6 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 const go = (path: string) => { location.hash = path; };
-function remembered(): string[] { try { return JSON.parse(localStorage.getItem('medidiag-cases') || '[]'); } catch { return []; } }
-function remember(id: string) { localStorage.setItem('medidiag-cases', JSON.stringify([id, ...remembered().filter(x => x !== id)].slice(0, 100))); }
 function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
   useEffect(() => { const change = () => setRoute(location.hash.slice(1) || '/'); window.addEventListener('hashchange', change); return () => window.removeEventListener('hashchange', change); }, []);
@@ -35,7 +33,7 @@ function Consult() {
     const payload = {symptoms, duration, background, input_kind: kind, source_ref: source || null, non_sensitive_confirmed: confirmed};
     // 只保存幂等键；不在浏览器持久保存症状与背景。
     const key = sessionStorage.getItem('medidiag-submit-key') || crypto.randomUUID(); sessionStorage.setItem('medidiag-submit-key', key);
-    try { const item = await api<Case>('/consultations', {method: 'POST', headers: {'Idempotency-Key': key}, body: JSON.stringify(payload)}); remember(item.case_id); sessionStorage.removeItem('medidiag-submit-key'); go('/cases/' + item.case_id); }
+    try { const item = await api<Case>('/consultations', {method: 'POST', headers: {'Idempotency-Key': key}, body: JSON.stringify(payload)}); sessionStorage.removeItem('medidiag-submit-key'); go('/cases/' + item.case_id); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   return <><section className="intro"><p className="eyebrow">EVIDENCE FIRST / 证据优先</p><h1>让每一条分析，<br/>都有据可循。</h1><p>从公开资料与模拟问题开始，了解证据、来源和不确定性。</p></section><div className="columns"><section className="card"><div className="section-title"><h2>新建辅助分析</h2><span>01 / 提交问题</span></div><form onSubmit={submit}>
@@ -52,7 +50,7 @@ function Task({id, result}: {id: string; result: boolean}) {
   useEffect(() => { let stopped = false; let timer: ReturnType<typeof setTimeout>;
     const poll = async () => { try {
       const item = await api<Case>('/cases/' + id);
-      if (item.status === 'CREATED' && !item.active_task) await api('/cases/' + id + '/workflow', {method: 'POST', headers: {'Idempotency-Key': 'web-' + id}});
+      if (['CREATED', 'REVISION_REQUIRED'].includes(item.status) && !item.active_task) await api('/cases/' + id + '/workflow', {method: 'POST', headers: {'Idempotency-Key': 'web-' + id}});
       const data = await api<Analysis>('/cases/' + id + '/analysis');
       if (!stopped) { setAnalysis(data); setError(''); if (data.outcome === 'processing') timer = setTimeout(poll, 1200); }
     } catch (e) { if (!stopped) setError((e as Error).message); } }; void poll();
@@ -61,13 +59,23 @@ function Task({id, result}: {id: string; result: boolean}) {
   return <><a className="back" href="#/history">← 咨询记录</a><p className="eyebrow">{result ? '03 / 结果与证据' : '02 / 任务进度'}</p><h1>{result ? '理解结论，也理解局限。' : '从问题到证据，逐步可见。'}</h1><p className="muted">任务 {id}</p>{error && <div role="alert" className="error">{error}<button onClick={() => location.reload()}>重新连接</button></div>}
     {!analysis ? <p role="status">正在读取任务…</p> : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className="badge">{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p>
     {!result && <><ol className="steps">{['提交', '检索', '分析', '审核', '结果'].map((label, i) => <li key={label}><b>0{i + 1}</b>{label}</li>)}</ol><p className="muted">可以刷新或关闭此页，再从咨询记录返回。任务由后端持续执行。</p></>}
+    {analysis.outcome === 'processing' && <button className="secondary" onClick={async () => {try {await api('/cases/' + id + '/cancel', {method: 'POST'}); location.reload();} catch(e) {setError((e as Error).message);}}}>取消本次任务</button>}
     {analysis.outcome !== 'processing' && !result && <a className="button" href={'#/cases/' + id + '/result'}>查看结果与证据 →</a>}
     {analysis.outcome === 'failed' && <><p>错误标识：{analysis.failure_code || '需要维护者检查'}</p><a href="#/">重新提交新的咨询 →</a></>}
     </section>{result && <div className="columns"><section className="card"><h2>辅助分析</h2>{analysis.summary && <p>{analysis.summary}</p>}{analysis.claims.map(claim => <article key={claim.claim_id} className="claim"><p>{claim.text}</p>{claim.evidence_ids.map(e => <a className="citation" key={e} href={'#evidence-' + e} onClick={event => {event.preventDefault(); document.getElementById('evidence-' + e)?.scrollIntoView({behavior: 'smooth'});}}>查看证据 ↗</a>)}</article>)}<h3>不确定性与局限</h3><ul>{analysis.limitations.map((x, i) => <li key={i}>{x}</li>)}</ul><h3>风险与后续行动</h3><ul>{[...analysis.risk_warnings, ...analysis.next_steps].map((x, i) => <li key={i}>{x}</li>)}</ul><p className="notice">{analysis.disclaimer}</p></section><section className="card"><h2>证据来源 <span className="count">{analysis.evidence.length}</span></h2>{analysis.evidence.length === 0 && <p>没有可展示的证据，不作确定性结论。</p>}{analysis.evidence.map((e, i) => <article className="evidence" id={'evidence-' + e.chunk_id} key={e.chunk_id}><span className="eyebrow">证据 {i + 1} / {e.evidence_level}</span><p>{e.text}</p><p className="muted">{e.source} · {e.source_id}</p>{e.source_url ? <a href={e.source_url} target="_blank" rel="noreferrer">查看原始来源 ↗</a> : <small>本地模拟片段，无外部来源链接；不能作为临床证据。</small>}</article>)}</section></div>}</> }</>;
 }
 function History() {
   const [items, setItems] = useState<Case[]>([]); const [error, setError] = useState('');
-  useEffect(() => { let active = true; Promise.all(remembered().map(id => api<Case>('/cases/' + id))).then(data => {if(active) setItems(data);}).catch(() => {if(active) setError('部分任务不可访问，请检查服务连接。');}); return () => {active = false;}; }, []);
-  return <><p className="eyebrow">04 / 咨询记录</p><h1>回看每一次证据探索。</h1><p className="muted">当前记录保存在此浏览器；账号隔离将在身份模块接入后启用。</p>{error && <p role="alert">{error}</p>}<section className="card">{items.length ? items.map(item => <a className="history-item" key={item.case_id} href={'#/cases/' + item.case_id}><span>{item.case_id}</span><span>{states[item.status] || item.status} →</span></a>) : <p>暂无咨询记录。<a href="#/">开始第一条模拟咨询 →</a></p>}</section></>;
+  const [cursor, setCursor] = useState<number | null>(null); const [loading, setLoading] = useState(false);
+  async function load(before?: number) {
+    setLoading(true);
+    try { const data = await api<{items: Case[]; next_cursor: number | null}>('/cases' + (before ? '?before=' + before : ''));
+      setItems(previous => before ? [...previous, ...data.items] : data.items); setCursor(data.next_cursor); setError('');
+    } catch {setError('暂时无法获取本人的历史记录，请检查连接。');} finally {setLoading(false);}
+  }
+  useEffect(() => {void load();}, []);
+  return <><p className="eyebrow">04 / 咨询记录</p><h1>回看每一次证据探索。</h1><p className="muted">仅显示当前匿名会话的任务；会话有效期 30 天。清除 Cookie 或换浏览器后无法找回，不是实名账户。</p>{error && <p role="alert">{error}<button onClick={() => void load()}>重试</button></p>}<section className="card">{items.length ? items.map(item => <a className="history-item" key={item.case_id} href={'#/cases/' + item.case_id}><span>{item.case_id}</span><span>{states[item.status] || item.status} →</span></a>) : <p>{loading ? '正在读取…' : '暂无咨询记录。'}<a href="#/">开始第一条模拟咨询 →</a></p>}{cursor && <button disabled={loading} onClick={() => void load(cursor)}>加载更多</button>}</section></>;
 }
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+// 先完成会话握手，避免首次并发请求被分配到不同匿名身份。
+const root = createRoot(document.getElementById('root')!);
+api('/session').then(() => root.render(<React.StrictMode><App/></React.StrictMode>)).catch(() => root.render(<main><h1>暂时无法建立会话</h1><p>请确认后端已启动；若会话过期，请刷新重建。旧会话记录不会自动归属于新会话。</p><button onClick={() => location.reload()}>刷新重试</button></main>));

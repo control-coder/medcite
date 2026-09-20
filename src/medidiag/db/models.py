@@ -71,6 +71,7 @@ class Case(Base):
     case_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(32), default="CREATED", index=True)
     version: Mapped[int] = mapped_column(Integer, default=1)  # 乐观锁
+    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     question: Mapped[str] = mapped_column(Text)
     gold_answer: Mapped[str | None] = mapped_column(String(64), nullable=True)
     normalized_query: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -334,3 +335,12 @@ ALL_TABLES: tuple[str, ...] = (
     "stage_artifacts",
     "case_reports",
 )
+
+
+class WebSession(Base):
+    """服务端匿名身份；仅持久化随机会话凭据的摘要，不保存明文令牌。"""
+
+    __tablename__ = "web_sessions"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
