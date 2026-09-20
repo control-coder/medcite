@@ -79,6 +79,10 @@ def create_app(
         StaticFiles(directory=str(_API_DIR / "static")),
         name="static",
     )
+    # hash 路由仅请求此静态入口，刷新不会丢失后端任务标识。
+    frontend_dist = _API_DIR.parents[2] / "frontend" / "dist"
+    if frontend_dist.is_dir():
+        app.mount("/app", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
     if session_factory is None:
         engine = create_db_engine(database_url or get_settings().database_url)
         if initialize_schema:
