@@ -59,7 +59,11 @@ class Retriever:
         device: str = "auto",
         embedding_batch_size: int = 32,
         rerank_batch_size: int = 32,
+        bm25_tokenizer: str = "whitespace",
     ) -> None:
+        if bm25_tokenizer not in {"whitespace", "cjk_bigram"}:
+            raise ValueError("不支持的 BM25 切分方式")
+        self.bm25_tokenizer = bm25_tokenizer
         self.chunks = chunks
         self.weights = dict(weights)
         self.evidence_level_scores = dict(evidence_level_scores)
@@ -98,6 +102,18 @@ class Retriever:
         if use_embedding:
             self._build_embedding_index()
 
+    def tokenize(self, text: str) -> list[str]:
+        """中英文采用同一查询/正文规则；默认保留历史空格切分。"""
+        if self.bm25_tokenizer == "whitespace":
+            return text.lower().split()
+        tokens = []
+        for part in re.findall(r"[\u3400-\u9fff]+|[a-z0-9]+", text.lower()):
+            if "\u3400" <= part[0] <= "\u9fff" and len(part) > 1:
+                tokens.extend(part[i:i + 2] for i in range(len(part) - 1))
+            else:
+                tokens.append(part)
+        return tokens
+
     def _build_bm25(self) -> Any:
         """构建 BM25 索引并返回它。
 
@@ -105,7 +121,7 @@ class Retriever:
         """
         from rank_bm25 import BM25Okapi
 
-        tokenized = [text.lower().split() for text in self._texts]
+        tokenized = [self.tokenize(text) for text in self._texts]
         self._bm25 = BM25Okapi(tokenized)
         return self._bm25
 
@@ -281,7 +297,7 @@ class Retriever:
             return cached
         self._cache_misses["bm25"] += 1
         bm25 = self._bm25 if self._bm25 is not None else self._build_bm25()
-        tokenized_query = query.lower().split()
+        tokenized_query = self.tokenize(query)
         scores = bm25.get_scores(tokenized_query)
         max_score = max(scores.max(), 1e-8)
         normalized = np.array(scores, dtype=np.float32) / max_score

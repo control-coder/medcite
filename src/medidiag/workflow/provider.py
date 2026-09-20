@@ -63,6 +63,7 @@ class DeterministicWorkflowProvider:
             "query": normalized_query,
             "top_k": 1,
             "config_hash": "deterministic-fixture",
+            "execution_mode": "fake_offline",
             "chunks": [
                 {
                     "chunk_id": chunk_id,

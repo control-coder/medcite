@@ -34,6 +34,9 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
         ))
     result = AnalysisResponse(case_id=case.case_id, status=case.status,
                               outcome="processing", message="正在处理，请稍后查看。", evidence=evidence)
+    mode = artifact.payload.get("execution_mode") if artifact else None
+    if mode in {"fake_offline", "retrieval_mock", "model_pipeline"}:
+        result.execution_mode = mode
     result.observation = build_observation(session, case.case_id, task.task_id if task else None)
     if case.status == "CLOSED_CANCELLED":
         result.outcome, result.message = "cancelled", "任务已取消，没有可用报告。"

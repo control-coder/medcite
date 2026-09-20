@@ -53,7 +53,8 @@ class OpenAICompatibleWorkflowProvider(DemoWorkflowSupport):
             raise MediDiagError(
                 "RAG_CORPUS_INVALID", detail="live workflow 未装配 RuntimeMedicalRAG"
             )
-        return self.rag_stage.retrieve(normalized_query)
+        # 只标记适配器链路，不证明真实网络调用或在线验收已发生。
+        return {**self.rag_stage.retrieve(normalized_query), "execution_mode": "model_pipeline"}
 
     @property
     def is_configured(self) -> bool:

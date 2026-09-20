@@ -74,3 +74,10 @@ PostgreSQL/Redis/Celery 独立启动、专用故障注入验收、故障恢复�
 `src/medidiag/` 后端；`frontend/` React；`tests/` 自动化测试；`migrations/` 迁移；`scripts/` 与 `examples/` 辅助入口和模拟数据；`eval/` 独立研究子系统；`docs/` 当前资料；`docs/archive/research/` 历史文档；`artifacts/reports/application/` 本轮结果，其余历史报告原样保留。详情见 [目录说明](docs/structure.md)。
 
 遵循 [AGENTS.md](AGENTS.md)：中文说明、独立环境、分轮验证提交，不推送、不泄露凭据、不混入用户修改。许可证 MIT，见 LICENSE；第三方通知见 THIRD_PARTY_NOTICES.md。
+
+
+## 公开中文正文检索（第 8A 轮）
+
+已有 8 篇 WHO 中文科普页面短引、16 条固定工程查询和应用专用 configs/application.yaml。显式使用 `--provider retrieval_mock --app-config configs/application.yaml` 可展示实际检索片段与来源；生成仍是确定性摘录，不是在线模型。启动时请按 [运行手册](docs/development/runbook.md) 指向独立演示库。
+
+`python scripts/verify_public_rag.py` 重放两组对照；`python scripts/verify_offline.py --provider retrieval_mock --browser` 自动验证本机独立进程与 Edge 页面。仍有口语漏检和词面误命中，见 [检索记录](docs/development/rag-delivery.md)。第 8B 真实模型联合验收未执行；第 7 轮全新环境安装复验可选且本次跳过。

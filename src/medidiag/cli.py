@@ -19,14 +19,15 @@ from medidiag.llm import LLMRequest, build_llm_provider
 from medidiag.observability.logging import configure_logging
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.review.runtime import RuntimeMedicalReview
+from medidiag.workflow.application import build_application_provider
 from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
-from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
+from medidiag.workflow.provider import WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 
 _AGENT_TOPOLOGY_CHOICES = click.Choice(["single", "fixed_pair", "dynamic_pair"])
 
 _PROVIDER_CHOICES = click.Choice(
-    ["fake_offline", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
+    ["fake_offline", "retrieval_mock", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
     case_sensitive=False,
 )
 
@@ -76,11 +77,12 @@ def _build_provider(
     review_verdict: str,
     *,
     rag_config: str = "eval/config.yaml",
+    app_config: str = "configs/application.yaml",
     agent_topology: str = "dynamic_pair",
     specialist_pair: str = "cardiology,respiratory",
 ) -> WorkflowProvider:
-    if provider_name == "fake_offline":
-        return DeterministicWorkflowProvider(review_verdict=review_verdict)
+    if provider_name in {"fake_offline", "retrieval_mock"}:
+        return build_application_provider(provider_name, app_config=app_config, review_verdict=review_verdict)
     provider = OpenAICompatibleWorkflowProvider(profile_id=provider_name)
     if not provider.is_configured:
         raise click.UsageError(
@@ -117,8 +119,10 @@ def _build_provider(
     type=_PROVIDER_CHOICES,
     default="deepseek_default",
     show_default=True,
-    help="选择 LLM profile；fake_offline 为无网络 fixture。",
+    help="显式选择模式；fake_offline 为 fixture，retrieval_mock 为真实检索/模拟生成。",
 )
+@click.option("--app-config", default="configs/application.yaml", show_default=True,
+              help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
 @click.option(
     "--rag-config",
     default="eval/config.yaml",
@@ -152,6 +156,7 @@ def worker(
     worker_id: str,
     provider_name: str,
     rag_config: str,
+    app_config: str,
     agent_topology: str,
     specialist_pair: str,
     review_verdict: str,
@@ -164,7 +169,7 @@ def worker(
         _build_provider(
             provider_name,
             review_verdict,
-            rag_config=rag_config,
+            rag_config=rag_config, app_config=app_config,
             agent_topology=agent_topology,
             specialist_pair=specialist_pair,
         ),
@@ -201,6 +206,8 @@ def worker(
     default="deepseek_default",
     show_default=True,
 )
+@click.option("--app-config", default="configs/application.yaml", show_default=True,
+              help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
 @click.option(
     "--rag-config",
     default="eval/config.yaml",
@@ -226,6 +233,7 @@ def demo(
     port: int,
     provider_name: str,
     rag_config: str,
+    app_config: str,
     agent_topology: str,
     specialist_pair: str,
 ) -> None:
@@ -244,7 +252,7 @@ def demo(
     provider = _build_provider(
         provider_name,
         "APPROVED",
-        rag_config=rag_config,
+        rag_config=rag_config, app_config=app_config,
         agent_topology=agent_topology,
         specialist_pair=specialist_pair,
     )

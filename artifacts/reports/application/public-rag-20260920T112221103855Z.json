@@ -1,0 +1,902 @@
+{
+  "schema_version": "public-health-rag-regression-v1",
+  "generated_at": "2026-09-20T11:22:23.785268+00:00",
+  "dataset": {
+    "version": "public-health-excerpts-v1",
+    "knowledge_base_path": "examples/public_health/chunks.jsonl",
+    "rag_eval_set_path": "examples/public_health/queries.jsonl",
+    "agent_eval_set_path": "examples/public_health/queries.jsonl"
+  },
+  "query_count": 16,
+  "query_sha256": "d0b5c84a2f7df3330a24abdc862825a001c694df36c4fafc2b0591aae2004007",
+  "top_k": 3,
+  "weights": {
+    "w1_bm25": 1.0,
+    "w2_embedding": 0.0,
+    "w3_evidence_level": 0.0,
+    "w4_term_overlap": 0.0
+  },
+  "runs": {
+    "whitespace": {
+      "splits": {
+        "dev": {
+          "positive_count": 6,
+          "metrics": {
+            "hit@1": 0,
+            "recall@1": 0.0,
+            "hit@3": 0,
+            "recall@3": 0.0
+          },
+          "no_evidence_count": 2,
+          "correct_empty_count": 2,
+          "false_hit_ids": [],
+          "miss_ids_at_3": [
+            "public_q01",
+            "public_q02",
+            "public_q03",
+            "public_q04",
+            "public_q05",
+            "public_q06"
+          ],
+          "median_query_ms": 0.02635
+        },
+        "check": {
+          "positive_count": 6,
+          "metrics": {
+            "hit@1": 0,
+            "recall@1": 0.0,
+            "hit@3": 0,
+            "recall@3": 0.0
+          },
+          "no_evidence_count": 2,
+          "correct_empty_count": 2,
+          "false_hit_ids": [],
+          "miss_ids_at_3": [
+            "public_q09",
+            "public_q10",
+            "public_q11",
+            "public_q12",
+            "public_q13",
+            "public_q14"
+          ],
+          "median_query_ms": 0.02025
+        }
+      },
+      "queries": [
+        {
+          "sample_id": "public_q01",
+          "split": "dev",
+          "question": "咳嗽时如何用纸巾遮住口鼻并洗手？",
+          "gold_evidence_ids": [
+            "kb_flu_hygiene_01",
+            "kb_covid_etiquette_01"
+          ],
+          "rationale": "两段包含咳嗽时的纸巾遮挡；流感段另含洗手。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.1607,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q02",
+          "split": "dev",
+          "question": "接触受感染动物有哪些风险因素？",
+          "gold_evidence_ids": [
+            "kb_flu_animals_01"
+          ],
+          "rationale": "仅动物接触风险，不涉及疫苗或治疗。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0282,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q03",
+          "split": "dev",
+          "question": "老年人和有基础疾病的人重症风险如何？",
+          "gold_evidence_ids": [
+            "kb_covid_risk_01"
+          ],
+          "rationale": "新冠资料明确提到这些人群。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0221,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q04",
+          "split": "dev",
+          "question": "戴口罩可以保护周围的人吗？",
+          "gold_evidence_ids": [
+            "kb_covid_masks_01"
+          ],
+          "rationale": "仅引用口罩保护对象短句。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0296,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q05",
+          "split": "dev",
+          "question": "通风如何改善室内空气质量？",
+          "gold_evidence_ids": [
+            "kb_covid_ventilation_01"
+          ],
+          "rationale": "通风的过程定义。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0245,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q06",
+          "split": "dev",
+          "question": "热浪中孩子能留在停放车辆里吗？",
+          "gold_evidence_ids": [
+            "kb_heat_children_01"
+          ],
+          "rationale": "车辆内高温风险提示。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0218,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q07",
+          "split": "dev",
+          "question": "量子纠缠计算芯片",
+          "gold_evidence_ids": [],
+          "rationale": "范围外，无相应正文。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0215,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q08",
+          "split": "dev",
+          "question": "脑瘤分期方案和靶向药剂量",
+          "gold_evidence_ids": [],
+          "rationale": "片段没有肿瘤或剂量信息。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0301,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q09",
+          "split": "check",
+          "question": "打喷嚏时用肘部还是纸巾遮住口鼻？",
+          "gold_evidence_ids": [
+            "kb_covid_etiquette_01",
+            "kb_flu_hygiene_01"
+          ],
+          "rationale": "肘部在新冠礼仪短句；流感段可部分支持纸巾遮挡。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0227,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q10",
+          "split": "check",
+          "question": "与动物间接接触为什么有感染风险？",
+          "gold_evidence_ids": [
+            "kb_flu_animals_01"
+          ],
+          "rationale": "保留原始风险因素陈述。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.021,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q11",
+          "split": "check",
+          "question": "未接种疫苗是否属于新冠重症风险人群？",
+          "gold_evidence_ids": [
+            "kb_covid_risk_01"
+          ],
+          "rationale": "不外推疫苗的有效率。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0274,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q12",
+          "split": "check",
+          "question": "屋里太闷怎样透透气？",
+          "gold_evidence_ids": [
+            "kb_covid_ventilation_01"
+          ],
+          "rationale": "口语同义表达，保留可能的词法漏检。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0207,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q13",
+          "split": "check",
+          "question": "天黑后什么温度条件下打开窗户降温？",
+          "gold_evidence_ids": [
+            "kb_heat_home_01"
+          ],
+          "rationale": "包含夜间开窗的室内外温度条件。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0198,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q14",
+          "split": "check",
+          "question": "孩子短时间留在停放的车辆中安全吗？",
+          "gold_evidence_ids": [
+            "kb_heat_children_01"
+          ],
+          "rationale": "包含一会儿也不留在车辆内的限制。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0198,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q15",
+          "split": "check",
+          "question": "疫苗抗体滴度的具体阈值",
+          "gold_evidence_ids": [],
+          "rationale": "有疫苗字面但没有阈值答案，用来保留误命中风险。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0191,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q16",
+          "split": "check",
+          "question": "牙齿正畸的价格",
+          "gold_evidence_ids": [],
+          "rationale": "范围外，无相应正文。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0194,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        }
+      ],
+      "build_ms": 2664.8054,
+      "corpus_hash": "7bee59f9043bb7732261161acaa5eeb5765a508deb25981e7130e51da7520396",
+      "config_hash": "9200f8c58138c1f00a25d1aba390c2b4595ffdfc0445e9ae40bb7686379c9d81"
+    },
+    "cjk_bigram": {
+      "splits": {
+        "dev": {
+          "positive_count": 6,
+          "metrics": {
+            "hit@1": 1,
+            "recall@1": 0.9166666666666666,
+            "hit@3": 1,
+            "recall@3": 1.0
+          },
+          "no_evidence_count": 2,
+          "correct_empty_count": 2,
+          "false_hit_ids": [],
+          "miss_ids_at_3": [],
+          "median_query_ms": 0.2123
+        },
+        "check": {
+          "positive_count": 6,
+          "metrics": {
+            "hit@1": 0.8333333333333334,
+            "recall@1": 0.75,
+            "hit@3": 0.8333333333333334,
+            "recall@3": 0.8333333333333334
+          },
+          "no_evidence_count": 2,
+          "correct_empty_count": 1,
+          "false_hit_ids": [
+            "public_q15"
+          ],
+          "miss_ids_at_3": [
+            "public_q12"
+          ],
+          "median_query_ms": 0.1336
+        }
+      },
+      "queries": [
+        {
+          "sample_id": "public_q01",
+          "split": "dev",
+          "question": "咳嗽时如何用纸巾遮住口鼻并洗手？",
+          "gold_evidence_ids": [
+            "kb_flu_hygiene_01",
+            "kb_covid_etiquette_01"
+          ],
+          "rationale": "两段包含咳嗽时的纸巾遮挡；流感段另含洗手。",
+          "retrieved_ids": [
+            "kb_flu_hygiene_01",
+            "kb_covid_etiquette_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_flu_hygiene_01",
+              "score": 0.9999999864665905
+            },
+            {
+              "chunk_id": "kb_covid_etiquette_01",
+              "score": 0.5428331653360726
+            }
+          ],
+          "latency_ms": 0.2117,
+          "at_1": {
+            "hit": 1,
+            "recall": 0.5
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q02",
+          "split": "dev",
+          "question": "接触受感染动物有哪些风险因素？",
+          "gold_evidence_ids": [
+            "kb_flu_animals_01"
+          ],
+          "rationale": "仅动物接触风险，不涉及疫苗或治疗。",
+          "retrieved_ids": [
+            "kb_flu_animals_01",
+            "kb_covid_risk_01",
+            "kb_heat_children_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_flu_animals_01",
+              "score": 0.9999999908928079
+            },
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 0.08358173650416355
+            },
+            {
+              "chunk_id": "kb_heat_children_01",
+              "score": 0.07173031993045424
+            }
+          ],
+          "latency_ms": 0.1386,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q03",
+          "split": "dev",
+          "question": "老年人和有基础疾病的人重症风险如何？",
+          "gold_evidence_ids": [
+            "kb_covid_risk_01"
+          ],
+          "rationale": "新冠资料明确提到这些人群。",
+          "retrieved_ids": [
+            "kb_covid_risk_01",
+            "kb_covid_masks_01",
+            "kb_flu_animals_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 1.0000000095003079
+            },
+            {
+              "chunk_id": "kb_covid_masks_01",
+              "score": 0.05719236306878319
+            },
+            {
+              "chunk_id": "kb_flu_animals_01",
+              "score": 0.04838935545551989
+            }
+          ],
+          "latency_ms": 0.217,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q04",
+          "split": "dev",
+          "question": "戴口罩可以保护周围的人吗？",
+          "gold_evidence_ids": [
+            "kb_covid_masks_01"
+          ],
+          "rationale": "仅引用口罩保护对象短句。",
+          "retrieved_ids": [
+            "kb_covid_masks_01",
+            "kb_covid_risk_01",
+            "kb_covid_ventilation_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_masks_01",
+              "score": 1.0000000195275376
+            },
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 0.11516000994993361
+            },
+            {
+              "chunk_id": "kb_covid_ventilation_01",
+              "score": 0.10957672057366569
+            }
+          ],
+          "latency_ms": 0.2142,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q05",
+          "split": "dev",
+          "question": "通风如何改善室内空气质量？",
+          "gold_evidence_ids": [
+            "kb_covid_ventilation_01"
+          ],
+          "rationale": "通风的过程定义。",
+          "retrieved_ids": [
+            "kb_covid_ventilation_01",
+            "kb_heat_home_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_ventilation_01",
+              "score": 1.0000000212757096
+            },
+            {
+              "chunk_id": "kb_heat_home_01",
+              "score": 0.19985414547639427
+            }
+          ],
+          "latency_ms": 0.2129,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q06",
+          "split": "dev",
+          "question": "热浪中孩子能留在停放车辆里吗？",
+          "gold_evidence_ids": [
+            "kb_heat_children_01"
+          ],
+          "rationale": "车辆内高温风险提示。",
+          "retrieved_ids": [
+            "kb_heat_children_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_heat_children_01",
+              "score": 0.9999999707909357
+            }
+          ],
+          "latency_ms": 0.2209,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q07",
+          "split": "dev",
+          "question": "量子纠缠计算芯片",
+          "gold_evidence_ids": [],
+          "rationale": "范围外，无相应正文。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.1383,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q08",
+          "split": "dev",
+          "question": "脑瘤分期方案和靶向药剂量",
+          "gold_evidence_ids": [],
+          "rationale": "片段没有肿瘤或剂量信息。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.1468,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q09",
+          "split": "check",
+          "question": "打喷嚏时用肘部还是纸巾遮住口鼻？",
+          "gold_evidence_ids": [
+            "kb_covid_etiquette_01",
+            "kb_flu_hygiene_01"
+          ],
+          "rationale": "肘部在新冠礼仪短句；流感段可部分支持纸巾遮挡。",
+          "retrieved_ids": [
+            "kb_covid_etiquette_01",
+            "kb_flu_hygiene_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_etiquette_01",
+              "score": 0.9999999723281245
+            },
+            {
+              "chunk_id": "kb_flu_hygiene_01",
+              "score": 0.3309890482747829
+            }
+          ],
+          "latency_ms": 0.2247,
+          "at_1": {
+            "hit": 1,
+            "recall": 0.5
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q10",
+          "split": "check",
+          "question": "与动物间接接触为什么有感染风险？",
+          "gold_evidence_ids": [
+            "kb_flu_animals_01"
+          ],
+          "rationale": "保留原始风险因素陈述。",
+          "retrieved_ids": [
+            "kb_flu_animals_01",
+            "kb_covid_risk_01",
+            "kb_heat_children_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_flu_animals_01",
+              "score": 1.0000000145073957
+            },
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 0.11330108254381857
+            },
+            {
+              "chunk_id": "kb_heat_children_01",
+              "score": 0.0972356311229555
+            }
+          ],
+          "latency_ms": 0.308,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q11",
+          "split": "check",
+          "question": "未接种疫苗是否属于新冠重症风险人群？",
+          "gold_evidence_ids": [
+            "kb_covid_risk_01"
+          ],
+          "rationale": "不外推疫苗的有效率。",
+          "retrieved_ids": [
+            "kb_covid_risk_01",
+            "kb_flu_animals_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 1.000000031262514
+            },
+            {
+              "chunk_id": "kb_flu_animals_01",
+              "score": 0.08388000611606126
+            }
+          ],
+          "latency_ms": 0.2659,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q12",
+          "split": "check",
+          "question": "屋里太闷怎样透透气？",
+          "gold_evidence_ids": [
+            "kb_covid_ventilation_01"
+          ],
+          "rationale": "口语同义表达，保留可能的词法漏检。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0816,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "sample_id": "public_q13",
+          "split": "check",
+          "question": "天黑后什么温度条件下打开窗户降温？",
+          "gold_evidence_ids": [
+            "kb_heat_home_01"
+          ],
+          "rationale": "包含夜间开窗的室内外温度条件。",
+          "retrieved_ids": [
+            "kb_heat_home_01",
+            "kb_heat_children_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_heat_home_01",
+              "score": 1.0000000136911116
+            },
+            {
+              "chunk_id": "kb_heat_children_01",
+              "score": 0.07980406458044584
+            }
+          ],
+          "latency_ms": 0.1415,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q14",
+          "split": "check",
+          "question": "孩子短时间留在停放的车辆中安全吗？",
+          "gold_evidence_ids": [
+            "kb_heat_children_01"
+          ],
+          "rationale": "包含一会儿也不留在车辆内的限制。",
+          "retrieved_ids": [
+            "kb_heat_children_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_heat_children_01",
+              "score": 0.9999999872227249
+            }
+          ],
+          "latency_ms": 0.1257,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "sample_id": "public_q15",
+          "split": "check",
+          "question": "疫苗抗体滴度的具体阈值",
+          "gold_evidence_ids": [],
+          "rationale": "有疫苗字面但没有阈值答案，用来保留误命中风险。",
+          "retrieved_ids": [
+            "kb_covid_risk_01"
+          ],
+          "ranking": [
+            {
+              "chunk_id": "kb_covid_risk_01",
+              "score": 0.9999999701796874
+            }
+          ],
+          "latency_ms": 0.089,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "sample_id": "public_q16",
+          "split": "check",
+          "question": "牙齿正畸的价格",
+          "gold_evidence_ids": [],
+          "rationale": "范围外，无相应正文。",
+          "retrieved_ids": [],
+          "ranking": [],
+          "latency_ms": 0.0592,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        }
+      ],
+      "build_ms": 8.8363,
+      "corpus_hash": "7bee59f9043bb7732261161acaa5eeb5765a508deb25981e7130e51da7520396",
+      "config_hash": "aa23825cb404050ccfa71e4fb2c876ce7194517d1b0fd5f2a05f2972ef5db57a"
+    }
+  },
+  "versions": {
+    "python": "3.11.15",
+    "rank-bm25": "0.2.2",
+    "numpy": "2.4.6"
+  },
+  "external_model_calls": 0,
+  "limitations": [
+    "8 篇 WHO 中文科普页面的短引，16 条 AI 辅助工程查询，非医学金标或盲测。",
+    "只改变 BM25 切分规则；check 结果不用于调参。",
+    "字面相关不等于能回答；无证据参考上的误命中单独保留。",
+    "单进程微型检索耗时不含生成/网络，不作吞吐、P95 或临床效果宣传。"
+  ]
+}

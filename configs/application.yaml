@@ -1,0 +1,43 @@
+# 应用离线检索配置，不复用研究模型或触发任何模型下载。
+application:
+  mode: retrieval_mock
+  topology: single
+runtime:
+  device: cpu
+  batch_size: 8
+embedding:
+  model: disabled
+  revision: not-used
+rerank:
+  model: disabled
+  revision: not-used
+dataset:
+  version: public-health-excerpts-v1
+  knowledge_base_path: examples/public_health/chunks.jsonl
+  rag_eval_set_path: examples/public_health/queries.jsonl
+  agent_eval_set_path: examples/public_health/queries.jsonl
+retrieval:
+  bm25_tokenizer: cjk_bigram
+  top_k: 3
+  candidate_k: 8
+  weights:
+    w1_bm25: 1.0
+    w2_embedding: 0.0
+    w3_evidence_level: 0.0
+    w4_term_overlap: 0.0
+  evidence_levels:
+    level_5_other: 0.3
+experiments:
+  rag:
+    rag_full:
+      config:
+        use_bm25: true
+        use_embedding: false
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: false
+leakage_check:
+  chunk_fields_to_check: [source, source_id, metadata.raw_id]
+  check_question_text: true
+  check_answer_key: true

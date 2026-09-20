@@ -1,0 +1,16 @@
+{"sample_id": "public_q01", "split": "dev", "question": "咳嗽时如何用纸巾遮住口鼻并洗手？", "gold_evidence_ids": ["kb_flu_hygiene_01", "kb_covid_etiquette_01"], "rationale": "两段包含咳嗽时的纸巾遮挡；流感段另含洗手。"}
+{"sample_id": "public_q02", "split": "dev", "question": "接触受感染动物有哪些风险因素？", "gold_evidence_ids": ["kb_flu_animals_01"], "rationale": "仅动物接触风险，不涉及疫苗或治疗。"}
+{"sample_id": "public_q03", "split": "dev", "question": "老年人和有基础疾病的人重症风险如何？", "gold_evidence_ids": ["kb_covid_risk_01"], "rationale": "新冠资料明确提到这些人群。"}
+{"sample_id": "public_q04", "split": "dev", "question": "戴口罩可以保护周围的人吗？", "gold_evidence_ids": ["kb_covid_masks_01"], "rationale": "仅引用口罩保护对象短句。"}
+{"sample_id": "public_q05", "split": "dev", "question": "通风如何改善室内空气质量？", "gold_evidence_ids": ["kb_covid_ventilation_01"], "rationale": "通风的过程定义。"}
+{"sample_id": "public_q06", "split": "dev", "question": "热浪中孩子能留在停放车辆里吗？", "gold_evidence_ids": ["kb_heat_children_01"], "rationale": "车辆内高温风险提示。"}
+{"sample_id": "public_q07", "split": "dev", "question": "量子纠缠计算芯片", "gold_evidence_ids": [], "rationale": "范围外，无相应正文。"}
+{"sample_id": "public_q08", "split": "dev", "question": "脑瘤分期方案和靶向药剂量", "gold_evidence_ids": [], "rationale": "片段没有肿瘤或剂量信息。"}
+{"sample_id": "public_q09", "split": "check", "question": "打喷嚏时用肘部还是纸巾遮住口鼻？", "gold_evidence_ids": ["kb_covid_etiquette_01", "kb_flu_hygiene_01"], "rationale": "肘部在新冠礼仪短句；流感段可部分支持纸巾遮挡。"}
+{"sample_id": "public_q10", "split": "check", "question": "与动物间接接触为什么有感染风险？", "gold_evidence_ids": ["kb_flu_animals_01"], "rationale": "保留原始风险因素陈述。"}
+{"sample_id": "public_q11", "split": "check", "question": "未接种疫苗是否属于新冠重症风险人群？", "gold_evidence_ids": ["kb_covid_risk_01"], "rationale": "不外推疫苗的有效率。"}
+{"sample_id": "public_q12", "split": "check", "question": "屋里太闷怎样透透气？", "gold_evidence_ids": ["kb_covid_ventilation_01"], "rationale": "口语同义表达，保留可能的词法漏检。"}
+{"sample_id": "public_q13", "split": "check", "question": "天黑后什么温度条件下打开窗户降温？", "gold_evidence_ids": ["kb_heat_home_01"], "rationale": "包含夜间开窗的室内外温度条件。"}
+{"sample_id": "public_q14", "split": "check", "question": "孩子短时间留在停放的车辆中安全吗？", "gold_evidence_ids": ["kb_heat_children_01"], "rationale": "包含一会儿也不留在车辆内的限制。"}
+{"sample_id": "public_q15", "split": "check", "question": "疫苗抗体滴度的具体阈值", "gold_evidence_ids": [], "rationale": "有疫苗字面但没有阈值答案，用来保留误命中风险。"}
+{"sample_id": "public_q16", "split": "check", "question": "牙齿正畸的价格", "gold_evidence_ids": [], "rationale": "范围外，无相应正文。"}

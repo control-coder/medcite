@@ -140,6 +140,7 @@ class AnalysisResponse(BaseModel):
     schema_version: Literal["consultation-v1"] = "consultation-v1"
     case_id: str
     status: str
+    execution_mode: Literal["unknown", "fake_offline", "retrieval_mock", "model_pipeline"] = "unknown"
     outcome: Literal["processing", "ready", "insufficient_evidence", "failed", "cancelled"]
     message: str
     summary: str | None = None

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -44,6 +44,10 @@ class Settings(BaseSettings):
 
     # Hugging Face 模型缓存
     hf_home: str = ".cache/huggingface"
+
+    # 应用队列默认 fixture；真实检索也不允许隐式调用模型。
+    medidiag_app_provider: Literal["fake_offline", "retrieval_mock"] = "fake_offline"
+    medidiag_app_config: str = "configs/application.yaml"
 
     # 工作流运行时
     medidiag_lease_seconds: int = 60

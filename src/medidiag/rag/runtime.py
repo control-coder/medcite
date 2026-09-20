@@ -164,6 +164,7 @@ class RuntimeMedicalRAG:
             device=str(runtime.get("device", "auto")),
             embedding_batch_size=batch_size,
             rerank_batch_size=batch_size,
+            bm25_tokenizer=str(config["retrieval"].get("bm25_tokenizer", "whitespace")),
         )
         backend = cls(
             chunks=chunks,
@@ -181,7 +182,10 @@ class RuntimeMedicalRAG:
         )
         if build_index:
             try:
-                retriever.build_index(use_bm25=True, use_embedding=True)
+                retriever.build_index(
+                    use_bm25=backend.experiment_config.get("use_bm25", True),
+                    use_embedding=backend.experiment_config.get("use_embedding", True),
+                )
             except Exception as exc:
                 raise MediDiagError(
                     "RAG_INDEX_BUILD_FAILED", detail=f"医学检索索引构建失败: {exc}"
@@ -190,6 +194,13 @@ class RuntimeMedicalRAG:
 
     def normalize(self, question: str) -> dict[str, Any]:
         """输出版本化术语归一化结果。"""
+        if not self.experiment_config.get("use_term_normalization", True):
+            return {
+                "normalized_query": " ".join(question.strip().split()),
+                "normalizer_version": "whitespace-only-v1",
+                "coverage": 0.0,
+                "matched_terms": [],
+            }
         normalized = self.normalizer.normalize(question)
         return {
             "normalized_query": normalized.normalized,
@@ -300,6 +311,7 @@ class RuntimeMedicalRAG:
             "evidence_level_score": item.evidence_level_score,
             "term_overlap": item.term_overlap,
             "text": item.text,
+            "source_url": item.metadata.get("source_url"),
             "metadata": item.metadata,
         }
 

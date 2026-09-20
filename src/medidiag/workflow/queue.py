@@ -8,7 +8,7 @@ from celery import Celery
 
 from medidiag.config import get_settings
 from medidiag.db.session import create_db_engine, get_session_factory
-from medidiag.workflow.provider import DeterministicWorkflowProvider
+from medidiag.workflow.application import build_application_provider
 from medidiag.workflow.worker import SingleMachineWorker
 
 celery_app = Celery("medidiag", broker=get_settings().medidiag_broker_url)
@@ -27,7 +27,9 @@ def execute_task(task_id: str) -> None:
     engine = create_db_engine(get_settings().database_url)
     try:
         SingleMachineWorker(
-            get_session_factory(engine), DeterministicWorkflowProvider(),
+            get_session_factory(engine), build_application_provider(
+                get_settings().medidiag_app_provider, app_config=get_settings().medidiag_app_config,
+            ),
             worker_id=f"celery-{uuid.uuid4().hex}",
         ).run_task(task_id)
     finally:

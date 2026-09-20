@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client';
 import './style.css';
 
 type Case = { case_id: string; status: string; active_task: { status: string } | null };
-type Analysis = { case_id: string; status: string; outcome: string; message: string; summary: string | null;
+type Analysis = { case_id: string; status: string; execution_mode: string; outcome: string; message: string; summary: string | null;
   observation: { recorded_stage_latency_ms: number; provider_attempts: number; recorded_input_tokens: number | null; recorded_output_tokens: number | null; note: string };
   claims: { claim_id: string; text: string; evidence_ids: string[] }[];
   evidence: { chunk_id: string; text: string; source: string; source_id: string; source_url: string | null; evidence_level: string }[];
   limitations: string[]; risk_warnings: string[]; next_steps: string[]; disclaimer: string; failure_code: string | null };
+const modes: Record<string, string> = {fake_offline: "固定 fixture / 离线演示", retrieval_mock: "真实检索 / 模拟生成（无模型与 NLI）", model_pipeline: "模型适配器链路（不代表真实 API 验收通过）", unknown: "运行模式尚未记录，不能据此确认在线验收"};
 const states: Record<string, string> = { CREATED: '已提交', NORMALIZED: '检索中', EVIDENCE_RETRIEVED: '证据就绪', PLAN_GENERATED: '分析中', SPECIALIST_REVIEWING: '分析中', ARBITRATION_REVIEWING: '审核中', APPROVED: '整理结果', REPORT_GENERATED: '整理结果', CLOSED_SUCCESS: '已完成', ESCALATED: '处理受阻', REVISION_REQUIRED: '修订中', CLOSED_FAILED: '失败', CLOSED_CANCELLED: '已取消', CLOSED_ESCALATED: '已终止' };
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch('/api/v1' + path, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
@@ -20,7 +21,7 @@ function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
   useEffect(() => { const change = () => setRoute(location.hash.slice(1) || '/'); window.addEventListener('hashchange', change); return () => window.removeEventListener('hashchange', change); }, []);
   const parts = route.split('/');
-  return <><header><a className="brand" href="#/">M<span>+</span> <strong>MediDiag</strong></a><nav aria-label="主导航"><a href="#/" aria-current={route === '/' ? 'page' : undefined}>开始咨询</a><a href="#/history" aria-current={route === '/history' ? 'page' : undefined}>咨询记录</a><a href="/demo">工程工作台 ↗</a></nav><span className="mode">离线 / 工程原型</span></header>
+  return <><header><a className="brand" href="#/">M<span>+</span> <strong>MediDiag</strong></a><nav aria-label="主导航"><a href="#/" aria-current={route === '/' ? 'page' : undefined}>开始咨询</a><a href="#/history" aria-current={route === '/history' ? 'page' : undefined}>咨询记录</a><a href="/demo">工程工作台 ↗</a></nav><span className="mode">工程原型 / 非诊疗</span></header>
     <main>{parts[1] === 'history' ? <History/> : parts[1] === 'cases' && parts[2] ? <Task key={parts[2] + parts[3]} id={parts[2]} result={parts[3] === 'result'}/> : <Consult/>}</main>
     <footer>公开证据 · 可追踪引用 · 明确局限 <span>仅用于工程演示，不提供真实患者诊疗服务。</span></footer></>;
 }
@@ -44,7 +45,7 @@ function Consult() {
     <div className="form-row"><label>持续时间<input required maxLength={200} value={duration} onChange={e => setDuration(e.target.value)} placeholder="例如：模拟 2 天"/></label><label>必要背景（选填）<input maxLength={2000} value={background} onChange={e => setBackground(e.target.value)} placeholder="与问题有关的模拟背景"/></label></div>
     <label className="check"><input type="checkbox" required checked={confirmed} onChange={e => setConfirmed(e.target.checked)}/>我确认仅提交公开或模拟信息，不包含真实敏感数据。</label>
     {error && <p role="alert" className="error">{error}</p>}<button disabled={busy || !confirmed} type="submit">{busy ? '正在提交…' : '提交并检索证据 →'}</button></form></section>
-    <aside><section className="card sample"><p className="eyebrow">快速体验</p><h2>从一个模拟问题开始</h2><p>仅用于展示提交、检索和引用关联流程。</p><button className="secondary" onClick={() => {setSymptoms('模拟成年人出现轻微咳嗽，希望了解公开证据中的一般信息与局限。'); setDuration('模拟 2 天'); setBackground('无真实患者资料');}}>填入模拟示例 ↗</button></section><section className="notice"><h3>分析不是诊断</h3><p>结果可能不完整或不准确。证据不足时会明确弃答；引用关联不代表临床审核。真实健康问题请寻求专业医疗帮助。</p><a href="/assistant">原版助手仍可使用 →</a></section></aside></div></>;
+    <aside><section className="card sample"><p className="eyebrow">快速体验</p><h2>从一个模拟问题开始</h2><p>仅用于展示提交、检索和引用关联流程。</p><button className="secondary" onClick={() => {setSymptoms('模拟成年人出现轻微咳嗽，希望了解公开证据中的一般信息与局限。'); setDuration('模拟 2 天'); setBackground('无真实患者资料');}}>填入模拟示例 ↗</button><p>公开正文模式需要 worker 显式选择 retrieval_mock。</p><button className="secondary" onClick={() => {setSymptoms("通风如何改善室内空气质量？"); setDuration("科普提问，不适用"); setBackground("");}}>填入公开检索示例 ↗</button></section><section className="notice"><h3>分析不是诊断</h3><p>结果可能不完整或不准确。未检索到片段时会弃答；检索命中仍可能答非所问，引用关联不代表临床审核。真实健康问题请寻求专业医疗帮助。</p><a href="/assistant">原版助手仍可使用 →</a></section></aside></div></>;
 }
 function Task({id, result}: {id: string; result: boolean}) {
   const [analysis, setAnalysis] = useState<Analysis | null>(null); const [error, setError] = useState('');
@@ -58,7 +59,7 @@ function Task({id, result}: {id: string; result: boolean}) {
     return () => { stopped = true; clearTimeout(timer); };
   }, [id]);
   return <><a className="back" href="#/history">← 咨询记录</a><p className="eyebrow">{result ? '03 / 结果与证据' : '02 / 任务进度'}</p><h1>{result ? '理解结论，也理解局限。' : '从问题到证据，逐步可见。'}</h1><p className="muted">任务 {id}</p>{error && <div role="alert" className="error">{error}<button onClick={() => location.reload()}>重新连接</button></div>}
-    {!analysis ? <p role="status">正在读取任务…</p> : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className="badge">{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p>
+    {!analysis ? <p role="status">正在读取任务…</p> : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className="badge">{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p><p className="notice">{modes[analysis.execution_mode] || modes.unknown}</p>
     {!result && <><ol className="steps">{['提交', '检索', '分析', '审核', '结果'].map((label, i) => <li key={label}><b>0{i + 1}</b>{label}</li>)}</ol><p className="muted">可以刷新或关闭此页，再从咨询记录返回。任务由后端持续执行。</p></>}
     {analysis.outcome === 'processing' && <button className="secondary" onClick={async () => {try {await api('/cases/' + id + '/cancel', {method: 'POST'}); location.reload();} catch(e) {setError((e as Error).message);}}}>取消本次任务</button>}
     {analysis.outcome !== 'processing' && !result && <a className="button" href={'#/cases/' + id + '/result'}>查看结果与证据 →</a>}
