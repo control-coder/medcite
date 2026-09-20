@@ -5,8 +5,13 @@ from urllib.parse import urlparse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from medidiag.api.schemas import AnalysisResponse, ClaimResponse, EvidenceResponse
-from medidiag.db.models import Case, CaseReport, StageArtifact, WorkflowTask
+from medidiag.api.schemas import (
+    AnalysisResponse,
+    ClaimResponse,
+    EvidenceResponse,
+    ObservationResponse,
+)
+from medidiag.db.models import Case, CaseEventLog, CaseReport, StageArtifact, WorkflowTask
 
 
 def build_analysis(session: Session, case: Case) -> AnalysisResponse:
@@ -29,6 +34,7 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
         ))
     result = AnalysisResponse(case_id=case.case_id, status=case.status,
                               outcome="processing", message="正在处理，请稍后查看。", evidence=evidence)
+    result.observation = build_observation(session, case.case_id, task.task_id if task else None)
     if case.status == "CLOSED_CANCELLED":
         result.outcome, result.message = "cancelled", "任务已取消，没有可用报告。"
         result.retry_action = "resubmit"
@@ -60,5 +66,36 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
             result.limitations.append("检索为空或引用无法关联到本任务的证据片段。")
         else:
             result.outcome, result.message = "ready", "辅助分析已完成；引用关联不等于医学正确性核验。"
-            result.summary = data.get("summary")
+            # 自由摘要可能带有已被过滤的无引用结论，只从可关联 claim 生成展示摘要。
+            result.summary = " ".join(item.text for item in result.claims)
+            if len(result.claims) < len(data.get("claims", [])):
+                result.limitations.append("部分结论的引用无法关联，已隐藏；原始报告保留供排障。")
+    return result
+
+
+def build_observation(session: Session, case_id: str, task_id: str | None) -> ObservationResponse:
+    """只读取当前任务的非敏感计数，不把失败或未采集用量算成零。"""
+    result = ObservationResponse()
+    if task_id is None:
+        return result
+    artifacts = session.scalars(select(StageArtifact).where(StageArtifact.task_id == task_id))
+    result.recorded_stage_latency_ms = sum(item.latency_ms for item in artifacts)
+    events = session.scalars(select(CaseEventLog).where(CaseEventLog.case_id == case_id))
+    for event in events:
+        detail = event.detail or {}
+        if detail.get("task_id") != task_id:
+            continue
+        if event.event_type == "provider_call":
+            result.provider_attempts += 1
+        if event.event_type != "stage_completed":
+            continue
+        usage = detail.get("usage")
+        if not isinstance(usage, dict):
+            continue
+        for key in ("input_tokens", "output_tokens"):
+            value = usage.get(key)
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                attr = "recorded_" + key
+                setattr(result, attr, (getattr(result, attr) or 0) + value)
+                result.usage_status = "partial"
     return result

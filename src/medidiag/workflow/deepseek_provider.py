@@ -145,6 +145,7 @@ class DeepSeekWorkflowProvider:
             request_id=completion.request_id,
             metadata={
                 "generation_model": completion.model,
+                "usage": dict(completion.usage),
                 "prompt_cache_hit_tokens": completion.usage.get("prompt_cache_hit_tokens", 0),
                 "prompt_cache_miss_tokens": completion.usage.get("prompt_cache_miss_tokens", 0),
                 "prompt_cache_hit_rate_ppm": completion.usage.get("prompt_cache_hit_rate", 0),

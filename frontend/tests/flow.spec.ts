@@ -13,6 +13,8 @@ test('离线咨询闭环、刷新恢复与移动布局', async ({ page }) => {
   await page.getByRole('link', {name: '查看结果与证据'}).click({timeout: 30000});
   await expect(page.getByRole('heading', {name: '辅助分析', exact: true})).toBeVisible();
   await expect(page.locator('.evidence')).toHaveCount(1);
+  await expect(page.getByRole('heading', {name: '运行观测'})).toBeVisible();
+  await expect(page.getByText(/费用：未计价/)).toBeVisible();
   await page.screenshot({path: '../artifacts/visual/react-result-desktop.png', fullPage: true});
   await page.getByRole('link', {name: '咨询记录', exact: true}).click();
   await expect(page.locator('.history-item')).toHaveCount(1);

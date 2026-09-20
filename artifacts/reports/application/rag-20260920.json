@@ -1,0 +1,858 @@
+{
+  "schema_version": "application-rag-regression-v1",
+  "generated_at": "2026-09-20T08:14:47.001181+00:00",
+  "dataset": "examples/rag_regression",
+  "synthetic": true,
+  "query_count": 20,
+  "positive_query_count": 19,
+  "weights": {
+    "w1_bm25": 1.0,
+    "w2_embedding": 0.0,
+    "w3_evidence_level": 0.0,
+    "w4_term_overlap": 0.0
+  },
+  "top_k": 3,
+  "tokenizer": "lowercase_whitespace",
+  "versions": {
+    "python": "3.11.15",
+    "rank-bm25": "0.2.2",
+    "numpy": "2.4.6"
+  },
+  "external_model_calls": 0,
+  "external_model_cost_usd": 0,
+  "limitations": [
+    "模拟主题词匹配，无医学事实或临床金标。",
+    "查询刻意覆盖词典别名，不代表真实分布。",
+    "中文发热未被英文词典归一化，保留失败样例。",
+    "单次进程内计时；不含初始化、网络或生成，不能作性能宣传。",
+    "空相关集合单独计数，不纳入 Hit/Recall 均值；不运行向量与重排。"
+  ],
+  "runs": {
+    "bm25": {
+      "config": {
+        "use_bm25": true,
+        "use_embedding": false,
+        "use_rerank": false,
+        "use_evidence_weighting": false,
+        "use_term_normalization": false
+      },
+      "index_build_ms": 2.2531,
+      "metrics": {
+        "hit@1": 0.21052631578947367,
+        "recall@1": 0.21052631578947367,
+        "hit@3": 0.21052631578947367,
+        "recall@3": 0.21052631578947367
+      },
+      "median_query_ms": 0.047299999999999995,
+      "empty_results": 16,
+      "miss_ids_at_3": [
+        "q_01",
+        "q_02",
+        "q_03",
+        "q_04",
+        "q_05",
+        "q_06",
+        "q_07",
+        "q_08",
+        "q_09",
+        "q_10",
+        "q_11",
+        "q_12",
+        "q_17",
+        "q_18",
+        "q_20"
+      ],
+      "queries": [
+        {
+          "query_id": "q_01",
+          "question": "请查找 pyrexia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.2659,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_02",
+          "question": "请查找 cephalgia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_02"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.1413,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_03",
+          "question": "请查找 tussis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_03"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0667,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_04",
+          "question": "请查找 tiredness 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_04"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0499,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_05",
+          "question": "请查找 queasy 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_05"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0691,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_06",
+          "question": "请查找 emesis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_06"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0469,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_07",
+          "question": "请查找 swelling 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_07"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0382,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_08",
+          "question": "请查找 HTN 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_08"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0532,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_09",
+          "question": "请查找 MI 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_09"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0398,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_10",
+          "question": "请查找 CHF 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_10"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.037,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_11",
+          "question": "请查找 ECG 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_11"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0392,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_12",
+          "question": "请查找 CT 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_12"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0362,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_13",
+          "question": "请查找 fever 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_01"
+          ],
+          "latency_ms": 0.0529,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_14",
+          "question": "请查找 headache 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_02"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_02"
+          ],
+          "latency_ms": 0.0411,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_15",
+          "question": "请查找 pneumonia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_14"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_14"
+          ],
+          "latency_ms": 0.0396,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_16",
+          "question": "请查找 atrial fibrillation 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_16"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_16"
+          ],
+          "latency_ms": 0.0477,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_17",
+          "question": "请查找 pyrexia 和 tussis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01",
+            "sim_03"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0537,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_18",
+          "question": "请查找 MRI 和 CT 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_12",
+            "sim_13"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [],
+          "latency_ms": 0.0493,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        },
+        {
+          "query_id": "q_19",
+          "question": "请查找 火星地质样本 对应的模拟资料条目",
+          "relevant_chunk_ids": [],
+          "kind": "out_of_scope",
+          "retrieved_ids": [],
+          "latency_ms": 0.035,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "query_id": "q_20",
+          "question": "请查找 发热 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "language_limit",
+          "retrieved_ids": [],
+          "latency_ms": 0.0342,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        }
+      ]
+    },
+    "bm25_term_normalized": {
+      "config": {
+        "use_bm25": true,
+        "use_embedding": false,
+        "use_rerank": false,
+        "use_evidence_weighting": false,
+        "use_term_normalization": true
+      },
+      "index_build_ms": 0.0607,
+      "metrics": {
+        "hit@1": 0.9473684210526315,
+        "recall@1": 0.8947368421052632,
+        "hit@3": 0.9473684210526315,
+        "recall@3": 0.9473684210526315
+      },
+      "median_query_ms": 90.80590000000001,
+      "empty_results": 2,
+      "miss_ids_at_3": [
+        "q_20"
+      ],
+      "queries": [
+        {
+          "query_id": "q_01",
+          "question": "请查找 pyrexia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_01"
+          ],
+          "latency_ms": 77.4465,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_02",
+          "question": "请查找 cephalgia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_02"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_02"
+          ],
+          "latency_ms": 72.8742,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_03",
+          "question": "请查找 tussis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_03"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_03"
+          ],
+          "latency_ms": 63.3324,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_04",
+          "question": "请查找 tiredness 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_04"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_04"
+          ],
+          "latency_ms": 72.9978,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_05",
+          "question": "请查找 queasy 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_05"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_05"
+          ],
+          "latency_ms": 81.7926,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_06",
+          "question": "请查找 emesis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_06"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_06"
+          ],
+          "latency_ms": 82.3803,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_07",
+          "question": "请查找 swelling 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_07"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_07"
+          ],
+          "latency_ms": 76.0415,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_08",
+          "question": "请查找 HTN 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_08"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_08"
+          ],
+          "latency_ms": 69.6393,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_09",
+          "question": "请查找 MI 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_09"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_09"
+          ],
+          "latency_ms": 70.0472,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_10",
+          "question": "请查找 CHF 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_10"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_10"
+          ],
+          "latency_ms": 91.3964,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_11",
+          "question": "请查找 ECG 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_11"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_11"
+          ],
+          "latency_ms": 101.1399,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_12",
+          "question": "请查找 CT 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_12"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_12"
+          ],
+          "latency_ms": 95.4044,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_13",
+          "question": "请查找 fever 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_01"
+          ],
+          "latency_ms": 104.7138,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_14",
+          "question": "请查找 headache 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_02"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_02"
+          ],
+          "latency_ms": 91.2625,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_15",
+          "question": "请查找 pneumonia 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_14"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_14"
+          ],
+          "latency_ms": 100.2457,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_16",
+          "question": "请查找 atrial fibrillation 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_16"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_16"
+          ],
+          "latency_ms": 90.4124,
+          "at_1": {
+            "hit": 1,
+            "recall": 1.0
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_17",
+          "question": "请查找 pyrexia 和 tussis 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01",
+            "sim_03"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_01",
+            "sim_03"
+          ],
+          "latency_ms": 93.1114,
+          "at_1": {
+            "hit": 1,
+            "recall": 0.5
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_18",
+          "question": "请查找 MRI 和 CT 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_12",
+            "sim_13"
+          ],
+          "kind": "retrieval",
+          "retrieved_ids": [
+            "sim_13",
+            "sim_12"
+          ],
+          "latency_ms": 91.1994,
+          "at_1": {
+            "hit": 1,
+            "recall": 0.5
+          },
+          "at_3": {
+            "hit": 1,
+            "recall": 1.0
+          }
+        },
+        {
+          "query_id": "q_19",
+          "question": "请查找 火星地质样本 对应的模拟资料条目",
+          "relevant_chunk_ids": [],
+          "kind": "out_of_scope",
+          "retrieved_ids": [],
+          "latency_ms": 103.783,
+          "at_1": {
+            "hit": null,
+            "recall": null
+          },
+          "at_3": {
+            "hit": null,
+            "recall": null
+          }
+        },
+        {
+          "query_id": "q_20",
+          "question": "请查找 发热 对应的模拟资料条目",
+          "relevant_chunk_ids": [
+            "sim_01"
+          ],
+          "kind": "language_limit",
+          "retrieved_ids": [],
+          "latency_ms": 99.7562,
+          "at_1": {
+            "hit": 0,
+            "recall": 0.0
+          },
+          "at_3": {
+            "hit": 0,
+            "recall": 0.0
+          }
+        }
+      ]
+    }
+  }
+}

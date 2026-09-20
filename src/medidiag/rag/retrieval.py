@@ -165,7 +165,10 @@ class Retriever:
         if config["use_bm25"]:
             bm25_scores = self._get_bm25_scores(normalized_query)
 
-        embedding_scores = self._get_embedding_scores(normalized_query)
+        # 产品小回归可显式关闭向量检索，默认保留历史研究组行为。
+        use_embedding = config.get("use_embedding", True)
+        embedding_scores = (self._get_embedding_scores(normalized_query) if use_embedding
+                            else np.zeros(len(self.chunks), dtype=np.float32))
 
         evidence_scores = None
         if config["use_evidence_weighting"]:
@@ -218,7 +221,14 @@ class Retriever:
             scores = scores + w["w4_term_overlap"] * term_overlaps
 
         # 排序取 top_k
-        top_indices = np.argsort(scores)[::-1][:top_k]
+        if use_embedding:
+            top_indices = np.argsort(scores)[::-1][:top_k]
+        else:
+            # 词法路径无命中时不能靠全零分数硬凑证据，同分按 ID 稳定排序。
+            top_indices = sorted(
+                (i for i in range(len(scores)) if scores[i] > 0),
+                key=lambda i: (-float(scores[i]), self.chunks[i].chunk_id),
+            )[:top_k]
 
         results = []
         for idx in top_indices:

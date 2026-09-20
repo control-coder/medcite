@@ -1,0 +1,162 @@
+[
+  {
+    "query_id": "q_01",
+    "question": "请查找 pyrexia 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_01"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_02",
+    "question": "请查找 cephalgia 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_02"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_03",
+    "question": "请查找 tussis 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_03"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_04",
+    "question": "请查找 tiredness 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_04"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_05",
+    "question": "请查找 queasy 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_05"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_06",
+    "question": "请查找 emesis 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_06"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_07",
+    "question": "请查找 swelling 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_07"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_08",
+    "question": "请查找 HTN 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_08"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_09",
+    "question": "请查找 MI 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_09"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_10",
+    "question": "请查找 CHF 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_10"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_11",
+    "question": "请查找 ECG 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_11"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_12",
+    "question": "请查找 CT 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_12"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_13",
+    "question": "请查找 fever 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_01"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_14",
+    "question": "请查找 headache 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_02"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_15",
+    "question": "请查找 pneumonia 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_14"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_16",
+    "question": "请查找 atrial fibrillation 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_16"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_17",
+    "question": "请查找 pyrexia 和 tussis 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_01",
+      "sim_03"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_18",
+    "question": "请查找 MRI 和 CT 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_12",
+      "sim_13"
+    ],
+    "kind": "retrieval"
+  },
+  {
+    "query_id": "q_19",
+    "question": "请查找 火星地质样本 对应的模拟资料条目",
+    "relevant_chunk_ids": [],
+    "kind": "out_of_scope"
+  },
+  {
+    "query_id": "q_20",
+    "question": "请查找 发热 对应的模拟资料条目",
+    "relevant_chunk_ids": [
+      "sim_01"
+    ],
+    "kind": "language_limit"
+  }
+]

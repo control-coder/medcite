@@ -124,6 +124,18 @@ class ClaimResponse(BaseModel):
     evidence_ids: list[str]
 
 
+class ObservationResponse(BaseModel):
+    """只展示实际落库的观测，缺失账单不推定为零费用。"""
+
+    recorded_stage_latency_ms: int = 0
+    provider_attempts: int = 0
+    recorded_input_tokens: int | None = None
+    recorded_output_tokens: int | None = None
+    usage_status: Literal["not_recorded", "partial"] = "not_recorded"
+    cost_usd: float | None = None
+    note: str = "耗时为最新任务已保存阶段之和，不含排队和未提交阶段；Token 为部分已记录用量，费用未计价。"
+
+
 class AnalysisResponse(BaseModel):
     schema_version: Literal["consultation-v1"] = "consultation-v1"
     case_id: str
@@ -131,6 +143,7 @@ class AnalysisResponse(BaseModel):
     outcome: Literal["processing", "ready", "insufficient_evidence", "failed", "cancelled"]
     message: str
     summary: str | None = None
+    observation: ObservationResponse = Field(default_factory=ObservationResponse)
     claims: list[ClaimResponse] = Field(default_factory=list)
     evidence: list[EvidenceResponse] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)

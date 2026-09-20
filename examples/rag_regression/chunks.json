@@ -1,0 +1,162 @@
+[
+  {
+    "chunk_id": "sim_01",
+    "source": "manual",
+    "source_id": "simulation_topic_01",
+    "text": "模拟检索主题 fever ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_02",
+    "source": "manual",
+    "source_id": "simulation_topic_02",
+    "text": "模拟检索主题 headache ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_03",
+    "source": "manual",
+    "source_id": "simulation_topic_03",
+    "text": "模拟检索主题 cough ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_04",
+    "source": "manual",
+    "source_id": "simulation_topic_04",
+    "text": "模拟检索主题 fatigue ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_05",
+    "source": "manual",
+    "source_id": "simulation_topic_05",
+    "text": "模拟检索主题 nausea ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_06",
+    "source": "manual",
+    "source_id": "simulation_topic_06",
+    "text": "模拟检索主题 vomiting ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_07",
+    "source": "manual",
+    "source_id": "simulation_topic_07",
+    "text": "模拟检索主题 edema ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_08",
+    "source": "manual",
+    "source_id": "simulation_topic_08",
+    "text": "模拟检索主题 hypertension ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_09",
+    "source": "manual",
+    "source_id": "simulation_topic_09",
+    "text": "模拟检索主题 myocardial infarction ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_10",
+    "source": "manual",
+    "source_id": "simulation_topic_10",
+    "text": "模拟检索主题 congestive heart failure ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_11",
+    "source": "manual",
+    "source_id": "simulation_topic_11",
+    "text": "模拟检索主题 electrocardiogram ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_12",
+    "source": "manual",
+    "source_id": "simulation_topic_12",
+    "text": "模拟检索主题 computed tomography ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_13",
+    "source": "manual",
+    "source_id": "simulation_topic_13",
+    "text": "模拟检索主题 magnetic resonance imaging ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_14",
+    "source": "manual",
+    "source_id": "simulation_topic_14",
+    "text": "模拟检索主题 pneumonia ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_15",
+    "source": "manual",
+    "source_id": "simulation_topic_15",
+    "text": "模拟检索主题 diabetes mellitus ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  },
+  {
+    "chunk_id": "sim_16",
+    "source": "manual",
+    "source_id": "simulation_topic_16",
+    "text": "模拟检索主题 atrial fibrillation ；仅为词法检索占位条目，不包含诊断、处方或治疗建议。",
+    "evidence_level": "level_5_other",
+    "metadata": {
+      "synthetic": true
+    }
+  }
+]
