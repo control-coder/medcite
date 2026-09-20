@@ -593,6 +593,13 @@ class SingleMachineWorker:
         stage: str,
         operation: Callable[[], dict[str, Any] | ProviderResponse],
     ) -> StageExecution:
+        # 无证据时不调用模型猜测，仍通过原状态机保存明确的弃答产物。
+        artifacts = self._artifacts(session, case.case_id, task.task_id)
+        retrieval = artifacts.get("retrieval")
+        if retrieval is not None and not retrieval.payload.get("chunks"):
+            from medidiag.workflow.abstention import abstention_payload
+
+            operation = lambda: abstention_payload(stage, case.case_id)
         # 心跳在整个 provider 调用（含有界重试）期间用独立会话续期，因此单个阶段
         # 长于 lease_seconds 不再导致任务被扫描器接管。DD-020。
         heartbeat = LeaseHeartbeat(

@@ -16,7 +16,10 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from medidiag.api.analysis import build_analysis
 from medidiag.api.schemas import (
+    AnalysisResponse,
+    ConsultationCreateRequest,
     CaseCreateRequest,
     CaseResponse,
     ErrorResponse,
@@ -150,6 +153,19 @@ def create_app(
             source_ref=payload.source_ref,
         )
         return _case_response(session, case)
+
+    @app.post("/api/v1/consultations", response_model=CaseResponse, status_code=201)
+    def create_consultation(
+        payload: ConsultationCreateRequest,
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+        user_scope: str = Header(default="local-demo", alias="X-User-Scope"),
+        session: Session = Depends(get_session),
+    ) -> CaseResponse:
+        return create_case(payload.as_case(), idempotency_key, user_scope, session)
+
+    @app.get("/api/v1/cases/{case_id}/analysis", response_model=AnalysisResponse)
+    def get_analysis(case_id: str, session: Session = Depends(get_session)) -> AnalysisResponse:
+        return build_analysis(session, _case_or_404(session, case_id))
 
     @app.post(
         "/api/v1/cases/{case_id}/workflow",
