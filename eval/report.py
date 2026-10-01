@@ -175,7 +175,7 @@ def generate_report(
             f"```text\n{manifest.get('command', 'formal runner command 未记录')}\n```",
             f"- 配置校验：`{reproduction.get('validate_command', '未记录')}`",
             f"- leakage 检查：`{reproduction.get('leakage_check_command', '未记录')}`",
-            "- 人工审计与正式报告命令见 `docs/archive/research/evaluation_protocol.md`；"
+            "- 人工审计与正式报告命令见 `docs/research/evaluation-protocol.md`；"
             "本报告不重复调用 generation provider。",
         ]
     )

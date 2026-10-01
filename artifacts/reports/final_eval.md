@@ -73,4 +73,4 @@ D:\resume_project\medidiag\eval\runner.py --config eval/config.formal.yaml --exp
 ```
 - 配置校验：`python -m eval.runner --config eval/config.yaml --validate`
 - leakage 检查：`python -m eval.leakage_check --config eval/config.yaml --eval-set eval/datasets/eval_set_pubmedqa.jsonl --kb eval/datasets/knowledge_chunks.jsonl`
-- 人工审计与正式报告命令见 `docs/archive/research/evaluation_protocol.md`；本报告不重复调用 generation provider。
+- 人工审计与正式报告命令见 `docs/research/evaluation-protocol.md`；本报告不重复调用 generation provider。

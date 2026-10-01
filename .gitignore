@@ -78,3 +78,12 @@ p1a-trace-test-output.txt
 p1a-trace-cli-output.txt
 p1b-*-output.txt
 p1b-server-error.txt
+
+# 本地协作规范与过程记录，只在本机维护，不随仓库发布
+AGENTS.md
+CLAUDE.md
+项目实施计划.md
+docs/status.md
+docs/structure.md
+docs/development/
+docs/archive/

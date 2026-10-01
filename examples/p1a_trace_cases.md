@@ -21,4 +21,4 @@ conda run --no-capture-output -n medidiag python -m medidiag.cli trace-examples 
 | `lease_recovery` | 旧 worker 租约过期 -> 新 worker reclaim -> 旧写入被拒绝 -> `CLOSED_SUCCESS` | `lease_reclaimed`、`TASK_LEASE_LOST`、attempt 变化和恢复后的阶段事件 |
 | `review_escalation` | reviewer -> `ESCALATED` -> human `APPROVED` -> 新任务恢复 -> `CLOSED_SUCCESS` | 升级状态、人工理由摘要、恢复任务和最终报告 |
 
-双专科收益或噪声案例尚未形成真实模型实验，不包含在本轮生成器中，也不得据此声称多 Agent 收益。
+双专科收益或噪声案例尚未形成真实模型实验，不包含在当前生成器中，也不得据此声称多 Agent 收益。
