@@ -4,8 +4,9 @@ from __future__ import annotations
 import json as jsonlib
 import sqlite3
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 import httpx
@@ -16,7 +17,8 @@ from medidiag.errors import MediDiagError
 class BudgetedTransport:
     """仅支持本轮指定官方接口；不记录请求正文、请求头或异常原文。"""
 
-    def __init__(self, ledger: str | Path, *, max_calls: int = 8, post=None) -> None:
+    def __init__(self, ledger: str | Path, *, max_calls: int = 8,
+                 post: Callable[..., httpx.Response] | None = None) -> None:
         self.path = Path(ledger).resolve()
         if type(max_calls) is not int or not 1 <= max_calls <= 8:
             raise ValueError("单次验收最多允许 8 次真实请求")
@@ -32,7 +34,7 @@ class BudgetedTransport:
                 id INTEGER PRIMARY KEY, state TEXT NOT NULL, elapsed_ms INTEGER,
                 http_status INTEGER, model TEXT, response_id TEXT, usage TEXT, error_type TEXT)""")
 
-    def __call__(self, url: str, *, headers: dict, json: dict, timeout: float) -> httpx.Response:
+    def __call__(self, url: str, *, headers: dict[str, str], json: dict[str, Any], timeout: float) -> httpx.Response:
         target = urlsplit(url)
         if (target.scheme != "https" or target.hostname != "api.xiaomimimo.com"
                 or target.path != "/v1/chat/completions" or target.query or target.fragment
@@ -46,7 +48,7 @@ class BudgetedTransport:
             db.execute("BEGIN IMMEDIATE")
             if db.execute("SELECT COUNT(*) FROM calls").fetchone()[0] >= self.max_calls:
                 raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="真实验收调用额度已用尽")
-            call_id = db.execute("INSERT INTO calls(state) VALUES ('reserved')").lastrowid
+            call_id = cast(int, db.execute("INSERT INTO calls(state) VALUES ('reserved')").lastrowid)
         started = time.perf_counter()
         try:
             response = self.post(url, headers=headers, json=json, timeout=timeout, follow_redirects=False)

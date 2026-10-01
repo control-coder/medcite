@@ -11,7 +11,7 @@ from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 
 def load_application_config(path: str | Path) -> dict[str, Any]:
-    config = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    config: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     try:
         flags = config["experiments"]["rag"]["rag_full"]["config"]
         safe = (
@@ -53,6 +53,7 @@ def build_application_provider(mode: str = "fake_offline", *,
     from medidiag.llm.profiles import get_provider_profile
     from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
 
+    assert live_budget is not None  # 上方已拒绝缺少账本的真实模式，此处仅供类型收窄
     llm = OpenAICompatibleProvider(get_provider_profile("mimo_v25"),
         post=BudgetedTransport(live_budget), max_retries=0, max_structured_retries=0)
     if not llm.is_configured:

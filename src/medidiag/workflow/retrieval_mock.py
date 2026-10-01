@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from medidiag.compliance.guard import MANDATORY_DISCLAIMER, ComplianceGuard
 from medidiag.compliance.status import ComplianceStatus
 from medidiag.errors import MediDiagError
 from medidiag.rag.runtime import RuntimeMedicalRAG
+
+if TYPE_CHECKING:
+    from medidiag.workflow.provider import StageResult
 
 LIMITATION = "真实检索、模拟生成；未调用真实模型或 NLI。词面命中和引用关联不等于语义支持。"
 
@@ -48,7 +51,7 @@ class RetrievalMockWorkflowProvider:
                 "evidence_ids": [item["chunk_id"] for item in retrieval["chunks"]],
                 "requires_uncertainty": True}
 
-    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]) -> StageResult:
         return {"agents": [], "claims": [
             {"claim_id": f"excerpt_{i:04d}", "text": "检索摘录（不代表问题已获解答）：" + item["text"],
              "citation_chunk_ids": [item["chunk_id"]], "confidence": None}

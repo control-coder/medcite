@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from sqlalchemy.orm import Session, sessionmaker
 from starlette.concurrency import run_in_threadpool
 
 from medidiag.db.models import WebSession
@@ -17,7 +19,7 @@ COOKIE_NAME = "medidiag_session"
 SESSION_SECONDS = 30 * 24 * 3600
 
 
-def identify(factory, token: str | None) -> tuple[str, str | None]:
+def identify(factory: sessionmaker[Session], token: str | None) -> tuple[str, str | None]:
     now = datetime.now(UTC).replace(tzinfo=None)
     with factory() as session:
         if token:
@@ -35,7 +37,9 @@ def identify(factory, token: str | None) -> tuple[str, str | None]:
         return owner, token
 
 
-async def identity_middleware(request: Request, call_next):
+async def identity_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     if not request.url.path.startswith(("/api/", "/assistant", "/demo")):
         return await call_next(request)
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
@@ -48,9 +52,9 @@ async def identity_middleware(request: Request, call_next):
             identify, request.app.state.session_factory, request.cookies.get(COOKIE_NAME),
         )
     except ValueError:
-        response = JSONResponse({"code": "SESSION_INVALID", "detail": "会话无效或已过期，请刷新后建立新的匿名会话。"}, status_code=401)
-        response.delete_cookie(COOKIE_NAME)
-        return response
+        rejected = JSONResponse({"code": "SESSION_INVALID", "detail": "会话无效或已过期，请刷新后建立新的匿名会话。"}, status_code=401)
+        rejected.delete_cookie(COOKIE_NAME)
+        return rejected
     request.state.owner_id = owner
     response = await call_next(request)
     response.headers["Cache-Control"] = "no-store"

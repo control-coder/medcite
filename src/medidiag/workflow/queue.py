@@ -21,7 +21,8 @@ celery_app.conf.update(
 )
 
 
-@celery_app.task(name="medidiag.execute", ignore_result=True)
+# Celery 未提供类型存根，装饰器在严格模式下视为无类型。
+@celery_app.task(name="medidiag.execute", ignore_result=True)  # type: ignore[untyped-decorator]
 def execute_task(task_id: str) -> None:
     # 默认明确使用离线 Provider，队列启动不会隐式调用付费模型。
     engine = create_db_engine(get_settings().database_url)

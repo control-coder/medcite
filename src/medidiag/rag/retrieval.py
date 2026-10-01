@@ -106,7 +106,7 @@ class Retriever:
         """中英文采用同一查询/正文规则；默认保留历史空格切分。"""
         if self.bm25_tokenizer == "whitespace":
             return text.lower().split()
-        tokens = []
+        tokens: list[str] = []
         for part in re.findall(r"[\u3400-\u9fff]+|[a-z0-9]+", text.lower()):
             if "\u3400" <= part[0] <= "\u9fff" and len(part) > 1:
                 tokens.extend(part[i:i + 2] for i in range(len(part) - 1))
@@ -238,7 +238,7 @@ class Retriever:
 
         # 排序取 top_k
         if use_embedding:
-            top_indices = np.argsort(scores)[::-1][:top_k]
+            top_indices: list[int] = np.argsort(scores)[::-1][:top_k].tolist()
         else:
             # 词法路径无命中时不能靠全零分数硬凑证据，同分按 ID 稳定排序。
             top_indices = sorted(
