@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "medidiag"
 version = "0.1.0"
-description = "MediDiag：带证据引用的医疗信息辅助分析原型（仅公开与模拟数据）"
+description = "MedCite：带证据引用的医疗信息辅助分析原型（仅公开与模拟数据）"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "MediDiag Project" }]
+authors = [{ name = "control-coder" }]
 keywords = ["medical", "rag", "agent", "evidence-based", "diagnosis", "workflow"]
 
 dependencies = [

@@ -25,7 +25,7 @@ function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
   useEffect(() => { const change = () => setRoute(location.hash.slice(1) || '/'); window.addEventListener('hashchange', change); return () => window.removeEventListener('hashchange', change); }, []);
   const parts = route.split('/');
-  return <><header><a className="brand" href="#/"><span className="brand-mark">M<span>+</span></span><strong>MediDiag</strong></a><nav aria-label="主导航"><a href="#/" aria-current={route === '/' ? 'page' : undefined}>开始咨询</a><a href="#/history" aria-current={route === '/history' ? 'page' : undefined}>咨询记录</a><a className="nav-ext" href="/demo">工程工作台 ↗</a></nav><span className="mode">工程原型 / 非诊疗</span></header>
+  return <><header><a className="brand" href="#/"><span className="brand-mark">M<span>+</span></span><strong>MedCite</strong></a><nav aria-label="主导航"><a href="#/" aria-current={route === '/' ? 'page' : undefined}>开始咨询</a><a href="#/history" aria-current={route === '/history' ? 'page' : undefined}>咨询记录</a><a className="nav-ext" href="/demo">工程工作台 ↗</a></nav><span className="mode">工程原型 / 非诊疗</span></header>
     <main>{parts[1] === 'history' ? <History/> : parts[1] === 'cases' && parts[2] ? <Task key={parts[2] + parts[3]} id={parts[2]} result={parts[3] === 'result'}/> : <Consult/>}</main>
     <footer>公开证据 · 可追踪引用 · 明确局限 <span>仅用于工程演示，不提供真实患者诊疗服务。</span></footer></>;
 }

@@ -72,7 +72,7 @@ def create_app(
     initialize_schema: bool = False,
 ) -> FastAPI:
     app = FastAPI(
-        title="MediDiag-Agent EvidenceFlow",
+        title="MedCite EvidenceFlow",
         version="0.1.0",
         description="Engineering prototype for public/deidentified data; not medical advice.",
     )

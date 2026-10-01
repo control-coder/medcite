@@ -41,7 +41,7 @@ def test_demo_home_and_non_htmx_create_fallback(demo_runtime) -> None:
     client, _ = demo_runtime
     home = client.get("/demo")
     assert home.status_code == 200
-    assert "MediDiag EvidenceFlow" in home.text
+    assert "MedCite EvidenceFlow" in home.text
     assert 'hx-post="/demo/cases"' in home.text
     assert 'method="post" action="/demo/cases"' in home.text
     assert '/static/htmx.min.js' in home.text
