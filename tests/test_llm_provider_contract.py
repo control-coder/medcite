@@ -27,13 +27,11 @@ def _response(
 
 
 def test_provider_profile_loads_project_dotenv_without_overriding_process_env(
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """项目 .env 可补齐 profile，且显式进程变量优先。"""
+    """项目 .env 可补齐 profile，且显式进程变量优先；临时 .env 写入 pytest 临时目录，不残留在仓库。"""
     import medidiag.llm.profiles as profiles_module
 
-    tmp_path = Path("tests/.tmp_provider_profile_env")
-    tmp_path.mkdir(exist_ok=True)
     dotenv = tmp_path / ".env"
     dotenv.write_text(
         "MIMO_API_KEY=dotenv-secret\n"

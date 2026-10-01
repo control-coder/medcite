@@ -18,6 +18,8 @@ ENV/
 *.swp
 *.swo
 .DS_Store
+Thumbs.db
+desktop.ini
 
 # 本地密钥与机器专用配置
 .env
@@ -43,6 +45,7 @@ eval/config.formal.yaml
 .ruff_cache/
 .ipynb_checkpoints/
 .tmp/
+*.log
 
 # 运行产物；已有版本化历史记录仍保留
 artifacts/visual/
@@ -61,6 +64,8 @@ htmlcov/
 coverage.xml
 *.cover
 node_modules/
+frontend/test-results/
+frontend/playwright-report/
 
 # 历史命令截获文件，不作为项目资料
 pytest-output.txt
