@@ -156,3 +156,36 @@ def test_sign_test_and_retry_helpers():
     assert ev.call_with_retry(flaky, sleep=delays.append) == "ok" and delays == [2.0, 4.0]
     with pytest.raises(MediDiagError):
         ev.call_with_retry(lambda: (_ for _ in ()).throw(MediDiagError("PROVIDER_AUTH_FAILED")), sleep=delays.append)
+
+
+def test_retry_on_violation_resamples_once_and_reports_both_views(tmp_path: Path):
+    class FlakyOnce(FakeModel):
+        """每个生成请求第一次违反契约（改写原文），之后正常。"""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.seen: set[str] = set()
+
+        def __call__(self, url: str, **kw: Any) -> httpx.Response:
+            response = super().__call__(url, **kw)
+            user = kw["json"]["messages"][1]["content"]
+            if "evidence" not in user or user in self.seen:
+                return response
+            self.seen.add(user)
+            data = response.json()
+            content = json.loads(data["choices"][0]["message"]["content"])
+            for claim in content["claims"]:
+                claim["text"] += "（改写）"
+            data["choices"][0]["message"]["content"] = json.dumps(content, ensure_ascii=False)
+            return httpx.Response(200, json=data, request=httpx.Request("POST", url))
+
+    server = FlakyOnce()
+    cassette, retry_cassette = Cassette(tmp_path / "c.jsonl"), Cassette(tmp_path / "r.jsonl")
+    transports = {0: RecordingTransport(cassette, tmp_path / "l.db", max_calls=100, trial=0, post=server),
+                  ev.RETRY_BASE: RecordingTransport(retry_cassette, tmp_path / "l.db", max_calls=100, trial=ev.RETRY_BASE, post=server)}
+    report = ev.run(args(conditions=["bm25"], repeat_trials=1, retry_on_violation=True), transports,
+                    Dataset(chunks=CHUNKS, queries=QUERIES))
+    assert report["generation"]["bm25"]["trial_0"]["contract_violations_or_errors"] == 2  # 首次结果不被覆盖
+    after = report["generation_with_retry"]["bm25"]["trial_0"]
+    assert after["contract_violations_or_errors"] == 0 and after["useful_answer_rate"]["k"] == 1
+    assert report["retry_summary"]["bm25"] == {"retried": 2, "recovered": 2, "still_invalid": 0}

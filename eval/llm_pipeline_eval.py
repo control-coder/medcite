@@ -84,6 +84,8 @@ def call_with_retry(fn: Callable[[], Any], tries: int = 3, sleep: Callable[[floa
 
 # ----------------------------------------------------------------- LLM 步骤
 
+RETRY_BASE = 100  # 重采样用 trial 号 RETRY_BASE + t，与首次采样的录像互不覆盖
+
 def make_provider(transport: Any) -> OpenAICompatibleProvider:
     return OpenAICompatibleProvider(get_provider_profile("mimo_v25"), post=transport,
                                     max_retries=0, max_structured_retries=0)
@@ -122,12 +124,14 @@ def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked:
 
 # ----------------------------------------------------------------- 指标
 
-def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: int) -> dict[str, Any]:
+def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: int, *, with_retry: bool = False) -> dict[str, Any]:
     answerable = [r for r in rows if r["gold"]]
     unanswerable = [r for r in rows if not r["gold"]]
 
     def outcome(row: dict[str, Any]) -> dict[str, Any]:
-        return row["conditions"][condition]["trials"][trial]
+        first = row["conditions"][condition]["trials"][trial]
+        # with_retry：首次违反契约的请求，以重采样那一次的结果为准（最多一次）
+        return first["retry"] if with_retry and "retry" in first else first
 
     correct = sum(1 for r in answerable if outcome(r)["decision"] == "answered" and set(outcome(r)["selected"]) & set(r["gold"]))
     wrong = sum(1 for r in answerable if outcome(r)["decision"] == "answered" and not set(outcome(r)["selected"]) & set(r["gold"]))
@@ -231,6 +235,7 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
         queries = [q for s in ("dev", "test") for q in [x for x in queries if x["split"] == s][: args.limit]]
     retrievers = build_retrievers(conditions, dataset, args.embedding_revision)
     providers = {trial: make_provider(t) for trial, t in transports.items()}
+    retry_enabled = bool(getattr(args, "retry_on_violation", False))
 
     started = time.perf_counter()
     rewrites: dict[str, dict[str, Any]] = {}
@@ -257,7 +262,10 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
         ranked = [(cid, chunk_text[cid]) for cid in retrieval[condition][query["sample_id"]]]
         if not ranked:  # 与应用一致：空检索不调用模型
             return {"decision": "abstained", "selected": [], "model_called": False}
-        return {**grounded_decision(providers[trial], query["question"], ranked), "model_called": True}
+        first = {**grounded_decision(providers[trial], query["question"], ranked), "model_called": True}
+        if retry_enabled and first["decision"] == "invalid":  # 只对契约违规重采样一次；网络类错误不算
+            first["retry"] = {**grounded_decision(providers[RETRY_BASE + trial], query["question"], ranked), "model_called": True}
+        return first
 
     with ThreadPoolExecutor(args.workers) as pool:
         outcomes = list(pool.map(execute, jobs))
@@ -275,6 +283,16 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
         "repeatability": {c: repeatability(rows, c) for c in conditions if trials_for[c] > 1},
         "per_query": rows, "wall_seconds": round(time.perf_counter() - started, 1),
     }
+    if retry_enabled:
+        report["generation_with_retry"] = {
+            c: {f"trial_{t}": generation_metrics(rows, c, t, with_retry=True) for t in range(trials_for[c])} for c in conditions}
+        report["retry_summary"] = {
+            c: {"retried": sum(1 for r in rows for o in r["conditions"][c]["trials"] if "retry" in o),
+                "recovered": sum(1 for r in rows for o in r["conditions"][c]["trials"]
+                                 if "retry" in o and o["retry"]["decision"] in {"answered", "abstained"}),
+                "still_invalid": sum(1 for r in rows for o in r["conditions"][c]["trials"]
+                                     if "retry" in o and o["retry"]["decision"] in {"invalid", "error"})}
+            for c in conditions}
     if "bm25_rewrite" in conditions:
         report["rewrite"] = {
             "effect_on_retrieval": rewrite_effect(queries, retrieval),
@@ -302,6 +320,10 @@ def main() -> None:
                         choices=["bm25", "bm25_rewrite", "dense"])
     parser.add_argument("--repeat-trials", type=int, default=3)
     parser.add_argument("--workers", type=int, default=6)
+    parser.add_argument("--retry-cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2-retry.jsonl",
+                        help="重采样录像带，与主录像带分开，不改变已入库录像带的指纹")
+    parser.add_argument("--retry-on-violation", action="store_true",
+                        help="首次违反输出契约时重采样一次（用 trial 号 100+t，需要额外调用）")
     parser.add_argument("--limit", type=int, default=0, help="冒烟：每个 split 只取前 N 条查询")
     parser.add_argument("--embedding-revision", default="7999e1d3359715c523056ef9478215996d62a620")
     parser.add_argument("--out", type=Path, default=None)
@@ -314,10 +336,17 @@ def main() -> None:
     spent: dict[str, Any] | None = None
     if args.mode == "record":
         transports = {t: RecordingTransport(cassette, args.ledger, max_calls=args.max_calls, trial=t) for t in range(trials)}
+        if args.retry_on_violation:
+            retry_cassette = Cassette(args.retry_cassette)
+            transports.update({RETRY_BASE + t: RecordingTransport(retry_cassette, args.ledger, max_calls=args.max_calls, trial=RETRY_BASE + t)
+                               for t in range(trials)})
     else:
         os.environ["MIMO_API_KEY"] = "replay-no-network"  # 回放不联网，也不使用真实密钥
         os.environ["MIMO_BASE_URL"] = "https://api.xiaomimimo.com"
         transports = {t: ReplayTransport(cassette, trial=t) for t in range(trials)}
+        if args.retry_on_violation:
+            retry_cassette = Cassette(args.retry_cassette)
+            transports.update({RETRY_BASE + t: ReplayTransport(retry_cassette, trial=RETRY_BASE + t) for t in range(trials)})
     report = run(args, transports, dataset)
     if args.mode == "record":
         spent = transports[0].spent()
@@ -327,7 +356,9 @@ def main() -> None:
                    "repeat_trials_bm25": args.repeat_trials, "limit": args.limit or None,
                    "rewrite_prompt": REWRITE_PROMPT, "temperature": "供应商默认（该 profile 不支持设置）",
                    "dataset_sha256": dataset.fingerprints, "cassette_entries": len(cassette),
-                   "cassette_sha256": sha256_of(args.cassette)},
+                   "cassette_sha256": sha256_of(args.cassette),
+                   "retry_on_violation": bool(args.retry_on_violation),
+                   "retry_cassette_sha256": sha256_of(args.retry_cassette) if args.retry_on_violation else None},
         "spend": spent, **report}
     text = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
