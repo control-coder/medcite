@@ -37,6 +37,7 @@ import tempfile
 import time
 import uuid
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -205,6 +206,7 @@ class Fleet:
         self.lease_log = str(workdir / "lease_errors.log")
         self.stop_file = str(workdir / "STOP")
         self.flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        self.started_wall = datetime.now(UTC).replace(tzinfo=None)
 
     def spawn(self) -> str:
         self.spawned += 1
@@ -249,6 +251,7 @@ def run_scenario(database_url: str, args: argparse.Namespace) -> dict[str, Any]:
                 case_ids.append(case.case_id)
 
         started = time.monotonic()
+        fleet.started_wall = datetime.now(UTC).replace(tzinfo=None)
         for _ in range(args.workers):
             fleet.spawn()
 
@@ -331,8 +334,20 @@ def collect(factory: Any, case_ids: list[str], fleet: Fleet, events: list[dict[s
             stages_per_case.setdefault(case_id, set()).add(stage)
         tasks = session.execute(select(WorkflowTask.status, WorkflowTask.attempt).where(
             WorkflowTask.case_id.in_(case_ids))).all()
-        reclaimed = int(session.scalar(select(func.count()).select_from(CaseEventLog).where(
-            CaseEventLog.case_id.in_(case_ids), CaseEventLog.event_type == "lease_reclaimed")) or 0)
+        reclaim_rows = session.execute(select(CaseEventLog.case_id, CaseEventLog.created_at, CaseEventLog.detail)
+                                       .where(CaseEventLog.case_id.in_(case_ids),
+                                              CaseEventLog.event_type == "lease_reclaimed")
+                                       .order_by(CaseEventLog.created_at, CaseEventLog.id)).all()
+    reclaimed = len(reclaim_rows)
+    chains: dict[str, list[dict[str, Any]]] = {}
+    for row in reclaim_rows:
+        detail = row.detail or {}
+        chains.setdefault(row.case_id, []).append({
+            "t": round((row.created_at - fleet.started_wall).total_seconds(), 2),
+            "old_owner": detail.get("old_owner"), "new_owner": detail.get("new_owner"),
+            "old_attempt": detail.get("old_attempt"),
+        })
+    reclaim_chains = {cid: chain for cid, chain in chains.items() if len(chain) > 1}
 
     succeeded = [row for row in cases if row.status == "CLOSED_SUCCESS"]
     latencies = [(row.updated_at - row.created_at).total_seconds() for row in succeeded]
@@ -376,6 +391,7 @@ def collect(factory: Any, case_ids: list[str], fleet: Fleet, events: list[dict[s
             "terminal_success_rate": round(len(succeeded) / len(case_ids), 4),
             "lease_reclaims": reclaimed, "task_attempt_histogram": {str(k): v for k, v in sorted(attempts.items())},
             "stale_writers_rejected": dict(lease_errors),
+            "multi_reclaim_chains": reclaim_chains,
         },
         "side_effects": {
             "violations": violations,

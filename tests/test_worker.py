@@ -717,3 +717,20 @@ def test_run_once_escalates_after_too_many_reclaims(runtime) -> None:
             select(CaseEventLog).where(CaseEventLog.case_id == case_id).order_by(CaseEventLog.id.desc()).limit(1)
         )
         assert "WORKFLOW_RETRY_EXCEEDED" in str(event.detail)
+
+
+def test_run_once_finishes_its_reclaimed_task_before_taking_new_work(runtime) -> None:
+    _, factory = runtime
+    executor = WorkflowExecutor()
+    reclaimed_case, reclaimed = _create_task(factory, "workflow-a")
+    _expire(factory, executor, reclaimed, "crashed-worker")
+    LeaseScanner(factory, recovery_worker_id="w").scan_once(limit=1)
+    with factory() as session:
+        case = executor.create_case(session, "Deidentified simulated case two.", "case-2", "test-scope")
+        pending_case = case.case_id
+        executor.start_workflow(session, pending_case, "case_workflow", "workflow-b", "input-hash-2")
+
+    result = SingleMachineWorker(factory, DeterministicWorkflowProvider(), worker_id="w").run_once()
+    assert result.case_id == reclaimed_case  # 先做接管来的任务，它没有人续约，不能晾着
+    with factory() as session:
+        assert session.scalar(select(WorkflowTask.status).where(WorkflowTask.case_id == pending_case)) == "PENDING"

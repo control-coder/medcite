@@ -1,0 +1,224 @@
+{
+  "config": {
+    "backend": "postgres",
+    "workers": 4,
+    "cases": 60,
+    "kills_planned": 8,
+    "freezes_planned": 2,
+    "stage_delay_ms": 150,
+    "lease_seconds": 3,
+    "seed": 2,
+    "provider": "DelayedProvider(无网络、无付费调用)"
+  },
+  "injected": {
+    "kills": 8,
+    "freezes": 2,
+    "ticks_without_busy_worker": 0,
+    "events": [
+      {
+        "t": 1.5,
+        "action": "kill",
+        "worker": "stress-w1",
+        "task": "task_4841ed31d71f"
+      },
+      {
+        "t": 3.2,
+        "action": "kill",
+        "worker": "stress-w3",
+        "task": "task_93e74e75e575"
+      },
+      {
+        "t": 5.53,
+        "action": "freeze",
+        "worker": "stress-w6",
+        "task": "task_fefa32f18785"
+      },
+      {
+        "t": 7.55,
+        "action": "kill",
+        "worker": "stress-w5",
+        "task": "task_a69578d70975"
+      },
+      {
+        "t": 9.77,
+        "action": "kill",
+        "worker": "stress-w7",
+        "task": "task_08bf62ef8c8e"
+      },
+      {
+        "t": 11.98,
+        "action": "kill",
+        "worker": "stress-w6",
+        "task": "task_9693ed23f738"
+      },
+      {
+        "t": 14.09,
+        "action": "kill",
+        "worker": "stress-w2",
+        "task": "task_6df0b86226fd"
+      },
+      {
+        "t": 15.48,
+        "action": "kill",
+        "worker": "stress-w8",
+        "task": "task_db75c318c070"
+      },
+      {
+        "t": 17.61,
+        "action": "freeze",
+        "worker": "stress-w9",
+        "task": "task_6f072a73bd21"
+      },
+      {
+        "t": 19.73,
+        "action": "kill",
+        "worker": "stress-w4",
+        "task": "task_fefa32f18785"
+      }
+    ]
+  },
+  "outcome": {
+    "cases": 60,
+    "status": {
+      "CLOSED_SUCCESS": 57,
+      "ESCALATED": 3
+    },
+    "terminal_success_rate": 0.95,
+    "lease_reclaims": 20,
+    "task_attempt_histogram": {
+      "0": 50,
+      "1": 5,
+      "2": 2,
+      "3": 2,
+      "5": 1
+    },
+    "stale_writers_rejected": {
+      "TASK_LEASE_LOST": 2
+    },
+    "multi_reclaim_chains": {
+      "case_875ff91d6d24": [
+        {
+          "t": 5.27,
+          "old_owner": "stress-w1",
+          "new_owner": "stress-w4",
+          "old_attempt": 0
+        },
+        {
+          "t": 10.25,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w4",
+          "old_attempt": 1
+        },
+        {
+          "t": 24.37,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w11",
+          "old_attempt": 2
+        }
+      ],
+      "case_24589bc3cd96": [
+        {
+          "t": 6.5,
+          "old_owner": "stress-w3",
+          "new_owner": "stress-w5",
+          "old_attempt": 0
+        },
+        {
+          "t": 10.23,
+          "old_owner": "stress-w5",
+          "new_owner": "stress-w2",
+          "old_attempt": 1
+        },
+        {
+          "t": 13.99,
+          "old_owner": "stress-w2",
+          "new_owner": "stress-w4",
+          "old_attempt": 2
+        },
+        {
+          "t": 17.78,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w4",
+          "old_attempt": 3
+        },
+        {
+          "t": 23.01,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w11",
+          "old_attempt": 4
+        }
+      ],
+      "case_0f917e6c0d06": [
+        {
+          "t": 8.99,
+          "old_owner": "stress-w6",
+          "new_owner": "stress-w4",
+          "old_attempt": 0
+        },
+        {
+          "t": 24.39,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w11",
+          "old_attempt": 1
+        }
+      ],
+      "case_07f03356d229": [
+        {
+          "t": 11.5,
+          "old_owner": "stress-w5",
+          "new_owner": "stress-w6",
+          "old_attempt": 0
+        },
+        {
+          "t": 15.25,
+          "old_owner": "stress-w6",
+          "new_owner": "stress-w4",
+          "old_attempt": 1
+        },
+        {
+          "t": 23.04,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w11",
+          "old_attempt": 2
+        }
+      ],
+      "case_90be9f104259": [
+        {
+          "t": 12.75,
+          "old_owner": "stress-w7",
+          "new_owner": "stress-w4",
+          "old_attempt": 0
+        },
+        {
+          "t": 23.06,
+          "old_owner": "stress-w4",
+          "new_owner": "stress-w11",
+          "old_attempt": 1
+        }
+      ]
+    }
+  },
+  "side_effects": {
+    "violations": {
+      "cases_not_terminal_success": 3,
+      "cases_without_exactly_one_report": 3,
+      "duplicate_stage_artifacts": 0,
+      "cases_missing_stage_artifacts": 3,
+      "tasks_left_running_or_pending": 0
+    },
+    "provider_calls": 416,
+    "committed_provider_artifacts": 406,
+    "reexecuted_provider_calls": 10
+  },
+  "performance": {
+    "wall_seconds": 24.89,
+    "throughput_cases_per_s": 2.29,
+    "latency_s": {
+      "p50": 14.93,
+      "p95": 24.94,
+      "max": 25.23
+    },
+    "note": "延迟 = 病例创建到最终写入；所有病例在 t0 一次性提交，因此包含排队时间。"
+  },
+  "passed": false
+}
