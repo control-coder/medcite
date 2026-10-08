@@ -127,30 +127,33 @@ class SingleMachineWorker:
 
     def run_once(self) -> WorkerRunResult:
         with self.session_factory() as session:
+            # 先继续自己已持有租约的任务（例如刚接管的过期任务）；若先领新任务，
+            # 接管来的任务会无人续约，租约再次过期后被重复接管。
             task = session.execute(
                 select(WorkflowTask)
-                .where(WorkflowTask.status == "PENDING")
+                .where(
+                    WorkflowTask.status == "RUNNING",
+                    WorkflowTask.lease_owner == self.worker_id,
+                    WorkflowTask.lease_until > self.executor.lease.now(),
+                )
                 .order_by(WorkflowTask.id)
                 .limit(1)
             ).scalar_one_or_none()
-            if task is not None:
-                if not self.executor.lease.acquire(session, task.task_id, self.worker_id):
-                    return WorkerRunResult(processed=False)
-                session.expire_all()
-                task = session.execute(
-                    select(WorkflowTask).where(WorkflowTask.task_id == task.task_id)
-                ).scalar_one()
-            else:
-                task = session.execute(
+            if task is None:
+                pending = session.execute(
                     select(WorkflowTask)
-                    .where(
-                        WorkflowTask.status == "RUNNING",
-                        WorkflowTask.lease_owner == self.worker_id,
-                        WorkflowTask.lease_until > self.executor.lease.now(),
-                    )
+                    .where(WorkflowTask.status == "PENDING")
                     .order_by(WorkflowTask.id)
                     .limit(1)
                 ).scalar_one_or_none()
+                if pending is None:
+                    return WorkerRunResult(processed=False)
+                if not self.executor.lease.acquire(session, pending.task_id, self.worker_id):
+                    return WorkerRunResult(processed=False)
+                session.expire_all()
+                task = session.execute(
+                    select(WorkflowTask).where(WorkflowTask.task_id == pending.task_id)
+                ).scalar_one()
             if task is None:
                 return WorkerRunResult(processed=False)
             _log.info(
