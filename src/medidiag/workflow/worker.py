@@ -72,6 +72,8 @@ _STAGE_SUBJECTS: dict[str, TriggerSubject] = {
 
 _log = get_logger(__name__)
 
+MAX_TASK_ATTEMPTS = 3  # 任务被接管（lease 过期）达到该次数后转人工，不再自动重跑
+
 
 class _StageFailure(Exception):
     """Provider 阶段耗尽 ProviderCallRunner 有界重试后产生的异常。
@@ -159,7 +161,7 @@ class SingleMachineWorker:
                 task_type=task.task_type,
                 attempt=task.attempt,
             )
-            return self._process(session, task)
+            return self._escalate_if_retries_exceeded(session, task) or self._process(session, task)
 
     def run_task(self, task_id: str) -> WorkerRunResult:
         """队列只传标识；重复投递须重新经过数据库领取，不能沿用已有租约。"""
@@ -172,19 +174,24 @@ class SingleMachineWorker:
             session.expire_all()
             task = session.scalar(select(WorkflowTask).where(WorkflowTask.task_id == task_id))
             assert task is not None
-            if task.attempt >= 3 and session.scalar(
-                select(Case.status).where(Case.case_id == task.case_id)
-            ) != CaseState.REPORT_GENERATED.value:
-                case = session.scalar(select(Case).where(Case.case_id == task.case_id))
-                assert case is not None
-                stage, subject = _STAGE_BY_STATE[CaseState(case.status)]
-                self.executor.fail_stage(
-                    session, task_id=task_id, worker_id=self.worker_id, attempt=task.attempt,
-                    to_state=CaseState.ESCALATED, subject=subject, stage=stage,
-                    error_code="WORKFLOW_RETRY_EXCEEDED", error_message="worker 中断恢复次数达到上限。",
-                )
-                return WorkerRunResult(True, task_id, task.case_id, "ESCALATED")
-            return self._process(session, task)
+            return self._escalate_if_retries_exceeded(session, task) or self._process(session, task)
+
+    def _escalate_if_retries_exceeded(self, session: Session, task: WorkflowTask) -> WorkerRunResult | None:
+        """被接管（attempt 递增）达到上限的任务不再重跑，转人工；run_once 与 run_task 共用。"""
+        if task.attempt < MAX_TASK_ATTEMPTS:
+            return None
+        case = session.scalar(select(Case).where(Case.case_id == task.case_id))
+        assert case is not None
+        state = CaseState(case.status)
+        if state == CaseState.REPORT_GENERATED or state not in _STAGE_BY_STATE:
+            return None  # 只差最后一步提交，或已是终态/转人工，交给 _process 收尾
+        stage, subject = _STAGE_BY_STATE[state]
+        self.executor.fail_stage(
+            session, task_id=task.task_id, worker_id=self.worker_id, attempt=task.attempt,
+            to_state=CaseState.ESCALATED, subject=subject, stage=stage,
+            error_code="WORKFLOW_RETRY_EXCEEDED", error_message="worker 中断恢复次数达到上限。",
+        )
+        return WorkerRunResult(True, task.task_id, task.case_id, "ESCALATED")
 
     def _process(self, session: Session, task: WorkflowTask) -> WorkerRunResult:
         for _ in range(16):
@@ -798,10 +805,15 @@ class LeaseScanner:
         self.recovery_worker_id = recovery_worker_id
         self.executor = executor or WorkflowExecutor()
 
-    def scan_once(self) -> list[str]:
+    def scan_once(self, limit: int | None = None) -> list[str]:
+        """回收过期任务。同一 worker 要逐个执行接管到的任务时应传 ``limit=1``：
+
+        一次接管多个，后面的任务在排队时租约再次过期，会被别的 worker 重复接管，attempt 因此被放大。
+        """
         reclaimed: list[str] = []
         with self.session_factory() as session:
             task_ids = [task.task_id for task in self.executor.lease.find_expired(session)]
+        task_ids = task_ids[:limit] if limit is not None else task_ids
         for task_id in task_ids:
             with self.session_factory() as session:
                 if self.executor.lease.reclaim(session, task_id, self.recovery_worker_id):
