@@ -118,7 +118,19 @@ python -m medidiag.cli demo --provider mimo_grounded --live-budget .cache/implem
 python -m scripts.verify_live_application --allow-live --ledger .cache/implementation/<ledger>/calls.db
 ```
 
-账本最多允许 8 次请求，先占额度后发请求，失败不退额、重启不重置；不要通过新建或删除账本来绕过上限。每次网络操作超时 45 秒，网络、格式与阶段自动重试均为 0。账本不保存凭据、请求正文或上游错误原文。
+账本最多允许 8 次请求，先占额度后发请求，失败不退额、重启不重置；不要通过新建或删除账本来绕过上限。每次网络操作超时 45 秒，网络与阶段自动重试均为 0。账本不保存凭据、请求正文或上游错误原文。
+
+### 向量检索方案
+
+默认配置只用 BM25。要换成评测中表现更好的向量检索（固定版本的 `BAAI/bge-small-zh-v1.5`，v2 语料），需要先在本机准备好模型缓存（应用不会自动下载），然后指定另一份配置：
+
+```powershell
+python -m medidiag.cli demo --provider mimo_grounded --app-config configs/application_dense.yaml --live-budget .cache/dense-ledger.db --port 8400
+# 6 个问题的真实调用冒烟（最多 8 次请求），结果写入 artifacts/reports/application/
+python -I scripts/verify_dense_application.py --allow-live --ledger .cache/dense-ledger.db
+```
+
+该配置还让模型输出不合格（摘录不是原文、格式错误）时，带上被拒原因再请求一次，最多多 1 次调用；其他配置默认不重试。向量检索方案也可以配合 `--provider retrieval_mock` 使用，此时不调用模型。首次启动需要几秒加载模型并给 178 条短引建索引。
 
 ## 演示路线（约 4 分钟）
 
@@ -128,7 +140,7 @@ python -m scripts.verify_live_application --allow-live --ledger .cache/implement
 | 0:40–1:20 | 刷新任务页：URL 保留任务 ID，从后端恢复，不会新建任务 |
 | 1:20–2:20 | 查看摘录、证据与 WHO 来源链接；说明引用关联不等于语义审核 |
 | 2:20–2:50 | 查看历史记录并返回同一任务 |
-| 2:50–3:40 | 提交“模拟提问：量子纠缠计算芯片”，展示空证据弃答 |
+| 2:50–3:40 | 提交“模拟提问：量子纠缠计算芯片”，展示空证据拒答 |
 | 3:40–4:20 | 演示取消任务与会话丢失后的提示 |
 
 体验取消时，按“独立 API 与 worker”启动，停止 worker 后提交并取消，再重启 worker。
@@ -142,7 +154,7 @@ python -m scripts.verify_live_application --allow-live --ledger .cache/implement
 | 401 / 404 | 刷新页面会建立新匿名会话；旧会话的记录无法找回，越权与不存在统一返回 404 |
 | 400 Host / 403 Origin | 使用同源回环地址；自定义部署需配置 `MEDIDIAG_ALLOWED_HOSTS`（JSON 数组）、HTTPS 与可信代理 |
 | 任务一直排队 | 确认 API、消费者与扫描器使用相同的数据库和 broker，查看各进程日志 |
-| 证据不足 | 属于正常弃答，系统不会把无支持的文本包装成结论 |
+| 证据不足 | 属于正常拒答，系统不会把无支持的文本包装成结论 |
 | 升级 / 失败 | 查看安全错误码与 `/demo` 中的事件，重新提交咨询 |
 | 预算不足 | 停止真实请求，不要更换账本绕过上限 |
 
