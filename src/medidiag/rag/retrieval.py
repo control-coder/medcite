@@ -20,6 +20,21 @@ from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
 
+def tokenize_text(text: str, mode: str = "whitespace") -> list[str]:
+    """BM25 切分：whitespace 保留历史行为，cjk_bigram 对连续汉字取相邻双字。"""
+    if mode == "whitespace":
+        return text.lower().split()
+    if mode != "cjk_bigram":
+        raise ValueError("不支持的 BM25 切分方式")
+    tokens: list[str] = []
+    for part in re.findall(r"[\u3400-\u9fff]+|[a-z0-9]+", text.lower()):
+        if "\u3400" <= part[0] <= "\u9fff" and len(part) > 1:
+            tokens.extend(part[i:i + 2] for i in range(len(part) - 1))
+        else:
+            tokens.append(part)
+    return tokens
+
+
 @dataclass
 class SearchResult:
     """单个检索结果。"""
@@ -104,15 +119,7 @@ class Retriever:
 
     def tokenize(self, text: str) -> list[str]:
         """中英文采用同一查询/正文规则；默认保留历史空格切分。"""
-        if self.bm25_tokenizer == "whitespace":
-            return text.lower().split()
-        tokens: list[str] = []
-        for part in re.findall(r"[\u3400-\u9fff]+|[a-z0-9]+", text.lower()):
-            if "\u3400" <= part[0] <= "\u9fff" and len(part) > 1:
-                tokens.extend(part[i:i + 2] for i in range(len(part) - 1))
-            else:
-                tokens.append(part)
-        return tokens
+        return tokenize_text(text, self.bm25_tokenizer)
 
     def _build_bm25(self) -> Any:
         """构建 BM25 索引并返回它。
