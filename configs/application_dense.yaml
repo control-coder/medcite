@@ -1,0 +1,48 @@
+# 应用向量检索方案：固定版本的 bge-small-zh，只读本地缓存，不联网下载；语料为 v2（51 篇、178 条短引）。
+# 评测依据见 docs/evaluation.md 第四、六节。需要先在本机准备好模型缓存。
+application:
+  mode: retrieval_mock
+  topology: single
+runtime:
+  device: cpu
+  batch_size: 8
+embedding:
+  model: BAAI/bge-small-zh-v1.5
+  revision: 7999e1d3359715c523056ef9478215996d62a620
+  local_files_only: true
+rerank:
+  model: disabled
+  revision: not-used
+dataset:
+  version: public-health-excerpts-v2
+  knowledge_base_path: examples/public_health_v2/chunks.jsonl
+  rag_eval_set_path: examples/public_health_v2/queries.jsonl
+  agent_eval_set_path: examples/public_health_v2/queries.jsonl
+retrieval:
+  bm25_tokenizer: cjk_bigram
+  top_k: 3
+  candidate_k: 8
+  weights:
+    w1_bm25: 0.0
+    w2_embedding: 1.0
+    w3_evidence_level: 0.0
+    w4_term_overlap: 0.0
+  evidence_levels:
+    level_5_other: 0.3
+# 模型输出不合格（摘录不是原文等）时，带上被拒原因再请求一次；评测里 33 次不合格恢复 30 次。
+generation:
+  on_invalid: feedback
+experiments:
+  rag:
+    rag_full:
+      config:
+        use_bm25: false
+        use_embedding: true
+        use_evidence_weighting: false
+        use_term_normalization: false
+        use_rerank: false
+        use_citation_review: false
+leakage_check:
+  chunk_fields_to_check: [source, source_id, metadata.raw_id]
+  check_question_text: true
+  check_answer_key: true

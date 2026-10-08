@@ -24,6 +24,9 @@ class RetrievalMockWorkflowProvider:
     rag_stage: RuntimeMedicalRAG
     version: str = "retrieval-mock-v1"
 
+    def _page_count(self) -> int:
+        return len({chunk.source_id for chunk in self.rag_stage.chunks})
+
     def normalize(self, question: str) -> dict[str, Any]:
         # ConsultationCreateRequest 的字段标签和缺省占位不是用户问题。
         # 特别是“背景：未提供”中的“提供”会让任何输入误命中口罩摘录。
@@ -47,7 +50,7 @@ class RetrievalMockWorkflowProvider:
         return {**result, "execution_mode": "retrieval_mock"}
 
     def plan(self, normalized_query: str, retrieval: dict[str, Any]) -> dict[str, Any]:
-        return {"objective": "展示词法检索相关摘录，不回答个体医疗问题", "topology": "single",
+        return {"objective": "展示检索到的相关摘录，不回答个体医疗问题", "topology": "single",
                 "evidence_ids": [item["chunk_id"] for item in retrieval["chunks"]],
                 "requires_uncertainty": True}
 
@@ -84,7 +87,7 @@ class RetrievalMockWorkflowProvider:
         return {"schema_version": "assistant-report-v1", "case_id": case_id,
                 "title": "公开正文检索摘录（模拟生成）", "summary": "仅展示相关摘录，不生成医学结论。",
                 "claims": generation["claims"], "filtered_claim_count": 0,
-                "limitations": [LIMITATION, "仅含八篇历史网页的短引；片段可能只部分相关，不能保证答案完整或现行适用。"],
+                "limitations": [LIMITATION, f"仅含 {self._page_count()} 篇历史网页的短引；片段可能只部分相关，不能保证答案完整或现行适用。"],
                 "risk_warnings": ["不能用于真实医疗决策。"],
                 "next_steps": ["请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"],
                 "disclaimer": MANDATORY_DISCLAIMER,

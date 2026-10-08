@@ -1,0 +1,170 @@
+{
+  "schema_version": "dense-application-live-v1",
+  "created_at": "2026-10-08T10:16:34.574736+00:00",
+  "app_config": "configs/application_dense.yaml",
+  "on_invalid": "feedback",
+  "model": "mimo-v2.5",
+  "baseline_commit": "325b6a41713d4782d99dc0021fb6162b22004079",
+  "calls": 6,
+  "ledger_total": 6,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "response",
+      "elapsed_ms": 2382,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "7124d911-8ce9-49f3-b4f3-ca01de4d01ef_2f8a70ee6965439a9e5b75f1fb2aff4a",
+      "usage": {
+        "completion_tokens": 95,
+        "prompt_tokens": 291,
+        "total_tokens": 386
+      },
+      "error_type": null
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 61549,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "a7028ad3-885b-4769-b100-22c6a955e688_0555cee6c97b459d90a36d3348dd49a4",
+      "usage": {
+        "completion_tokens": 97,
+        "prompt_tokens": 304,
+        "total_tokens": 401
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 3231,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "ec1dfd1f-4dd4-45cb-8230-66c8fed20579_4a6458b6e34041728bc6fdf92f1411c9",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 301,
+        "total_tokens": 355
+      },
+      "error_type": null
+    },
+    {
+      "id": 4,
+      "state": "response",
+      "elapsed_ms": 1730,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "7890685b-2682-4310-b8d1-122816b290fd_371a7c65d55548249e94afb91bd73b61",
+      "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 353,
+        "total_tokens": 366
+      },
+      "error_type": null
+    },
+    {
+      "id": 5,
+      "state": "response",
+      "elapsed_ms": 24891,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "872f7b39-6eaa-4dc2-a681-813fc6ebe706_38f617dd754e487293f384256901e426",
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 331,
+        "total_tokens": 341
+      },
+      "error_type": null
+    },
+    {
+      "id": 6,
+      "state": "response",
+      "elapsed_ms": 1572,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "2cf296c2-20ba-4adb-9b40-7a0bdad7ed2d_1c98d9ff465943d0a735e34f0e0aec00",
+      "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 286,
+        "total_tokens": 299
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "kind": "字面问法",
+      "question": "咳嗽时如何用纸巾遮住口鼻并洗手？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 2.53,
+      "abstained": false,
+      "claims": [
+        {
+          "chunk_id": "kb_flu_hygiene_01",
+          "text": "为防止传播，人们在咳嗽时应用纸巾遮住口鼻，并经常洗手。"
+        },
+        {
+          "chunk_id": "kb_covid_etiquette_01",
+          "text": "注意呼吸礼仪（咳嗽或打喷嚏时用肘部或纸巾遮住口鼻）"
+        }
+      ]
+    },
+    {
+      "kind": "口语换说法",
+      "question": "屋里太闷怎样透透气？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 61.69,
+      "abstained": false,
+      "claims": [
+        {
+          "chunk_id": "kb_covid_ventilation_01",
+          "text": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。"
+        },
+        {
+          "chunk_id": "kb_heat_home_01",
+          "text": "天黑后，当室外温度低于室内温度时，打开窗户，利用夜间的空气给家中降温。"
+        }
+      ]
+    },
+    {
+      "kind": "有答案",
+      "question": "高温时可以把孩子留在停放的车辆中吗？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 3.33,
+      "abstained": false,
+      "claims": [
+        {
+          "chunk_id": "kb_heat_children_01",
+          "text": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。"
+        }
+      ]
+    },
+    {
+      "kind": "主题相关但没答案",
+      "question": "疫苗抗体滴度的具体阈值",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 1.83,
+      "abstained": true,
+      "claims": []
+    },
+    {
+      "kind": "范围外",
+      "question": "量子纠缠计算芯片是什么原理？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 24.99,
+      "abstained": true,
+      "claims": []
+    },
+    {
+      "kind": "口语换说法",
+      "question": "天气特别热的时候出门要注意什么？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 1.66,
+      "abstained": true,
+      "claims": []
+    }
+  ],
+  "boundary": "6 个问题的真实调用冒烟，证明向量检索方案能走完整个应用工作流；不是准确率评测。"
+}

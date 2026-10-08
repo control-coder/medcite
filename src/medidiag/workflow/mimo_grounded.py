@@ -41,6 +41,9 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     llm: LLMProvider | None = None
     version: str = "mimo-grounded-v1"
     max_stage_attempts: int = 1
+    # 输出不合格（摘录不是原文、格式错误）时的补救，最多再调用一次模型：
+    # none 不补救；resample 原样再问一次；feedback 再问一次并告知上次被拒的原因。
+    on_invalid: Literal["none", "resample", "feedback"] = "none"
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
         return {**super().retrieve(normalized_query), "execution_mode": "mimo_grounded"}
@@ -48,15 +51,33 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     def plan(self, normalized_query: str, retrieval: dict[str, Any]) -> dict[str, Any]:
         return {**super().plan(normalized_query, retrieval), "objective": "真实模型选择直接答题的完整原文短引，否则弃答"}
 
-    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]) -> ProviderResponse:
+    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any], *,
+                 feedback: str | None = None) -> ProviderResponse:
+        """``feedback`` 只供评测单独复现“带原因的第二次请求”；应用路径由 ``on_invalid`` 控制。"""
         chunks = {item["chunk_id"]: item["text"] for item in retrieval["chunks"]}
         if not chunks:
             return ProviderResponse({"agents": [], "claims": [], "abstained": True, "uncertainty": LIMITATION})
         if self.llm is None:
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
+        try:
+            return self._generate_once(question, chunks, feedback)
+        except MediDiagError as exc:
+            if feedback is not None or self.on_invalid == "none" or exc.code != "STRUCTURED_OUTPUT_INVALID":
+                raise
+            reason = str(exc.detail) if self.on_invalid == "feedback" else None
+            return self._generate_once(question, chunks, reason)
+
+    def _generate_once(self, question: str, chunks: dict[str, str], feedback: str | None) -> ProviderResponse:
+        assert self.llm is not None
+        messages = [{"role": "system", "content": PROMPT}, {"role": "user", "content": json.dumps(
+            {"question": question, "evidence": chunks}, ensure_ascii=False)}]
+        if feedback is not None:
+            messages.append({"role": "user", "content": json.dumps(
+                {"previous_output_rejected": feedback,
+                 "instruction": "请按要求重新输出：每段 text 必须与所选证据的全文逐字一致，且只使用本次提供的 chunk_id。"},
+                ensure_ascii=False)})
         result = self.llm.generate(LLMRequest(
-            messages=[{"role": "system", "content": PROMPT}, {"role": "user", "content": json.dumps(
-                {"question": question, "evidence": chunks}, ensure_ascii=False)}],
+            messages=messages,
             model="mimo-v2.5", response_format={"type": "json_object"}, max_tokens=2048,
             reasoning_mode="disabled", prompt_version="mimo-grounded-v1"),
             timeout_s=45, idempotency_key="mimo-grounded-" + uuid.uuid4().hex)
@@ -105,6 +126,6 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
         result = super().report(case_id, generation, review)
         result.update(title="公开证据短引（真实 MiMo 受约束生成）", summary="仅展示模型选择的完整原文，不生成诊疗结论。",
                       abstained=generation.get("abstained", False),
-                      limitations=[LIMITATION, "仅八篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"],
+                      limitations=[LIMITATION, f"仅 {self._page_count()} 篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"],
                       provenance={"provider": self.version, "execution_mode": "mimo_grounded"})
         return result

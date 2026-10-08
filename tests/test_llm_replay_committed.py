@@ -93,3 +93,34 @@ def test_retry_experiment_reproduces_from_committed_cassettes(request: pytest.Fi
     # 重采样不能引入误答：不论是否重采样，不可回答问题上的误答都是 0
     for trials in committed["generation_with_retry"].values():
         assert all(m["false_answer_rate"]["k"] == 0 for m in trials.values())
+
+
+FEEDBACK_CASSETTE = ROOT / "eval/cassettes/llm-pipeline-v2-feedback.jsonl"
+FEEDBACK_REPORT = ROOT / "artifacts/reports/llm/llm-pipeline-v2-feedback-20261008.json"
+
+
+def test_feedback_retry_experiment_reproduces_from_committed_cassettes(request: pytest.FixtureRequest):
+    import hashlib
+
+    committed = json.loads(FEEDBACK_REPORT.read_text(encoding="utf-8"))
+    assert hashlib.sha256(FEEDBACK_CASSETTE.read_bytes()).hexdigest() == committed["config"]["feedback_cassette_sha256"]
+    assert hashlib.sha256(RETRY_CASSETTE.read_bytes()).hexdigest() == committed["config"]["retry_cassette_sha256"]
+
+    mp = pytest.MonkeyPatch()
+    request.addfinalizer(mp.undo)
+    mp.setenv("MIMO_API_KEY", "replay-no-network")
+    mp.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
+    base, retry, feedback = Cassette(CASSETTE), Cassette(RETRY_CASSETTE), Cassette(FEEDBACK_CASSETTE)
+    transports = {t: ReplayTransport(base, trial=t) for t in range(3)}
+    transports.update({ev.RETRY_BASE + t: ReplayTransport(retry, trial=ev.RETRY_BASE + t) for t in range(3)})
+    transports.update({ev.FEEDBACK_BASE + t: ReplayTransport(feedback, trial=ev.FEEDBACK_BASE + t) for t in range(3)})
+    args = argparse.Namespace(conditions=["bm25", "bm25_rewrite"], repeat_trials=3, workers=4, limit=0,
+                              embedding_revision=None, retry_on_violation=True, feedback_retry=True)
+    replayed = ev.run(args, transports, load_dataset(ROOT / "examples/public_health_v2"))
+    for condition in ("bm25", "bm25_rewrite"):
+        assert (replayed["generation_with_feedback_retry"][condition]
+                == committed["generation_with_feedback_retry"][condition])
+        assert replayed["feedback_retry_summary"][condition] == committed["feedback_retry_summary"][condition]
+    for trials in committed["generation_with_feedback_retry"].values():
+        assert all(m["false_answer_rate"]["k"] == 0 for m in trials.values())  # 重试不能引入误答
+
