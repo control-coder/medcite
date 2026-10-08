@@ -1,0 +1,2 @@
+# 录像带的哈希需跨平台稳定，禁止换行转换
+eval/cassettes/*.jsonl -text
