@@ -85,6 +85,7 @@ def call_with_retry(fn: Callable[[], Any], tries: int = 3, sleep: Callable[[floa
 # ----------------------------------------------------------------- LLM 步骤
 
 RETRY_BASE = 100  # 重采样用 trial 号 RETRY_BASE + t，与首次采样的录像互不覆盖
+FEEDBACK_BASE = 200  # 带原因的第二次请求用 trial 号 FEEDBACK_BASE + t
 
 def make_provider(transport: Any) -> OpenAICompatibleProvider:
     return OpenAICompatibleProvider(get_provider_profile("mimo_v25"), post=transport,
@@ -108,12 +109,13 @@ def rewrite_query(provider: OpenAICompatibleProvider, question: str) -> dict[str
     return {"query": text.strip(), "status": "ok", "usage": result.usage}
 
 
-def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked: Sequence[tuple[str, str]]) -> dict[str, Any]:
+def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked: Sequence[tuple[str, str]],
+                      feedback: str | None = None) -> dict[str, Any]:
     """走应用的真实生成路径。decision: answered | abstained | invalid | error。"""
     app = MimoGroundedWorkflowProvider(rag_stage=None, llm=provider)  # type: ignore[arg-type]
     retrieval = {"chunks": [{"chunk_id": cid, "text": text} for cid, text in ranked]}
     try:
-        response = call_with_retry(lambda: app.generate(question, retrieval, {}))
+        response = call_with_retry(lambda: app.generate(question, retrieval, {}, feedback=feedback))
     except MediDiagError as exc:
         return {"decision": "invalid" if exc.code in CONTRACT_VIOLATIONS else "error", "code": exc.code, "detail": exc.detail, "selected": []}
     claims = response.payload["claims"]
@@ -124,14 +126,16 @@ def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked:
 
 # ----------------------------------------------------------------- 指标
 
-def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: int, *, with_retry: bool = False) -> dict[str, Any]:
+def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: int, *,
+                       with_retry: bool | str = False) -> dict[str, Any]:
     answerable = [r for r in rows if r["gold"]]
     unanswerable = [r for r in rows if not r["gold"]]
 
     def outcome(row: dict[str, Any]) -> dict[str, Any]:
         first = row["conditions"][condition]["trials"][trial]
         # with_retry：首次违反契约的请求，以重采样那一次的结果为准（最多一次）
-        return first["retry"] if with_retry and "retry" in first else first
+        key = "retry" if with_retry is True else with_retry
+        return first[key] if key and key in first else first
 
     correct = sum(1 for r in answerable if outcome(r)["decision"] == "answered" and set(outcome(r)["selected"]) & set(r["gold"]))
     wrong = sum(1 for r in answerable if outcome(r)["decision"] == "answered" and not set(outcome(r)["selected"]) & set(r["gold"]))
@@ -236,6 +240,7 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
     retrievers = build_retrievers(conditions, dataset, args.embedding_revision)
     providers = {trial: make_provider(t) for trial, t in transports.items()}
     retry_enabled = bool(getattr(args, "retry_on_violation", False))
+    feedback_enabled = bool(getattr(args, "feedback_retry", False))
 
     started = time.perf_counter()
     rewrites: dict[str, dict[str, Any]] = {}
@@ -265,6 +270,9 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
         first = {**grounded_decision(providers[trial], query["question"], ranked), "model_called": True}
         if retry_enabled and first["decision"] == "invalid":  # 只对契约违规重采样一次；网络类错误不算
             first["retry"] = {**grounded_decision(providers[RETRY_BASE + trial], query["question"], ranked), "model_called": True}
+        if feedback_enabled and first["decision"] == "invalid":  # 同上，但第二次请求带上被拒原因
+            first["feedback_retry"] = {**grounded_decision(providers[FEEDBACK_BASE + trial], query["question"], ranked,
+                                                           feedback=first.get("detail")), "model_called": True}
         return first
 
     with ThreadPoolExecutor(args.workers) as pool:
@@ -292,6 +300,17 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
                                  if "retry" in o and o["retry"]["decision"] in {"answered", "abstained"}),
                 "still_invalid": sum(1 for r in rows for o in r["conditions"][c]["trials"]
                                      if "retry" in o and o["retry"]["decision"] in {"invalid", "error"})}
+            for c in conditions}
+    if feedback_enabled:
+        report["generation_with_feedback_retry"] = {
+            c: {f"trial_{t}": generation_metrics(rows, c, t, with_retry="feedback_retry") for t in range(trials_for[c])}
+            for c in conditions}
+        report["feedback_retry_summary"] = {
+            c: {"retried": sum(1 for r in rows for o in r["conditions"][c]["trials"] if "feedback_retry" in o),
+                "recovered": sum(1 for r in rows for o in r["conditions"][c]["trials"]
+                                 if "feedback_retry" in o and o["feedback_retry"]["decision"] in {"answered", "abstained"}),
+                "still_invalid": sum(1 for r in rows for o in r["conditions"][c]["trials"]
+                                     if "feedback_retry" in o and o["feedback_retry"]["decision"] in {"invalid", "error"})}
             for c in conditions}
     if "bm25_rewrite" in conditions:
         report["rewrite"] = {
@@ -324,6 +343,11 @@ def main() -> None:
                         help="重采样录像带，与主录像带分开，不改变已入库录像带的指纹")
     parser.add_argument("--retry-on-violation", action="store_true",
                         help="首次违反输出契约时重采样一次（用 trial 号 100+t，需要额外调用）")
+    parser.add_argument("--feedback-cassette", type=Path,
+                        default=ROOT / "eval/cassettes/llm-pipeline-v2-feedback.jsonl",
+                        help="带原因的第二次请求的录像带，与前两个分开")
+    parser.add_argument("--feedback-retry", action="store_true",
+                        help="首次违反输出契约时，带上被拒原因再请求一次（trial 号 200+t，需要额外调用）")
     parser.add_argument("--limit", type=int, default=0, help="冒烟：每个 split 只取前 N 条查询")
     parser.add_argument("--embedding-revision", default="7999e1d3359715c523056ef9478215996d62a620")
     parser.add_argument("--out", type=Path, default=None)
@@ -340,6 +364,10 @@ def main() -> None:
             retry_cassette = Cassette(args.retry_cassette)
             transports.update({RETRY_BASE + t: RecordingTransport(retry_cassette, args.ledger, max_calls=args.max_calls, trial=RETRY_BASE + t)
                                for t in range(trials)})
+        if args.feedback_retry:
+            feedback_cassette = Cassette(args.feedback_cassette)
+            transports.update({FEEDBACK_BASE + t: RecordingTransport(feedback_cassette, args.ledger, max_calls=args.max_calls,
+                                                                     trial=FEEDBACK_BASE + t) for t in range(trials)})
     else:
         os.environ["MIMO_API_KEY"] = "replay-no-network"  # 回放不联网，也不使用真实密钥
         os.environ["MIMO_BASE_URL"] = "https://api.xiaomimimo.com"
@@ -347,6 +375,10 @@ def main() -> None:
         if args.retry_on_violation:
             retry_cassette = Cassette(args.retry_cassette)
             transports.update({RETRY_BASE + t: ReplayTransport(retry_cassette, trial=RETRY_BASE + t) for t in range(trials)})
+        if args.feedback_retry:
+            feedback_cassette = Cassette(args.feedback_cassette)
+            transports.update({FEEDBACK_BASE + t: ReplayTransport(feedback_cassette, trial=FEEDBACK_BASE + t)
+                               for t in range(trials)})
     report = run(args, transports, dataset)
     if args.mode == "record":
         spent = transports[0].spent()
@@ -358,7 +390,9 @@ def main() -> None:
                    "dataset_sha256": dataset.fingerprints, "cassette_entries": len(cassette),
                    "cassette_sha256": sha256_of(args.cassette),
                    "retry_on_violation": bool(args.retry_on_violation),
-                   "retry_cassette_sha256": sha256_of(args.retry_cassette) if args.retry_on_violation else None},
+                   "retry_cassette_sha256": sha256_of(args.retry_cassette) if args.retry_on_violation else None,
+                   "feedback_retry": bool(args.feedback_retry),
+                   "feedback_cassette_sha256": sha256_of(args.feedback_cassette) if args.feedback_retry else None},
         "spend": spent, **report}
     text = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:

@@ -9,27 +9,58 @@ from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
+DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
+ON_INVALID_CHOICES = ("none", "resample", "feedback")
+_SAFE_FLAGS_OFF = ("use_rerank", "use_term_normalization", "use_evidence_weighting", "use_citation_review")
+_BM25_WEIGHTS = {"w1_bm25": 1.0, "w2_embedding": 0.0, "w3_evidence_level": 0.0, "w4_term_overlap": 0.0}
+_DENSE_WEIGHTS = {"w1_bm25": 0.0, "w2_embedding": 1.0, "w3_evidence_level": 0.0, "w4_term_overlap": 0.0}
+
+
+def _is_revision(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 40 and all(ch in "0123456789abcdef" for ch in value)
+
 
 def load_application_config(path: str | Path) -> dict[str, Any]:
+    """只接受两种显式检索方案：单路 BM25，或单路向量检索（固定版本、只读本地缓存）。"""
     config: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     try:
         flags = config["experiments"]["rag"]["rag_full"]["config"]
-        safe = (
+        common = (
             config["application"] == {"mode": "retrieval_mock", "topology": "single"}
-            and flags.get("use_bm25") is True
-            and all(flags.get(key) is False for key in (
-                "use_embedding", "use_rerank", "use_term_normalization", "use_evidence_weighting", "use_citation_review"))
-            and config["retrieval"]["weights"] == {
-                "w1_bm25": 1.0, "w2_embedding": 0.0, "w3_evidence_level": 0.0, "w4_term_overlap": 0.0}
+            and all(flags.get(key) is False for key in _SAFE_FLAGS_OFF)
             and config["leakage_check"]["check_question_text"] is True
             and config["leakage_check"]["check_answer_key"] is True
             and set(config["leakage_check"]["chunk_fields_to_check"]) >= {"source", "source_id", "metadata.raw_id"}
+            and config.get("generation", {}).get("on_invalid", "none") in ON_INVALID_CHOICES
         )
+        weights = config["retrieval"]["weights"]
+        bm25 = (flags.get("use_bm25") is True and flags.get("use_embedding") is False and weights == _BM25_WEIGHTS)
+        embedding = config["embedding"]
+        dense = (
+            flags.get("use_bm25") is False and flags.get("use_embedding") is True and weights == _DENSE_WEIGHTS
+            and embedding.get("model") == DENSE_MODEL and _is_revision(embedding.get("revision"))
+            and embedding.get("local_files_only") is True
+            and config["rerank"].get("model") == "disabled"
+        )
+        safe = common and (bm25 or dense)
     except (KeyError, TypeError, AttributeError) as exc:
         raise ValueError("应用配置缺少明确的安全检索参数。") from exc
     if not safe:
-        raise ValueError("应用模式仅允许显式的单路纯 BM25 配置，禁止套用研究/在线配置或禁用泄露检查。")
+        raise ValueError("应用模式仅允许显式的单路 BM25 或单路固定版本向量检索配置，禁止套用研究/在线配置或禁用泄露检查。")
     return config
+
+
+def retrieval_profile(config: dict[str, Any]) -> str:
+    return "dense" if config["experiments"]["rag"]["rag_full"]["config"].get("use_embedding") else "bm25"
+
+
+def _dense_factory(chunks: Any, **kwargs: Any) -> Any:
+    from medidiag.rag.dense import DenseRetriever, load_local_encoder
+
+    name, revision = kwargs["embedding_model"], kwargs["embedding_revision"]
+    encoder = load_local_encoder(name, revision, device=kwargs.get("device", "cpu"),
+                                 batch_size=int(kwargs.get("embedding_batch_size", 8)))
+    return DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision)
 
 
 def build_application_provider(mode: str = "fake_offline", *,
@@ -45,7 +76,10 @@ def build_application_provider(mode: str = "fake_offline", *,
         raise ValueError("真实应用必须显式指定 --live-budget 持久账本；选择该模式表示已授权调用。")
     path = Path(app_config)
     config = load_application_config(path if path.is_absolute() else Path(root) / path)
-    rag = RuntimeMedicalRAG.from_config(config, root=root)
+    if retrieval_profile(config) == "dense":
+        rag = RuntimeMedicalRAG.from_config(config, root=root, retriever_factory=_dense_factory)
+    else:
+        rag = RuntimeMedicalRAG.from_config(config, root=root)
     if mode == "retrieval_mock":
         return RetrievalMockWorkflowProvider(rag)
     from medidiag.llm.budget import BudgetedTransport
@@ -58,4 +92,4 @@ def build_application_provider(mode: str = "fake_offline", *,
         post=BudgetedTransport(live_budget), max_retries=0, max_structured_retries=0)
     if not llm.is_configured:
         raise ValueError("mimo_v25 配置不完整，请通过安全环境配置凭据。")
-    return MimoGroundedWorkflowProvider(rag, llm=llm)
+    return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=config.get("generation", {}).get("on_invalid", "none"))
