@@ -112,7 +112,7 @@ def child_main(worker_id: str, delay_s: float, log_path: str, stop_file: str, le
             result = worker.run_once()
             if not result.processed:
                 # 只有空闲时才扫描，被接管的任务立刻由本进程执行，避免接管后排队再次过期。
-                scanner.scan_once()
+                scanner.scan_once(limit=1)
                 result = worker.run_once()
         except Exception as exc:  # 被冻结后恢复的僵尸写入会走到这里
             code = getattr(exc, "code", None) or type(exc).__name__

@@ -670,3 +670,50 @@ def test_heartbeat_uses_its_own_session(runtime) -> None:
     assert heartbeat.renewals >= 1
     # 每次续期都自取会话，没有共用调用方的 Session。
     assert len(opened) >= 1
+
+
+def _expire(factory, executor, task_id: str, owner: str, attempt: int = 0) -> None:
+    with factory() as session:
+        assert executor.lease.acquire(session, task_id, owner) is True
+        session.execute(
+            update(WorkflowTask)
+            .where(WorkflowTask.task_id == task_id)
+            .values(lease_until=executor.lease.now() - timedelta(seconds=1), attempt=attempt)
+        )
+        session.commit()
+
+
+def test_scan_once_limit_reclaims_only_that_many(runtime) -> None:
+    _, factory = runtime
+    executor = WorkflowExecutor()
+    _, first = _create_task(factory, "workflow-a")
+    with factory() as session:
+        case = executor.create_case(session, "Deidentified simulated case two.", "case-2", "test-scope")
+        second = executor.start_workflow(session, case.case_id, "case_workflow", "workflow-b", "input-hash-2").task_id
+    for task_id in (first, second):
+        _expire(factory, executor, task_id, "crashed-worker")
+
+    scanner = LeaseScanner(factory, recovery_worker_id="local-worker")
+    assert len(scanner.scan_once(limit=1)) == 1
+    with factory() as session:
+        attempts = sorted(session.scalars(select(WorkflowTask.attempt)))
+    assert attempts == [0, 1]  # 另一个任务没有被提前接管，attempt 没有被放大
+    assert len(scanner.scan_once()) == 1
+
+
+def test_run_once_escalates_after_too_many_reclaims(runtime) -> None:
+    _, factory = runtime
+    executor = WorkflowExecutor()
+    case_id, task_id = _create_task(factory)
+    _expire(factory, executor, task_id, "crashed-worker", attempt=2)
+    assert LeaseScanner(factory, recovery_worker_id="w").scan_once() == [task_id]  # attempt 2 -> 3
+
+    result = SingleMachineWorker(factory, DeterministicWorkflowProvider(), worker_id="w").run_once()
+    assert result.final_state == "ESCALATED"
+    with factory() as session:
+        assert session.scalar(select(Case.status).where(Case.case_id == case_id)) == "ESCALATED"
+        assert session.query(CaseReport).count() == 0
+        event = session.scalar(
+            select(CaseEventLog).where(CaseEventLog.case_id == case_id).order_by(CaseEventLog.id.desc()).limit(1)
+        )
+        assert "WORKFLOW_RETRY_EXCEEDED" in str(event.detail)
