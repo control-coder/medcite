@@ -44,11 +44,11 @@
 | --- | --- |
 | `processing` | 尚在处理，刷新/轮询同一任务 |
 | `ready` | 工程成功且有可关联内容；不等于 NLI、临床或医学正确性审核 |
-| `insufficient_evidence` | 检索为空、模型弃答或无可关联 claim；不输出确定分析 |
+| `insufficient_evidence` | 检索为空、模型拒答或无可关联 claim；不输出确定分析 |
 | `failed` | 未交付兼容报告或处理升级/失败，显示安全错误码，不泄露上游异常正文 |
 | `cancelled` | 已取消，没有可用报告 |
 
-空检索保留弃答阶段产物但跳过生成调用。`ESCALATED` 在投影中属未交付，并非成功终态；底层 HUMAN 状态机不变。`retry_action=resubmit` 只表示新建咨询。
+空检索保留拒答阶段产物但跳过生成调用。`ESCALATED` 在投影中属未交付，并非成功终态；底层 HUMAN 状态机不变。`retry_action=resubmit` 只表示新建咨询。
 
 `execution_mode` 可为 `fake_offline`、`retrieval_mock`、`mimo_grounded`、`model_pipeline`、`unknown`。前端明示固定演示、真实检索/模拟生成、MiMo 受约束摘录等区别；`unknown` 不猜测为在线成功，任何标签都不能证明某个任务实际联网（空证据尤其不会生成）。路线设计见 [架构](architecture.md#检索与模型路线)。
 
