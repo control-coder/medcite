@@ -1,0 +1,54 @@
+{
+  "config": {
+    "backend": "postgres",
+    "workers": 4,
+    "cases": 60,
+    "kills_planned": 0,
+    "freezes_planned": 0,
+    "stage_delay_ms": 150,
+    "lease_seconds": 3,
+    "seed": 1,
+    "provider": "DelayedProvider(无网络、无付费调用)"
+  },
+  "injected": {
+    "kills": 0,
+    "freezes": 0,
+    "ticks_without_busy_worker": 0,
+    "events": []
+  },
+  "outcome": {
+    "cases": 60,
+    "status": {
+      "CLOSED_SUCCESS": 60
+    },
+    "terminal_success_rate": 1.0,
+    "lease_reclaims": 0,
+    "task_attempt_histogram": {
+      "0": 60
+    },
+    "stale_writers_rejected": {}
+  },
+  "side_effects": {
+    "violations": {
+      "cases_not_terminal_success": 0,
+      "cases_without_exactly_one_report": 0,
+      "duplicate_stage_artifacts": 0,
+      "cases_missing_stage_artifacts": 0,
+      "tasks_left_running_or_pending": 0
+    },
+    "provider_calls": 420,
+    "committed_provider_artifacts": 420,
+    "reexecuted_provider_calls": 0
+  },
+  "performance": {
+    "wall_seconds": 20.44,
+    "throughput_cases_per_s": 2.936,
+    "latency_s": {
+      "p50": 11.87,
+      "p95": 20.23,
+      "max": 20.39
+    },
+    "note": "延迟 = 病例创建到最终写入；所有病例在 t0 一次性提交，因此包含排队时间。"
+  },
+  "passed": true
+}

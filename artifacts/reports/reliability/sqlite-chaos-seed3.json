@@ -1,0 +1,119 @@
+{
+  "config": {
+    "backend": "sqlite",
+    "workers": 4,
+    "cases": 60,
+    "kills_planned": 8,
+    "freezes_planned": 2,
+    "stage_delay_ms": 150,
+    "lease_seconds": 3,
+    "seed": 3,
+    "provider": "DelayedProvider(无网络、无付费调用)"
+  },
+  "injected": {
+    "kills": 8,
+    "freezes": 2,
+    "ticks_without_busy_worker": 0,
+    "events": [
+      {
+        "t": 1.56,
+        "action": "kill",
+        "worker": "stress-w4",
+        "task": "task_918bde7322a4"
+      },
+      {
+        "t": 2.8,
+        "action": "freeze",
+        "worker": "stress-w2",
+        "task": "task_cde054926836"
+      },
+      {
+        "t": 3.92,
+        "action": "kill",
+        "worker": "stress-w5",
+        "task": "task_bee3d4ae8066"
+      },
+      {
+        "t": 5.47,
+        "action": "kill",
+        "worker": "stress-w6",
+        "task": "task_528779c44f5f"
+      },
+      {
+        "t": 7.0,
+        "action": "kill",
+        "worker": "stress-w7",
+        "task": "task_2e9520126e94"
+      },
+      {
+        "t": 9.06,
+        "action": "freeze",
+        "worker": "stress-w2",
+        "task": "task_b09e1a7afdbb"
+      },
+      {
+        "t": 10.8,
+        "action": "kill",
+        "worker": "stress-w8",
+        "task": "task_f2f494beafd7"
+      },
+      {
+        "t": 12.23,
+        "action": "kill",
+        "worker": "stress-w1",
+        "task": "task_9a54c41cbb9d"
+      },
+      {
+        "t": 14.08,
+        "action": "kill",
+        "worker": "stress-w10",
+        "task": "task_d26b36065de8"
+      },
+      {
+        "t": 15.11,
+        "action": "kill",
+        "worker": "stress-w11",
+        "task": "task_cdf2e369f19b"
+      }
+    ]
+  },
+  "outcome": {
+    "cases": 60,
+    "status": {
+      "CLOSED_SUCCESS": 60
+    },
+    "terminal_success_rate": 1.0,
+    "lease_reclaims": 24,
+    "task_attempt_histogram": {
+      "0": 50,
+      "2": 6,
+      "3": 4
+    },
+    "stale_writers_rejected": {
+      "TASK_LEASE_LOST": 2
+    }
+  },
+  "side_effects": {
+    "violations": {
+      "cases_not_terminal_success": 0,
+      "cases_without_exactly_one_report": 0,
+      "duplicate_stage_artifacts": 0,
+      "cases_missing_stage_artifacts": 0,
+      "tasks_left_running_or_pending": 0
+    },
+    "provider_calls": 430,
+    "committed_provider_artifacts": 420,
+    "reexecuted_provider_calls": 10
+  },
+  "performance": {
+    "wall_seconds": 27.34,
+    "throughput_cases_per_s": 2.194,
+    "latency_s": {
+      "p50": 15.59,
+      "p95": 25.39,
+      "max": 27.3
+    },
+    "note": "延迟 = 病例创建到最终写入；所有病例在 t0 一次性提交，因此包含排队时间。"
+  },
+  "passed": true
+}

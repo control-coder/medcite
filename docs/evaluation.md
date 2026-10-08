@@ -147,6 +147,45 @@
 python -m eval.retrieval_benchmark --embedding-revision 7999e1d3359715c523056ef9478215996d62a620
 ```
 
+## 五、多进程故障注入压测
+
+`scripts/stress_reliability.py` 提交 60 个病例，由 4 个独立 worker 进程领取（每个 provider 阶段固定耗时 150 ms，7 个阶段，无网络、无付费调用），运行期间随机注入故障，结束后只从数据库和调用日志核对不变量：
+
+- 硬终止：对当前持有任务的 worker 做 TerminateProcess，再起新进程补位。每次运行 8 次。
+- 整进程挂起：把持有任务的 worker 挂起超过租约（3 秒）后恢复，心跳线程一并停止。该 worker 恢复时仍会尝试写入，用来检验僵尸写入被租约条件拒绝。每次运行 2 次。
+- 恢复路径：空闲 worker 调用 `LeaseScanner` 接管过期任务，再由同一进程继续执行。
+
+核对的不变量：全部病例到达 `CLOSED_SUCCESS`；每个病例恰好 1 份 `CaseReport`；每个（病例，阶段）至多 1 条 `StageArtifact`；没有残留的 RUNNING/PENDING 任务。
+
+| 场景（60 病例，4 worker） | 终态成功率 | 违规项 | 接管次数 | 重复执行的 provider 调用 | 吞吐（病例/秒） | p50 / p95 完成时间（秒） |
+| --- | --- | --- | --- | --- | --- | --- |
+| SQLite 无故障 | 60/60 | 0 | 0 | 0 | 3.26 | 10.5 / 18.3 |
+| SQLite 8 次 kill + 2 次挂起（3 个种子） | 180/180 | 0 | 17 / 18 / 24 | 10 / 10 / 10 | 1.95 – 2.28 | p95 25.2 – 28.7 |
+| PostgreSQL 17 无故障 | 60/60 | 0 | 0 | 0 | 2.94 | 11.9 / 20.2 |
+| PostgreSQL 17 8 次 kill + 2 次挂起（3 个种子） | 180/180 | 0 | 25 / 18 / 28 | 10 / 9 / 10 | 1.91 – 2.09 | p95 27.7 – 30.2 |
+
+读法：
+
+- 6 次故障运行共 360 个病例、48 次 kill、12 次挂起，没有丢任务、没有重复报告、没有重复阶段产物。挂起的 12 次中，恢复后的僵尸写入全部被拒绝（日志里记录为 `TASK_LEASE_LOST`，SQLite 种子 2 多出 1 次被拒绝的写入，原因没有深查）。
+- 语义是“至少执行一次、结果恰好提交一次”：被中断的那次 provider 调用会重跑，每次故障约多执行 1 次调用（430 次调用对 420 条提交）。provider 如果有外部副作用，需要自己保证幂等。
+- 故障下吞吐约降到无故障的 60% 到 71%，p95 完成时间增加约 7 到 10 秒；绝对数由 3 秒租约和固定延迟决定，只能用于比较，不能当作容量指标。完成时间含排队：60 个病例在 t0 一次性提交。
+- 发现：接管次数多于故障次数（SQLite 种子 1 为 17 次对 10 次注入）。`scan_once` 会把当次发现的全部过期任务接管给同一个 worker，该 worker 逐个执行，后面的任务在等待期间租约再次过期，被其他空闲 worker 再次接管，任务 attempt 因此最高到 3。结果仍然正确，但 attempt 计数会被放大；`run_once` 路径也没有 attempt 上限（上限只在 Celery 的 `run_task` 路径生效）。本节没有修改这部分行为。
+- 只杀过一次、不批量接管的情形（5 次 kill，30 病例）接管次数等于 kill 次数，说明接管本身没有重复。
+
+没有覆盖的部分：
+
+- Redis/Celery 不在此压测内；队列路径的重复投递、派发失败补偿、单次进程中断见 `scripts/verify_queue.py`。
+- 单机、本地回环网络、固定延迟的确定性 provider；没有测网络分区、磁盘故障、数据库主从切换。
+- kill 在任务执行期间随机落点，没有对每一个提交点逐一枚举。
+- 真实模型调用的延迟与失败不在这里。
+
+复现（PostgreSQL 会自动启动并删除一个独立命名的临时容器，不接触已有容器与卷）：
+
+```
+python -I scripts/stress_reliability.py --backend sqlite --kills 8 --freezes 2 --seed 1 --out sqlite-chaos-seed1.json
+python -I scripts/stress_reliability.py --backend postgres --kills 8 --freezes 2 --seed 1 --out postgres-chaos-seed1.json
+```
+
 ## 未验证的范围
 
-全新环境安装、真实模型与 PostgreSQL/Redis 的联合运行、公网生产安全、多机容量、临床效果与完整计费均未验证。研究子系统的 formal 结论与限制见 [研究评测协议](research/evaluation-protocol.md) 和 [NLI 语言兼容性复盘](research/nli-language-compatibility.md)。
+全新环境安装、真实模型与 PostgreSQL/Redis 的联合运行（第五节只覆盖 PostgreSQL 的多进程恢复，不含 Redis）、公网生产安全、多机容量、临床效果与完整计费均未验证。研究子系统的 formal 结论与限制见 [研究评测协议](research/evaluation-protocol.md) 和 [NLI 语言兼容性复盘](research/nli-language-compatibility.md)。

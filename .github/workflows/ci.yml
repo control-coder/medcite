@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "feat/eval-scale-abstention"]  # TEMP: 验证分支 CI，合并前移除
+    branches: ["main"]
   pull_request:
 
 concurrency:
