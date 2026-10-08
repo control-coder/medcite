@@ -34,7 +34,9 @@ def main() -> None:
     parser.add_argument("--provider", choices=["fake_offline", "retrieval_mock"], default="fake_offline")
     parser.add_argument("--browser", action="store_true", help="同时运行现有 Edge 浏览器验收，不下载浏览器")
     args = parser.parse_args()
-    if Path(sys.prefix).name.lower() != "medidiag" or sys.version_info[:2] != (3, 11):
+    # CI 使用 setup-python 的虚拟环境，显式设置 MEDIDIAG_VERIFY_ANY_ENV=1 才放宽 conda 环境名检查。
+    allow_any_env = os.environ.get("MEDIDIAG_VERIFY_ANY_ENV") == "1"
+    if (not allow_any_env and Path(sys.prefix).name.lower() != "medidiag") or sys.version_info[:2] != (3, 11):
         raise SystemExit("请先激活 conda medidiag（Python 3.11），禁止使用其他环境。")
     if not (ROOT / "frontend" / "dist" / "index.html").is_file():
         raise SystemExit("请先执行 npm ci --prefix frontend 与 npm run build --prefix frontend。")
@@ -131,7 +133,7 @@ def main() -> None:
                            "cancellation_boundary": ("浏览器待领取取消；运行中迟到写入另由单元测试覆盖。"
                                                      if args.browser else "本次未运行浏览器取消验收。"),
                            "separate_api_and_worker": True, "new_database": True, "cross_owner_denied": True,
-                           "conda_environment": "medidiag", "python_version": sys.version.split()[0],
+                           "conda_environment": "medidiag" if not allow_any_env else "ci-venv", "python_version": sys.version.split()[0],
                            "boundary": "现有指定环境、新数据库与独立进程；不是全新机器或临床验收。"}
                 (work / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                 print("离线闭环通过；记录目录：", work)
