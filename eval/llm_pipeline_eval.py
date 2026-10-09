@@ -43,20 +43,14 @@ from eval.retrieval_benchmark import (
 )
 from medidiag.errors import MediDiagError
 from medidiag.llm.cassette import Cassette, RecordingTransport, ReplayTransport
-from medidiag.llm.contracts import LLMRequest
 from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
 from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
+from medidiag.workflow.query_rewrite import REWRITE_PROMPT, build_rewrite_request, parse_rewrite
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_VERSION = "llm-pipeline-eval-v1"
 TOP_K = 3
-REWRITE_PROMPT = (
-    "你是公共卫生科普检索的查询改写助手。把用户的口语化问题改写成一句规范的书面表述，"
-    "使用世界卫生组织等科普页面常用的术语，保留原意。只做改写：不回答问题，"
-    "不添加问题中没有的事实、数字或建议。"
-    '返回 JSON：{"query":"改写后的一句话，不超过 60 字"}。'
-)
 RETRYABLE = {"PROVIDER_RATE_LIMITED", "PROVIDER_UNAVAILABLE", "LLM_TIMEOUT", "PROVIDER_NETWORK_ERROR"}
 CONTRACT_VIOLATIONS = {"STRUCTURED_OUTPUT_INVALID", "PROVIDER_SCHEMA_INVALID"}
 
@@ -94,19 +88,15 @@ def make_provider(transport: Any) -> OpenAICompatibleProvider:
 
 def rewrite_query(provider: OpenAICompatibleProvider, question: str) -> dict[str, Any]:
     """返回 {"query": 改写句, "status": ok|invalid|error}；失败时调用方回退到原问题。"""
-    request = LLMRequest(
-        messages=[{"role": "system", "content": REWRITE_PROMPT},
-                  {"role": "user", "content": json.dumps({"question": question}, ensure_ascii=False)}],
-        model="mimo-v2.5", response_format={"type": "json_object"}, max_tokens=256,
-        reasoning_mode="disabled", prompt_version="query-rewrite-v1")
+    request = build_rewrite_request(question)
     try:
         result = call_with_retry(lambda: provider.generate(request, timeout_s=45, idempotency_key="rw-" + hashlib.sha256(question.encode()).hexdigest()[:24]))
     except MediDiagError as exc:
         return {"query": "", "status": "invalid" if exc.code in CONTRACT_VIOLATIONS else "error", "code": exc.code}
-    text = (result.parsed_json or {}).get("query")
-    if not isinstance(text, str) or not text.strip() or len(text) > 120:
+    text = parse_rewrite(result.parsed_json)
+    if text is None:
         return {"query": "", "status": "invalid", "code": "REWRITE_SHAPE"}
-    return {"query": text.strip(), "status": "ok", "usage": result.usage}
+    return {"query": text, "status": "ok", "usage": result.usage}
 
 
 def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked: Sequence[tuple[str, str]],

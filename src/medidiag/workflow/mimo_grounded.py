@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from medidiag.errors import MediDiagError
 from medidiag.llm.contracts import LLMProvider, LLMRequest
 from medidiag.workflow.provider_runtime import ProviderResponse
+from medidiag.workflow.query_rewrite import build_rewrite_request, parse_rewrite
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 LIMITATION = "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。"
@@ -44,9 +45,29 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     # 输出不合格（摘录不是原文、格式错误）时的补救，最多再调用一次模型：
     # none 不补救；resample 原样再问一次；feedback 再问一次并告知上次被拒的原因。
     on_invalid: Literal["none", "resample", "feedback"] = "none"
+    # 检索前先让模型把问题改写成规范表述，和原问题一起做 BM25 检索（每个问题多 1 次调用）。
+    # 改写失败时回退到原问题，并把原因记在检索结果里，不静默吞掉。
+    rewrite: bool = False
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
-        return {**super().retrieve(normalized_query), "execution_mode": "mimo_grounded"}
+        query, rewrite_info = (self._rewritten(normalized_query) if self.rewrite else (normalized_query, None))
+        result = {**super().retrieve(query), "execution_mode": "mimo_grounded"}
+        if rewrite_info is not None:
+            result["query_rewrite"] = rewrite_info
+        return result
+
+    def _rewritten(self, question: str) -> tuple[str, dict[str, Any]]:
+        if self.llm is None:
+            raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
+        try:
+            result = self.llm.generate(build_rewrite_request(question), timeout_s=45,
+                                       idempotency_key="mimo-rewrite-" + uuid.uuid4().hex)
+        except MediDiagError as exc:
+            return question, {"status": "fallback", "code": exc.code}
+        text = parse_rewrite(result.parsed_json)
+        if text is None:
+            return question, {"status": "fallback", "code": "REWRITE_SHAPE"}
+        return f"{question} {text}", {"status": "ok", "rewrite": text, "usage": result.usage}
 
     def plan(self, normalized_query: str, retrieval: dict[str, Any]) -> dict[str, Any]:
         return {**super().plan(normalized_query, retrieval), "objective": "真实模型选择直接答题的完整原文短引，否则弃答"}
