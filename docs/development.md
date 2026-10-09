@@ -108,6 +108,8 @@ python scripts/verify_public_rag.py
 
 服务已在 8400 端口运行时，可单独执行 `npm run test:e2e --prefix frontend`；其他端口设置 `MEDIDIAG_WEB_URL`。真实模型的浏览器用例需显式授权变量，日常测试不会触发付费请求。
 
+**重新生成 README 里的截图**：运行上面带 `--provider retrieval_mock --browser` 的命令，截图会写到 `artifacts/visual/`（该目录不提交）。README 用到的三张是 `public-rag-form-desktop.png`、`public-rag-desktop.png`、`public-rag-empty-mobile.png`，复制到 `docs/images/` 并改成对应的文件名后提交。界面改动后需要重新生成。
+
 ## 真实模型模式
 
 `mimo_grounded` 会在用户提交后调用 `mimo-v2.5`，需要在 `.env` 中配置 `MIMO_API_KEY`、`MIMO_BASE_URL`、`MIMO_MODEL`，并指定持久化预算账本：
