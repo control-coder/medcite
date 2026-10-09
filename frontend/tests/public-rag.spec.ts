@@ -8,6 +8,8 @@ test('公开中文检索、来源、刷新恢复和无证据反馈', async ({ pa
   await page.goto('/app/');
   await page.getByRole('button', {name: '填入公开检索示例'}).click();
   await page.getByRole('checkbox').check();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({path: '../artifacts/visual/public-rag-form-desktop.png', fullPage: true});
   await page.getByRole('button', {name: '提交并检索证据'}).click();
   await expect(page).toHaveURL(/#\/cases\/case_/);
   const url = page.url(); await page.reload(); await expect(page).toHaveURL(url);
