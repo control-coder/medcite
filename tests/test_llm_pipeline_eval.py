@@ -189,3 +189,13 @@ def test_retry_on_violation_resamples_once_and_reports_both_views(tmp_path: Path
     after = report["generation_with_retry"]["bm25"]["trial_0"]
     assert after["contract_violations_or_errors"] == 0 and after["useful_answer_rate"]["k"] == 1
     assert report["retry_summary"]["bm25"] == {"retried": 2, "recovered": 2, "still_invalid": 0}
+
+
+def test_answer_f1_from_generation_metrics():
+    metrics = {"precision_when_answered": ev.proportion(34, 35), "useful_answer_rate": ev.proportion(34, 56)}
+    scores = ev.answer_f1(metrics)
+    assert scores["precision"] == pytest.approx(34 / 35)
+    assert scores["recall"] == pytest.approx(34 / 56)
+    assert scores["f1"] == pytest.approx(0.7473, abs=1e-4)
+    nothing = {"precision_when_answered": ev.proportion(0, 0), "useful_answer_rate": ev.proportion(0, 56)}
+    assert ev.answer_f1(nothing)["f1"] == 0.0

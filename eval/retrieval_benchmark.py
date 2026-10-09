@@ -2,7 +2,8 @@
 
 回答三个问题，全部带置信区间并区分 dev/test：
 
-1. 不同检索器（BM25 空格/双字、IDF 覆盖率、稠密向量、混合）的 Hit@k / Recall@3 / MRR。
+1. 不同检索器（BM25 空格/双字、IDF 覆盖率、稠密向量、混合）的 Hit@k、Recall@k、Precision@k、
+   nDCG@k、MAP@10、MRR@10；以及作答决定的精确率、召回率与 F1。
 2. 以 top1 分数作为置信度时，弃答阈值如何在“误答率”和“过度弃答率”之间取舍；
    阈值与混合权重只在 dev 上选择，test 只报告不调参。
 3. 语料规模从小到大变化时 Hit@3 如何衰减（每条查询保留自己的金标准文档，
@@ -289,10 +290,43 @@ def run_queries(scorer: Scorer, chunks: Sequence[dict[str, Any]], queries: Seque
         records.append({
             "sample_id": query["sample_id"], "split": query["split"], "bucket": query["bucket"],
             "gold": sorted(gold), "retrieved": [cid for cid, _ in ranked[:5]],
+            # 每个金标准片段在结果里的名次（从 1 起，只含前 TOP_N 名内的），供 Recall/Precision/nDCG/MAP 使用
+            "gold_ranks": sorted(r for r, (cid, _) in enumerate(ranked, 1) if cid in gold),
             "top1_score": ranked[0][1] if ranked else 0.0, "first_gold_rank": first_gold,
             "gold_in_top3": len(gold & {cid for cid, _ in ranked[:3]}),
         })
     return records
+
+
+def _mean_ci(values: Sequence[float]) -> dict[str, Any]:
+    return {"mean": round(statistics.mean(values), 4) if values else None, "ci95": bootstrap_mean_ci(values)}
+
+
+def _gold_ranks_within(record: dict[str, Any], k: int) -> list[int]:
+    return [rank for rank in record["gold_ranks"] if rank <= k]
+
+
+def _recall_at(record: dict[str, Any], k: int) -> float:
+    """前 k 条里找回的金标准片段数 / 金标准片段总数。"""
+    return len(_gold_ranks_within(record, k)) / len(record["gold"])
+
+
+def _precision_at(record: dict[str, Any], k: int) -> float:
+    """前 k 条里属于金标准的比例。多数问题只有 1 个金标准，所以上限是 1/k，这是该指标本身的性质。"""
+    return len(_gold_ranks_within(record, k)) / k
+
+
+def _ndcg_at(record: dict[str, Any], k: int) -> float:
+    """二元相关度的 nDCG：命中越靠前得分越高，与理想排序（金标准全部排在最前）相比。"""
+    dcg = sum(1 / math.log2(rank + 1) for rank in _gold_ranks_within(record, k))
+    ideal = sum(1 / math.log2(i + 2) for i in range(min(len(record["gold"]), k)))
+    return dcg / ideal if ideal else 0.0
+
+
+def _average_precision(record: dict[str, Any]) -> float:
+    """AP@TOP_N：每个金标准片段出现处的 Precision 之平均，分母为金标准总数（没找回的记 0）。"""
+    total = sum((i + 1) / rank for i, rank in enumerate(record["gold_ranks"]))
+    return total / len(record["gold"])
 
 
 def retrieval_metrics(records: Sequence[dict[str, Any]], corpus_size: int) -> dict[str, Any]:
@@ -305,6 +339,14 @@ def retrieval_metrics(records: Sequence[dict[str, Any]], corpus_size: int) -> di
     out["recall@3"] = {"mean": round(statistics.mean(recalls), 4) if recalls else None, "ci95": bootstrap_mean_ci(recalls)}
     reciprocal = [1 / r["first_gold_rank"] if r["first_gold_rank"] else 0.0 for r in answerable]
     out["mrr@10"] = {"mean": round(statistics.mean(reciprocal), 4) if reciprocal else None, "ci95": bootstrap_mean_ci(reciprocal)}
+    # 常用的排序指标：金标准片段可能不止一个，所以 Recall、Precision、nDCG、MAP 与 Hit 不同
+    for k in (1, 5, 10):
+        out[f"recall@{k}"] = _mean_ci([_recall_at(r, k) for r in answerable])
+    for k in (1, 3, 5):
+        out[f"precision@{k}"] = _mean_ci([_precision_at(r, k) for r in answerable])
+    for k in (3, 10):
+        out[f"ndcg@{k}"] = _mean_ci([_ndcg_at(r, k) for r in answerable])
+    out["map@10"] = _mean_ci([_average_precision(r) for r in answerable])
     baseline = [random_hit_expectation(corpus_size, len(r["gold"]), 3) for r in answerable]
     out["random_hit@3"] = round(statistics.mean(baseline), 4) if baseline else None
     return out
@@ -316,6 +358,9 @@ def abstention_at(records: Sequence[dict[str, Any]], threshold: float) -> dict[s
     unanswerable = [r for r in records if not r["gold"]]
     answered = [r for r in answerable if r["top1_score"] > threshold]
     answered_hit = [r for r in answered if r["first_gold_rank"] is not None and r["first_gold_rank"] <= 3]
+    answered_total = len(answered) + sum(r["top1_score"] > threshold for r in unanswerable)
+    precision = len(answered_hit) / answered_total if answered_total else None
+    recall = len(answered_hit) / len(answerable) if answerable else None
     return {
         "threshold": round(threshold, 6),
         # 不可回答的问题仍被作答
@@ -326,6 +371,12 @@ def abstention_at(records: Sequence[dict[str, Any]], threshold: float) -> dict[s
         "wrong_evidence_rate": proportion(len(answered) - len(answered_hit), len(answerable)),
         # 可回答、作答且前 3 条命中
         "useful_answer_rate": proportion(len(answered_hit), len(answerable)),
+        # 把“作答且前 3 条含金标准”当作正确回答：精确率 = 正确回答数 / 全部回答数（含不该答的），
+        # 召回率 = 正确回答数 / 可回答问题数（与 useful_answer_rate 相同），F1 为两者的调和平均
+        "answer_precision": proportion(len(answered_hit), answered_total),
+        "answer_recall": proportion(len(answered_hit), len(answerable)),
+        "answer_f1": round(2 * precision * recall / (precision + recall), 4)
+        if precision and recall else (0.0 if answered_total else None),
     }
 
 

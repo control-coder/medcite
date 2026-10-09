@@ -158,3 +158,41 @@ def test_latency_profile_really_encodes_queries(tmp_path):
     rb.latency_profile(scorer, dataset.chunks, dataset.queries)
     # 预热 1 次 + 每条查询 1 次；文档向量已缓存，不应再编码
     assert sum(calls) == len(dataset.queries) + 1
+
+
+def test_ranking_metrics_with_two_gold_chunks():
+    """金标准在第 1、4 名：Hit@1=1，Recall@1=0.5，Precision@3=1/3，nDCG 与 AP 手算核对。"""
+    record = {"gold": ["x", "y"], "gold_ranks": [1, 4], "first_gold_rank": 1, "gold_in_top3": 1,
+              "bucket": "multi", "top1_score": 1.0}
+    metrics = rb.retrieval_metrics([record], corpus_size=10)
+    assert metrics["hit@1"]["rate"] == 1.0
+    assert metrics["recall@1"]["mean"] == 0.5
+    assert metrics["recall@3"]["mean"] == 0.5
+    assert metrics["recall@5"]["mean"] == 1.0 and metrics["recall@10"]["mean"] == 1.0
+    assert metrics["precision@3"]["mean"] == pytest.approx(1 / 3, abs=1e-4)
+    assert metrics["ndcg@3"]["mean"] == pytest.approx(0.6131, abs=1e-4)
+    assert metrics["ndcg@10"]["mean"] == pytest.approx(0.8772, abs=1e-4)
+    assert metrics["map@10"]["mean"] == 0.75
+
+
+def test_ranking_metrics_missing_gold_is_zero():
+    record = {"gold": ["x"], "gold_ranks": [], "first_gold_rank": None, "gold_in_top3": 0,
+              "bucket": "direct", "top1_score": 1.0}
+    metrics = rb.retrieval_metrics([record], corpus_size=10)
+    assert all(metrics[name]["mean"] == 0.0 for name in ("recall@10", "precision@1", "ndcg@10", "map@10"))
+
+
+def test_answer_precision_recall_f1():
+    records = [
+        {"gold": ["x"], "first_gold_rank": 1, "top1_score": 5.0},
+        {"gold": ["x"], "first_gold_rank": 2, "top1_score": 4.0},
+        {"gold": ["x"], "first_gold_rank": None, "top1_score": 1.0},
+        {"gold": [], "first_gold_rank": None, "top1_score": 2.0},
+        {"gold": [], "first_gold_rank": None, "top1_score": 0.0},
+    ]
+    result = rb.abstention_at(records, 0.0)
+    assert result["answer_precision"]["k"] == 2 and result["answer_precision"]["n"] == 4
+    assert result["answer_recall"]["k"] == 2 and result["answer_recall"]["n"] == 3
+    assert result["answer_f1"] == pytest.approx(0.5714, abs=1e-4)
+    nothing_answered = rb.abstention_at(records, 99.0)
+    assert nothing_answered["answer_precision"]["rate"] is None and nothing_answered["answer_f1"] is None

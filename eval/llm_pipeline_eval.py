@@ -170,6 +170,18 @@ def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: in
     }
 
 
+def answer_f1(metrics: dict[str, Any]) -> dict[str, float | None]:
+    """由 ``generation_metrics`` 的结果算出回答的精确率、召回率和 F1，不改动入库报告的字段。
+
+    精确率 = 作答且选中金标准 / 全部作答（含不该答却答了的）；召回率 = 作答且选中金标准 / 可回答问题数。
+    """
+    precision = metrics["precision_when_answered"]["rate"]
+    recall = metrics["useful_answer_rate"]["rate"]
+    f1 = 2 * precision * recall / (precision + recall) if precision and recall else (
+        0.0 if precision is not None or recall is not None else None)
+    return {"precision": precision, "recall": recall, "f1": None if f1 is None else round(f1, 4)}
+
+
 def repeatability(rows: Sequence[dict[str, Any]], condition: str) -> dict[str, Any]:
     decisions_agree = selections_agree = 0
     flips: list[str] = []
