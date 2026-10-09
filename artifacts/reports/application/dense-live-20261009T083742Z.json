@@ -1,0 +1,175 @@
+{
+  "schema_version": "dense-application-live-v1",
+  "created_at": "2026-10-09T08:37:42.339112+00:00",
+  "app_config": "configs/application_rewrite.yaml",
+  "on_invalid": "feedback",
+  "cases_selected": [
+    2,
+    3,
+    6
+  ],
+  "model": "mimo-v2.5",
+  "baseline_commit": "87a230763d80db8c2cfbd7620914a20a45c91724",
+  "calls": 6,
+  "ledger_total": 6,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "response",
+      "elapsed_ms": 1268,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "dbe632e3-750f-45aa-876e-8ffcf3d7d8b5_64e97a6ce8d2469bb818bad79b1a6385",
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 102,
+        "total_tokens": 119
+      },
+      "error_type": null
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 8767,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "d3235f6c-9ced-46be-86c5-e7296f5d8d77_9efe749bc2eb4f51874c56c069a2abb4",
+      "usage": {
+        "completion_tokens": 10,
+        "prompt_tokens": 304,
+        "total_tokens": 314
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 8211,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "a42adaa1-6e11-4b59-a86b-07baf31703c9_84988545e5bb4b8e8c778e056f0a8118",
+      "usage": {
+        "completion_tokens": 19,
+        "prompt_tokens": 106,
+        "total_tokens": 125
+      },
+      "error_type": null
+    },
+    {
+      "id": 4,
+      "state": "response",
+      "elapsed_ms": 3163,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "46687a60-b359-4ffc-89c3-d07105d25afc_62c8208a8e8c41869ca4de0e2ec8d38d",
+      "usage": {
+        "completion_tokens": 54,
+        "prompt_tokens": 307,
+        "total_tokens": 361
+      },
+      "error_type": null
+    },
+    {
+      "id": 5,
+      "state": "response",
+      "elapsed_ms": 17704,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "af2dd6fc-cc47-44e8-ae28-58303b513971_94ccd565dce14076ab84aee3a413ad45",
+      "usage": {
+        "completion_tokens": 16,
+        "prompt_tokens": 103,
+        "total_tokens": 119
+      },
+      "error_type": null
+    },
+    {
+      "id": 6,
+      "state": "response",
+      "elapsed_ms": 1089,
+      "http_status": 200,
+      "model": "mimo-v2.5",
+      "response_id": "24d98adf-50c2-4ccc-aa31-c433b96cc7e0_5dd85fdd2dba4c7385edb31c729c94ad",
+      "usage": {
+        "completion_tokens": 13,
+        "prompt_tokens": 326,
+        "total_tokens": 339
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "kind": "口语换说法",
+      "question": "屋里太闷怎样透透气？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 10.17,
+      "abstained": true,
+      "query_rewrite": {
+        "status": "ok",
+        "rewrite": "室内闷热时如何通风换气以改善空气质量？",
+        "usage": {
+          "input_tokens": 102,
+          "output_tokens": 17,
+          "total_tokens": 119
+        }
+      },
+      "retrieved_chunks": [
+        "kb_covid_ventilation_01",
+        "kb_household_air_02",
+        "kb_heat_home_01"
+      ],
+      "claims": []
+    },
+    {
+      "kind": "有答案",
+      "question": "高温时可以把孩子留在停放的车辆中吗？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 11.46,
+      "abstained": false,
+      "query_rewrite": {
+        "status": "ok",
+        "rewrite": "高温天气下，将儿童单独留在停放的车内是否安全？",
+        "usage": {
+          "input_tokens": 106,
+          "output_tokens": 19,
+          "total_tokens": 125
+        }
+      },
+      "retrieved_chunks": [
+        "kb_heat_children_01",
+        "kb_road_traffic_03",
+        "kb_hearing_02"
+      ],
+      "claims": [
+        {
+          "chunk_id": "kb_heat_children_01",
+          "text": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。"
+        }
+      ]
+    },
+    {
+      "kind": "口语换说法",
+      "question": "天气特别热的时候出门要注意什么？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 18.9,
+      "abstained": true,
+      "query_rewrite": {
+        "status": "ok",
+        "rewrite": "高温天气外出时的防暑健康注意事项有哪些",
+        "usage": {
+          "input_tokens": 103,
+          "output_tokens": 16,
+          "total_tokens": 119
+        }
+      },
+      "retrieved_chunks": [
+        "kb_covid_etiquette_01",
+        "kb_asthma_03",
+        "kb_tobacco_03"
+      ],
+      "claims": []
+    }
+  ],
+  "boundary": "6 个问题的真实调用冒烟，证明向量检索方案能走完整个应用工作流；不是准确率评测。"
+}

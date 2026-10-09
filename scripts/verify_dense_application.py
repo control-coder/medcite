@@ -37,11 +37,12 @@ def main() -> None:
     parser.add_argument("--allow-live", action="store_true")
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--app-config", default="configs/application_dense.yaml")
+    parser.add_argument("--cases", type=int, nargs="*", help="只运行这些序号（从 1 起）的问题；默认全部")
     args = parser.parse_args()
     if not args.allow_live:
         parser.error("必须取得真实调用授权并显式传 --allow-live")
 
-    from medidiag.db.models import Case, CaseReport
+    from medidiag.db.models import Case, CaseReport, StageArtifact
     from medidiag.db.session import create_db_engine, get_session_factory, init_db
     from medidiag.llm.budget import BudgetedTransport
     from medidiag.workflow.application import build_application_provider
@@ -59,7 +60,8 @@ def main() -> None:
         executor = WorkflowExecutor()
         worker = SingleMachineWorker(factory, provider, worker_id="dense-live")
         rows = []
-        for label, question in QUESTIONS:
+        selected = [q for i, q in enumerate(QUESTIONS, 1) if not args.cases or i in args.cases]
+        for label, question in selected:
             with factory() as session:
                 case = executor.create_case(session, question, uuid.uuid4().hex, "dense-live")
                 executor.start_workflow(session, case.case_id, "case_workflow", "run", "hash")
@@ -73,8 +75,12 @@ def main() -> None:
                 status = session.query(Case.status).filter(Case.case_id == case_id).scalar()
                 report = session.query(CaseReport).filter(CaseReport.case_id == case_id).first()
                 structured = report.structured_report if report else {}
+                retrieved = session.query(StageArtifact.payload).filter(
+                    StageArtifact.case_id == case_id, StageArtifact.stage == "retrieval").first()
+                rewrite = (retrieved[0] or {}).get("query_rewrite") if retrieved else None
             rows.append({"kind": label, "question": question, "status": status, "seconds": elapsed,
-                         "abstained": not structured.get("claims"),
+                         "abstained": not structured.get("claims"), "query_rewrite": rewrite,
+                         "retrieved_chunks": [c["chunk_id"] for c in (retrieved[0] or {}).get("chunks", [])] if retrieved else [],
                          "claims": [{"chunk_id": c["citation_chunk_ids"][0], "text": c["text"]}
                                     for c in structured.get("claims", [])]})
             print(label, question, status, "拒答" if rows[-1]["abstained"] else f"{len(rows[-1]['claims'])} 条摘录")
@@ -82,7 +88,7 @@ def main() -> None:
     records = ledger.records()
     report_doc = {
         "schema_version": "dense-application-live-v1", "created_at": datetime.now(UTC).isoformat(),
-        "app_config": args.app_config, "on_invalid": "feedback", "model": "mimo-v2.5",
+        "app_config": args.app_config, "on_invalid": "feedback", "cases_selected": args.cases or "all", "model": "mimo-v2.5",
         "baseline_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "calls": len(records) - before, "ledger_total": len(records),
         "transport_records": records, "cases": rows,

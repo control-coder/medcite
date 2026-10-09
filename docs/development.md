@@ -134,6 +134,14 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/dense
 
 该配置还让模型输出不合格（摘录不是原文、格式错误）时，带上被拒原因再请求一次，最多多 1 次调用；其他配置默认不重试。向量检索方案也可以配合 `--provider retrieval_mock` 使用，此时不调用模型。首次启动需要几秒加载模型并给 178 条短引建索引。
 
+### BM25 加问题改写
+
+没有向量模型缓存时，可以用 `configs/application_rewrite.yaml`：检索前先让模型把问题改写成规范表述，再和原问题一起做 BM25 检索，改写失败时回退到原问题（原因写在检索结果的 `query_rewrite`）。必须搭配 `mimo_grounded`，每个问题多一次改写调用，单轮冒烟用 `--cases` 挑 3 个问题以留在 8 次请求的上限内：
+
+```powershell
+python -I scripts/verify_dense_application.py --allow-live --ledger .cache/rewrite-ledger.db --app-config configs/application_rewrite.yaml --cases 2 3 6
+```
+
 ## 演示路线（约 4 分钟）
 
 | 时间 | 操作 |
