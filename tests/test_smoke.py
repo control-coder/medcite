@@ -302,12 +302,3 @@ def test_eval_config_compliance_rules(eval_config: dict) -> None:
     assert len(comp["block_absolute_terms"]) > 0
     assert "确诊" in comp["block_absolute_terms"]
     assert comp["mandatory_disclaimer"]
-
-
-def test_eval_config_reproduction_commands(eval_config: dict) -> None:
-    """可复现命令必须定义。"""
-    repro = eval_config["reproduction"]
-    assert "validate_command" in repro
-    assert "rag_command" in repro
-    assert "agent_command" in repro
-    assert "leakage_check_command" in repro

@@ -106,7 +106,7 @@ class RoutingResult:
     """歧义度比值 = top2.total / top1.total。
 
     **该值不参与路由决策**（原规则 4 已删除，DD-025）。名字沿用 `confidence` 是为了
-    不破坏 `eval/runner.py` 的 `routing_confidence` 字段与历史产物的键名，但它的方向
+    不破坏历史产物里 `routing_confidence` 字段的键名，但它的方向
     与"置信度"直觉相反：值越大表示前两名越接近，也就是越难判断。
     """
 

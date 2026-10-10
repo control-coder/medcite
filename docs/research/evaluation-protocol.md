@@ -1,5 +1,7 @@
 # 正式评测与人工 citation 复核协议
 
+> **说明（2026-10-10）**：本文描述的 `eval.runner`、`eval.annotation_audit`、`eval.cost_estimate` 等命令对应的代码已经删除，不能再运行；文件作为历史协议保留，原代码可从 git 历史找回。
+
 > 本协议面向 P2 正式评测，定义工程门禁。它不构成医学研究结论，也不以开发态结果代替人工标注。
 > 首次 formal run 已于 2026-07-29 完成，结果见 [final_eval.md](../../artifacts/reports/final_eval.md)，解读边界见 [NLI 语言兼容性复盘](nli-language-compatibility.md)。本文件只保留可执行的协议本身。
 

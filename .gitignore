@@ -25,7 +25,6 @@ desktop.ini
 .env
 .env.local
 .env.*.local
-eval/config.formal.yaml
 
 # 持久数据库不入库，但不能当缓存删除
 *.db

@@ -35,7 +35,7 @@
 
 - 检索方案四选一，都要显式配置：默认是 BM25（`configs/application.yaml`，不需要下载模型）；向量检索（`configs/application_dense.yaml`，固定版本的 bge-small-zh，只读本地缓存，语料为 51 篇 178 条短引）；BM25 加问题改写（`configs/application_rewrite.yaml`，没有向量模型缓存时的替代，检索前让模型把口语问题改写一遍）；BM25 加检索智能体（`configs/application_agent.yaml`，先检索一次，由模型看结果后决定是否换种说法再检索，最多再检索 2 次）。后三种搭配 `mimo_grounded` 时，模型输出不合格会带原因重试一次。依据见下面的评测结果。
 - 真实模型调用有预算账本限额：先扣额度再发请求，失败不退还，重启后不重置，也不跟随重定向。
-- 独立研究评测子系统（`eval/`）：多专科 Agent 路由、BM25／向量／重排检索的对比实验、用自然语言推理（NLI）模型检查引用是否支持结论，以及双人标注的核对。
+- 评测代码（`eval/`）：真实模型端到端评测（拒答、查询改写、检索智能体、输出重试）和检索基准，模型调用记录入库，CI 里零网络回放。早期的多专科 Agent 加 NLI 研究评测代码已删除，只保留数据与说明。
 
 ## 界面截图
 
@@ -205,7 +205,7 @@ migrations/       Alembic 数据库迁移
 configs/          应用运行配置
 examples/         公开语料、固定查询与回归用例
 scripts/          数据准备与端到端验证脚本
-eval/             研究评测子系统（配置、数据集、标注）
+eval/             评测代码、模型调用记录；历史研究数据与标注
 artifacts/        评测报告与运行追踪
 tests/            自动化测试
 ```
@@ -220,9 +220,9 @@ tests/            自动化测试
 | [API 与前端行为](docs/api.md) | 接口、输入约束、结果投影与失败语义 |
 | [开发与运行](docs/development.md) | 安装、各运行模式、验证命令、演示路线与排障 |
 | [评测与验证](docs/evaluation.md) | 检索对照、故障压测、真实模型验证、失败案例与限制 |
-| [研究评测协议](docs/research/evaluation-protocol.md) | formal 评测与人工 citation 复核流程 |
+| [研究评测协议](docs/research/evaluation-protocol.md) | 历史 formal 评测与人工 citation 复核流程（对应代码已删除） |
 | [NLI 语言兼容性复盘](docs/research/nli-language-compatibility.md) | 历史评测中中英文混杂对 NLI 的影响 |
-| [研究子系统](eval/README.md)、[报告索引](artifacts/reports/README.md) | 研究数据、标注与报告说明 |
+| [评测目录说明](eval/README.md)、[报告索引](artifacts/reports/README.md) | 评测代码、历史数据与报告说明 |
 
 ## 局限
 
