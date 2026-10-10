@@ -1,0 +1,3228 @@
+{
+  "version": "public-health-excerpts-v3",
+  "sources": [
+    {
+      "document_id": "flu_hygiene",
+      "chunk_ids": [
+        "kb_flu_hygiene_01"
+      ],
+      "sections": [
+        "传播"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "季节性流感",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/influenza-(seasonal)",
+      "published_at": "2025-02-28",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "flu_animals",
+      "chunk_ids": [
+        "kb_flu_animals_01"
+      ],
+      "sections": [
+        "人类的感染"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "流感（禽流感和其他人畜共患流感）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/influenza-(avian-and-other-zoonotic)",
+      "published_at": "2026-01-21",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "covid_risk",
+      "chunk_ids": [
+        "kb_covid_risk_01"
+      ],
+      "sections": [
+        "重要事实"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "冠状病毒病（COVID-19）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/coronavirus-disease-(covid-19)",
+      "published_at": "2025-11-27",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "covid_etiquette",
+      "chunk_ids": [
+        "kb_covid_etiquette_01"
+      ],
+      "sections": [
+        "如何保护自己"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "2019冠状病毒病（COVID-19）",
+      "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19",
+      "published_at": "2023-03-28",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "covid_masks",
+      "chunk_ids": [
+        "kb_covid_masks_01"
+      ],
+      "sections": [
+        "为什么要戴口罩"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "2019冠状病毒病（COVID-19）：口罩",
+      "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19-masks",
+      "published_at": "2023-10-12",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "covid_ventilation",
+      "chunk_ids": [
+        "kb_covid_ventilation_01"
+      ],
+      "sections": [
+        "什么是通风"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "2019冠状病毒病（COVID-19）：通风和空气调节",
+      "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/coronavirus-disease-covid-19-ventilation-and-air-conditioning",
+      "published_at": "2021-12-23",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "heat_home",
+      "chunk_ids": [
+        "kb_heat_home_01"
+      ],
+      "sections": [
+        "保持家中凉爽"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "高温与健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/climate-change-heat-and-health",
+      "published_at": "2026-07-31",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "heat_children",
+      "chunk_ids": [
+        "kb_heat_children_01"
+      ],
+      "sections": [
+        "如何在热浪中保护我的孩子"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "热浪：如何保持凉爽",
+      "source_url": "https://www.who.int/zh/news-room/questions-and-answers/item/heatwaves-how-to-stay-cool",
+      "published_at": "2024-10-11",
+      "accessed_at": "2026-09-20",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-09-20 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "tb",
+      "chunk_ids": [
+        "kb_tb_01",
+        "kb_tb_02",
+        "kb_tb_03",
+        "kb_tb_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "预防",
+        "结核病和艾滋病毒"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "结核病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/tuberculosis",
+      "published_at": "2026-03-24",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "malaria",
+      "chunk_ids": [
+        "kb_malaria_01",
+        "kb_malaria_02",
+        "kb_malaria_03",
+        "kb_malaria_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "概述",
+        "重要事实"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "疟疾",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/malaria",
+      "published_at": "2025-12-04",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "hiv",
+      "chunk_ids": [
+        "kb_hiv_01",
+        "kb_hiv_02",
+        "kb_hiv_03",
+        "kb_hiv_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "重要事实",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "艾滋病毒和艾滋病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/hiv-aids",
+      "published_at": "2025-07-15",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "dengue",
+      "chunk_ids": [
+        "kb_dengue_01",
+        "kb_dengue_02",
+        "kb_dengue_03",
+        "kb_dengue_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "概述",
+        "危险因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "登革热和重症登革热",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/dengue-and-severe-dengue",
+      "published_at": "2024-04-23",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "hepb",
+      "chunk_ids": [
+        "kb_hepb_01",
+        "kb_hepb_02",
+        "kb_hepb_03",
+        "kb_hepb_04"
+      ],
+      "sections": [
+        "概述",
+        "重要事实",
+        "症状",
+        "预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "乙型肝炎",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/hepatitis-b",
+      "published_at": "2026-07-28",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "measles",
+      "chunk_ids": [
+        "kb_measles_01",
+        "kb_measles_02",
+        "kb_measles_03",
+        "kb_measles_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "概述",
+        "传播"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "麻疹",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/measles",
+      "published_at": "2026-07-15",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "cholera",
+      "chunk_ids": [
+        "kb_cholera_01",
+        "kb_cholera_02",
+        "kb_cholera_03",
+        "kb_cholera_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "重要事实",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "霍乱",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/cholera",
+      "published_at": "2024-12-05",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "rabies",
+      "chunk_ids": [
+        "kb_rabies_01",
+        "kb_rabies_02",
+        "kb_rabies_03",
+        "kb_rabies_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "重要事实",
+        "概述"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "狂犬病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/rabies",
+      "published_at": "2024-06-05",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "ebola",
+      "chunk_ids": [
+        "kb_ebola_01",
+        "kb_ebola_02",
+        "kb_ebola_03",
+        "kb_ebola_04"
+      ],
+      "sections": [
+        "重要事实",
+        "传播",
+        "传播",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "埃博拉病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/ebola-virus-disease",
+      "published_at": "2025-04-24",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "yf",
+      "chunk_ids": [
+        "kb_yf_01",
+        "kb_yf_02",
+        "kb_yf_03",
+        "kb_yf_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "症状",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "黄热病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/yellow-fever",
+      "published_at": "2025-10-20",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "diabetes",
+      "chunk_ids": [
+        "kb_diabetes_01",
+        "kb_diabetes_02",
+        "kb_diabetes_03",
+        "kb_diabetes_04"
+      ],
+      "sections": [
+        "概述",
+        "症状",
+        "症状",
+        "预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "糖尿病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/diabetes",
+      "published_at": "2024-11-14",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "hypertension",
+      "chunk_ids": [
+        "kb_hypertension_01",
+        "kb_hypertension_02",
+        "kb_hypertension_03",
+        "kb_hypertension_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "风险因素",
+        "不控制高血压可能会带来的并发症"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "高血压",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/hypertension",
+      "published_at": "2025-09-25",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "cvd",
+      "chunk_ids": [
+        "kb_cvd_01",
+        "kb_cvd_02",
+        "kb_cvd_03",
+        "kb_cvd_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "心血管疾病的风险因素",
+        "心血管疾病常见症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "心血管疾病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/cardiovascular-diseases-(cvds)",
+      "published_at": "2021-06-11",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "cancer",
+      "chunk_ids": [
+        "kb_cancer_01",
+        "kb_cancer_02",
+        "kb_cancer_03",
+        "kb_cancer_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "危险因素",
+        "减轻负担"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "癌症",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/cancer",
+      "published_at": "2026-07-03",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "copd",
+      "chunk_ids": [
+        "kb_copd_01",
+        "kb_copd_02",
+        "kb_copd_03",
+        "kb_copd_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "概述",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "慢性阻塞性肺病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/chronic-obstructive-pulmonary-disease-(copd)",
+      "published_at": "2026-06-10",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "asthma",
+      "chunk_ids": [
+        "kb_asthma_01",
+        "kb_asthma_02",
+        "kb_asthma_03",
+        "kb_asthma_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "症状",
+        "重要事实"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "哮喘",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/asthma",
+      "published_at": "2026-04-28",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "obesity",
+      "chunk_ids": [
+        "kb_obesity_01",
+        "kb_obesity_02",
+        "kb_obesity_03",
+        "kb_obesity_04"
+      ],
+      "sections": [
+        "概述",
+        "超重和肥胖的定义",
+        "超重和肥胖的原因",
+        "常见健康后果"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "肥胖和超重",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/obesity-and-overweight",
+      "published_at": "2025-12-08",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "dementia",
+      "chunk_ids": [
+        "kb_dementia_01",
+        "kb_dementia_02",
+        "kb_dementia_03",
+        "kb_dementia_04"
+      ],
+      "sections": [
+        "概述",
+        "重要事实",
+        "概述",
+        "概述"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "痴呆症",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/dementia",
+      "published_at": "2026-07-03",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "stroke",
+      "chunk_ids": [
+        "kb_stroke_01",
+        "kb_stroke_02",
+        "kb_stroke_03",
+        "kb_stroke_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "危险因素",
+        "诊断和治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "卒中",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/stroke",
+      "published_at": "2025-12-19",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "oral",
+      "chunk_ids": [
+        "kb_oral_01",
+        "kb_oral_02",
+        "kb_oral_03",
+        "kb_oral_04"
+      ],
+      "sections": [
+        "概述",
+        "龋齿（蛀牙）",
+        "牙周（牙龈）病",
+        "口腔癌"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "口腔卫生",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/oral-health",
+      "published_at": "2025-03-17",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "healthy_diet",
+      "chunk_ids": [
+        "kb_healthy_diet_01",
+        "kb_healthy_diet_02",
+        "kb_healthy_diet_03",
+        "kb_healthy_diet_04"
+      ],
+      "sections": [
+        "重要事实",
+        "糖",
+        "碳水化合物",
+        "盐/钠和钾"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "健康饮食",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/healthy-diet",
+      "published_at": "2026-01-26",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "physical_activity",
+      "chunk_ids": [
+        "kb_physical_activity_01",
+        "kb_physical_activity_02",
+        "kb_physical_activity_03",
+        "kb_physical_activity_04"
+      ],
+      "sections": [
+        "概述",
+        "重要事实",
+        "身体活动的好处以及久坐行为和缺乏活动的风险",
+        "身体活动的好处以及久坐行为和缺乏活动的风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "身体活动",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/physical-activity",
+      "published_at": "2024-06-26",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "tobacco",
+      "chunk_ids": [
+        "kb_tobacco_01",
+        "kb_tobacco_02",
+        "kb_tobacco_03",
+        "kb_tobacco_04"
+      ],
+      "sections": [
+        "重要事实",
+        "二手烟雾导致死亡",
+        "概述",
+        "新型烟草和尼古丁产品"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "烟草与尼古丁",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/tobacco",
+      "published_at": "2026-06-26",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "alcohol",
+      "chunk_ids": [
+        "kb_alcohol_01",
+        "kb_alcohol_02",
+        "kb_alcohol_03",
+        "kb_alcohol_04"
+      ],
+      "sections": [
+        "重要事实",
+        "影响酒精消费及酒精相关伤害的因素",
+        "使用的健康风险",
+        "使用的健康风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "酒精",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/alcohol",
+      "published_at": "2024-06-28",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "salt",
+      "chunk_ids": [
+        "kb_salt_01",
+        "kb_salt_02",
+        "kb_salt_03",
+        "kb_salt_04"
+      ],
+      "sections": [
+        "减少钠摄入的建议",
+        "重要事实",
+        "关于钠",
+        "减少钠摄入的建议"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "减少钠摄入",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/salt-reduction",
+      "published_at": "2026-05-11",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "trans_fat",
+      "chunk_ids": [
+        "kb_trans_fat_01",
+        "kb_trans_fat_02",
+        "kb_trans_fat_03",
+        "kb_trans_fat_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "重要事实",
+        "重要事实"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "反式脂肪",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/trans-fat",
+      "published_at": "2024-01-24",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "malnutrition",
+      "chunk_ids": [
+        "kb_malnutrition_01",
+        "kb_malnutrition_02",
+        "kb_malnutrition_03",
+        "kb_malnutrition_04"
+      ],
+      "sections": [
+        "概述",
+        "微量营养素相关营养不良",
+        "营养不足",
+        "谁面临风险？"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "营养不良",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/malnutrition",
+      "published_at": "2024-03-01",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "anaemia",
+      "chunk_ids": [
+        "kb_anaemia_01",
+        "kb_anaemia_02",
+        "kb_anaemia_03",
+        "kb_anaemia_04"
+      ],
+      "sections": [
+        "概述",
+        "体征和症状",
+        "概述",
+        "重要事实"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "贫血症",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/anaemia",
+      "published_at": "2023-05-01",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "oral_health",
+      "chunk_ids": [
+        "kb_oral_health_02",
+        "kb_oral_health_03"
+      ],
+      "sections": [
+        "重要事实",
+        "牙周（牙龈）病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "口腔卫生",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/oral-health",
+      "published_at": "2025-03-17",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "air_outdoor",
+      "chunk_ids": [
+        "kb_air_outdoor_01",
+        "kb_air_outdoor_02",
+        "kb_air_outdoor_03",
+        "kb_air_outdoor_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "污染物",
+        "减少空气污染的政策"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "环境（室外）空气污染和健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/ambient-(outdoor)-air-quality-and-health",
+      "published_at": "2024-10-24",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "household_air",
+      "chunk_ids": [
+        "kb_household_air_01",
+        "kb_household_air_02",
+        "kb_household_air_03",
+        "kb_household_air_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "重要事实",
+        "指导方针"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "家庭空气污染",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/household-air-pollution-and-health",
+      "published_at": "2025-12-16",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "depression",
+      "chunk_ids": [
+        "kb_depression_01",
+        "kb_depression_02",
+        "kb_depression_03",
+        "kb_depression_04"
+      ],
+      "sections": [
+        "概述",
+        "症状和类型",
+        "成因和预防",
+        "概述"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "抑郁障碍（抑郁症）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/depression",
+      "published_at": "2026-09-11",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "mental_health",
+      "chunk_ids": [
+        "kb_mental_health_01",
+        "kb_mental_health_02",
+        "kb_mental_health_03",
+        "kb_mental_health_04"
+      ],
+      "sections": [
+        "概述",
+        "风险和保护性因素",
+        "风险和保护性因素",
+        "精神卫生促进和预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "精神卫生",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/mental-health-strengthening-our-response",
+      "published_at": "2026-09-11",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "road_traffic",
+      "chunk_ids": [
+        "kb_road_traffic_01",
+        "kb_road_traffic_02",
+        "kb_road_traffic_03",
+        "kb_road_traffic_04"
+      ],
+      "sections": [
+        "重要事实",
+        "超速",
+        "不使用摩托车头盔、安全带和儿童约束装置",
+        "分心驾驶"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "道路交通伤害",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/road-traffic-injuries",
+      "published_at": "2026-07-20",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "drowning",
+      "chunk_ids": [
+        "kb_drowning_01",
+        "kb_drowning_02",
+        "kb_drowning_03",
+        "kb_drowning_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "风险因素",
+        "预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "溺水",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/drowning",
+      "published_at": "2026-05-01",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "food_safety",
+      "chunk_ids": [
+        "kb_food_safety_01",
+        "kb_food_safety_02",
+        "kb_food_safety_03",
+        "kb_food_safety_04"
+      ],
+      "sections": [
+        "概述",
+        "重要事实",
+        "主要食源性疾病和原因",
+        "主要食源性疾病和原因"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "食品安全",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/food-safety",
+      "published_at": "2026-06-04",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "amr",
+      "chunk_ids": [
+        "kb_amr_01",
+        "kb_amr_02",
+        "kb_amr_03",
+        "kb_amr_04"
+      ],
+      "sections": [
+        "重要事实",
+        "现况如何？",
+        "概述",
+        "现况如何？"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "抗微生物药物耐药性",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/antimicrobial-resistance",
+      "published_at": "2026-07-16",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "immunization",
+      "chunk_ids": [
+        "kb_immunization_01",
+        "kb_immunization_02",
+        "kb_immunization_03",
+        "kb_immunization_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "2025年全球免疫覆盖率",
+        "2025年全球免疫覆盖率"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "免疫覆盖",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/immunization-coverage",
+      "published_at": "2026-07-15",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "maternal",
+      "chunk_ids": [
+        "kb_maternal_01",
+        "kb_maternal_02",
+        "kb_maternal_03",
+        "kb_maternal_04"
+      ],
+      "sections": [
+        "重要事实",
+        "妇女因何而死？",
+        "妇女因何而死？",
+        "如何挽救妇女的生命？"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "孕产妇死亡率",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/maternal-mortality",
+      "published_at": "2025-04-07",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "ageing",
+      "chunk_ids": [
+        "kb_ageing_01",
+        "kb_ageing_02",
+        "kb_ageing_03",
+        "kb_ageing_04"
+      ],
+      "sections": [
+        "重要事实",
+        "关于衰老的解释",
+        "与衰老相关的常见健康状况",
+        "影响健康老龄化的因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "老龄化与健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/ageing-and-health",
+      "published_at": "2025-10-01",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "vision",
+      "chunk_ids": [
+        "kb_vision_01",
+        "kb_vision_02",
+        "kb_vision_03",
+        "kb_vision_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "视力损害造成的影响",
+        "应对眼疾，避免视力受损的策略"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "盲症和视力损害",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/blindness-and-visual-impairment",
+      "published_at": "2026-02-10",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "hearing",
+      "chunk_ids": [
+        "kb_hearing_01",
+        "kb_hearing_02",
+        "kb_hearing_03",
+        "kb_hearing_04"
+      ],
+      "sections": [
+        "听力损失和耳聋",
+        "重要事实",
+        "预防",
+        "未得到解决的听力损失的影响"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "耳聋和听力损失",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/deafness-and-hearing-loss",
+      "published_at": "2026-03-03",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "infant_feeding",
+      "chunk_ids": [
+        "kb_infant_feeding_01",
+        "kb_infant_feeding_02",
+        "kb_infant_feeding_03",
+        "kb_infant_feeding_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "母乳喂养",
+        "补充喂养"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "婴幼儿喂养",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/infant-and-young-child-feeding",
+      "published_at": "2026-08-04",
+      "accessed_at": "2026-10-08",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-08 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "comprehensive_sexuality_education",
+      "chunk_ids": [
+        "kb_comprehensive_sexuality_education_01",
+        "kb_comprehensive_sexuality_education_02",
+        "kb_comprehensive_sexuality_education_03",
+        "kb_comprehensive_sexuality_education_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "全面性教育为何重要",
+        "应在何时何地提供全面性教育"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "全面性教育",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/comprehensive-sexuality-education",
+      "published_at": "2026-03-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "opioid_overdose",
+      "chunk_ids": [
+        "kb_opioid_overdose_01",
+        "kb_opioid_overdose_02",
+        "kb_opioid_overdose_03",
+        "kb_opioid_overdose_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "阿片类药物过量",
+        "阿片类药物过量的紧急应对"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "阿片类药物过量",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/opioid-overdose",
+      "published_at": "2023-08-29",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "child_mortality_under_5_years",
+      "chunk_ids": [
+        "kb_child_mortality_under_5_years_01",
+        "kb_child_mortality_under_5_years_02",
+        "kb_child_mortality_under_5_years_03",
+        "kb_child_mortality_under_5_years_04"
+      ],
+      "sections": [
+        "概述",
+        "概述",
+        "谁面临最大风险？",
+        "谁面临最大风险？"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "儿童死亡率（五岁以下）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/child-mortality-under-5-years",
+      "published_at": "2026-05-01",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "schistosomiasis",
+      "chunk_ids": [
+        "kb_schistosomiasis_01",
+        "kb_schistosomiasis_02",
+        "kb_schistosomiasis_03",
+        "kb_schistosomiasis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "流行病学",
+        "症状",
+        "预防和控制"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "血吸虫病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/schistosomiasis",
+      "published_at": "2026-02-23",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "dracunculiasis_guinea_worm_disease",
+      "chunk_ids": [
+        "kb_dracunculiasis_guinea_worm_disease_01",
+        "kb_dracunculiasis_guinea_worm_disease_02",
+        "kb_dracunculiasis_guinea_worm_disease_03",
+        "kb_dracunculiasis_guinea_worm_disease_04"
+      ],
+      "sections": [
+        "重要事实",
+        "问题的范围",
+        "国家认证",
+        "挑战"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "麦地那龙线虫病（几内亚蠕虫病）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/dracunculiasis-_guinea-worm-disease_",
+      "published_at": "2024-09-13",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "intrauterine_devices",
+      "chunk_ids": [
+        "kb_intrauterine_devices_01",
+        "kb_intrauterine_devices_02",
+        "kb_intrauterine_devices_03",
+        "kb_intrauterine_devices_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "概述",
+        "健康益处和风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "宫内节育器（IUD）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/intrauterine-devices",
+      "published_at": "2026-01-22",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "lead_poisoning_and_health",
+      "chunk_ids": [
+        "kb_lead_poisoning_and_health_01",
+        "kb_lead_poisoning_and_health_02",
+        "kb_lead_poisoning_and_health_03",
+        "kb_lead_poisoning_and_health_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "概述",
+        "来源和暴露途径"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "铅中毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/lead-poisoning-and-health",
+      "published_at": "2026-06-10",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "heart_attack",
+      "chunk_ids": [
+        "kb_heart_attack_01",
+        "kb_heart_attack_02",
+        "kb_heart_attack_03",
+        "kb_heart_attack_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "症状",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "心脏病发作",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/heart-attack",
+      "published_at": "2026-09-10",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "legionellosis",
+      "chunk_ids": [
+        "kb_legionellosis_01",
+        "kb_legionellosis_02",
+        "kb_legionellosis_03",
+        "kb_legionellosis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "疾病范围",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "军团病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/legionellosis",
+      "published_at": "2022-09-06",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "low_back_pain",
+      "chunk_ids": [
+        "kb_low_back_pain_01",
+        "kb_low_back_pain_02",
+        "kb_low_back_pain_03",
+        "kb_low_back_pain_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "体征和症状",
+        "原因和高危因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "腰痛",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/low-back-pain",
+      "published_at": "2023-06-19",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "botulism",
+      "chunk_ids": [
+        "kb_botulism_01",
+        "kb_botulism_02",
+        "kb_botulism_03",
+        "kb_botulism_04"
+      ],
+      "sections": [
+        "重要事实",
+        "食源性肉毒中毒症状",
+        "食源性肉毒杆菌中毒",
+        "其它类型的中毒"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "肉毒杆菌中毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/botulism",
+      "published_at": "2023-09-25",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "trypanosomiasis_human_african_sleeping_s",
+      "chunk_ids": [
+        "kb_trypanosomiasis_human_african_sleeping_s_01",
+        "kb_trypanosomiasis_human_african_sleeping_s_02",
+        "kb_trypanosomiasis_human_african_sleeping_s_03",
+        "kb_trypanosomiasis_human_african_sleeping_s_04"
+      ],
+      "sections": [
+        "重要事实",
+        "非洲人类锥虫病的类型",
+        "1920年在若干国家",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "非洲人类锥虫病（昏睡病）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/trypanosomiasis-human-african-_sleeping-sickness_",
+      "published_at": "2023-05-02",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "epilepsy",
+      "chunk_ids": [
+        "kb_epilepsy_01",
+        "kb_epilepsy_02",
+        "kb_epilepsy_03",
+        "kb_epilepsy_04"
+      ],
+      "sections": [
+        "重要事实",
+        "症状和体征",
+        "治疗",
+        "预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "癫痫",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/epilepsy",
+      "published_at": "2024-02-07",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "lung_cancer",
+      "chunk_ids": [
+        "kb_lung_cancer_01",
+        "kb_lung_cancer_02",
+        "kb_lung_cancer_03",
+        "kb_lung_cancer_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "早期发现",
+        "靶向治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "肺癌",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/lung-cancer",
+      "published_at": "2026-04-16",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "asbestos",
+      "chunk_ids": [
+        "kb_asbestos_01",
+        "kb_asbestos_02",
+        "kb_asbestos_03",
+        "kb_asbestos_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "为什么石棉有问题？",
+        "谁面临风险？"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "石棉",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/asbestos",
+      "published_at": "2026-08-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "sporotrichosis",
+      "chunk_ids": [
+        "kb_sporotrichosis_01",
+        "kb_sporotrichosis_02",
+        "kb_sporotrichosis_03",
+        "kb_sporotrichosis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "体征和症状",
+        "预防和控制"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "孢子丝菌病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/sporotrichosis",
+      "published_at": "2023-11-15",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "osteoarthritis",
+      "chunk_ids": [
+        "kb_osteoarthritis_01",
+        "kb_osteoarthritis_02",
+        "kb_osteoarthritis_03",
+        "kb_osteoarthritis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "症状和体征",
+        "治疗和管理"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "骨关节炎",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/osteoarthritis",
+      "published_at": "2023-07-14",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "family_planning_contraception",
+      "chunk_ids": [
+        "kb_family_planning_contraception_01",
+        "kb_family_planning_contraception_02",
+        "kb_family_planning_contraception_03",
+        "kb_family_planning_contraception_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "障碍",
+        "避孕方法"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "计划生育/避孕",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/family-planning-contraception",
+      "published_at": "2025-07-03",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "abortion",
+      "chunk_ids": [
+        "kb_abortion_01",
+        "kb_abortion_02",
+        "kb_abortion_03",
+        "kb_abortion_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "问题的范围",
+        "无法获得优质流产护理的后果"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "人工流产",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/abortion",
+      "published_at": "2025-12-08",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "campylobacter",
+      "chunk_ids": [
+        "kb_campylobacter_01",
+        "kb_campylobacter_02",
+        "kb_campylobacter_03",
+        "kb_campylobacter_04"
+      ],
+      "sections": [
+        "重要事实",
+        "疾病",
+        "预防方法",
+        "弯曲杆菌全球概览 - 英文"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "弯曲杆菌",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/campylobacter",
+      "published_at": "2020-05-01",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "sand_and_dust_storms",
+      "chunk_ids": [
+        "kb_sand_and_dust_storms_01",
+        "kb_sand_and_dust_storms_02",
+        "kb_sand_and_dust_storms_03",
+        "kb_sand_and_dust_storms_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "对健康的影响",
+        "如何应对沙尘暴的健康影响"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "沙尘暴",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/sand-and-dust-storms",
+      "published_at": "2025-04-23",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "multi_drug_resistant_gonorrhoea",
+      "chunk_ids": [
+        "kb_multi_drug_resistant_gonorrhoea_01",
+        "kb_multi_drug_resistant_gonorrhoea_02",
+        "kb_multi_drug_resistant_gonorrhoea_03",
+        "kb_multi_drug_resistant_gonorrhoea_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "历史",
+        "原因"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "耐多药淋病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/multi-drug-resistant-gonorrhoea",
+      "published_at": "2025-10-22",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "newborn_mortality",
+      "chunk_ids": [
+        "kb_newborn_mortality_01",
+        "kb_newborn_mortality_02",
+        "kb_newborn_mortality_03",
+        "kb_newborn_mortality_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "原因",
+        "新生儿的基本护理"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "新生儿死亡率",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/newborn-mortality",
+      "published_at": "2024-03-14",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "mental_health_in_emergencies",
+      "chunk_ids": [
+        "kb_mental_health_in_emergencies_01",
+        "kb_mental_health_in_emergencies_02",
+        "kb_mental_health_in_emergencies_03",
+        "kb_mental_health_in_emergencies_04"
+      ],
+      "sections": [
+        "重要事实",
+        "社会问题",
+        "建议采取的行动",
+        "建议采取的行动"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "紧急情况下的精神卫生",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/mental-health-in-emergencies",
+      "published_at": "2025-05-06",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "rehabilitation",
+      "chunk_ids": [
+        "kb_rehabilitation_01",
+        "kb_rehabilitation_02",
+        "kb_rehabilitation_03",
+        "kb_rehabilitation_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "概述",
+        "对康复服务的误解"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "康复",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/rehabilitation",
+      "published_at": "2024-04-22",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "oral_contraceptives",
+      "chunk_ids": [
+        "kb_oral_contraceptives_01",
+        "kb_oral_contraceptives_02",
+        "kb_oral_contraceptives_03",
+        "kb_oral_contraceptives_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "健康益处和风险",
+        "健康益处和风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "口服避孕药",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/oral-contraceptives",
+      "published_at": "2025-12-23",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "oropouche_virus_disease",
+      "chunk_ids": [
+        "kb_oropouche_virus_disease_01",
+        "kb_oropouche_virus_disease_02",
+        "kb_oropouche_virus_disease_03",
+        "kb_oropouche_virus_disease_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "传播",
+        "治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "奥罗普切病毒病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/oropouche-virus-disease",
+      "published_at": "2024-10-22",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "refugee_and_migrant_health",
+      "chunk_ids": [
+        "kb_refugee_and_migrant_health_01",
+        "kb_refugee_and_migrant_health_02",
+        "kb_refugee_and_migrant_health_03",
+        "kb_refugee_and_migrant_health_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "常见健康问题",
+        "常见健康问题"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "难民和移民健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/refugee-and-migrant-health",
+      "published_at": "2026-03-25",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "preterm_birth",
+      "chunk_ids": [
+        "kb_preterm_birth_01",
+        "kb_preterm_birth_02",
+        "kb_preterm_birth_03",
+        "kb_preterm_birth_04"
+      ],
+      "sections": [
+        "极早产（28至32周）",
+        "极早产（28至32周）",
+        "早产在何时何地发生？",
+        "世卫组织的反应"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "早产",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/preterm-birth",
+      "published_at": "2023-05-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "onchocerciasis",
+      "chunk_ids": [
+        "kb_onchocerciasis_01",
+        "kb_onchocerciasis_02",
+        "kb_onchocerciasis_03",
+        "kb_onchocerciasis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "问题的范围",
+        "临床体征和症状",
+        "临床体征和症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "盘尾丝虫病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/onchocerciasis",
+      "published_at": "2025-12-04",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "universal_health_coverage_uhc",
+      "chunk_ids": [
+        "kb_universal_health_coverage_uhc_01",
+        "kb_universal_health_coverage_uhc_02",
+        "kb_universal_health_coverage_uhc_03",
+        "kb_universal_health_coverage_uhc_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "实现全民健康覆盖的进展情况",
+        "实现全民健康覆盖的进展情况"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "全民健康覆盖",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/universal-health-coverage-_uhc_",
+      "published_at": "2025-12-05",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "plague",
+      "chunk_ids": [
+        "kb_plague_01",
+        "kb_plague_02",
+        "kb_plague_03",
+        "kb_plague_04"
+      ],
+      "sections": [
+        "阅读时间",
+        "体征和症状",
+        "鼠疫的诊断",
+        "鼠疫疫情的管理"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "鼠疫",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/plague",
+      "published_at": "2026-09-29",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "mercury_and_health",
+      "chunk_ids": [
+        "kb_mercury_and_health_01",
+        "kb_mercury_and_health_02",
+        "kb_mercury_and_health_03",
+        "kb_mercury_and_health_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "体征和症状",
+        "皮肤美白产品和其他化妆品"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "汞与健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/mercury-and-health",
+      "published_at": "2024-10-24",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "millennium_development_goals_mdgs",
+      "chunk_ids": [
+        "kb_millennium_development_goals_mdgs_01",
+        "kb_millennium_development_goals_mdgs_02",
+        "kb_millennium_development_goals_mdgs_03",
+        "kb_millennium_development_goals_mdgs_04"
+      ],
+      "sections": [
+        "重要事实",
+        "关于卫生相关千年发展目标的进展报告",
+        "关于卫生相关千年发展目标的进展报告",
+        "其它疾病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "千年发展目标",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/millennium-development-goals-_mdgs_",
+      "published_at": "2018-02-19",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "bacterial_vaginosis",
+      "chunk_ids": [
+        "kb_bacterial_vaginosis_01",
+        "kb_bacterial_vaginosis_02",
+        "kb_bacterial_vaginosis_03",
+        "kb_bacterial_vaginosis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "诊断",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "细菌性阴道炎",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/bacterial-vaginosis",
+      "published_at": "2025-11-21",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "yaws",
+      "chunk_ids": [
+        "kb_yaws_01",
+        "kb_yaws_02",
+        "kb_yaws_03",
+        "kb_yaws_04"
+      ],
+      "sections": [
+        "主要事实",
+        "问题的范围",
+        "诊断",
+        "预防和控制"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "雅司病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/yaws",
+      "published_at": "2023-01-12",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "civil_registration_and_vital_statistics",
+      "chunk_ids": [
+        "kb_civil_registration_and_vital_statistics_01",
+        "kb_civil_registration_and_vital_statistics_02",
+        "kb_civil_registration_and_vital_statistics_03",
+        "kb_civil_registration_and_vital_statistics_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "概述",
+        "障碍和挑战"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "民事登记和生命统计",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/civil-registration-and-vital-statistics",
+      "published_at": "2024-02-27",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "nipah_virus",
+      "chunk_ids": [
+        "kb_nipah_virus_01",
+        "kb_nipah_virus_02",
+        "kb_nipah_virus_03",
+        "kb_nipah_virus_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "体征和症状",
+        "降低人群感染的风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "尼帕病毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/nipah-virus",
+      "published_at": "2026-01-29",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "substandard_and_falsified_medical_produc",
+      "chunk_ids": [
+        "kb_substandard_and_falsified_medical_produc_01",
+        "kb_substandard_and_falsified_medical_produc_02",
+        "kb_substandard_and_falsified_medical_produc_03",
+        "kb_substandard_and_falsified_medical_produc_04"
+      ],
+      "sections": [
+        "概述",
+        "问题的范围",
+        "挑战",
+        "挑战"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "伪劣医疗产品",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/substandard-and-falsified-medical-products",
+      "published_at": "2024-12-03",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "natural_toxins_in_food",
+      "chunk_ids": [
+        "kb_natural_toxins_in_food_01",
+        "kb_natural_toxins_in_food_02",
+        "kb_natural_toxins_in_food_03",
+        "kb_natural_toxins_in_food_04"
+      ],
+      "sections": [
+        "重要事实",
+        "天然毒素是什么？",
+        "凝集素",
+        "吡咯里西啶生物碱"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "食物中的天然毒素",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/natural-toxins-in-food",
+      "published_at": "2018-05-09",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "leishmaniasis",
+      "chunk_ids": [
+        "kb_leishmaniasis_01",
+        "kb_leishmaniasis_02",
+        "kb_leishmaniasis_03",
+        "kb_leishmaniasis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "世卫组织非洲区域",
+        "社会经济条件",
+        "诊断和治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "利什曼病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/leishmaniasis",
+      "published_at": "2023-01-12",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "violence_against_children",
+      "chunk_ids": [
+        "kb_violence_against_children_01",
+        "kb_violence_against_children_02",
+        "kb_violence_against_children_03",
+        "kb_violence_against_children_04"
+      ],
+      "sections": [
+        "重要事实",
+        "暴力侵害儿童行为的类型",
+        "暴力侵害儿童行为的类型",
+        "暴力的影响"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "暴力侵害儿童行为",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/violence-against-children",
+      "published_at": "2026-05-07",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "biodiversity",
+      "chunk_ids": [
+        "kb_biodiversity_01",
+        "kb_biodiversity_02",
+        "kb_biodiversity_03",
+        "kb_biodiversity_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "对生物多样性和卫生健康的威胁",
+        "卫生研究和传统医学"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "生物多样性",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/biodiversity",
+      "published_at": "2025-02-19",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "musculoskeletal_conditions",
+      "chunk_ids": [
+        "kb_musculoskeletal_conditions_01",
+        "kb_musculoskeletal_conditions_02",
+        "kb_musculoskeletal_conditions_03",
+        "kb_musculoskeletal_conditions_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "范围",
+        "问题规模"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "肌肉骨骼疾病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/musculoskeletal-conditions",
+      "published_at": "2021-02-08",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "female_genital_mutilation",
+      "chunk_ids": [
+        "kb_female_genital_mutilation_01",
+        "kb_female_genital_mutilation_02",
+        "kb_female_genital_mutilation_03",
+        "kb_female_genital_mutilation_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "残割女性生殖器分类",
+        "实施残割女性生殖器的文化和社会因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "残割女性生殖器",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/female-genital-mutilation",
+      "published_at": "2025-01-31",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "adolescents_health_risks_and_solutions",
+      "chunk_ids": [
+        "kb_adolescents_health_risks_and_solutions_01",
+        "kb_adolescents_health_risks_and_solutions_02",
+        "kb_adolescents_health_risks_and_solutions_03",
+        "kb_adolescents_health_risks_and_solutions_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "酒精和吸毒",
+        "人乳头状瘤和宫颈癌实况报道"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "青少年和青年健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/adolescents-health-risks-and-solutions",
+      "published_at": "2024-11-26",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "vector_borne_diseases",
+      "chunk_ids": [
+        "kb_vector_borne_diseases_01",
+        "kb_vector_borne_diseases_02",
+        "kb_vector_borne_diseases_03",
+        "kb_vector_borne_diseases_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "媒介传播的疾病",
+        "媒介传播的疾病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "媒介传播的疾病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/vector-borne-diseases",
+      "published_at": "2024-09-26",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "respiratory_syncytial_virus_rsv",
+      "chunk_ids": [
+        "kb_respiratory_syncytial_virus_rsv_01",
+        "kb_respiratory_syncytial_virus_rsv_02",
+        "kb_respiratory_syncytial_virus_rsv_03",
+        "kb_respiratory_syncytial_virus_rsv_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "传播",
+        "治疗和预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "呼吸道合胞病毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/respiratory-syncytial-virus-_rsv_",
+      "published_at": "2025-03-25",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "candidiasis_yeast_infection",
+      "chunk_ids": [
+        "kb_candidiasis_yeast_infection_01",
+        "kb_candidiasis_yeast_infection_02",
+        "kb_candidiasis_yeast_infection_03",
+        "kb_candidiasis_yeast_infection_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "预防",
+        "侵袭性念珠菌病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "念珠菌病（酵母菌感染）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/candidiasis-_yeast-infection_",
+      "published_at": "2025-04-09",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "diphtheria",
+      "chunk_ids": [
+        "kb_diphtheria_01",
+        "kb_diphtheria_02",
+        "kb_diphtheria_03",
+        "kb_diphtheria_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "体征和症状",
+        "治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "白喉",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/diphtheria",
+      "published_at": "2026-07-15",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "syphilis",
+      "chunk_ids": [
+        "kb_syphilis_01",
+        "kb_syphilis_02",
+        "kb_syphilis_03",
+        "kb_syphilis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "症状",
+        "诊断",
+        "治疗"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "梅毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/syphilis",
+      "published_at": "2025-05-29",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "colorectal_cancer",
+      "chunk_ids": [
+        "kb_colorectal_cancer_01",
+        "kb_colorectal_cancer_02",
+        "kb_colorectal_cancer_03",
+        "kb_colorectal_cancer_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "早期发现",
+        "早期疾病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "结直肠癌",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/colorectal-cancer",
+      "published_at": "2026-02-13",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "crimean_congo_haemorrhagic_fever",
+      "chunk_ids": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_crimean_congo_haemorrhagic_fever_02",
+        "kb_crimean_congo_haemorrhagic_fever_03",
+        "kb_crimean_congo_haemorrhagic_fever_04"
+      ],
+      "sections": [
+        "重要事实",
+        "传播",
+        "逆转录聚合酶链反应（RT-PCR）检测",
+        "降低人类感染风险"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "克里米亚-刚果出血热",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/crimean-congo-haemorrhagic-fever",
+      "published_at": "2025-02-20",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "electricity_in_health_care_facilities",
+      "chunk_ids": [
+        "kb_electricity_in_health_care_facilities_01",
+        "kb_electricity_in_health_care_facilities_02",
+        "kb_electricity_in_health_care_facilities_03",
+        "kb_electricity_in_health_care_facilities_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "全球供电状况",
+        "机会和惠益"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "卫生保健机构用电",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/electricity-in-health-care-facilities",
+      "published_at": "2023-09-01",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "burns",
+      "chunk_ids": [
+        "kb_burns_01",
+        "kb_burns_02",
+        "kb_burns_03",
+        "kb_burns_04"
+      ],
+      "sections": [
+        "要事实",
+        "问题",
+        "年龄",
+        "预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "烧伤",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/burns",
+      "published_at": "2023-10-13",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "salmonella_non_typhoidal",
+      "chunk_ids": [
+        "kb_salmonella_non_typhoidal_01",
+        "kb_salmonella_non_typhoidal_02",
+        "kb_salmonella_non_typhoidal_03",
+        "kb_salmonella_non_typhoidal_04"
+      ],
+      "sections": [
+        "重要事实",
+        "疾病",
+        "来源和传播",
+        "预防方法"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "沙门氏菌（非伤寒）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/salmonella-_non-typhoidal_",
+      "published_at": "2018-02-20",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "adolescent_pregnancy",
+      "chunk_ids": [
+        "kb_adolescent_pregnancy_01",
+        "kb_adolescent_pregnancy_02",
+        "kb_adolescent_pregnancy_03",
+        "kb_adolescent_pregnancy_04"
+      ],
+      "sections": [
+        "重要事实",
+        "问题的范围",
+        "导致少女怀孕的背景因素",
+        "导致少女怀孕的背景因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "少女怀孕",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/adolescent-pregnancy",
+      "published_at": "2024-04-10",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "self_care_health_interventions",
+      "chunk_ids": [
+        "kb_self_care_health_interventions_01",
+        "kb_self_care_health_interventions_02",
+        "kb_self_care_health_interventions_03",
+        "kb_self_care_health_interventions_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "问题的范围",
+        "通过自我护理补充卫生系统"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "通过自我护理增进健康与福祉",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/self-care-health-interventions",
+      "published_at": "2026-06-03",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "buruli_ulcer_mycobacterium_ulcerans_infe",
+      "chunk_ids": [
+        "kb_buruli_ulcer_mycobacterium_ulcerans_infe_01",
+        "kb_buruli_ulcer_mycobacterium_ulcerans_infe_02",
+        "kb_buruli_ulcer_mycobacterium_ulcerans_infe_03",
+        "kb_buruli_ulcer_mycobacterium_ulcerans_infe_04"
+      ],
+      "sections": [
+        "重要事实",
+        "问题的范围",
+        "诊断",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "布鲁里溃疡（溃疡分枝杆菌感染）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/buruli-ulcer-_mycobacterium-ulcerans-infection_",
+      "published_at": "2023-01-12",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "trichomoniasis",
+      "chunk_ids": [
+        "kb_trichomoniasis_01",
+        "kb_trichomoniasis_02",
+        "kb_trichomoniasis_03",
+        "kb_trichomoniasis_04"
+      ],
+      "sections": [
+        "重要事实",
+        "传播",
+        "预防",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "滴虫病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/trichomoniasis",
+      "published_at": "2025-11-21",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "patient_safety",
+      "chunk_ids": [
+        "kb_patient_safety_01",
+        "kb_patient_safety_02",
+        "kb_patient_safety_03",
+        "kb_patient_safety_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "患者伤害的常见来源",
+        "患者伤害的常见来源"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "患者安全",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/patient-safety",
+      "published_at": "2023-09-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "poliomyelitis",
+      "chunk_ids": [
+        "kb_poliomyelitis_01",
+        "kb_poliomyelitis_02",
+        "kb_poliomyelitis_03",
+        "kb_poliomyelitis_04"
+      ],
+      "sections": [
+        "©世卫组织",
+        "重要事实",
+        "症状和风险",
+        "消灭"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "脊髓灰质炎",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/poliomyelitis",
+      "published_at": "2025-04-02",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "foodborne_trematode_infections",
+      "chunk_ids": [
+        "kb_foodborne_trematode_infections_01",
+        "kb_foodborne_trematode_infections_02",
+        "kb_foodborne_trematode_infections_03",
+        "kb_foodborne_trematode_infections_04"
+      ],
+      "sections": [
+        "重要事实",
+        "传播和负担",
+        "诊断",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "食源性吸虫感染",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/foodborne-trematode-infections",
+      "published_at": "2021-05-17",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "suicide",
+      "chunk_ids": [
+        "kb_suicide_01",
+        "kb_suicide_02",
+        "kb_suicide_03",
+        "kb_suicide_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "风险人群",
+        "耻辱和禁忌"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "自杀",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/suicide",
+      "published_at": "2025-03-25",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "hantavirus",
+      "chunk_ids": [
+        "kb_hantavirus_01",
+        "kb_hantavirus_02",
+        "kb_hantavirus_03",
+        "kb_hantavirus_04"
+      ],
+      "sections": [
+        "重要事实",
+        "病毒家族和分类",
+        "传播",
+        "诊断"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "汉坦病毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/hantavirus",
+      "published_at": "2026-05-06",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "podoconiosis_non_filarial_lymphoedema",
+      "chunk_ids": [
+        "kb_podoconiosis_non_filarial_lymphoedema_01",
+        "kb_podoconiosis_non_filarial_lymphoedema_02",
+        "kb_podoconiosis_non_filarial_lymphoedema_03",
+        "kb_podoconiosis_non_filarial_lymphoedema_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "哪些人面临风险？",
+        "治疗和护理"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "象皮病（非丝虫性淋巴水肿）",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/podoconiosis-_non-filarial-lymphoedema_",
+      "published_at": "2023-05-01",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "autism_spectrum_disorders",
+      "chunk_ids": [
+        "kb_autism_spectrum_disorders_01",
+        "kb_autism_spectrum_disorders_02",
+        "kb_autism_spectrum_disorders_03",
+        "kb_autism_spectrum_disorders_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "病因",
+        "人权"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "自闭症",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/autism-spectrum-disorders",
+      "published_at": "2025-09-17",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "mental_disorders",
+      "chunk_ids": [
+        "kb_mental_disorders_01",
+        "kb_mental_disorders_02",
+        "kb_mental_disorders_03",
+        "kb_mental_disorders_04"
+      ],
+      "sections": [
+        "重要事实",
+        "抑郁症",
+        "进食障碍",
+        "神经发育障碍"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "精神障碍",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/mental-disorders",
+      "published_at": "2026-09-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "ebola_disease",
+      "chunk_ids": [
+        "kb_ebola_disease_01",
+        "kb_ebola_disease_02",
+        "kb_ebola_disease_03",
+        "kb_ebola_disease_04"
+      ],
+      "sections": [
+        "重要事实",
+        "症状",
+        "疫苗",
+        "控制卫生保健机构中的感染"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "埃博拉病",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/ebola-disease",
+      "published_at": "2025-04-24",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "mental_health_of_older_adults",
+      "chunk_ids": [
+        "kb_mental_health_of_older_adults_01",
+        "kb_mental_health_of_older_adults_02",
+        "kb_mental_health_of_older_adults_03",
+        "kb_mental_health_of_older_adults_04"
+      ],
+      "sections": [
+        "重要事实",
+        "流行率",
+        "促进和预防",
+        "促进和预防"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "老年人精神健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/mental-health-of-older-adults",
+      "published_at": "2026-07-20",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "group_b_streptococcus_gbs",
+      "chunk_ids": [
+        "kb_group_b_streptococcus_gbs_01",
+        "kb_group_b_streptococcus_gbs_02",
+        "kb_group_b_streptococcus_gbs_03",
+        "kb_group_b_streptococcus_gbs_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "体征和症状",
+        "感染控制"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "B组链球菌",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/group-b-streptococcus-_gbs_",
+      "published_at": "2026-04-24",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "abuse_of_older_people",
+      "chunk_ids": [
+        "kb_abuse_of_older_people_01",
+        "kb_abuse_of_older_people_02",
+        "kb_abuse_of_older_people_03",
+        "kb_abuse_of_older_people_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "0.7%",
+        "风险因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "虐待老人",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/abuse-of-older-people",
+      "published_at": "2022-06-13",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "ionizing_radiation_and_health_effects",
+      "chunk_ids": [
+        "kb_ionizing_radiation_and_health_effects_01",
+        "kb_ionizing_radiation_and_health_effects_02",
+        "kb_ionizing_radiation_and_health_effects_03",
+        "kb_ionizing_radiation_and_health_effects_04"
+      ],
+      "sections": [
+        "重要事实",
+        "什么是电离辐射？",
+        "电离辐射暴露",
+        "电离辐射对健康的影响"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "电离辐射与健康影响",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/ionizing-radiation-and-health-effects",
+      "published_at": "2023-07-27",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "corporal_punishment_and_health",
+      "chunk_ids": [
+        "kb_corporal_punishment_and_health_01",
+        "kb_corporal_punishment_and_health_02",
+        "kb_corporal_punishment_and_health_03",
+        "kb_corporal_punishment_and_health_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "范围",
+        "风险因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "儿童体罚与健康",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/corporal-punishment-and-health",
+      "published_at": "2026-05-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "middle_east_respiratory_syndrome_coronav",
+      "chunk_ids": [
+        "kb_middle_east_respiratory_syndrome_coronav_01",
+        "kb_middle_east_respiratory_syndrome_coronav_02",
+        "kb_middle_east_respiratory_syndrome_coronav_03",
+        "kb_middle_east_respiratory_syndrome_coronav_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "地理分布",
+        "症状"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "中东呼吸综合征冠状病毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/middle-east-respiratory-syndrome-coronavirus-_mers-cov_",
+      "published_at": "2025-12-11",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "sugars_and_dental_caries",
+      "chunk_ids": [
+        "kb_sugars_and_dental_caries_01",
+        "kb_sugars_and_dental_caries_02",
+        "kb_sugars_and_dental_caries_03",
+        "kb_sugars_and_dental_caries_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "概述",
+        "风险因素"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "糖与龋齿",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/sugars-and-dental-caries",
+      "published_at": "2025-08-14",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "herpes_simplex_virus",
+      "chunk_ids": [
+        "kb_herpes_simplex_virus_01",
+        "kb_herpes_simplex_virus_02",
+        "kb_herpes_simplex_virus_03",
+        "kb_herpes_simplex_virus_04"
+      ],
+      "sections": [
+        "重要事实",
+        "症状",
+        "治疗",
+        "传播"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "单纯疱疹病毒",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/herpes-simplex-virus",
+      "published_at": "2025-05-30",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "children_new_threats_to_health",
+      "chunk_ids": [
+        "kb_children_new_threats_to_health_01",
+        "kb_children_new_threats_to_health_02",
+        "kb_children_new_threats_to_health_03",
+        "kb_children_new_threats_to_health_04"
+      ],
+      "sections": [
+        "重要事实",
+        "概述",
+        "肥胖症与非传染性疾病",
+        "肥胖症与非传染性疾病"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "儿童健康：面临新的威胁",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/children-new-threats-to-health",
+      "published_at": "2020-11-19",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "electronic_waste_e_waste",
+      "chunk_ids": [
+        "kb_electronic_waste_e_waste_01",
+        "kb_electronic_waste_e_waste_02",
+        "kb_electronic_waste_e_waste_03",
+        "kb_electronic_waste_e_waste_04"
+      ],
+      "sections": [
+        "重要事实",
+        "问题的范围",
+        "儿童是最脆弱的群体",
+        "儿童是最脆弱的群体"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "电子垃圾",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/electronic-waste-_e-waste_",
+      "published_at": "2023-10-18",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    },
+    {
+      "document_id": "deliberate_events",
+      "chunk_ids": [
+        "kb_deliberate_events_01",
+        "kb_deliberate_events_02",
+        "kb_deliberate_events_03",
+        "kb_deliberate_events_04"
+      ],
+      "sections": [
+        "重要事实",
+        "重要事实",
+        "重要事实",
+        "风险和影响"
+      ],
+      "publisher": "世界卫生组织",
+      "title": "蓄意事件",
+      "source_url": "https://www.who.int/zh/news-room/fact-sheets/detail/deliberate-events",
+      "published_at": "2024-04-02",
+      "accessed_at": "2026-10-10",
+      "language": "zh-CN",
+      "content_kind": "verbatim_short_excerpt",
+      "usage": "仅保留必要正文短引和出处用于非商业工程演示；未取得全文再分发许可，不包含图片、附件，不授予下游全文使用权。",
+      "scope": "历史公开科普片段，不保证覆盖现行指南，不用于个体诊疗。",
+      "verification": "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
+    }
+  ]
+}
