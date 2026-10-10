@@ -15,6 +15,7 @@ import pytest
 from eval import llm_pipeline_eval as ev
 from eval.retrieval_benchmark import load_dataset
 from medidiag.llm.cassette import Cassette, ReplayTransport
+from medidiag.llm.models import PREVIOUS_MIMO_MODEL
 
 ROOT = Path(__file__).resolve().parent.parent
 CASSETTE = ROOT / "eval/cassettes/llm-pipeline-v2.jsonl"
@@ -29,7 +30,7 @@ def replayed(request: pytest.FixtureRequest) -> dict:
     mp.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
     cassette = Cassette(CASSETTE)
     args = argparse.Namespace(conditions=["bm25", "bm25_rewrite"], repeat_trials=3, workers=4, limit=0,
-                              embedding_revision=None)
+                              embedding_revision=None, model=PREVIOUS_MIMO_MODEL)
     transports = {t: ReplayTransport(cassette, trial=t) for t in range(3)}
     return ev.run(args, transports, load_dataset(ROOT / "examples/public_health_v2"))
 
@@ -85,7 +86,8 @@ def test_retry_experiment_reproduces_from_committed_cassettes(request: pytest.Fi
     transports = {t: ReplayTransport(base, trial=t) for t in range(3)}
     transports.update({ev.RETRY_BASE + t: ReplayTransport(retry, trial=ev.RETRY_BASE + t) for t in range(3)})
     args = argparse.Namespace(conditions=["bm25", "bm25_rewrite"], repeat_trials=3, workers=4, limit=0,
-                              embedding_revision=None, retry_on_violation=True)
+                              embedding_revision=None, retry_on_violation=True,
+                              model=PREVIOUS_MIMO_MODEL)
     replayed = ev.run(args, transports, load_dataset(ROOT / "examples/public_health_v2"))
     for condition in ("bm25", "bm25_rewrite"):
         assert replayed["generation_with_retry"][condition] == committed["generation_with_retry"][condition]
@@ -115,7 +117,8 @@ def test_feedback_retry_experiment_reproduces_from_committed_cassettes(request: 
     transports.update({ev.RETRY_BASE + t: ReplayTransport(retry, trial=ev.RETRY_BASE + t) for t in range(3)})
     transports.update({ev.FEEDBACK_BASE + t: ReplayTransport(feedback, trial=ev.FEEDBACK_BASE + t) for t in range(3)})
     args = argparse.Namespace(conditions=["bm25", "bm25_rewrite"], repeat_trials=3, workers=4, limit=0,
-                              embedding_revision=None, retry_on_violation=True, feedback_retry=True)
+                              embedding_revision=None, retry_on_violation=True, feedback_retry=True,
+                              model=PREVIOUS_MIMO_MODEL)
     replayed = ev.run(args, transports, load_dataset(ROOT / "examples/public_health_v2"))
     for condition in ("bm25", "bm25_rewrite"):
         assert (replayed["generation_with_feedback_retry"][condition]

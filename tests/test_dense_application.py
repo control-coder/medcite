@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from medidiag.errors import MediDiagError
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
 from medidiag.rag.dense import BGE_ZH_QUERY_PREFIX, DenseRetriever
@@ -90,14 +91,14 @@ class _FakeRag:
 
 
 def _reply(payload: dict) -> httpx.Response:
-    return httpx.Response(200, json={"id": "rid", "model": "mimo-v2.5", "usage": {"total_tokens": 3},
+    return httpx.Response(200, json={"id": "rid", "model": ACTIVE_MIMO_MODEL, "usage": {"total_tokens": 3},
         "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(payload, ensure_ascii=False)}}]})
 
 
 def _provider(monkeypatch, replies, on_invalid):
     monkeypatch.setenv("MIMO_API_KEY", "test-placeholder-not-a-real-key")
     monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com/v1")
-    monkeypatch.setenv("MIMO_MODEL", "mimo-v2.5")
+    monkeypatch.setenv("MIMO_MODEL", ACTIVE_MIMO_MODEL)
     bodies: list[dict] = []
 
     def post(url, **kwargs):

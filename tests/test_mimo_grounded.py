@@ -10,6 +10,7 @@ from medidiag.api.app import create_app
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.errors import MediDiagError
 from medidiag.llm.budget import BudgetedTransport
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
 from medidiag.workflow.application import build_application_provider
@@ -21,7 +22,7 @@ URL = "https://api.xiaomimimo.com/v1/chat/completions"
 
 
 def response(answer, **changes):
-    return httpx.Response(200, json={"id": "injected-response-id", "model": "mimo-v2.5",
+    return httpx.Response(200, json={"id": "injected-response-id", "model": ACTIVE_MIMO_MODEL,
         "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer, ensure_ascii=False)}}],
         "usage": {"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30}, **changes})
 
@@ -29,7 +30,7 @@ def response(answer, **changes):
 def make_provider(tmp_path, monkeypatch, post):
     monkeypatch.setenv("MIMO_API_KEY", "test-placeholder-not-a-real-key")
     monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com/v1")
-    monkeypatch.setenv("MIMO_MODEL", "mimo-v2.5")
+    monkeypatch.setenv("MIMO_MODEL", ACTIVE_MIMO_MODEL)
     profile = get_provider_profile("mimo_v25")
     transport = BudgetedTransport(tmp_path / "calls.db", post=post)
     llm = OpenAICompatibleProvider(profile, post=transport, max_retries=0, max_structured_retries=0)

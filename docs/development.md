@@ -112,7 +112,7 @@ python scripts/verify_public_rag.py
 
 ## 真实模型模式
 
-`mimo_grounded` 会在用户提交后调用 `mimo-v2.5`，需要在 `.env` 中配置 `MIMO_API_KEY`、`MIMO_BASE_URL`、`MIMO_MODEL`，并指定持久化预算账本：
+`mimo_grounded` 会在用户提交后调用 `mimo-v2.6-flash`（模型名由 `src/medidiag/llm/models.py` 决定，`.env` 里的 `MIMO_MODEL` 只是默认值），需要在 `.env` 中配置 `MIMO_API_KEY`、`MIMO_BASE_URL`，并指定持久化预算账本：
 
 ```powershell
 python -m medidiag.cli demo --provider mimo_grounded --live-budget .cache/implementation/<ledger>/calls.db --port 8400
