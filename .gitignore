@@ -52,6 +52,7 @@ artifacts/reports/raw/**
 !artifacts/reports/raw/.gitkeep
 artifacts/traces/raw/*.jsonl
 artifacts/traces/summary/*.json
+eval/config.formal.yaml
 eval/annotations_ui/
 eval/datasets/raw/
 
