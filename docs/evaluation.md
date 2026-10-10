@@ -219,9 +219,9 @@ python -I scripts/stress_reliability.py --backend postgres --kills 8 --freezes 2
 
 第四节说明纯检索分数无法区分“同主题但没答案”。这一节用 `mimo-v2.5` 回答三件事：把检索到的前 3 条证据交给应用的受约束生成后，模型自己的拒答能挡住多少误答；每个问题多花一次调用做查询改写能否补上口语换说法的漏检；同一请求重复问几次，答案是否稳定。代码为 `eval/llm_pipeline_eval.py`，生成走应用里的 `MimoGroundedWorkflowProvider`（同一提示词，同样要求模型只能逐字摘录原文）；报告为 [llm-pipeline-v2-20261008.json](../artifacts/reports/llm/llm-pipeline-v2-20261008.json)。
 
-**付费调用与预算**：第一次录制共 559 次请求（550 次 HTTP 200、1 次 500、2 次连接失败后重试成功，另有 6 次因请求头编码错误在本地失败、未发出），输入 139,044、输出 18,267 Token；单价未核实，费用记为未知。持久账本上限 800 次。成功调用的耗时中位数 2.4 秒、p95 13.2 秒（6 路并发）。请求只允许 `api.xiaomimimo.com`、最多 2048 输出 Token。
+**付费调用与预算**：第一次运行共 559 次请求（550 次 HTTP 200、1 次 500、2 次连接失败后重试成功，另有 6 次因请求头编码错误在本地失败、未发出），输入 139,044、输出 18,267 Token；单价未核实，费用记为未知。持久账本上限 800 次。成功调用的耗时中位数 2.4 秒、p95 13.2 秒（6 路并发）。请求只允许 `api.xiaomimimo.com`、最多 2048 输出 Token。
 
-**回放文件**：`src/medidiag/llm/cassette.py` 的 `RecordingTransport` 以请求体哈希为键保存响应的必要字段（正文、结束原因、用量，不含请求头、密钥或思维链），已录过的请求不再付费；`ReplayTransport` 只读回放文件，未命中直接失败。入库的 [llm-pipeline-v2.jsonl](../eval/cassettes/llm-pipeline-v2.jsonl) 含 550 条响应，`tests/test_llm_replay_committed.py` 在 CI 里零网络回放并要求指标与入库报告逐项一致。改动提示词、分词、证据排序或生成路径都会使请求哈希变化而未命中，此时必须重新录制（付费），不能悄悄改测试。
+**模型调用记录（下文简称调用记录）**：`src/medidiag/llm/cassette.py` 的 `RecordingTransport` 以请求体哈希为键保存响应的必要字段（正文、结束原因、用量，不含请求头、密钥或思维链），已记录过的请求不再付费；`ReplayTransport` 只读调用记录，未命中直接失败。入库的 [llm-pipeline-v2.jsonl](../eval/cassettes/llm-pipeline-v2.jsonl) 含 550 条响应，`tests/test_llm_replay_committed.py` 在 CI 里零网络回放并要求指标与入库报告逐项一致。改动提示词、分词、证据排序或生成路径都会使请求哈希变化而未命中，此时必须重新调用并记录（付费），不能悄悄改测试。
 
 ### 模型拒答（test：56 条可回答、28 条不可回答；证据为各检索方式返回的前 3 条）
 
@@ -258,7 +258,7 @@ python -I scripts/stress_reliability.py --backend postgres --kills 8 --freezes 2
 
 ### 输出不合格后重问一次
 
-上面说的输出不合格，是指模型的格式或摘录不符合要求。这里只试了最简单的补救：第一次不合格时，用同一个请求再问一次（应用路径仍然零重试，这里只在评测里试），不加错误反馈，也不改提示词。额外付费 29 次请求（账本累计 588 次，输入 148,519、输出 20,602 Token，单价未核实）；重问回放文件为 [llm-pipeline-v2-retry.jsonl](../eval/cassettes/llm-pipeline-v2-retry.jsonl)，报告为 [llm-pipeline-v2-retry-20261008.json](../artifacts/reports/llm/llm-pipeline-v2-retry-20261008.json)。
+上面说的输出不合格，是指模型的格式或摘录不符合要求。这里只试了最简单的补救：第一次不合格时，用同一个请求再问一次（应用路径仍然零重试，这里只在评测里试），不加错误反馈，也不改提示词。额外付费 29 次请求（账本累计 588 次，输入 148,519、输出 20,602 Token，单价未核实）；重问调用记录为 [llm-pipeline-v2-retry.jsonl](../eval/cassettes/llm-pipeline-v2-retry.jsonl)，报告为 [llm-pipeline-v2-retry-20261008.json](../artifacts/reports/llm/llm-pipeline-v2-retry-20261008.json)。
 
 | 条件 | 第一次不合格数 | 重问后恢复 | 作答且选对片段（重问前 → 后） | 输出不合格（前 → 后） |
 | --- | --- | --- | --- | --- |
@@ -273,7 +273,7 @@ python -I scripts/stress_reliability.py --backend postgres --kills 8 --freezes 2
 
 ### 带原因的第二次请求
 
-和上面的重问一样最多多问一次，区别是第二次请求里加了一句“上次输出被拒绝，原因是……，请让每段 text 与所选证据全文逐字一致”（原因就是应用校验给出的错误说明，不含上次的错误输出）。代码里是 `MimoGroundedWorkflowProvider` 的 `on_invalid="feedback"`；评测用 `--feedback-retry`，回放文件为 [llm-pipeline-v2-feedback.jsonl](../eval/cassettes/llm-pipeline-v2-feedback.jsonl)，报告为 [llm-pipeline-v2-feedback-20261008.json](../artifacts/reports/llm/llm-pipeline-v2-feedback-20261008.json)。额外付费 29 次请求，账本累计 617 次（上限 800）。
+和上面的重问一样最多多问一次，区别是第二次请求里加了一句“上次输出被拒绝，原因是……，请让每段 text 与所选证据全文逐字一致”（原因就是应用校验给出的错误说明，不含上次的错误输出）。代码里是 `MimoGroundedWorkflowProvider` 的 `on_invalid="feedback"`；评测用 `--feedback-retry`，调用记录为 [llm-pipeline-v2-feedback.jsonl](../eval/cassettes/llm-pipeline-v2-feedback.jsonl)，报告为 [llm-pipeline-v2-feedback-20261008.json](../artifacts/reports/llm/llm-pipeline-v2-feedback-20261008.json)。额外付费 29 次请求，账本累计 617 次（上限 800）。
 
 | 条件 | 第一次不合格数 | 不带原因的重问后恢复 | 带原因的第二次请求后恢复 | 作答且选对片段（原始 → 重问 → 带原因） |
 | --- | --- | --- | --- | --- |
@@ -307,15 +307,15 @@ python -I scripts/stress_reliability.py --backend postgres --kills 8 --freezes 2
 - 查询和“不可回答”问题由 AI 辅助撰写，不可回答只有 28 条（near_miss 11、uncovered 12、out_of_scope 5），0/28 的区间上界约 12%。没有第二位标注者，也不是盲测。
 - 只测了一个模型（`mimo-v2.5`）、一个提示词；“作答且选对片段”只核对选中的片段是否是金标准，不判断语义是否真正回答了问题，更不是医学正确性。
 - 本节的实验都在评测里完成；接入应用的部分及其选型见第七节（问题改写只接入了 BM25 方案）。
-- 向量条件依赖本地嵌入模型，CI 不回放；它在本机回放时与录制结果逐项一致。
+- 向量条件依赖本地嵌入模型，CI 不回放；它在本机回放时与记录的结果逐项一致。
 - 重问和带原因的重问在评测里做；应用里只有向量检索配置启用了带原因的那一种（第七节），默认配置仍然零重试。出现不合格时要多一次付费调用，响应时间也大约翻倍。
 
-复现（回放零费用；重新录制会产生付费调用）：
+复现本节（v2.5 的调用记录；回放零费用，重新调用并记录会产生付费调用。`mimo-v2.5` 将于 2026-10-14 下线，之后只能回放，不能重新调用并记录，换用 v2.6-flash 的结果见第八节）：
 
 ```
-python -m eval.llm_pipeline_eval --mode replay --conditions bm25 bm25_rewrite dense --repeat-trials 3 --out artifacts/reports/llm/NAME.json
-python -m eval.llm_pipeline_eval --mode replay --retry-on-violation --conditions bm25 bm25_rewrite dense --repeat-trials 3 --out artifacts/reports/llm/NAME.json
-python -m eval.llm_pipeline_eval --mode record --max-calls 800 ...
+python -m eval.llm_pipeline_eval --mode replay --model mimo-v2.5 --conditions bm25 bm25_rewrite dense --repeat-trials 3 --out artifacts/reports/llm/NAME.json
+python -m eval.llm_pipeline_eval --mode replay --model mimo-v2.5 --retry-on-violation --conditions bm25 bm25_rewrite dense --repeat-trials 3 --out artifacts/reports/llm/NAME.json
+python -m eval.llm_pipeline_eval --mode record --model mimo-v2.5 --max-calls 800 ...
 ```
 
 ## 七、应用接入：向量检索 + 模型拒答 + 带原因的重试
@@ -330,7 +330,7 @@ python -m eval.llm_pipeline_eval --mode record --max-calls 800 ...
 | --- | --- | --- |
 | 向量检索 vs BM25 | Hit@3 0.96 vs 0.70；模型拒答下作答且选对片段 0.73 vs 0.50–0.61（重问前） | 选向量检索 |
 | 混合检索 | 相对纯向量检索 MRR 只多 0.009，区间重叠 | 不选，多一个参数没有收益 |
-| 先改写问题再检索 | 对 BM25 有效（口语换说法类 6/21 → 17/21）；对向量检索几乎无增益：全部可回答 Hit@3 54/56 → 55/56，口语换说法类 20/21 → 21/21（一次性计算，脚本未入库，用的是已录制的改写） | 向量检索下不选，省一次调用和约 2 秒延迟；BM25 方案下改写仍有用，已作为单独的可选配置接入（见下面“另一种选择”） |
+| 先改写问题再检索 | 对 BM25 有效（口语换说法类 6/21 → 17/21）；对向量检索几乎无增益：全部可回答 Hit@3 54/56 → 55/56，口语换说法类 20/21 → 21/21（一次性计算，脚本未入库，用的是已记录的改写） | 向量检索下不选，省一次调用和约 2 秒延迟；BM25 方案下改写仍有用，已作为单独的可选配置接入（见下面“另一种选择”） |
 | 得分门槛 | 向量检索加门槛：误答 0.25、该答却拒答 0.18；模型拒答：误答 0/28、该答却拒答 3–4/56 | 不选；模型拒答更好，门槛只能省调用，却会多拒绝可回答的问题 |
 | 输出不合格后的补救 | 作答且选对片段 41/56 → 51/56；带原因 ≥ 不带原因（第六节） | 选带原因的，最多多 1 次调用 |
 
@@ -342,7 +342,7 @@ python -m eval.llm_pipeline_eval --mode record --max-calls 800 ...
 - `load_application_config` 现在接受两种明确方案（单路 BM25、单路向量检索）；浮动版本、允许下载、混合权重、重排、关闭泄露检查等配置仍被拒绝（`tests/test_dense_application.py` 逐项覆盖）。
 - `MimoGroundedWorkflowProvider.on_invalid`：`none`（默认）、`resample`、`feedback`；只对“输出不符合要求”这一类错误补救，网络、限流、超时不补救，最多多 1 次调用，仍受预算账本约束。
 - 页面报告里的“仅含 N 篇网页”改为按实际语料统计（8 或 51）。
-- `src/medidiag/workflow/query_rewrite.py`：改写提示词和请求构造，评测与应用共用同一份（改写的录制文件仍然全部命中）；`MimoGroundedWorkflowProvider.rewrite` 打开后，检索前先改写，把原问题和改写句拼在一起交给 BM25。
+- `src/medidiag/workflow/query_rewrite.py`：改写提示词和请求构造，评测与应用共用同一份（改写的调用记录仍然全部命中）；`MimoGroundedWorkflowProvider.rewrite` 打开后，检索前先改写，把原问题和改写句拼在一起交给 BM25。
 
 ### 真实调用冒烟
 
@@ -387,6 +387,95 @@ python -m eval.llm_pipeline_eval --mode record --max-calls 800 ...
 - 该答却拒答仍有约 7%，不合格仍有 1 条（1/56）；这些问题用户看到的是“证据不足”或失败，而不是错误内容。
 - 评测数据是 AI 辅助撰写的 168 条问题，不可回答只有 28 条；真实用户问题的分布可能不同，上线前需要用真实问题再测。
 
+## 八、换用 mimo-v2.6-flash 与检索智能体
+
+`mimo-v2.5` 将于 2026-10-14 下线，应用和评测改用 `mimo-v2.6-flash`。模型名集中写在 `src/medidiag/llm/models.py`；v2.5 的调用记录仍可回放（命令里加 `--model mimo-v2.5`），第六节的数字不变。这一节回答两件事：同一套实验换模型后结果怎样；再加一个由模型决定“要不要换种说法继续检索”的检索智能体，效果怎样、值不值得。
+
+### 换模型后的同一实验
+
+协议、语料和测试组与第六节相同（可回答 56、不可回答 28，证据为检索前 3 条），调用记录为 `eval/cassettes/llm-pipeline-v2-flash*.jsonl`，报告为 [llm-pipeline-v2-flash-20261010.json](../artifacts/reports/llm/llm-pipeline-v2-flash-20261010.json)。表中数字是“可回答的 56 条里作答且选对片段的条数”：
+
+| 条件 | v2.5 首次输出 | v2.5 带原因重试后 | v2.6-flash 首次输出 | v2.6-flash 带原因重试后 |
+| --- | --- | --- | --- | --- |
+| BM25（采样 3 次） | 34 / 28 / 32 | 见第六节 | 34 / 37 / 37 | 37 / 37 / 37 |
+| BM25 加改写 | 37 | 44 | 46 | 50 |
+| 向量检索 | 41 | 51 | 51 | 54 |
+
+- 不可回答的 28 条里误答仍是 0，所有条件、两个模型都一样。
+- 输出不符合要求（摘录不是原文、引用错误等）的次数下降：向量检索从 12 条降到 3 条；带原因重试后全部恢复。
+- 向量检索加带原因重试的回答 F1 为 0.982（v2.5 为 0.95）。
+- 每次只采样一次，第六节已经说明同一请求重复问时回答会变，所以几条的差距不要当成结论；模型输出不合格变少这个方向在三个条件里是一致的。
+- 调用耗时：不开思考的请求平均约 1 到 2 秒；有一次请求挂住约 300 秒后连接中断（单次超时设置为 45 秒，对这种情况不起作用，没有改）。
+
+### 检索智能体
+
+固定流程只检索一次，或者让模型改写问题后再检索一次。检索智能体把“下一步做什么”交给模型：
+
+1. 先按原问题检索一次（不调用模型）。
+2. 模型看到问题和第一批结果，判断其中有没有一段明确回答了问题。有就回复“结束”；没有就调用 `search_kb` 工具，换成规范的书面术语再检索，最多再检索 2 次（模型最多调用 3 次）。
+3. 几次检索的结果用倒数排名融合（常数 60）合并，取前 3 段作为证据，交给原来的受约束摘录。摘录必须与证据原文逐字一致的检查对它同样生效，智能体绕不过去。
+4. 任何模型错误（超时、格式不对、返回的模型名不符）都不会让问题失败：停止检索，沿用已经拿到的证据，原因写进步骤记录。
+
+代码为 `src/medidiag/workflow/retrieval_agent.py`，应用配置为 `configs/application_agent.yaml`（BM25 加智能体）。智能体不能和问题改写同时开启，配置校验会拒绝。评测里对应两个条件：`bm25_agent`、`dense_agent`。
+
+#### 结果（测试组，56 条可回答）
+
+| 条件 | 检索前 3 条含答案片段 | 作答且选对片段（带原因重试后） | 回答 F1 | 每题检索前的模型调用 |
+| --- | --- | --- | --- | --- |
+| BM25 | 39 | 37 | 0.787 | 0 |
+| BM25 加固定改写 | 52 | 50 | 0.935 | 1 |
+| BM25 加检索智能体 | 53 | 52 | 0.963 | 平均 2.05 |
+| 向量检索 | 54 | 54 | 0.982 | 0 |
+| 向量检索加检索智能体 | 55 | 55 | 0.991 | 平均 1.83 |
+
+不可回答的 28 条误答都是 0。BM25 加智能体相对只检索一次：含答案片段的问题从 39 条增加到 53 条（新命中 14 条，丢失 0 条，符号检验 p = 0.0001）；口语换说法的 21 条从 6 条增加到 19 条。开发组上同一方向（37 → 45，新命中 9 条，丢失 1 条，p = 0.02）。
+
+- BM25 加智能体 168 个问题共 345 次模型调用、约 24.6 万 Token；有 69 个问题第一次检索就被判断为够用而结束，78 个问题用满 3 次检索。
+- 向量检索加智能体：含答案片段 54 → 55（p = 1.0），不显著，却每题多一次判断调用（307 次调用，约 22.3 万 Token），不值得。有 1 个问题因一次请求挂住 300 秒后连接中断，按设计沿用了第一次检索的结果。
+
+#### 和固定改写比
+
+- 检索指标上两者接近：测试组 53 对 52，开发组 45 对 48，两组合计 98 对 100。回答 F1 0.963 对 0.935 差 2 条，在重复提问的波动范围内，不能说智能体更好。
+- 智能体比固定改写多的是“判断够不够用”：约四成问题只检索一次就结束；代价是每题平均 2.05 次调用，并且要开思考，延迟更高。固定改写每题固定 1 次调用。
+- 所以这一节的结论是：检索智能体在没有向量模型缓存时能把 BM25 补到接近向量检索，但并不比固定改写更准；有向量模型缓存时仍推荐向量检索，不加智能体。
+
+#### 提示词是怎么定下来的（需要如实说明）
+
+1. 第一版提示词，不开思考、最多输出 256 个 Token，在开发组和测试组都跑了一遍：168 个问题里 157 个只检索一次，BM25 含答案片段测试组 39 → 40，开发组 37 → 38，几乎没有改变。这是一次失败的尝试，已付费 360 次调用，这些调用记录没有入库，第一版的测试组数字就是上面这个。
+2. 之后只在开发组上调：第二版提示词加了“先逐条判断这批结果有没有明确回答问题；只是话题相近、或词语相同的不算”，不开思考，开发组 44 条；再打开思考（最多输出 1024 个 Token），48 条（固定改写在开发组是 48 条）。这两轮试验各自调用 72 次和 89 次。
+3. 最后用定下的提示词在开发组和测试组各跑一次完整评测（719 次调用，其中 1 次连接中断）。同一提示词在开发组这一次是 45 条，低于调参时的 48 条，说明模型输出每次不完全相同，开发组上调出来的数字偏乐观；上面引用的是测试组的完整评测结果。
+
+三轮试验加上主流程，这个模型一共产生约 1800 次付费调用。
+
+#### 这一节没有证明的事
+
+- 只测了一个模型、一个提示词，每个条件只采样一次；智能体的提示词在开发组上调过，测试组只跑了最终这一次，但整体仍是同一批 168 条 AI 辅助撰写的问题，真实用户问题上的表现没有测过。
+- 没有测延迟分布：智能体的耗时来自账本的平均值（全部 719 次调用平均 2.8 秒），没有按问题统计，也没有和固定改写做过同条件的耗时对比。
+- 回答 F1 只核对选中的片段是不是标准答案，不判断语义是否真的回答了问题。
+
+#### 真实调用冒烟（应用配置 `configs/application_agent.yaml`）
+
+3 个问题各用一个新账本（每个账本上限 8 次请求）走完整个应用工作流，共 10 次请求，报告为 [dense-live-20261010T061133Z.json](../artifacts/reports/application/dense-live-20261010T061133Z.json)、[dense-live-20261010T061203Z.json](../artifacts/reports/application/dense-live-20261010T061203Z.json)、[dense-live-20261010T061214Z.json](../artifacts/reports/application/dense-live-20261010T061214Z.json)（文件名沿用了脚本名，配置见其中的 `app_config`）。
+
+| 问题 | 智能体的检索过程 | 结果 |
+| --- | --- | --- |
+| 屋里太闷怎样透透气？ | 原问题没有检索到任何片段；模型改成“室内通风 改善空气质量”后命中通风相关片段，又试了一次“开窗通风 换气 方法”后结束 | 2 条摘录（通风、夜间降温各一），10.9 秒 |
+| 高温时可以把孩子留在停放的车辆中吗？ | 第一批结果的第 1 条就是正确片段，模型直接结束，只调用 1 次 | 1 条摘录，7.4 秒 |
+| 天气特别热的时候出门要注意什么？ | 原问题检索到烟草、登革热等不相关片段；两次改写后只检索到“居家降温”这一段，模型仍判断不够 | 拒答，23.9 秒 |
+
+- 第一个问题在固定流程里会因为“检索为空”直接拒答、不调用模型；智能体在检索为空时仍会让模型改写，这是它比固定改写多出来的一种情况。
+- 第三个问题：最接近的片段讲的是居家降温，不是外出注意事项，拒答与这一点一致，但仍属于该答却拒答的类型。这 3 个问题不是准确率评测，只说明这条路径能跑通，步骤记录写在检索结果的 `search_agent` 里。
+- 模型每次调用的耗时在 1.6 到 7.3 秒之间（开了思考）。
+
+复现（回放零费用，向量检索的条件依赖本地嵌入模型，CI 不回放；`tests/test_llm_replay_flash.py` 回放 BM25、BM25 加改写、BM25 加智能体并与入库报告逐项对比）：
+
+```
+python -m eval.llm_pipeline_eval --mode replay --conditions bm25 bm25_rewrite bm25_agent --retry-on-violation --feedback-retry \
+  --cassette eval/cassettes/llm-pipeline-v2-flash.jsonl \
+  --retry-cassette eval/cassettes/llm-pipeline-v2-flash-retry.jsonl \
+  --feedback-cassette eval/cassettes/llm-pipeline-v2-flash-feedback.jsonl --out artifacts/reports/llm/NAME.json
+```
+
 ## 未验证的范围
 
-全新环境安装、真实模型与 PostgreSQL/Redis 的联合运行（第五节只覆盖 PostgreSQL 的多进程恢复，不含 Redis）、公网生产安全、多机容量、临床效果与完整计费均未验证。第六节主要在评测中使用真实模型；第七节把向量检索、模型拒答和带原因的重试接入了应用，只做了 6 个问题（向量方案）和 3 个问题（BM25 加改写）的真实调用冒烟。研究子系统的 formal 结论与限制见 [研究评测协议](research/evaluation-protocol.md) 和 [NLI 语言兼容性复盘](research/nli-language-compatibility.md)。
+全新环境安装、真实模型与 PostgreSQL/Redis 的联合运行（第五节只覆盖 PostgreSQL 的多进程恢复，不含 Redis）、公网生产安全、多机容量、临床效果与完整计费均未验证。第六节主要在评测中使用真实模型；第七节把向量检索、模型拒答和带原因的重试接入了应用，只做了 6 个问题（向量方案）和 3 个问题（BM25 加改写）的真实调用冒烟。第八节换用 mimo-v2.6-flash 并加入检索智能体，只在评测里完成，检索智能体的应用配置只用 3 个问题做过真实调用冒烟。研究子系统的 formal 结论与限制见 [研究评测协议](research/evaluation-protocol.md) 和 [NLI 语言兼容性复盘](research/nli-language-compatibility.md)。

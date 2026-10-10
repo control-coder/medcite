@@ -142,6 +142,18 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/dense
 python -I scripts/verify_dense_application.py --allow-live --ledger .cache/rewrite-ledger.db --app-config configs/application_rewrite.yaml --cases 2 3 6
 ```
 
+### BM25 加检索智能体
+
+`configs/application_agent.yaml`：先按原问题检索一次，再由模型看结果，决定是否调用 `search_kb` 换种说法继续检索（最多再检索 2 次，模型最多调用 3 次，开启思考），合并后的前 3 段作为证据交给受约束摘录。出错时沿用已拿到的证据，步骤记录在检索结果的 `search_agent`。不能和问题改写同时开启。每个问题的模型调用最多 3 次检索判断加 1 到 2 次生成，所以 8 次请求的上限下一次只能试 1 到 2 个问题，需要换新的账本文件：
+
+```powershell
+python -I scripts/verify_dense_application.py --allow-live --ledger .cache/agent-ledger.db --app-config configs/application_agent.yaml --cases 2
+```
+
+### 评测的调用记录
+
+评测（`eval/llm_pipeline_eval.py`）把每次模型调用的请求和回复存成调用记录（`eval/cassettes/`），之后可以零网络、零费用回放。`--model` 指定请求用的模型名：新的调用并记录用默认的 `mimo-v2.6-flash`，回放 v2.5 的旧记录要加 `--model mimo-v2.5`。改动提示词、检索分词、证据排序或智能体的提示词与工具定义，都会使请求哈希变化而回放失败，需要重新调用并记录（付费，先确认账本额度）。回放测试为 `tests/test_llm_replay_committed.py`（v2.5）和 `tests/test_llm_replay_flash.py`（v2.6-flash）。
+
 ## 演示路线（约 4 分钟）
 
 | 时间 | 操作 |
