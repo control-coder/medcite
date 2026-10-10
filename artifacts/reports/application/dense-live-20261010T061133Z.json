@@ -1,0 +1,136 @@
+{
+  "schema_version": "dense-application-live-v1",
+  "created_at": "2026-10-10T06:11:33.905637+00:00",
+  "app_config": "configs/application_agent.yaml",
+  "on_invalid": "feedback",
+  "cases_selected": [
+    2
+  ],
+  "model": "mimo-v2.6-flash",
+  "baseline_commit": "aecfc7d48f7e1cb4dd6a4b45c7667d57c03a5fbd",
+  "calls": 4,
+  "ledger_total": 4,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "response",
+      "elapsed_ms": 2158,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "7bd5fa0c-2424-4570-92e7-5412e9153978_ca32239dec644d08a0f53ef8a30c5c70",
+      "usage": {
+        "completion_tokens": 78,
+        "prompt_tokens": 308,
+        "total_tokens": 386
+      },
+      "error_type": null
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 1563,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "674fa750-ad89-466f-af00-4abe9e6c07ff_8e245a4bab1b41b291724aa882940d14",
+      "usage": {
+        "completion_tokens": 111,
+        "prompt_tokens": 536,
+        "total_tokens": 647
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 4715,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "c3612796-6583-4339-ba26-04f40fec95d5_6f95101ff4b14d8e989bc0dd738a6bc8",
+      "usage": {
+        "completion_tokens": 317,
+        "prompt_tokens": 773,
+        "total_tokens": 1090
+      },
+      "error_type": null
+    },
+    {
+      "id": 4,
+      "state": "response",
+      "elapsed_ms": 2254,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "9a2d3f57-6880-4b00-b4b2-76a907fc6e04_d7e5eecbb0064cf78e9167e6eb5e118a",
+      "usage": {
+        "completion_tokens": 87,
+        "prompt_tokens": 304,
+        "total_tokens": 391
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "kind": "口语换说法",
+      "question": "屋里太闷怎样透透气？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 10.87,
+      "abstained": false,
+      "query_rewrite": null,
+      "search_agent": {
+        "status": "ok",
+        "code": null,
+        "model_calls": 3,
+        "steps": [
+          {
+            "action": "search",
+            "query": "屋里太闷怎样透透气？",
+            "chunk_ids": []
+          },
+          {
+            "action": "search",
+            "query": "室内通风 改善空气质量",
+            "chunk_ids": [
+              "kb_covid_ventilation_01",
+              "kb_household_air_02",
+              "kb_heat_home_01"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "开窗通风 换气 方法",
+            "chunk_ids": [
+              "kb_heat_home_01",
+              "kb_covid_ventilation_01",
+              "kb_hypertension_02"
+            ]
+          },
+          {
+            "action": "stop",
+            "reason": "model_done"
+          }
+        ],
+        "usage": {
+          "input_tokens": 1617,
+          "output_tokens": 506,
+          "total_tokens": 2123
+        }
+      },
+      "retrieved_chunks": [
+        "kb_covid_ventilation_01",
+        "kb_heat_home_01",
+        "kb_household_air_02"
+      ],
+      "claims": [
+        {
+          "chunk_id": "kb_covid_ventilation_01",
+          "text": "通风是将新鲜的室外空气引入室内并将室内空气排到室外以保持或改善空气质量的过程。"
+        },
+        {
+          "chunk_id": "kb_heat_home_01",
+          "text": "天黑后，当室外温度低于室内温度时，打开窗户，利用夜间的空气给家中降温。"
+        }
+      ]
+    }
+  ],
+  "boundary": "少量问题的真实调用冒烟，证明所选检索方案能走完整个应用工作流；不是准确率评测。"
+}

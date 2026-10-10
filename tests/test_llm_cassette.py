@@ -1,4 +1,4 @@
-"""录制文件：录制只在未命中时计费，回放零网络，预算与边界在发包前强制。"""
+"""调用记录：只有未命中时才计费，回放零网络，预算与边界在发包前强制。"""
 
 from __future__ import annotations
 
@@ -98,7 +98,7 @@ def test_budget_is_hard_cap_and_persistent(tmp_path: Path):
     with pytest.raises(ValueError):
         RecordingTransport(tmp_path / "c.jsonl", tmp_path / "ledger.db", max_calls=9, post=server)
     assert server.calls == 2
-    # 已录过的请求仍可免费读取
+    # 已记录过的请求仍可免费读取
     assert again(URL, headers=HEADERS, json=body("1"), timeout=30).status_code == 200
 
 
@@ -160,7 +160,7 @@ def test_tool_calls_are_kept_so_agent_runs_can_be_replayed(tmp_path: Path):
 
 
 def test_both_mimo_model_names_are_accepted(tmp_path: Path):
-    """旧模型名用于回放旧录制文件，新模型名用于真实调用；其他模型名仍被拒绝。"""
+    """旧模型名用于回放旧调用记录，新模型名用于真实调用；其他模型名仍被拒绝。"""
     recorder, server = make(tmp_path)
     for model in ("mimo-v2.5", "mimo-v2.6-flash"):
         recorder(URL, headers=HEADERS, json=body(model=model), timeout=30)
@@ -177,7 +177,7 @@ def test_failed_responses_cost_budget_but_are_not_cached(tmp_path: Path):
 
 
 def test_works_through_the_real_provider_adapter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """经 OpenAICompatibleProvider 走完整适配路径：回放结果与录制时的归一化结果一致。"""
+    """经 OpenAICompatibleProvider 走完整适配路径：回放结果与记录时的归一化结果一致。"""
     from medidiag.llm.contracts import LLMRequest
     from medidiag.llm.openai_compatible import OpenAICompatibleProvider
     from medidiag.llm.profiles import get_provider_profile

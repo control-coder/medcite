@@ -49,7 +49,7 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     # 检索前先让模型把问题改写成规范表述，和原问题一起做 BM25 检索（每个问题多 1 次调用）。
     # 改写失败时回退到原问题，并把原因记在检索结果里，不静默吞掉。
     rewrite: bool = False
-    # 请求的模型名；返回的模型名必须与它一致。回放旧录制文件时传 PREVIOUS_MIMO_MODEL。
+    # 请求的模型名；返回的模型名必须与它一致。回放旧调用记录时传 PREVIOUS_MIMO_MODEL。
     model: str = ACTIVE_MIMO_MODEL
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:

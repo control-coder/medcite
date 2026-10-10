@@ -1,13 +1,13 @@
 """真实模型接入后的端到端评测：LLM 弃答、查询改写与重复性（v2 语料）。
 
-回答三个问题，全部可用录制文件零费用回放：
+回答三个问题，全部可用调用记录零费用回放：
 
 1. 现网只有“有正分命中就作答”，把 top3 证据交给应用里的受约束生成（``MimoGroundedWorkflowProvider``）后，
    模型自己的弃答能否降低“不可回答问题仍被作答”的比例？代价是多少可回答问题被拒？
 2. 预算受限的查询改写（每个问题最多 1 次额外调用，不看语料）能否补上 BM25 在口语同义改写上的漏检？
 3. 同一请求重复采样，模型的作答/弃答与选段是否稳定？
 
-模式：``record`` 需要真实凭据并占用持久预算；``replay`` 只读录制文件，绝不联网，未命中即失败。
+模式：``record`` 需要真实凭据并占用持久预算；``replay`` 只读调用记录，绝不联网，未命中即失败。
 
 用法::
 
@@ -81,7 +81,7 @@ def call_with_retry(fn: Callable[[], Any], tries: int = 3, sleep: Callable[[floa
 
 # ----------------------------------------------------------------- LLM 步骤
 
-RETRY_BASE = 100  # 重采样用 trial 号 RETRY_BASE + t，与首次采样的录像互不覆盖
+RETRY_BASE = 100  # 重采样用 trial 号 RETRY_BASE + t，与首次采样的调用记录互不覆盖
 FEEDBACK_BASE = 200  # 带原因的第二次请求用 trial 号 FEEDBACK_BASE + t
 
 def make_provider(transport: Any) -> OpenAICompatibleProvider:
@@ -400,7 +400,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode", choices=["record", "replay"], required=True)
     parser.add_argument("--model", choices=ALLOWED_MIMO_MODELS, default=ACTIVE_MIMO_MODEL,
-                        help="请求的模型名；回放旧录制文件时用 mimo-v2.5，新录制与真实调用用默认值")
+                        help="请求的模型名；回放旧调用记录时用 mimo-v2.5，新的记录与真实调用用默认值")
     parser.add_argument("--dataset-dir", type=Path, default=ROOT / "examples/public_health_v2")
     parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2.jsonl")
     parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/llm-pipeline-ledger.db")
@@ -410,12 +410,12 @@ def main() -> None:
     parser.add_argument("--repeat-trials", type=int, default=3)
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--retry-cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2-retry.jsonl",
-                        help="重采样录制文件，与主录制文件分开，不改变已入库录制文件的指纹")
+                        help="重采样调用记录，与主调用记录分开，不改变已入库调用记录的指纹")
     parser.add_argument("--retry-on-violation", action="store_true",
                         help="首次违反输出契约时重采样一次（用 trial 号 100+t，需要额外调用）")
     parser.add_argument("--feedback-cassette", type=Path,
                         default=ROOT / "eval/cassettes/llm-pipeline-v2-feedback.jsonl",
-                        help="带原因的第二次请求的录制文件，与前两个分开")
+                        help="带原因的第二次请求的调用记录，与前两个分开")
     parser.add_argument("--feedback-retry", action="store_true",
                         help="首次违反输出契约时，带上被拒原因再请求一次（trial 号 200+t，需要额外调用）")
     parser.add_argument("--limit", type=int, default=0, help="冒烟：每个 split 只取前 N 条查询")

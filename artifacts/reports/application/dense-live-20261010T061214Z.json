@@ -1,0 +1,90 @@
+{
+  "schema_version": "dense-application-live-v1",
+  "created_at": "2026-10-10T06:12:14.635593+00:00",
+  "app_config": "configs/application_agent.yaml",
+  "on_invalid": "feedback",
+  "cases_selected": [
+    3
+  ],
+  "model": "mimo-v2.6-flash",
+  "baseline_commit": "aecfc7d48f7e1cb4dd6a4b45c7667d57c03a5fbd",
+  "calls": 2,
+  "ledger_total": 2,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "response",
+      "elapsed_ms": 1837,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "4260ce1e-26f7-45e0-9739-3cb88b23ce9b_28a0c1f32b7549edb2ce526f80d0e931",
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 459,
+        "total_tokens": 476
+      },
+      "error_type": null
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 5392,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "1049a35c-effc-4ecb-9896-8360f9d3961b_63cfa8a58c924b10b06a0c6b609f4a1b",
+      "usage": {
+        "completion_tokens": 48,
+        "prompt_tokens": 315,
+        "total_tokens": 363
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "kind": "有答案",
+      "question": "高温时可以把孩子留在停放的车辆中吗？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 7.38,
+      "abstained": false,
+      "query_rewrite": null,
+      "search_agent": {
+        "status": "ok",
+        "code": null,
+        "model_calls": 1,
+        "steps": [
+          {
+            "action": "search",
+            "query": "高温时可以把孩子留在停放的车辆中吗？",
+            "chunk_ids": [
+              "kb_heat_children_01",
+              "kb_malnutrition_04",
+              "kb_alcohol_04"
+            ]
+          },
+          {
+            "action": "stop",
+            "reason": "model_done"
+          }
+        ],
+        "usage": {
+          "input_tokens": 459,
+          "output_tokens": 17,
+          "total_tokens": 476
+        }
+      },
+      "retrieved_chunks": [
+        "kb_heat_children_01",
+        "kb_malnutrition_04",
+        "kb_alcohol_04"
+      ],
+      "claims": [
+        {
+          "chunk_id": "kb_heat_children_01",
+          "text": "切勿将孩子或动物留在停放的车辆中，一会儿都不行，因为温度会很快变得非常危险。"
+        }
+      ]
+    }
+  ],
+  "boundary": "少量问题的真实调用冒烟，证明所选检索方案能走完整个应用工作流；不是准确率评测。"
+}
