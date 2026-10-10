@@ -162,3 +162,15 @@ def test_agent_and_rewrite_cannot_be_combined(tmp_path) -> None:
         path.write_text(yaml.safe_dump(content), encoding="utf-8")
         with pytest.raises(ValueError):
             load_application_config(path)
+
+
+def test_shipped_agent_config_builds_the_agent_provider(monkeypatch, tmp_path) -> None:
+    from medidiag.workflow.application import build_application_provider
+
+    monkeypatch.setenv("MIMO_API_KEY", "test-not-a-secret")
+    monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
+    config = load_application_config(ROOT / "configs/application_agent.yaml")
+    assert config["generation"]["agent"] is True and not config["generation"].get("rewrite")
+    provider = build_application_provider("mimo_grounded", app_config="configs/application_agent.yaml", root=ROOT,
+                                          live_budget=tmp_path / "ledger.db")
+    assert isinstance(provider, RetrievalAgentWorkflowProvider)

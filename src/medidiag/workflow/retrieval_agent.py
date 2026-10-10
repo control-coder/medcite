@@ -14,7 +14,7 @@ import json
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from medidiag.errors import MediDiagError
 from medidiag.llm.contracts import LLMProvider, LLMRequest
@@ -24,6 +24,9 @@ MAX_EXTRA_SEARCHES = 2  # 原问题检索之外，最多再检索几次
 POOL_SIZE = 3  # 交给生成步骤的证据段数，与固定流程的 top3 保持一致
 RRF_K = 60  # 多次检索结果合并时的平滑常数，沿用倒数排名融合的常用取值
 MAX_QUERY_CHARS = 120
+# 判断“这批结果是否真的回答了问题”需要思考；不开思考时模型几乎总是直接结束（见 docs/evaluation.md）
+MAX_TOKENS = 1024
+REASONING_MODE: Literal["disabled", "enabled"] = "enabled"
 
 SEARCH_TOOL: dict[str, Any] = {
     "type": "function",
@@ -39,10 +42,13 @@ SEARCH_TOOL: dict[str, Any] = {
 }
 
 AGENT_PROMPT = (
-    "你是公共卫生科普检索助手，负责为后续的摘录步骤准备证据。你只检索，不回答问题。"
-    "用户消息里有问题，以及按原问题检索得到的第一批结果。"
-    "如果这些结果已经能直接回答问题，或者换一种说法也不太可能检索到更好的结果，直接回复“结束”。"
-    "如果结果和问题不相关，就调用 search_kb，改用世界卫生组织科普页面常用的规范术语再检索一次。"
+    "你是公共卫生科普检索助手，负责为后续的摘录步骤准备证据。你只检索，不回答问题。\n"
+    "检索工具按字面匹配：问题里的口语说法常常和资料里的书面用语对不上，检索到的片段可能只是话题相近。\n"
+    "用户消息里有问题，以及按原问题检索得到的第一批结果。请先逐条判断：这批结果里有没有一段明确回答了问题所问的内容？"
+    "只是话题相近、或只是词语相同的，不算。\n"
+    "- 有：直接回复“结束”。\n"
+    "- 没有：调用 search_kb，改用世界卫生组织科普页面常用的规范书面术语换一种说法再检索"
+    "（例如“嗓子冒烟”可以改成“咽喉不适 缓解”）。\n"
     "最多再检索两次，不要重复相同的检索语句，不要添加问题中没有的事实、数字或建议。"
 )
 
@@ -102,7 +108,8 @@ def run_search_agent(llm: LLMProvider, search: Callable[[str], Sequence[Any]], q
         try:
             reply = llm.generate(
                 LLMRequest(messages=messages, model=model, tools=[SEARCH_TOOL], tool_choice="auto",
-                           max_tokens=256, reasoning_mode="disabled", prompt_version="retrieval-agent-v1"),
+                           max_tokens=MAX_TOKENS, reasoning_mode=REASONING_MODE,
+                           prompt_version="retrieval-agent-v1"),
                 timeout_s=timeout_s, idempotency_key="mimo-agent-" + uuid.uuid4().hex)
         except MediDiagError as exc:
             outcome.status, outcome.code = "fallback", exc.code
