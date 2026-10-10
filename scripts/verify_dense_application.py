@@ -45,6 +45,7 @@ def main() -> None:
     from medidiag.db.models import Case, CaseReport, StageArtifact
     from medidiag.db.session import create_db_engine, get_session_factory, init_db
     from medidiag.llm.budget import BudgetedTransport
+    from medidiag.llm.models import ACTIVE_MIMO_MODEL
     from medidiag.workflow.application import build_application_provider
     from medidiag.workflow.executor import WorkflowExecutor
     from medidiag.workflow.worker import SingleMachineWorker
@@ -78,8 +79,9 @@ def main() -> None:
                 retrieved = session.query(StageArtifact.payload).filter(
                     StageArtifact.case_id == case_id, StageArtifact.stage == "retrieval").first()
                 rewrite = (retrieved[0] or {}).get("query_rewrite") if retrieved else None
+                search_agent = (retrieved[0] or {}).get("search_agent") if retrieved else None
             rows.append({"kind": label, "question": question, "status": status, "seconds": elapsed,
-                         "abstained": not structured.get("claims"), "query_rewrite": rewrite,
+                         "abstained": not structured.get("claims"), "query_rewrite": rewrite, "search_agent": search_agent,
                          "retrieved_chunks": [c["chunk_id"] for c in (retrieved[0] or {}).get("chunks", [])] if retrieved else [],
                          "claims": [{"chunk_id": c["citation_chunk_ids"][0], "text": c["text"]}
                                     for c in structured.get("claims", [])]})
@@ -88,11 +90,11 @@ def main() -> None:
     records = ledger.records()
     report_doc = {
         "schema_version": "dense-application-live-v1", "created_at": datetime.now(UTC).isoformat(),
-        "app_config": args.app_config, "on_invalid": "feedback", "cases_selected": args.cases or "all", "model": "mimo-v2.5",
+        "app_config": args.app_config, "on_invalid": "feedback", "cases_selected": args.cases or "all", "model": ACTIVE_MIMO_MODEL,
         "baseline_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "calls": len(records) - before, "ledger_total": len(records),
         "transport_records": records, "cases": rows,
-        "boundary": "6 个问题的真实调用冒烟，证明向量检索方案能走完整个应用工作流；不是准确率评测。"}
+        "boundary": "少量问题的真实调用冒烟，证明所选检索方案能走完整个应用工作流；不是准确率评测。"}
     out = ROOT / "artifacts/reports/application" / f"dense-live-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
     out.write_text(json.dumps(report_doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("调用次数：", report_doc["calls"], "报告：", out)

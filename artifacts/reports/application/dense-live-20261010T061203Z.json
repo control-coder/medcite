@@ -1,0 +1,131 @@
+{
+  "schema_version": "dense-application-live-v1",
+  "created_at": "2026-10-10T06:12:03.030697+00:00",
+  "app_config": "configs/application_agent.yaml",
+  "on_invalid": "feedback",
+  "cases_selected": [
+    6
+  ],
+  "model": "mimo-v2.6-flash",
+  "baseline_commit": "aecfc7d48f7e1cb4dd6a4b45c7667d57c03a5fbd",
+  "calls": 4,
+  "ledger_total": 4,
+  "transport_records": [
+    {
+      "id": 1,
+      "state": "response",
+      "elapsed_ms": 4181,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "a411b9aa-a5fb-416d-b360-ec35ceb049fd_e4b2315e6a2c414f8494706858d1d15b",
+      "usage": {
+        "completion_tokens": 92,
+        "prompt_tokens": 445,
+        "total_tokens": 537
+      },
+      "error_type": null
+    },
+    {
+      "id": 2,
+      "state": "response",
+      "elapsed_ms": 6466,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "dffe015c-c6c1-462d-9643-8bc9143d471a_5f9eb30949b94a8b8a6c621fa1d602a7",
+      "usage": {
+        "completion_tokens": 55,
+        "prompt_tokens": 698,
+        "total_tokens": 753
+      },
+      "error_type": null
+    },
+    {
+      "id": 3,
+      "state": "response",
+      "elapsed_ms": 5723,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "45797202-b07b-4419-8b2d-87dd7ee27089_b20415efb0fa40ca8a9024eb7882c5a1",
+      "usage": {
+        "completion_tokens": 133,
+        "prompt_tokens": 943,
+        "total_tokens": 1076
+      },
+      "error_type": null
+    },
+    {
+      "id": 4,
+      "state": "response",
+      "elapsed_ms": 7292,
+      "http_status": 200,
+      "model": "mimo-v2.6-flash",
+      "response_id": "7cffb26e-5402-4bf2-8257-46e564bd8f93_5a7eeca5af5740b38992386205ce9ff9",
+      "usage": {
+        "completion_tokens": 11,
+        "prompt_tokens": 325,
+        "total_tokens": 336
+      },
+      "error_type": null
+    }
+  ],
+  "cases": [
+    {
+      "kind": "口语换说法",
+      "question": "天气特别热的时候出门要注意什么？",
+      "status": "CLOSED_SUCCESS",
+      "seconds": 23.93,
+      "abstained": true,
+      "query_rewrite": null,
+      "search_agent": {
+        "status": "ok",
+        "code": null,
+        "model_calls": 3,
+        "steps": [
+          {
+            "action": "search",
+            "query": "天气特别热的时候出门要注意什么？",
+            "chunk_ids": [
+              "kb_tobacco_03",
+              "kb_dengue_04",
+              "kb_covid_etiquette_01"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "高温天气 户外活动 防暑降温 措施",
+            "chunk_ids": [
+              "kb_heat_home_01",
+              "kb_asthma_03",
+              "kb_physical_activity_04"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "炎热天气 中暑 预防 出行 健康风险",
+            "chunk_ids": [
+              "kb_asthma_03",
+              "kb_cvd_03",
+              "kb_hiv_03"
+            ]
+          },
+          {
+            "action": "stop",
+            "reason": "model_done"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2086,
+          "output_tokens": 280,
+          "total_tokens": 2366
+        }
+      },
+      "retrieved_chunks": [
+        "kb_asthma_03",
+        "kb_tobacco_03",
+        "kb_heat_home_01"
+      ],
+      "claims": []
+    }
+  ],
+  "boundary": "少量问题的真实调用冒烟，证明所选检索方案能走完整个应用工作流；不是准确率评测。"
+}

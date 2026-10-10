@@ -1,11 +1,11 @@
-"""LLM 响应录制文件：录制真实调用，之后可零网络、零费用回放。
+"""LLM 响应调用记录：记录真实调用，之后可零网络、零费用回放。
 
 两个类都是 ``post`` 兼容的可调用对象，可直接注入 ``OpenAICompatibleProvider(post=...)``。
 
-- ``RecordingTransport``：先查录制文件，命中则不联网；未命中才占用持久预算后请求并写入。
-- ``ReplayTransport``：只读录制文件，未命中直接失败，绝不联网。
+- ``RecordingTransport``：先查调用记录，命中则不联网；未命中才占用持久预算后请求并写入。
+- ``ReplayTransport``：只读调用记录，未命中直接失败，绝不联网。
 
-录制文件以请求体的哈希为键（加 trial 序号，用于对同一请求做重复采样），只保存响应的必要字段
+调用记录以请求体的哈希为键（加 trial 序号，用于对同一请求做重复采样），只保存响应的必要字段
 （id、model、首个 choice 的 content、tool_calls 与 finish_reason、usage），不保存请求头、密钥、思维链或错误响应。
 """
 
@@ -67,7 +67,7 @@ def sanitize(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 class Cassette:
-    """追加写的 JSONL 录制文件；读写都受锁保护，可被多线程共享。"""
+    """追加写的 JSONL 调用记录；读写都受锁保护，可被多线程共享。"""
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
@@ -110,12 +110,12 @@ class ReplayTransport:
                  **_: Any) -> httpx.Response:
         entry = self.cassette.get(request_key(json, self.trial))
         if entry is None:
-            raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="录制文件未命中：请求与录制时不一致")
+            raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="调用记录未命中：请求与记录时不一致")
         return _response(url, entry)
 
 
 class RecordingTransport:
-    """录制 + 去重：已录过的请求不再付费；未录过的请求受持久预算上限约束。"""
+    """记录 + 去重：已记录过的请求不再付费；未记录过的请求受持久预算上限约束。"""
 
     def __init__(self, cassette: str | Path | Cassette, ledger: str | Path, *, max_calls: int, trial: int = 0,
                  post: Callable[..., httpx.Response] | None = None) -> None:
@@ -143,7 +143,7 @@ class RecordingTransport:
         key = request_key(json, self.trial)
         with self._lock:
             key_lock = self._inflight.setdefault(key, threading.Lock())
-        with key_lock:  # 并发的相同请求只付一次费，后到者读取先到者刚写入的录像
+        with key_lock:  # 并发的相同请求只付一次费，后到者读取先到者刚写入的调用记录
             cached = self.cassette.get(key)
             if cached is not None:
                 return _response(url, cached)
