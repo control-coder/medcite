@@ -33,6 +33,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and set(config["leakage_check"]["chunk_fields_to_check"]) >= {"source", "source_id", "metadata.raw_id"}
             and config.get("generation", {}).get("on_invalid", "none") in ON_INVALID_CHOICES
             and isinstance(config.get("generation", {}).get("rewrite", False), bool)
+            and isinstance(config.get("generation", {}).get("agent", False), bool)
         )
         weights = config["retrieval"]["weights"]
         bm25 = (flags.get("use_bm25") is True and flags.get("use_embedding") is False and weights == _BM25_WEIGHTS)
@@ -45,7 +46,9 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         )
         # 改写只对字面匹配检索有用；向量检索下几乎没有收益，却要多一次调用，所以不接受这种组合
         rewrite_ok = not (dense and config.get("generation", {}).get("rewrite", False))
-        safe = common and (bm25 or dense) and rewrite_ok
+        # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
+        agent_ok = not (config.get("generation", {}).get("agent", False) and config.get("generation", {}).get("rewrite", False))
+        safe = common and (bm25 or dense) and rewrite_ok and agent_ok
     except (KeyError, TypeError, AttributeError) as exc:
         raise ValueError("应用配置缺少明确的安全检索参数。") from exc
     if not safe:
@@ -89,6 +92,7 @@ def build_application_provider(mode: str = "fake_offline", *,
     from medidiag.llm.openai_compatible import OpenAICompatibleProvider
     from medidiag.llm.profiles import get_provider_profile
     from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
+    from medidiag.workflow.retrieval_agent import RetrievalAgentWorkflowProvider
 
     assert live_budget is not None  # 上方已拒绝缺少账本的真实模式，此处仅供类型收窄
     llm = OpenAICompatibleProvider(get_provider_profile("mimo_v25"),
@@ -96,5 +100,7 @@ def build_application_provider(mode: str = "fake_offline", *,
     if not llm.is_configured:
         raise ValueError("mimo_v25 配置不完整，请通过安全环境配置凭据。")
     generation = config.get("generation", {})
+    if generation.get("agent", False):
+        return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"))
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
                                         rewrite=bool(generation.get("rewrite", False)))

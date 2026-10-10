@@ -140,6 +140,25 @@ def test_requests_outside_boundary_are_rejected_before_any_call(tmp_path: Path, 
     assert server.calls == 0 and recorder.spent()["calls"] == 0
 
 
+def test_tool_calls_are_kept_so_agent_runs_can_be_replayed(tmp_path: Path):
+    payload = {"id": "r1", "model": "mimo-v2.6-flash", "usage": {"total_tokens": 5},
+               "choices": [{"finish_reason": "tool_calls", "message": {
+                   "content": None, "reasoning_content": "不应被保存", "tool_calls": [
+                       {"id": "call_1", "type": "function", "index": 0,
+                        "function": {"name": "search_kb", "arguments": "{\"query\": \"通风\"}"}}]}}]}
+
+    def post(url: str, **kw: Any) -> httpx.Response:
+        return httpx.Response(200, json=payload, request=httpx.Request("POST", url))
+
+    recorder = RecordingTransport(tmp_path / "c.jsonl", tmp_path / "ledger.db", post=post, max_calls=2)
+    recorder(URL, headers=HEADERS, json=body(model="mimo-v2.6-flash"), timeout=30)
+    replayed = ReplayTransport(tmp_path / "c.jsonl")(URL, headers={}, json=body(model="mimo-v2.6-flash"), timeout=30)
+    message = replayed.json()["choices"][0]["message"]
+    assert message["tool_calls"] == [{"id": "call_1", "type": "function",
+                                      "function": {"name": "search_kb", "arguments": "{\"query\": \"通风\"}"}}]
+    assert "reasoning_content" not in message and "index" not in json.dumps(message)
+
+
 def test_both_mimo_model_names_are_accepted(tmp_path: Path):
     """旧模型名用于回放旧录制文件，新模型名用于真实调用；其他模型名仍被拒绝。"""
     recorder, server = make(tmp_path)
