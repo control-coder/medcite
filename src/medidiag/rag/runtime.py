@@ -211,24 +211,34 @@ class RuntimeMedicalRAG:
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
         """检索证据并冻结 EvidenceBundle；空结果不会伪装为成功。"""
-        candidate_k = int(self.retrieval_config.get("candidate_k", 10))
-        top_k = int(self.retrieval_config.get("top_k", 5))
-        candidates = self.retriever.search(
-            normalized_query,
-            top_k=max(candidate_k, top_k),
-            experiment_config=self.experiment_config,
-        )
-        results = (
-            self.retriever.rerank(normalized_query, candidates, top_k=top_k)
-            if self.experiment_config.get("use_rerank", False)
-            else candidates[:top_k]
-        )
-        evidence = tuple(self._evidence_item(item) for item in results if item.chunk)
+        evidence = self.search_evidence(normalized_query)
         if not evidence:
             raise MediDiagError(
                 "RAG_NO_EVIDENCE",
                 detail="医学检索未返回可追溯证据，禁止进入普通报告链路",
             )
+        return self.freeze_evidence(normalized_query, evidence)
+
+    def search_evidence(self, query: str) -> tuple[EvidenceItem, ...]:
+        """只检索、不冻结；可能返回空元组。检索智能体用它做多次检索。"""
+        candidate_k = int(self.retrieval_config.get("candidate_k", 10))
+        top_k = int(self.retrieval_config.get("top_k", 5))
+        candidates = self.retriever.search(
+            query,
+            top_k=max(candidate_k, top_k),
+            experiment_config=self.experiment_config,
+        )
+        results = (
+            self.retriever.rerank(query, candidates, top_k=top_k)
+            if self.experiment_config.get("use_rerank", False)
+            else candidates[:top_k]
+        )
+        return tuple(self._evidence_item(item) for item in results if item.chunk)
+
+    def freeze_evidence(self, normalized_query: str, evidence: tuple[EvidenceItem, ...]) -> dict[str, Any]:
+        """把给定证据冻结成带哈希的 EvidenceBundle，并返回流程各阶段使用的检索结果。"""
+        candidate_k = int(self.retrieval_config.get("candidate_k", 10))
+        top_k = int(self.retrieval_config.get("top_k", 5))
         bundle_seed = {
             "query": normalized_query,
             "corpus_hash": self.corpus_hash,

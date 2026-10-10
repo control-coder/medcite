@@ -6,7 +6,7 @@
 - ``ReplayTransport``：只读录制文件，未命中直接失败，绝不联网。
 
 录制文件以请求体的哈希为键（加 trial 序号，用于对同一请求做重复采样），只保存响应的必要字段
-（id、model、首个 choice 的 content 与 finish_reason、usage），不保存请求头、密钥、思维链或错误响应。
+（id、model、首个 choice 的 content、tool_calls 与 finish_reason、usage），不保存请求头、密钥、思维链或错误响应。
 """
 
 from __future__ import annotations
@@ -34,6 +34,17 @@ def request_key(body: dict[str, Any], trial: int = 0) -> str:
     return hashlib.sha256(f"{canonical}#{trial}".encode()).hexdigest()
 
 
+def _kept_tool_calls(raw: Any) -> list[dict[str, Any]]:
+    """工具调用只留 id、类型、函数名和参数字符串；检索智能体回放时要用到它们。"""
+    kept = []
+    for item in raw if isinstance(raw, list) else []:
+        function = item.get("function") if isinstance(item, dict) else None
+        if isinstance(function, dict) and isinstance(function.get("name"), str):
+            kept.append({"id": str(item.get("id", ""))[:128], "type": "function",
+                         "function": {"name": function["name"][:64], "arguments": str(function.get("arguments", ""))[:2000]}})
+    return kept
+
+
 def sanitize(payload: dict[str, Any]) -> dict[str, Any]:
     """只留回放需要的字段；丢弃 reasoning_content 等其他服务器字段。"""
     choices = payload.get("choices")
@@ -42,11 +53,14 @@ def sanitize(payload: dict[str, Any]) -> dict[str, Any]:
     message: dict[str, Any] = raw_message if isinstance(raw_message, dict) else {}
     raw_usage = payload.get("usage")
     usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
+    saved: dict[str, Any] = {"role": "assistant", "content": message.get("content", "")}
+    tool_calls = _kept_tool_calls(message.get("tool_calls"))
+    if tool_calls:
+        saved["tool_calls"] = tool_calls
     return {
         "id": str(payload.get("id", ""))[:128],
         "model": str(payload.get("model", ""))[:128],
-        "choices": [{"message": {"role": "assistant", "content": message.get("content", "")},
-                     "finish_reason": choice.get("finish_reason")}],
+        "choices": [{"message": saved, "finish_reason": choice.get("finish_reason")}],
         "usage": {k: v for k, v in usage.items()
                   if k in {"prompt_tokens", "completion_tokens", "total_tokens"} and type(v) is int and v >= 0},
     }

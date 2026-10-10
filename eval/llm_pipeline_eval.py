@@ -26,6 +26,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,7 @@ from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
 from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
 from medidiag.workflow.query_rewrite import REWRITE_PROMPT, build_rewrite_request, parse_rewrite
+from medidiag.workflow.retrieval_agent import SearchAgentResult, run_search_agent
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_VERSION = "llm-pipeline-eval-v1"
@@ -213,6 +215,48 @@ def rewrite_effect(queries: Sequence[dict[str, Any]], retrieval: dict[str, list[
     return out
 
 
+@dataclass(frozen=True)
+class _Hit:
+    chunk_id: str
+    text: str
+
+
+def agent_effect(queries: Sequence[dict[str, Any]], runs: dict[str, SearchAgentResult]) -> dict[str, Any]:
+    """智能体的证据与它的起点（第一次按原问题检索，即同一检索方式的固定流程）相比，前 3 条里含正确片段的变化。"""
+    def hits(ids_of: Callable[[SearchAgentResult], list[str]]) -> dict[str, bool]:
+        return {q["sample_id"]: bool(set(q["gold_evidence_ids"]) & set(ids_of(runs[q["sample_id"]])))
+                for q in queries if q["gold_evidence_ids"]}
+
+    base = hits(lambda r: r.steps[0]["chunk_ids"])
+    new = hits(lambda r: [hit.chunk_id for hit in r.chunks])
+    out: dict[str, Any] = {}
+    for label, predicate in [("all", lambda q: True), *[(b, lambda q, b=b: q["bucket"] == b)
+                                                       for b in ("direct", "paraphrase", "multi")]]:
+        for split in ("dev", "test", "both"):
+            ids = [q["sample_id"] for q in queries if q["gold_evidence_ids"] and predicate(q)
+                   and (split == "both" or q["split"] == split)]
+            gained = sum(1 for i in ids if new[i] and not base[i])
+            lost = sum(1 for i in ids if base[i] and not new[i])
+            out[f"{label}/{split}"] = {
+                "n": len(ids), "base_hit@3": proportion(sum(base[i] for i in ids), len(ids)),
+                "agent_hit@3": proportion(sum(new[i] for i in ids), len(ids)),
+                "gained": gained, "lost": lost, "sign_test_p": round(binomial_two_sided(min(gained, lost), gained + lost), 4)}
+    return out
+
+
+def agent_summary(runs: dict[str, SearchAgentResult]) -> dict[str, Any]:
+    searches = Counter(sum(1 for s in r.steps if s["action"] == "search") for r in runs.values())
+    stops = Counter(s.get("reason", s["action"]) for r in runs.values() for s in r.steps if s["action"] != "search")
+    usage: Counter[str] = Counter()
+    for r in runs.values():
+        usage.update(r.usage)
+    return {"queries": len(runs), "status": dict(Counter(r.status for r in runs.values())),
+            "codes": dict(Counter(r.code for r in runs.values() if r.code)),
+            "searches_per_query": {str(k): v for k, v in sorted(searches.items())},
+            "how_it_stopped": dict(stops), "model_calls": sum(r.model_calls for r in runs.values()),
+            "usage": dict(usage)}
+
+
 def rewrite_status(queries: Sequence[dict[str, Any]], rewrites: dict[str, dict[str, Any]]) -> dict[str, Any]:
     status = Counter(r["status"] for r in rewrites.values())
     return {"status": dict(status), "queries": len(queries)}
@@ -226,7 +270,7 @@ def build_retrievers(conditions: Sequence[str], dataset: Any, embedding_revision
     bm25.fit(dataset.chunks)
     retrievers: dict[str, Callable[[dict[str, Any], str], list[tuple[str, float]]]] = {
         "bm25": lambda q, text: rank_chunks(bm25.score(text), chunk_ids, True, TOP_K)}
-    if "dense" in conditions:
+    if "dense" in conditions or "dense_agent" in conditions:
         cache = EmbeddingCache(load_sentence_transformer(DEFAULT_EMBEDDING_MODEL, embedding_revision))
         dense = DenseScorer("dense", cache, BGE_ZH_QUERY_PREFIX)
         dense.fit(dataset.chunks)
@@ -252,7 +296,21 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
             for query, result in zip(queries, pool.map(lambda q: rewrite_query(providers[0], q["question"], args.model), queries), strict=True):
                 rewrites[query["sample_id"]] = result
 
+    agent_runs: dict[str, dict[str, SearchAgentResult]] = {}
+    for condition in (c for c in conditions if c.endswith("_agent")):
+        base_retriever = retrievers[condition.removesuffix("_agent")]
+
+        def agent_for(query: dict[str, Any], base_retriever: Any = base_retriever) -> SearchAgentResult:
+            def search(text: str) -> list[_Hit]:
+                return [_Hit(cid, chunk_text[cid]) for cid, _ in base_retriever(query, text)]
+            return run_search_agent(providers[0], search, query["question"], search(query["question"]), args.model)
+
+        with ThreadPoolExecutor(args.workers) as pool:
+            agent_runs[condition] = {q["sample_id"]: r for q, r in zip(queries, pool.map(agent_for, queries), strict=True)}
+
     def retrieved(condition: str, query: dict[str, Any]) -> list[tuple[str, float]]:
+        if condition in agent_runs:
+            return [(hit.chunk_id, 0.0) for hit in agent_runs[condition][query["sample_id"]].chunks]
         if condition == "bm25_rewrite":
             rewritten = rewrites[query["sample_id"]]["query"]
             return retrievers["bm25"](query, f"{query['question']} {rewritten}".strip())
@@ -261,7 +319,7 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
     retrieval: dict[str, dict[str, list[str]]] = {
         c: {q["sample_id"]: [cid for cid, _ in retrieved(c, q)] for q in queries} for c in conditions}
     gen_queries = [q for q in queries if q["split"] == "test"]
-    trials_for = {c: (args.repeat_trials if c == "bm25" else 1) for c in conditions}
+    trials_for = {c: (args.repeat_trials if c == "bm25" else 1) for c in conditions}  # 其余条件各采样一次
 
     jobs = [(c, q, t) for c in conditions for q in gen_queries for t in range(trials_for[c])]
 
@@ -315,6 +373,13 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
                 "still_invalid": sum(1 for r in rows for o in r["conditions"][c]["trials"]
                                      if "feedback_retry" in o and o["feedback_retry"]["decision"] in {"invalid", "error"})}
             for c in conditions}
+    if agent_runs:
+        report["agent"] = {
+            c: {"summary": agent_summary(runs),
+                "effect_on_retrieval": agent_effect(queries, runs),
+                "traces": {sid: {"status": r.status, "model_calls": r.model_calls, "steps": r.steps}
+                           for sid, r in runs.items()}}
+            for c, runs in agent_runs.items()}
     if "bm25_rewrite" in conditions:
         report["rewrite"] = {
             "effect_on_retrieval": rewrite_effect(queries, retrieval),
@@ -341,7 +406,7 @@ def main() -> None:
     parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/llm-pipeline-ledger.db")
     parser.add_argument("--max-calls", type=int, default=800, help="record 模式的持久调用上限（含失败与重试）")
     parser.add_argument("--conditions", nargs="+", default=["bm25", "bm25_rewrite", "dense"],
-                        choices=["bm25", "bm25_rewrite", "dense"])
+                        choices=["bm25", "bm25_rewrite", "dense", "bm25_agent", "dense_agent"])
     parser.add_argument("--repeat-trials", type=int, default=3)
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--retry-cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2-retry.jsonl",
