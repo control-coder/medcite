@@ -192,7 +192,7 @@ src/medidiag/
   workflow/       状态机、任务领取与租约、派发补偿、worker、应用 Provider
   rag/            检索、分块、术语归一化
   review/  compliance/   引用审核与输出合规边界
-  llm/  agents/   模型适配、预算账本、录像带录制回放、多专科 Agent 组件
+  llm/  agents/   模型适配、预算账本、真实调用的录制与回放、多专科 Agent 组件
   db/  observability/    数据模型、会话、结构化日志与追踪
 frontend/         React + TypeScript + Vite 应用与 Playwright 测试
 migrations/       Alembic 数据库迁移

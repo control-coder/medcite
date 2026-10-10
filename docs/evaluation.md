@@ -342,7 +342,7 @@ python -m eval.llm_pipeline_eval --mode record --max-calls 800 ...
 - `load_application_config` 现在接受两种明确方案（单路 BM25、单路向量检索）；浮动版本、允许下载、混合权重、重排、关闭泄露检查等配置仍被拒绝（`tests/test_dense_application.py` 逐项覆盖）。
 - `MimoGroundedWorkflowProvider.on_invalid`：`none`（默认）、`resample`、`feedback`；只对“输出不符合要求”这一类错误补救，网络、限流、超时不补救，最多多 1 次调用，仍受预算账本约束。
 - 页面报告里的“仅含 N 篇网页”改为按实际语料统计（8 或 51）。
-- `src/medidiag/workflow/query_rewrite.py`：改写提示词和请求构造，评测与应用共用同一份（改写的录像带仍然全部命中）；`MimoGroundedWorkflowProvider.rewrite` 打开后，检索前先改写，把原问题和改写句拼在一起交给 BM25。
+- `src/medidiag/workflow/query_rewrite.py`：改写提示词和请求构造，评测与应用共用同一份（改写的录制文件仍然全部命中）；`MimoGroundedWorkflowProvider.rewrite` 打开后，检索前先改写，把原问题和改写句拼在一起交给 BM25。
 
 ### 真实调用冒烟
 
