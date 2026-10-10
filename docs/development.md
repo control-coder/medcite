@@ -182,4 +182,4 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/agent
 
 ## 研究评测
 
-研究子系统的数据、配置与 formal 流程见 [eval/README.md](../eval/README.md) 与 [研究评测协议](research/evaluation-protocol.md)。它独立于应用运行，不是应用测试的必要步骤。
+评测代码、历史数据和标注的说明见 [eval/README.md](../eval/README.md)；早期 formal 评测协议见 [研究评测协议](research/evaluation-protocol.md)（对应代码已删除，仅作历史记录）。评测独立于应用运行，不是应用测试的必要步骤。

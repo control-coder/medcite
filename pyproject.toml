@@ -45,7 +45,6 @@ dev = [
 
 [project.scripts]
 medidiag = "medidiag.cli:main"
-medidiag-eval = "eval.runner:cli"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]

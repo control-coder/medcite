@@ -12,7 +12,7 @@ import re
 
 import pytest
 
-from eval.configuration import load_config
+from medidiag.config import load_eval_config
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.schemas import KnowledgeChunk
 
@@ -146,7 +146,7 @@ def test_chunks() -> list[KnowledgeChunk]:
 
 @pytest.fixture(scope="module")
 def eval_config() -> dict:
-    return load_config("eval/config.yaml")
+    return load_eval_config("eval/config.yaml")
 
 
 @pytest.fixture(scope="module")

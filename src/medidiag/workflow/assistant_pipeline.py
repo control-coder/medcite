@@ -1,8 +1,7 @@
 """医疗助手 Agent 的共享阶段执行契约。
 
 本模块只负责阶段调用、schema 校验、哈希与可审计 artifact 封装；数据库事务、
-任务租约和状态迁移仍由 workflow runtime 负责，评测目录与 manifest 仍由
-``eval.runner`` 负责。
+任务租约和状态迁移仍由 workflow runtime 负责。
 """
 
 from __future__ import annotations
