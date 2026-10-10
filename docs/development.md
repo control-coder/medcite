@@ -152,7 +152,7 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/agent
 
 ### 评测的调用记录
 
-评测（`eval/llm_pipeline_eval.py`）把每次模型调用的请求和回复存成调用记录（`eval/cassettes/`），之后可以零网络、零费用回放。`--model` 指定请求用的模型名：新的调用并记录用默认的 `mimo-v2.6-flash`，回放 v2.5 的旧记录要加 `--model mimo-v2.5`。改动提示词、检索分词、证据排序或智能体的提示词与工具定义，都会使请求哈希变化而回放失败，需要重新调用并记录（付费，先确认账本额度）。回放测试为 `tests/test_llm_replay_committed.py`（v2.5）和 `tests/test_llm_replay_flash.py`（v2.6-flash）。
+评测（`eval/llm_pipeline_eval.py`）把每次模型调用的请求和回复存成调用记录（`eval/cassettes/`），之后可以零网络、零费用回放。`--model` 指定请求用的模型名：新的调用并记录用默认的 `mimo-v2.6-flash`，回放 v2.5 的旧记录要加 `--model mimo-v2.5`。改动提示词、检索分词、证据排序或智能体的提示词与工具定义，都会使请求哈希变化而回放失败，需要重新调用并记录（付费，先确认账本额度）。回放测试为 `tests/test_llm_replay_committed.py`（v2.5）、`tests/test_llm_replay_flash.py`（v2.6-flash，v2 语料）和 `tests/test_llm_replay_v3.py`（v2.6-flash，v3 语料）。
 
 ## 演示路线（约 4 分钟）
 

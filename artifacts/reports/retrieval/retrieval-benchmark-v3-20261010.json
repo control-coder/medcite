@@ -1,0 +1,3801 @@
+{
+  "schema_version": "retrieval-benchmark-v1",
+  "generated_at": "2026-10-10T07:11:40.134142+00:00",
+  "dataset": {
+    "dir": "examples\\public_health_v3",
+    "chunks": 498,
+    "docs": 131,
+    "queries": 168,
+    "queries_by_split_bucket": {
+      "dev/direct": 29,
+      "dev/multi": 7,
+      "dev/near_miss": 10,
+      "dev/out_of_scope": 6,
+      "dev/paraphrase": 20,
+      "dev/uncovered": 12,
+      "test/direct": 28,
+      "test/multi": 7,
+      "test/near_miss": 11,
+      "test/out_of_scope": 5,
+      "test/paraphrase": 21,
+      "test/uncovered": 12
+    },
+    "sha256": {
+      "chunks.jsonl": "67a2b747025e5c90ac91e68bb3d0fd3301cbfbb4317296e673f8c77dbefeb026",
+      "queries.jsonl": "f2b831a31733a54bc73442b3624a21ea3bfb4cf230b362b9362d8b2c773f55dd"
+    }
+  },
+  "config": {
+    "embedding_model": "BAAI/bge-small-zh-v1.5",
+    "query_prefix": "为这个句子生成表示以用于检索相关文章：",
+    "hybrid_alpha": 0.2,
+    "alpha_grid_dev": [
+      {
+        "alpha": 0.0,
+        "dev_mrr@10": 0.9256,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.1,
+        "dev_mrr@10": 0.9375,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.2,
+        "dev_mrr@10": 0.947,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.3,
+        "dev_mrr@10": 0.947,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.4,
+        "dev_mrr@10": 0.9351,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.5,
+        "dev_mrr@10": 0.9054,
+        "dev_hit@3": 0.9821428571428571
+      },
+      {
+        "alpha": 0.6,
+        "dev_mrr@10": 0.8726,
+        "dev_hit@3": 0.9464285714285714
+      },
+      {
+        "alpha": 0.7,
+        "dev_mrr@10": 0.8161,
+        "dev_hit@3": 0.8571428571428571
+      },
+      {
+        "alpha": 0.8,
+        "dev_mrr@10": 0.7387,
+        "dev_hit@3": 0.8214285714285714
+      },
+      {
+        "alpha": 0.9,
+        "dev_mrr@10": 0.6378,
+        "dev_hit@3": 0.7321428571428571
+      },
+      {
+        "alpha": 1.0,
+        "dev_mrr@10": 0.554,
+        "dev_hit@3": 0.625
+      }
+    ],
+    "top_n": 10,
+    "corpus_embedding_s_cpu": 2.56,
+    "external_model_calls": 0,
+    "selection_rule": "alpha 与弃答阈值仅在 dev 上选择；test 只报告"
+  },
+  "systems": {
+    "bm25_ws": {
+      "name": "bm25_ws",
+      "dev_selected_threshold": 0.0,
+      "dev": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "hit@3": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "hit@5": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "recall@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@1": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@5": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@5": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "map@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "random_hit@3": 0.0077
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 0,
+            "n": 29,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.117
+            ]
+          },
+          "paraphrase": {
+            "k": 0,
+            "n": 20,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1611
+            ]
+          },
+          "multi": {
+            "k": 0,
+            "n": 7,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3543
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 0,
+            "n": 28,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1206
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 56,
+            "n": 56,
+            "rate": 1.0,
+            "ci95": [
+              0.9358,
+              1.0
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_precision": {
+            "k": 0,
+            "n": 0,
+            "rate": null,
+            "ci95": null
+          },
+          "answer_recall": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_f1": null
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 0,
+            "n": 28,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1206
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 56,
+            "n": 56,
+            "rate": 1.0,
+            "ci95": [
+              0.9358,
+              1.0
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_precision": {
+            "k": 0,
+            "n": 0,
+            "rate": null,
+            "ci95": null
+          },
+          "answer_recall": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_f1": null
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 0,
+            "n": 10,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2775
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 6,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3903
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": null,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 0.0,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.0
+          }
+        ]
+      },
+      "test": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "hit@3": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "hit@5": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "recall@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@1": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@5": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "recall@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "precision@5": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "map@10": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "random_hit@3": 0.0069
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 0,
+            "n": 28,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1206
+            ]
+          },
+          "paraphrase": {
+            "k": 0,
+            "n": 21,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1546
+            ]
+          },
+          "multi": {
+            "k": 0,
+            "n": 7,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3543
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 0,
+            "n": 28,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1206
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 56,
+            "n": 56,
+            "rate": 1.0,
+            "ci95": [
+              0.9358,
+              1.0
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_precision": {
+            "k": 0,
+            "n": 0,
+            "rate": null,
+            "ci95": null
+          },
+          "answer_recall": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_f1": null
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 0,
+            "n": 28,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.1206
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 56,
+            "n": 56,
+            "rate": 1.0,
+            "ci95": [
+              0.9358,
+              1.0
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_precision": {
+            "k": 0,
+            "n": 0,
+            "rate": null,
+            "ci95": null
+          },
+          "answer_recall": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "answer_f1": null
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 0,
+            "n": 11,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2588
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 5,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.4345
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": null,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 0.0,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.0
+          }
+        ]
+      },
+      "latency": {
+        "index_build_ms": 1.24,
+        "query_p50_ms": 0.069,
+        "query_p95_ms": 0.078
+      }
+    },
+    "bm25_bigram": {
+      "name": "bm25_bigram",
+      "dev_selected_threshold": 18.190811,
+      "dev": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 26,
+            "n": 56,
+            "rate": 0.4642857142857143,
+            "ci95": [
+              0.3402,
+              0.593
+            ]
+          },
+          "hit@3": {
+            "k": 36,
+            "n": 56,
+            "rate": 0.6428571428571429,
+            "ci95": [
+              0.5119,
+              0.7554
+            ]
+          },
+          "hit@5": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "recall@3": {
+            "mean": 0.6101,
+            "ci95": [
+              0.4851,
+              0.7351
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.5592,
+            "ci95": [
+              0.4405,
+              0.6717
+            ]
+          },
+          "recall@1": {
+            "mean": 0.4375,
+            "ci95": [
+              0.3036,
+              0.5625
+            ]
+          },
+          "recall@5": {
+            "mean": 0.6577,
+            "ci95": [
+              0.5298,
+              0.7738
+            ]
+          },
+          "recall@10": {
+            "mean": 0.6964,
+            "ci95": [
+              0.5744,
+              0.8065
+            ]
+          },
+          "precision@1": {
+            "mean": 0.4643,
+            "ci95": [
+              0.3393,
+              0.5893
+            ]
+          },
+          "precision@3": {
+            "mean": 0.2321,
+            "ci95": [
+              0.1845,
+              0.2857
+            ]
+          },
+          "precision@5": {
+            "mean": 0.1536,
+            "ci95": [
+              0.125,
+              0.1821
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.552,
+            "ci95": [
+              0.4314,
+              0.6723
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.5913,
+            "ci95": [
+              0.4768,
+              0.6987
+            ]
+          },
+          "map@10": {
+            "mean": 0.548,
+            "ci95": [
+              0.429,
+              0.6605
+            ]
+          },
+          "random_hit@3": 0.0077
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 28,
+            "n": 29,
+            "rate": 0.9655172413793104,
+            "ci95": [
+              0.8282,
+              0.9939
+            ]
+          },
+          "paraphrase": {
+            "k": 5,
+            "n": 20,
+            "rate": 0.25,
+            "ci95": [
+              0.1119,
+              0.4687
+            ]
+          },
+          "multi": {
+            "k": 3,
+            "n": 7,
+            "rate": 0.42857142857142855,
+            "ci95": [
+              0.1582,
+              0.7495
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 27,
+            "n": 28,
+            "rate": 0.9642857142857143,
+            "ci95": [
+              0.8229,
+              0.9937
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 20,
+            "n": 56,
+            "rate": 0.35714285714285715,
+            "ci95": [
+              0.2446,
+              0.4881
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 36,
+            "n": 56,
+            "rate": 0.6428571428571429,
+            "ci95": [
+              0.5119,
+              0.7554
+            ]
+          },
+          "answer_precision": {
+            "k": 36,
+            "n": 83,
+            "rate": 0.43373493975903615,
+            "ci95": [
+              0.3324,
+              0.5409
+            ]
+          },
+          "answer_recall": {
+            "k": 36,
+            "n": 56,
+            "rate": 0.6428571428571429,
+            "ci95": [
+              0.5119,
+              0.7554
+            ]
+          },
+          "answer_f1": 0.518
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 18.190811,
+          "false_answer_rate": {
+            "k": 1,
+            "n": 28,
+            "rate": 0.03571428571428571,
+            "ci95": [
+              0.0063,
+              0.1771
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 28,
+            "n": 56,
+            "rate": 0.5,
+            "ci95": [
+              0.3733,
+              0.6267
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 27,
+            "n": 56,
+            "rate": 0.48214285714285715,
+            "ci95": [
+              0.3567,
+              0.6099
+            ]
+          },
+          "answer_precision": {
+            "k": 27,
+            "n": 29,
+            "rate": 0.9310344827586207,
+            "ci95": [
+              0.7804,
+              0.9809
+            ]
+          },
+          "answer_recall": {
+            "k": 27,
+            "n": 56,
+            "rate": 0.48214285714285715,
+            "ci95": [
+              0.3567,
+              0.6099
+            ]
+          },
+          "answer_f1": 0.6353
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 1,
+            "n": 10,
+            "rate": 0.1,
+            "ci95": [
+              0.0179,
+              0.4042
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 6,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3903
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": 0.9067,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.6429
+          },
+          {
+            "threshold": 5.85312,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.7857,
+            "useful_answer_rate": 0.6429
+          },
+          {
+            "threshold": 6.335268,
+            "answer_coverage": 0.9286,
+            "false_answer_rate": 0.5714,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 7.514664,
+            "answer_coverage": 0.8036,
+            "false_answer_rate": 0.5357,
+            "useful_answer_rate": 0.5893
+          },
+          {
+            "threshold": 9.095038,
+            "answer_coverage": 0.7679,
+            "false_answer_rate": 0.3929,
+            "useful_answer_rate": 0.5893
+          },
+          {
+            "threshold": 11.429303,
+            "answer_coverage": 0.6786,
+            "false_answer_rate": 0.3214,
+            "useful_answer_rate": 0.5714
+          },
+          {
+            "threshold": 13.193059,
+            "answer_coverage": 0.6429,
+            "false_answer_rate": 0.1429,
+            "useful_answer_rate": 0.5714
+          },
+          {
+            "threshold": 14.960536,
+            "answer_coverage": 0.5536,
+            "false_answer_rate": 0.1071,
+            "useful_answer_rate": 0.5179
+          },
+          {
+            "threshold": 19.365487,
+            "answer_coverage": 0.4464,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4286
+          },
+          {
+            "threshold": 25.33991,
+            "answer_coverage": 0.3214,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.3214
+          },
+          {
+            "threshold": 30.471956,
+            "answer_coverage": 0.2143,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.2143
+          },
+          {
+            "threshold": 40.741772,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "test": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 34,
+            "n": 56,
+            "rate": 0.6071428571428571,
+            "ci95": [
+              0.4763,
+              0.7242
+            ]
+          },
+          "hit@3": {
+            "k": 38,
+            "n": 56,
+            "rate": 0.6785714285714286,
+            "ci95": [
+              0.5482,
+              0.786
+            ]
+          },
+          "hit@5": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "recall@3": {
+            "mean": 0.6339,
+            "ci95": [
+              0.5179,
+              0.75
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.6477,
+            "ci95": [
+              0.5308,
+              0.764
+            ]
+          },
+          "recall@1": {
+            "mean": 0.5625,
+            "ci95": [
+              0.4375,
+              0.6875
+            ]
+          },
+          "recall@5": {
+            "mean": 0.6518,
+            "ci95": [
+              0.5357,
+              0.7679
+            ]
+          },
+          "recall@10": {
+            "mean": 0.7411,
+            "ci95": [
+              0.625,
+              0.8482
+            ]
+          },
+          "precision@1": {
+            "mean": 0.6071,
+            "ci95": [
+              0.4821,
+              0.7321
+            ]
+          },
+          "precision@3": {
+            "mean": 0.2381,
+            "ci95": [
+              0.1905,
+              0.2857
+            ]
+          },
+          "precision@5": {
+            "mean": 0.1464,
+            "ci95": [
+              0.1179,
+              0.175
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.6176,
+            "ci95": [
+              0.5002,
+              0.7348
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.6559,
+            "ci95": [
+              0.5463,
+              0.7665
+            ]
+          },
+          "map@10": {
+            "mean": 0.62,
+            "ci95": [
+              0.5051,
+              0.7355
+            ]
+          },
+          "random_hit@3": 0.0069
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 27,
+            "n": 28,
+            "rate": 0.9642857142857143,
+            "ci95": [
+              0.8229,
+              0.9937
+            ]
+          },
+          "paraphrase": {
+            "k": 5,
+            "n": 21,
+            "rate": 0.23809523809523808,
+            "ci95": [
+              0.1063,
+              0.4509
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 27,
+            "n": 28,
+            "rate": 0.9642857142857143,
+            "ci95": [
+              0.8229,
+              0.9937
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 17,
+            "n": 56,
+            "rate": 0.30357142857142855,
+            "ci95": [
+              0.199,
+              0.4334
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 38,
+            "n": 56,
+            "rate": 0.6785714285714286,
+            "ci95": [
+              0.5482,
+              0.786
+            ]
+          },
+          "answer_precision": {
+            "k": 38,
+            "n": 82,
+            "rate": 0.4634146341463415,
+            "ci95": [
+              0.3595,
+              0.5706
+            ]
+          },
+          "answer_recall": {
+            "k": 38,
+            "n": 56,
+            "rate": 0.6785714285714286,
+            "ci95": [
+              0.5482,
+              0.786
+            ]
+          },
+          "answer_f1": 0.5507
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 18.190811,
+          "false_answer_rate": {
+            "k": 2,
+            "n": 28,
+            "rate": 0.07142857142857142,
+            "ci95": [
+              0.0198,
+              0.2265
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 26,
+            "n": 56,
+            "rate": 0.4642857142857143,
+            "ci95": [
+              0.3402,
+              0.593
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 2,
+            "n": 56,
+            "rate": 0.03571428571428571,
+            "ci95": [
+              0.0098,
+              0.1212
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 28,
+            "n": 56,
+            "rate": 0.5,
+            "ci95": [
+              0.3733,
+              0.6267
+            ]
+          },
+          "answer_precision": {
+            "k": 28,
+            "n": 32,
+            "rate": 0.875,
+            "ci95": [
+              0.7193,
+              0.9503
+            ]
+          },
+          "answer_recall": {
+            "k": 28,
+            "n": 56,
+            "rate": 0.5,
+            "ci95": [
+              0.3733,
+              0.6267
+            ]
+          },
+          "answer_f1": 0.6364
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 2,
+            "n": 11,
+            "rate": 0.18181818181818182,
+            "ci95": [
+              0.0514,
+              0.477
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 5,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.4345
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": 0.9286,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 5.935797,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.75,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 6.364177,
+            "answer_coverage": 0.9286,
+            "false_answer_rate": 0.5714,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 7.811247,
+            "answer_coverage": 0.875,
+            "false_answer_rate": 0.4286,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 9.621369,
+            "answer_coverage": 0.8036,
+            "false_answer_rate": 0.3214,
+            "useful_answer_rate": 0.6607
+          },
+          {
+            "threshold": 10.807111,
+            "answer_coverage": 0.7321,
+            "false_answer_rate": 0.2143,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 13.196139,
+            "answer_coverage": 0.6429,
+            "false_answer_rate": 0.1429,
+            "useful_answer_rate": 0.5536
+          },
+          {
+            "threshold": 17.057281,
+            "answer_coverage": 0.5714,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.5179
+          },
+          {
+            "threshold": 20.170499,
+            "answer_coverage": 0.4464,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.4286
+          },
+          {
+            "threshold": 24.599078,
+            "answer_coverage": 0.3393,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.3393
+          },
+          {
+            "threshold": 28.660238,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 42.593818,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "latency": {
+        "index_build_ms": 14.9,
+        "query_p50_ms": 0.688,
+        "query_p95_ms": 1.012
+      }
+    },
+    "coverage_bigram": {
+      "name": "coverage_bigram",
+      "dev_selected_threshold": 0.20076,
+      "dev": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 27,
+            "n": 56,
+            "rate": 0.48214285714285715,
+            "ci95": [
+              0.3567,
+              0.6099
+            ]
+          },
+          "hit@3": {
+            "k": 35,
+            "n": 56,
+            "rate": 0.625,
+            "ci95": [
+              0.4941,
+              0.7399
+            ]
+          },
+          "hit@5": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "recall@3": {
+            "mean": 0.5714,
+            "ci95": [
+              0.4405,
+              0.6935
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.554,
+            "ci95": [
+              0.4335,
+              0.6673
+            ]
+          },
+          "recall@1": {
+            "mean": 0.4464,
+            "ci95": [
+              0.3125,
+              0.5714
+            ]
+          },
+          "recall@5": {
+            "mean": 0.6369,
+            "ci95": [
+              0.5089,
+              0.75
+            ]
+          },
+          "recall@10": {
+            "mean": 0.6726,
+            "ci95": [
+              0.5446,
+              0.7887
+            ]
+          },
+          "precision@1": {
+            "mean": 0.4821,
+            "ci95": [
+              0.3571,
+              0.6071
+            ]
+          },
+          "precision@3": {
+            "mean": 0.2262,
+            "ci95": [
+              0.1726,
+              0.2738
+            ]
+          },
+          "precision@5": {
+            "mean": 0.1536,
+            "ci95": [
+              0.1214,
+              0.1821
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.5337,
+            "ci95": [
+              0.4069,
+              0.6533
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.5764,
+            "ci95": [
+              0.4584,
+              0.6858
+            ]
+          },
+          "map@10": {
+            "mean": 0.5361,
+            "ci95": [
+              0.4131,
+              0.6524
+            ]
+          },
+          "random_hit@3": 0.0077
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 28,
+            "n": 29,
+            "rate": 0.9655172413793104,
+            "ci95": [
+              0.8282,
+              0.9939
+            ]
+          },
+          "paraphrase": {
+            "k": 2,
+            "n": 20,
+            "rate": 0.1,
+            "ci95": [
+              0.0279,
+              0.301
+            ]
+          },
+          "multi": {
+            "k": 5,
+            "n": 7,
+            "rate": 0.7142857142857143,
+            "ci95": [
+              0.3589,
+              0.9178
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 27,
+            "n": 28,
+            "rate": 0.9642857142857143,
+            "ci95": [
+              0.8229,
+              0.9937
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 21,
+            "n": 56,
+            "rate": 0.375,
+            "ci95": [
+              0.2601,
+              0.5059
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 35,
+            "n": 56,
+            "rate": 0.625,
+            "ci95": [
+              0.4941,
+              0.7399
+            ]
+          },
+          "answer_precision": {
+            "k": 35,
+            "n": 83,
+            "rate": 0.42168674698795183,
+            "ci95": [
+              0.3212,
+              0.5291
+            ]
+          },
+          "answer_recall": {
+            "k": 35,
+            "n": 56,
+            "rate": 0.625,
+            "ci95": [
+              0.4941,
+              0.7399
+            ]
+          },
+          "answer_f1": 0.5036
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.20076,
+          "false_answer_rate": {
+            "k": 1,
+            "n": 28,
+            "rate": 0.03571428571428571,
+            "ci95": [
+              0.0063,
+              0.1771
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 26,
+            "n": 56,
+            "rate": 0.4642857142857143,
+            "ci95": [
+              0.3402,
+              0.593
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 29,
+            "n": 56,
+            "rate": 0.5178571428571429,
+            "ci95": [
+              0.3901,
+              0.6433
+            ]
+          },
+          "answer_precision": {
+            "k": 29,
+            "n": 31,
+            "rate": 0.9354838709677419,
+            "ci95": [
+              0.7928,
+              0.9821
+            ]
+          },
+          "answer_recall": {
+            "k": 29,
+            "n": 56,
+            "rate": 0.5178571428571429,
+            "ci95": [
+              0.3901,
+              0.6433
+            ]
+          },
+          "answer_f1": 0.6667
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 1,
+            "n": 10,
+            "rate": 0.1,
+            "ci95": [
+              0.0179,
+              0.4042
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 6,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3903
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": 0.948,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.059709,
+            "answer_coverage": 0.8929,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.069554,
+            "answer_coverage": 0.8571,
+            "false_answer_rate": 0.7857,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.090957,
+            "answer_coverage": 0.7857,
+            "false_answer_rate": 0.6786,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.102819,
+            "answer_coverage": 0.7321,
+            "false_answer_rate": 0.5357,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.122924,
+            "answer_coverage": 0.6786,
+            "false_answer_rate": 0.3571,
+            "useful_answer_rate": 0.6071
+          },
+          {
+            "threshold": 0.137994,
+            "answer_coverage": 0.5893,
+            "false_answer_rate": 0.2857,
+            "useful_answer_rate": 0.5714
+          },
+          {
+            "threshold": 0.177605,
+            "answer_coverage": 0.5357,
+            "false_answer_rate": 0.1429,
+            "useful_answer_rate": 0.5179
+          },
+          {
+            "threshold": 0.249273,
+            "answer_coverage": 0.4643,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4643
+          },
+          {
+            "threshold": 0.334478,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.447384,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.563696,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "test": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 36,
+            "n": 56,
+            "rate": 0.6428571428571429,
+            "ci95": [
+              0.5119,
+              0.7554
+            ]
+          },
+          "hit@3": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "hit@5": {
+            "k": 40,
+            "n": 56,
+            "rate": 0.7142857142857143,
+            "ci95": [
+              0.5852,
+              0.8158
+            ]
+          },
+          "recall@3": {
+            "mean": 0.6518,
+            "ci95": [
+              0.5357,
+              0.7679
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.6707,
+            "ci95": [
+              0.5521,
+              0.7917
+            ]
+          },
+          "recall@1": {
+            "mean": 0.5893,
+            "ci95": [
+              0.4732,
+              0.7143
+            ]
+          },
+          "recall@5": {
+            "mean": 0.6696,
+            "ci95": [
+              0.5536,
+              0.7857
+            ]
+          },
+          "recall@10": {
+            "mean": 0.6875,
+            "ci95": [
+              0.5714,
+              0.8036
+            ]
+          },
+          "precision@1": {
+            "mean": 0.6429,
+            "ci95": [
+              0.5179,
+              0.7679
+            ]
+          },
+          "precision@3": {
+            "mean": 0.244,
+            "ci95": [
+              0.2024,
+              0.2917
+            ]
+          },
+          "precision@5": {
+            "mean": 0.1536,
+            "ci95": [
+              0.125,
+              0.1821
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.64,
+            "ci95": [
+              0.5259,
+              0.7581
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.6554,
+            "ci95": [
+              0.5414,
+              0.7713
+            ]
+          },
+          "map@10": {
+            "mean": 0.6328,
+            "ci95": [
+              0.5193,
+              0.7537
+            ]
+          },
+          "random_hit@3": 0.0069
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "paraphrase": {
+            "k": 5,
+            "n": 21,
+            "rate": 0.23809523809523808,
+            "ci95": [
+              0.1063,
+              0.4509
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 27,
+            "n": 28,
+            "rate": 0.9642857142857143,
+            "ci95": [
+              0.8229,
+              0.9937
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 16,
+            "n": 56,
+            "rate": 0.2857142857142857,
+            "ci95": [
+              0.1842,
+              0.4148
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "answer_precision": {
+            "k": 39,
+            "n": 82,
+            "rate": 0.47560975609756095,
+            "ci95": [
+              0.371,
+              0.5824
+            ]
+          },
+          "answer_recall": {
+            "k": 39,
+            "n": 56,
+            "rate": 0.6964285714285714,
+            "ci95": [
+              0.5666,
+              0.801
+            ]
+          },
+          "answer_f1": 0.5652
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.20076,
+          "false_answer_rate": {
+            "k": 2,
+            "n": 28,
+            "rate": 0.07142857142857142,
+            "ci95": [
+              0.0198,
+              0.2265
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 24,
+            "n": 56,
+            "rate": 0.42857142857142855,
+            "ci95": [
+              0.3077,
+              0.5586
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 31,
+            "n": 56,
+            "rate": 0.5535714285714286,
+            "ci95": [
+              0.4241,
+              0.6761
+            ]
+          },
+          "answer_precision": {
+            "k": 31,
+            "n": 34,
+            "rate": 0.9117647058823529,
+            "ci95": [
+              0.7704,
+              0.9695
+            ]
+          },
+          "answer_recall": {
+            "k": 31,
+            "n": 56,
+            "rate": 0.5535714285714286,
+            "ci95": [
+              0.4241,
+              0.6761
+            ]
+          },
+          "answer_f1": 0.6889
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 2,
+            "n": 11,
+            "rate": 0.18181818181818182,
+            "ci95": [
+              0.0514,
+              0.477
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 5,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.4345
+            ]
+          },
+          "uncovered": {
+            "k": 0,
+            "n": 12,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.2425
+            ]
+          }
+        },
+        "top1_score_auroc": 0.9322,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.6964
+          },
+          {
+            "threshold": 0.062552,
+            "answer_coverage": 0.9286,
+            "false_answer_rate": 0.8571,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 0.072986,
+            "answer_coverage": 0.8571,
+            "false_answer_rate": 0.75,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 0.091248,
+            "answer_coverage": 0.8036,
+            "false_answer_rate": 0.6071,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 0.115478,
+            "answer_coverage": 0.7679,
+            "false_answer_rate": 0.4286,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 0.136381,
+            "answer_coverage": 0.7143,
+            "false_answer_rate": 0.2857,
+            "useful_answer_rate": 0.6429
+          },
+          {
+            "threshold": 0.172302,
+            "answer_coverage": 0.6607,
+            "false_answer_rate": 0.1429,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.195072,
+            "answer_coverage": 0.5714,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.5536
+          },
+          {
+            "threshold": 0.239204,
+            "answer_coverage": 0.4643,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4643
+          },
+          {
+            "threshold": 0.321796,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.446409,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.520111,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "latency": {
+        "index_build_ms": 12.2,
+        "query_p50_ms": 0.351,
+        "query_p95_ms": 0.686
+      }
+    },
+    "dense": {
+      "name": "dense",
+      "dev_selected_threshold": 0.614146,
+      "dev": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 49,
+            "n": 56,
+            "rate": 0.875,
+            "ci95": [
+              0.7637,
+              0.9381
+            ]
+          },
+          "hit@3": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "hit@5": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "recall@3": {
+            "mean": 0.9077,
+            "ci95": [
+              0.8452,
+              0.9583
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.9256,
+            "ci95": [
+              0.869,
+              0.9732
+            ]
+          },
+          "recall@1": {
+            "mean": 0.7649,
+            "ci95": [
+              0.6637,
+              0.8571
+            ]
+          },
+          "recall@5": {
+            "mean": 0.9524,
+            "ci95": [
+              0.9018,
+              0.9911
+            ]
+          },
+          "recall@10": {
+            "mean": 0.9911,
+            "ci95": [
+              0.9732,
+              1.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.875,
+            "ci95": [
+              0.7857,
+              0.9464
+            ]
+          },
+          "precision@3": {
+            "mean": 0.3571,
+            "ci95": [
+              0.3333,
+              0.3869
+            ]
+          },
+          "precision@5": {
+            "mean": 0.2357,
+            "ci95": [
+              0.2107,
+              0.2643
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.8802,
+            "ci95": [
+              0.8212,
+              0.9325
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.9222,
+            "ci95": [
+              0.875,
+              0.961
+            ]
+          },
+          "map@10": {
+            "mean": 0.8838,
+            "ci95": [
+              0.8239,
+              0.9368
+            ]
+          },
+          "random_hit@3": 0.0077
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 29,
+            "n": 29,
+            "rate": 1.0,
+            "ci95": [
+              0.883,
+              1.0
+            ]
+          },
+          "paraphrase": {
+            "k": 20,
+            "n": 20,
+            "rate": 1.0,
+            "ci95": [
+              0.8389,
+              1.0
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "answer_precision": {
+            "k": 55,
+            "n": 84,
+            "rate": 0.6547619047619048,
+            "ci95": [
+              0.5483,
+              0.7477
+            ]
+          },
+          "answer_recall": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "answer_f1": 0.7857
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.614146,
+          "false_answer_rate": {
+            "k": 5,
+            "n": 28,
+            "rate": 0.17857142857142858,
+            "ci95": [
+              0.0788,
+              0.3559
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 8,
+            "n": 56,
+            "rate": 0.14285714285714285,
+            "ci95": [
+              0.0742,
+              0.2574
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 47,
+            "n": 56,
+            "rate": 0.8392857142857143,
+            "ci95": [
+              0.7219,
+              0.9131
+            ]
+          },
+          "answer_precision": {
+            "k": 47,
+            "n": 53,
+            "rate": 0.8867924528301887,
+            "ci95": [
+              0.7742,
+              0.9471
+            ]
+          },
+          "answer_recall": {
+            "k": 47,
+            "n": 56,
+            "rate": 0.8392857142857143,
+            "ci95": [
+              0.7219,
+              0.9131
+            ]
+          },
+          "answer_f1": 0.8624
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 4,
+            "n": 10,
+            "rate": 0.4,
+            "ci95": [
+              0.1682,
+              0.6873
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 6,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3903
+            ]
+          },
+          "uncovered": {
+            "k": 1,
+            "n": 12,
+            "rate": 0.08333333333333333,
+            "ci95": [
+              0.0149,
+              0.3539
+            ]
+          }
+        },
+        "top1_score_auroc": 0.861,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 1.0,
+            "useful_answer_rate": 0.9821
+          },
+          {
+            "threshold": 0.366743,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.9821
+          },
+          {
+            "threshold": 0.52977,
+            "answer_coverage": 0.9643,
+            "false_answer_rate": 0.7857,
+            "useful_answer_rate": 0.9464
+          },
+          {
+            "threshold": 0.554161,
+            "answer_coverage": 0.9107,
+            "false_answer_rate": 0.6429,
+            "useful_answer_rate": 0.8929
+          },
+          {
+            "threshold": 0.574848,
+            "answer_coverage": 0.8929,
+            "false_answer_rate": 0.4286,
+            "useful_answer_rate": 0.875
+          },
+          {
+            "threshold": 0.607818,
+            "answer_coverage": 0.8571,
+            "false_answer_rate": 0.25,
+            "useful_answer_rate": 0.8393
+          },
+          {
+            "threshold": 0.618235,
+            "answer_coverage": 0.7679,
+            "false_answer_rate": 0.1786,
+            "useful_answer_rate": 0.75
+          },
+          {
+            "threshold": 0.633581,
+            "answer_coverage": 0.6429,
+            "false_answer_rate": 0.1786,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.666683,
+            "answer_coverage": 0.5714,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.5536
+          },
+          {
+            "threshold": 0.704734,
+            "answer_coverage": 0.4643,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4464
+          },
+          {
+            "threshold": 0.734594,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.769493,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.80207,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "test": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 47,
+            "n": 56,
+            "rate": 0.8392857142857143,
+            "ci95": [
+              0.7219,
+              0.9131
+            ]
+          },
+          "hit@3": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "hit@5": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "recall@3": {
+            "mean": 0.9196,
+            "ci95": [
+              0.8393,
+              0.9821
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.8973,
+            "ci95": [
+              0.8304,
+              0.9568
+            ]
+          },
+          "recall@1": {
+            "mean": 0.7768,
+            "ci95": [
+              0.6786,
+              0.875
+            ]
+          },
+          "recall@5": {
+            "mean": 0.9643,
+            "ci95": [
+              0.9196,
+              1.0
+            ]
+          },
+          "recall@10": {
+            "mean": 0.9911,
+            "ci95": [
+              0.9732,
+              1.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.8393,
+            "ci95": [
+              0.75,
+              0.9286
+            ]
+          },
+          "precision@3": {
+            "mean": 0.3452,
+            "ci95": [
+              0.3095,
+              0.381
+            ]
+          },
+          "precision@5": {
+            "mean": 0.2179,
+            "ci95": [
+              0.2,
+              0.2357
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.8835,
+            "ci95": [
+              0.8063,
+              0.9471
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.9136,
+            "ci95": [
+              0.8626,
+              0.9582
+            ]
+          },
+          "map@10": {
+            "mean": 0.8828,
+            "ci95": [
+              0.8161,
+              0.942
+            ]
+          },
+          "random_hit@3": 0.0069
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "paraphrase": {
+            "k": 18,
+            "n": 21,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.6536,
+              0.9502
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 4,
+            "n": 56,
+            "rate": 0.07142857142857142,
+            "ci95": [
+              0.0281,
+              0.1698
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "answer_precision": {
+            "k": 52,
+            "n": 84,
+            "rate": 0.6190476190476191,
+            "ci95": [
+              0.5122,
+              0.7155
+            ]
+          },
+          "answer_recall": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "answer_f1": 0.7429
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.614146,
+          "false_answer_rate": {
+            "k": 9,
+            "n": 28,
+            "rate": 0.32142857142857145,
+            "ci95": [
+              0.1793,
+              0.5066
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 10,
+            "n": 56,
+            "rate": 0.17857142857142858,
+            "ci95": [
+              0.1,
+              0.2984
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 45,
+            "n": 56,
+            "rate": 0.8035714285714286,
+            "ci95": [
+              0.6816,
+              0.8866
+            ]
+          },
+          "answer_precision": {
+            "k": 45,
+            "n": 55,
+            "rate": 0.8181818181818182,
+            "ci95": [
+              0.6967,
+              0.8981
+            ]
+          },
+          "answer_recall": {
+            "k": 45,
+            "n": 56,
+            "rate": 0.8035714285714286,
+            "ci95": [
+              0.6816,
+              0.8866
+            ]
+          },
+          "answer_f1": 0.8108
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 5,
+            "n": 11,
+            "rate": 0.45454545454545453,
+            "ci95": [
+              0.2127,
+              0.7199
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 5,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.4345
+            ]
+          },
+          "uncovered": {
+            "k": 4,
+            "n": 12,
+            "rate": 0.3333333333333333,
+            "ci95": [
+              0.1381,
+              0.6094
+            ]
+          }
+        },
+        "top1_score_auroc": 0.8846,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 1.0,
+            "useful_answer_rate": 0.9286
+          },
+          {
+            "threshold": 0.396339,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.9286
+          },
+          {
+            "threshold": 0.54343,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.75,
+            "useful_answer_rate": 0.9107
+          },
+          {
+            "threshold": 0.558349,
+            "answer_coverage": 0.9643,
+            "false_answer_rate": 0.5357,
+            "useful_answer_rate": 0.9107
+          },
+          {
+            "threshold": 0.586337,
+            "answer_coverage": 0.9107,
+            "false_answer_rate": 0.3929,
+            "useful_answer_rate": 0.875
+          },
+          {
+            "threshold": 0.613347,
+            "answer_coverage": 0.8214,
+            "false_answer_rate": 0.3214,
+            "useful_answer_rate": 0.8036
+          },
+          {
+            "threshold": 0.653189,
+            "answer_coverage": 0.75,
+            "false_answer_rate": 0.2143,
+            "useful_answer_rate": 0.75
+          },
+          {
+            "threshold": 0.680136,
+            "answer_coverage": 0.6607,
+            "false_answer_rate": 0.1429,
+            "useful_answer_rate": 0.6607
+          },
+          {
+            "threshold": 0.698946,
+            "answer_coverage": 0.5714,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.5714
+          },
+          {
+            "threshold": 0.719704,
+            "answer_coverage": 0.4643,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4643
+          },
+          {
+            "threshold": 0.749016,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.790272,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.805861,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "latency": {
+        "index_build_ms": 1.06,
+        "query_p50_ms": 10.835,
+        "query_p95_ms": 12.52
+      }
+    },
+    "hybrid": {
+      "name": "hybrid",
+      "dev_selected_threshold": 0.498189,
+      "dev": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 51,
+            "n": 56,
+            "rate": 0.9107142857142857,
+            "ci95": [
+              0.8074,
+              0.9613
+            ]
+          },
+          "hit@3": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "hit@5": {
+            "k": 56,
+            "n": 56,
+            "rate": 1.0,
+            "ci95": [
+              0.9358,
+              1.0
+            ]
+          },
+          "recall@3": {
+            "mean": 0.9226,
+            "ci95": [
+              0.8661,
+              0.9702
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.947,
+            "ci95": [
+              0.897,
+              0.9857
+            ]
+          },
+          "recall@1": {
+            "mean": 0.8006,
+            "ci95": [
+              0.7054,
+              0.8869
+            ]
+          },
+          "recall@5": {
+            "mean": 0.9613,
+            "ci95": [
+              0.9256,
+              0.9911
+            ]
+          },
+          "recall@10": {
+            "mean": 0.9911,
+            "ci95": [
+              0.9732,
+              1.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.9107,
+            "ci95": [
+              0.8393,
+              0.9821
+            ]
+          },
+          "precision@3": {
+            "mean": 0.369,
+            "ci95": [
+              0.3393,
+              0.4048
+            ]
+          },
+          "precision@5": {
+            "mean": 0.2393,
+            "ci95": [
+              0.2179,
+              0.2643
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.9054,
+            "ci95": [
+              0.8506,
+              0.9516
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.9383,
+            "ci95": [
+              0.8954,
+              0.9723
+            ]
+          },
+          "map@10": {
+            "mean": 0.9053,
+            "ci95": [
+              0.8479,
+              0.9531
+            ]
+          },
+          "random_hit@3": 0.0077
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 29,
+            "n": 29,
+            "rate": 1.0,
+            "ci95": [
+              0.883,
+              1.0
+            ]
+          },
+          "paraphrase": {
+            "k": 20,
+            "n": 20,
+            "rate": 1.0,
+            "ci95": [
+              0.8389,
+              1.0
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "answer_precision": {
+            "k": 55,
+            "n": 84,
+            "rate": 0.6547619047619048,
+            "ci95": [
+              0.5483,
+              0.7477
+            ]
+          },
+          "answer_recall": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "answer_f1": 0.7857
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.498189,
+          "false_answer_rate": {
+            "k": 7,
+            "n": 28,
+            "rate": 0.25,
+            "ci95": [
+              0.1268,
+              0.4336
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 10,
+            "n": 56,
+            "rate": 0.17857142857142858,
+            "ci95": [
+              0.1,
+              0.2984
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 45,
+            "n": 56,
+            "rate": 0.8035714285714286,
+            "ci95": [
+              0.6816,
+              0.8866
+            ]
+          },
+          "answer_precision": {
+            "k": 45,
+            "n": 53,
+            "rate": 0.8490566037735849,
+            "ci95": [
+              0.7295,
+              0.9215
+            ]
+          },
+          "answer_recall": {
+            "k": 45,
+            "n": 56,
+            "rate": 0.8035714285714286,
+            "ci95": [
+              0.6816,
+              0.8866
+            ]
+          },
+          "answer_f1": 0.8257
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 5,
+            "n": 10,
+            "rate": 0.5,
+            "ci95": [
+              0.2366,
+              0.7634
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 6,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.3903
+            ]
+          },
+          "uncovered": {
+            "k": 2,
+            "n": 12,
+            "rate": 0.16666666666666666,
+            "ci95": [
+              0.047,
+              0.448
+            ]
+          }
+        },
+        "top1_score_auroc": 0.8487,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 1.0,
+            "useful_answer_rate": 0.9821
+          },
+          {
+            "threshold": 0.293394,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.9821
+          },
+          {
+            "threshold": 0.426214,
+            "answer_coverage": 0.9643,
+            "false_answer_rate": 0.7857,
+            "useful_answer_rate": 0.9464
+          },
+          {
+            "threshold": 0.443329,
+            "answer_coverage": 0.9107,
+            "false_answer_rate": 0.6429,
+            "useful_answer_rate": 0.8929
+          },
+          {
+            "threshold": 0.475506,
+            "answer_coverage": 0.8929,
+            "false_answer_rate": 0.4286,
+            "useful_answer_rate": 0.875
+          },
+          {
+            "threshold": 0.494165,
+            "answer_coverage": 0.8214,
+            "false_answer_rate": 0.3214,
+            "useful_answer_rate": 0.8036
+          },
+          {
+            "threshold": 0.511872,
+            "answer_coverage": 0.7321,
+            "false_answer_rate": 0.25,
+            "useful_answer_rate": 0.7143
+          },
+          {
+            "threshold": 0.533167,
+            "answer_coverage": 0.6429,
+            "false_answer_rate": 0.1786,
+            "useful_answer_rate": 0.625
+          },
+          {
+            "threshold": 0.567554,
+            "answer_coverage": 0.5714,
+            "false_answer_rate": 0.0714,
+            "useful_answer_rate": 0.5536
+          },
+          {
+            "threshold": 0.598098,
+            "answer_coverage": 0.4821,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.4643
+          },
+          {
+            "threshold": 0.658836,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.699579,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.742559,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "test": {
+        "query_count": 84,
+        "retrieval": {
+          "answerable_n": 56,
+          "hit@1": {
+            "k": 48,
+            "n": 56,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.7426,
+              0.9258
+            ]
+          },
+          "hit@3": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "hit@5": {
+            "k": 55,
+            "n": 56,
+            "rate": 0.9821428571428571,
+            "ci95": [
+              0.9055,
+              0.9968
+            ]
+          },
+          "recall@3": {
+            "mean": 0.9196,
+            "ci95": [
+              0.8393,
+              0.9821
+            ]
+          },
+          "mrr@10": {
+            "mean": 0.9062,
+            "ci95": [
+              0.8408,
+              0.9628
+            ]
+          },
+          "recall@1": {
+            "mean": 0.7946,
+            "ci95": [
+              0.6964,
+              0.8839
+            ]
+          },
+          "recall@5": {
+            "mean": 0.9643,
+            "ci95": [
+              0.9196,
+              1.0
+            ]
+          },
+          "recall@10": {
+            "mean": 0.9911,
+            "ci95": [
+              0.9732,
+              1.0
+            ]
+          },
+          "precision@1": {
+            "mean": 0.8571,
+            "ci95": [
+              0.7679,
+              0.9464
+            ]
+          },
+          "precision@3": {
+            "mean": 0.3452,
+            "ci95": [
+              0.3095,
+              0.381
+            ]
+          },
+          "precision@5": {
+            "mean": 0.2179,
+            "ci95": [
+              0.2,
+              0.2357
+            ]
+          },
+          "ndcg@3": {
+            "mean": 0.8915,
+            "ci95": [
+              0.8154,
+              0.9549
+            ]
+          },
+          "ndcg@10": {
+            "mean": 0.9216,
+            "ci95": [
+              0.8714,
+              0.9637
+            ]
+          },
+          "map@10": {
+            "mean": 0.8947,
+            "ci95": [
+              0.828,
+              0.9509
+            ]
+          },
+          "random_hit@3": 0.0069
+        },
+        "hit@3_by_bucket": {
+          "direct": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "paraphrase": {
+            "k": 18,
+            "n": 21,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.6536,
+              0.9502
+            ]
+          },
+          "multi": {
+            "k": 6,
+            "n": 7,
+            "rate": 0.8571428571428571,
+            "ci95": [
+              0.4869,
+              0.9743
+            ]
+          }
+        },
+        "abstention_at_production_threshold_0": {
+          "threshold": 0.0,
+          "false_answer_rate": {
+            "k": 28,
+            "n": 28,
+            "rate": 1.0,
+            "ci95": [
+              0.8794,
+              1.0
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 0,
+            "n": 56,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.0642
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 4,
+            "n": 56,
+            "rate": 0.07142857142857142,
+            "ci95": [
+              0.0281,
+              0.1698
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "answer_precision": {
+            "k": 52,
+            "n": 84,
+            "rate": 0.6190476190476191,
+            "ci95": [
+              0.5122,
+              0.7155
+            ]
+          },
+          "answer_recall": {
+            "k": 52,
+            "n": 56,
+            "rate": 0.9285714285714286,
+            "ci95": [
+              0.8302,
+              0.9719
+            ]
+          },
+          "answer_f1": 0.7429
+        },
+        "abstention_at_dev_threshold": {
+          "threshold": 0.498189,
+          "false_answer_rate": {
+            "k": 10,
+            "n": 28,
+            "rate": 0.35714285714285715,
+            "ci95": [
+              0.2071,
+              0.5417
+            ]
+          },
+          "over_abstention_rate": {
+            "k": 11,
+            "n": 56,
+            "rate": 0.19642857142857142,
+            "ci95": [
+              0.1134,
+              0.3184
+            ]
+          },
+          "wrong_evidence_rate": {
+            "k": 1,
+            "n": 56,
+            "rate": 0.017857142857142856,
+            "ci95": [
+              0.0032,
+              0.0945
+            ]
+          },
+          "useful_answer_rate": {
+            "k": 44,
+            "n": 56,
+            "rate": 0.7857142857142857,
+            "ci95": [
+              0.6618,
+              0.8729
+            ]
+          },
+          "answer_precision": {
+            "k": 44,
+            "n": 55,
+            "rate": 0.8,
+            "ci95": [
+              0.6763,
+              0.8845
+            ]
+          },
+          "answer_recall": {
+            "k": 44,
+            "n": 56,
+            "rate": 0.7857142857142857,
+            "ci95": [
+              0.6618,
+              0.8729
+            ]
+          },
+          "answer_f1": 0.7928
+        },
+        "false_answer_by_bucket_at_dev_threshold": {
+          "near_miss": {
+            "k": 6,
+            "n": 11,
+            "rate": 0.5454545454545454,
+            "ci95": [
+              0.2801,
+              0.7873
+            ]
+          },
+          "out_of_scope": {
+            "k": 0,
+            "n": 5,
+            "rate": 0.0,
+            "ci95": [
+              0.0,
+              0.4345
+            ]
+          },
+          "uncovered": {
+            "k": 4,
+            "n": 12,
+            "rate": 0.3333333333333333,
+            "ci95": [
+              0.1381,
+              0.6094
+            ]
+          }
+        },
+        "top1_score_auroc": 0.8874,
+        "risk_coverage": [
+          {
+            "threshold": 0.0,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 1.0,
+            "useful_answer_rate": 0.9286
+          },
+          {
+            "threshold": 0.317071,
+            "answer_coverage": 1.0,
+            "false_answer_rate": 0.9643,
+            "useful_answer_rate": 0.9286
+          },
+          {
+            "threshold": 0.43484,
+            "answer_coverage": 0.9821,
+            "false_answer_rate": 0.75,
+            "useful_answer_rate": 0.9107
+          },
+          {
+            "threshold": 0.456144,
+            "answer_coverage": 0.9286,
+            "false_answer_rate": 0.6071,
+            "useful_answer_rate": 0.8929
+          },
+          {
+            "threshold": 0.479406,
+            "answer_coverage": 0.875,
+            "false_answer_rate": 0.4643,
+            "useful_answer_rate": 0.8393
+          },
+          {
+            "threshold": 0.496165,
+            "answer_coverage": 0.8036,
+            "false_answer_rate": 0.3571,
+            "useful_answer_rate": 0.7857
+          },
+          {
+            "threshold": 0.535656,
+            "answer_coverage": 0.75,
+            "false_answer_rate": 0.2143,
+            "useful_answer_rate": 0.75
+          },
+          {
+            "threshold": 0.568151,
+            "answer_coverage": 0.6786,
+            "false_answer_rate": 0.1071,
+            "useful_answer_rate": 0.6786
+          },
+          {
+            "threshold": 0.598171,
+            "answer_coverage": 0.5893,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.5893
+          },
+          {
+            "threshold": 0.626539,
+            "answer_coverage": 0.4643,
+            "false_answer_rate": 0.0357,
+            "useful_answer_rate": 0.4643
+          },
+          {
+            "threshold": 0.672372,
+            "answer_coverage": 0.3571,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.3571
+          },
+          {
+            "threshold": 0.69708,
+            "answer_coverage": 0.2321,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.2321
+          },
+          {
+            "threshold": 0.73228,
+            "answer_coverage": 0.1071,
+            "false_answer_rate": 0.0,
+            "useful_answer_rate": 0.1071
+          }
+        ]
+      },
+      "latency": {
+        "index_build_ms": 12.48,
+        "query_p50_ms": 11.906,
+        "query_p95_ms": 14.458
+      }
+    }
+  },
+  "scaling": {
+    "bm25_bigram": [
+      {
+        "docs": 8,
+        "seeds": 5,
+        "hit@3_mean": 0.7964,
+        "hit@3_min": 0.7857,
+        "hit@3_max": 0.8036,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 16,
+        "seeds": 5,
+        "hit@3_mean": 0.7786,
+        "hit@3_min": 0.7679,
+        "hit@3_max": 0.7946,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 32,
+        "seeds": 5,
+        "hit@3_mean": 0.7321,
+        "hit@3_min": 0.7232,
+        "hit@3_max": 0.7411,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 51,
+        "seeds": 5,
+        "hit@3_mean": 0.7,
+        "hit@3_min": 0.6875,
+        "hit@3_max": 0.7143,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 80,
+        "seeds": 5,
+        "hit@3_mean": 0.675,
+        "hit@3_min": 0.6696,
+        "hit@3_max": 0.6875,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 110,
+        "seeds": 5,
+        "hit@3_mean": 0.6679,
+        "hit@3_min": 0.6607,
+        "hit@3_max": 0.6786,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 131,
+        "seeds": 5,
+        "hit@3_mean": 0.6607,
+        "hit@3_min": 0.6607,
+        "hit@3_max": 0.6607,
+        "answerable_queries": 112
+      }
+    ],
+    "dense": [
+      {
+        "docs": 8,
+        "seeds": 5,
+        "hit@3_mean": 0.9911,
+        "hit@3_min": 0.9911,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 16,
+        "seeds": 5,
+        "hit@3_mean": 0.9911,
+        "hit@3_min": 0.9911,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 32,
+        "seeds": 5,
+        "hit@3_mean": 0.9857,
+        "hit@3_min": 0.9821,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 51,
+        "seeds": 5,
+        "hit@3_mean": 0.9804,
+        "hit@3_min": 0.9643,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 80,
+        "seeds": 5,
+        "hit@3_mean": 0.9732,
+        "hit@3_min": 0.9643,
+        "hit@3_max": 0.9821,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 110,
+        "seeds": 5,
+        "hit@3_mean": 0.9589,
+        "hit@3_min": 0.9554,
+        "hit@3_max": 0.9643,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 131,
+        "seeds": 5,
+        "hit@3_mean": 0.9554,
+        "hit@3_min": 0.9554,
+        "hit@3_max": 0.9554,
+        "answerable_queries": 112
+      }
+    ],
+    "hybrid": [
+      {
+        "docs": 8,
+        "seeds": 5,
+        "hit@3_mean": 0.9911,
+        "hit@3_min": 0.9911,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 16,
+        "seeds": 5,
+        "hit@3_mean": 0.9911,
+        "hit@3_min": 0.9911,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 32,
+        "seeds": 5,
+        "hit@3_mean": 0.9857,
+        "hit@3_min": 0.9821,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 51,
+        "seeds": 5,
+        "hit@3_mean": 0.9804,
+        "hit@3_min": 0.9643,
+        "hit@3_max": 0.9911,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 80,
+        "seeds": 5,
+        "hit@3_mean": 0.9732,
+        "hit@3_min": 0.9643,
+        "hit@3_max": 0.9821,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 110,
+        "seeds": 5,
+        "hit@3_mean": 0.9589,
+        "hit@3_min": 0.9554,
+        "hit@3_max": 0.9643,
+        "answerable_queries": 112
+      },
+      {
+        "docs": 131,
+        "seeds": 5,
+        "hit@3_mean": 0.9554,
+        "hit@3_min": 0.9554,
+        "hit@3_max": 0.9554,
+        "answerable_queries": 112
+      }
+    ]
+  },
+  "versions": {
+    "python": "3.11.15",
+    "numpy": "2.4.6"
+  }
+}
