@@ -43,6 +43,7 @@ from eval.retrieval_benchmark import (
 )
 from medidiag.errors import MediDiagError
 from medidiag.llm.cassette import Cassette, RecordingTransport, ReplayTransport
+from medidiag.llm.models import ACTIVE_MIMO_MODEL, ALLOWED_MIMO_MODELS
 from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
 from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
@@ -86,9 +87,9 @@ def make_provider(transport: Any) -> OpenAICompatibleProvider:
                                     max_retries=0, max_structured_retries=0)
 
 
-def rewrite_query(provider: OpenAICompatibleProvider, question: str) -> dict[str, Any]:
+def rewrite_query(provider: OpenAICompatibleProvider, question: str, model: str) -> dict[str, Any]:
     """返回 {"query": 改写句, "status": ok|invalid|error}；失败时调用方回退到原问题。"""
-    request = build_rewrite_request(question)
+    request = build_rewrite_request(question, model)
     try:
         result = call_with_retry(lambda: provider.generate(request, timeout_s=45, idempotency_key="rw-" + hashlib.sha256(question.encode()).hexdigest()[:24]))
     except MediDiagError as exc:
@@ -100,9 +101,9 @@ def rewrite_query(provider: OpenAICompatibleProvider, question: str) -> dict[str
 
 
 def grounded_decision(provider: OpenAICompatibleProvider, question: str, ranked: Sequence[tuple[str, str]],
-                      feedback: str | None = None) -> dict[str, Any]:
+                      model: str, feedback: str | None = None) -> dict[str, Any]:
     """走应用的真实生成路径。decision: answered | abstained | invalid | error。"""
-    app = MimoGroundedWorkflowProvider(rag_stage=None, llm=provider)  # type: ignore[arg-type]
+    app = MimoGroundedWorkflowProvider(rag_stage=None, llm=provider, model=model)  # type: ignore[arg-type]
     retrieval = {"chunks": [{"chunk_id": cid, "text": text} for cid, text in ranked]}
     try:
         response = call_with_retry(lambda: app.generate(question, retrieval, {}, feedback=feedback))
@@ -248,7 +249,7 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
     rewrites: dict[str, dict[str, Any]] = {}
     if "bm25_rewrite" in conditions:
         with ThreadPoolExecutor(args.workers) as pool:
-            for query, result in zip(queries, pool.map(lambda q: rewrite_query(providers[0], q["question"]), queries), strict=True):
+            for query, result in zip(queries, pool.map(lambda q: rewrite_query(providers[0], q["question"], args.model), queries), strict=True):
                 rewrites[query["sample_id"]] = result
 
     def retrieved(condition: str, query: dict[str, Any]) -> list[tuple[str, float]]:
@@ -269,12 +270,12 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
         ranked = [(cid, chunk_text[cid]) for cid in retrieval[condition][query["sample_id"]]]
         if not ranked:  # 与应用一致：空检索不调用模型
             return {"decision": "abstained", "selected": [], "model_called": False}
-        first = {**grounded_decision(providers[trial], query["question"], ranked), "model_called": True}
+        first = {**grounded_decision(providers[trial], query["question"], ranked, args.model), "model_called": True}
         if retry_enabled and first["decision"] == "invalid":  # 只对契约违规重采样一次；网络类错误不算
-            first["retry"] = {**grounded_decision(providers[RETRY_BASE + trial], query["question"], ranked), "model_called": True}
+            first["retry"] = {**grounded_decision(providers[RETRY_BASE + trial], query["question"], ranked, args.model), "model_called": True}
         if feedback_enabled and first["decision"] == "invalid":  # 同上，但第二次请求带上被拒原因
             first["feedback_retry"] = {**grounded_decision(providers[FEEDBACK_BASE + trial], query["question"], ranked,
-                                                           feedback=first.get("detail")), "model_called": True}
+                                                           args.model, feedback=first.get("detail")), "model_called": True}
         return first
 
     with ThreadPoolExecutor(args.workers) as pool:
@@ -333,6 +334,8 @@ def sha256_of(path: Path) -> str | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode", choices=["record", "replay"], required=True)
+    parser.add_argument("--model", choices=ALLOWED_MIMO_MODELS, default=ACTIVE_MIMO_MODEL,
+                        help="请求的模型名；回放旧录制文件时用 mimo-v2.5，新录制与真实调用用默认值")
     parser.add_argument("--dataset-dir", type=Path, default=ROOT / "examples/public_health_v2")
     parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2.jsonl")
     parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/llm-pipeline-ledger.db")
@@ -386,7 +389,7 @@ def main() -> None:
         spent = transports[0].spent()
     report = {
         "schema_version": SCHEMA_VERSION, "generated_at": datetime.now(UTC).isoformat(),
-        "config": {"model": "mimo-v2.5", "mode": args.mode, "conditions": args.conditions, "top_k": TOP_K,
+        "config": {"model": args.model, "mode": args.mode, "conditions": args.conditions, "top_k": TOP_K,
                    "repeat_trials_bm25": args.repeat_trials, "limit": args.limit or None,
                    "rewrite_prompt": REWRITE_PROMPT, "temperature": "供应商默认（该 profile 不支持设置）",
                    "dataset_sha256": dataset.fingerprints, "cassette_entries": len(cassette),

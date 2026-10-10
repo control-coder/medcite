@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 
-test.skip(process.env.MEDIDIAG_ALLOW_LIVE !== 'mimo-v2.5', '只有显式授权脚本可执行真实模型验收');
+test.skip(process.env.MEDIDIAG_ALLOW_LIVE !== 'mimo-v2.6-flash', '只有显式授权脚本可执行真实模型验收');
 test.setTimeout(240000);
 
 test('真实 MiMo 页面闭环、保守弃答与空检索', async ({ page }) => {

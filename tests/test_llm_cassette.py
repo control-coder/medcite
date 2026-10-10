@@ -140,6 +140,14 @@ def test_requests_outside_boundary_are_rejected_before_any_call(tmp_path: Path, 
     assert server.calls == 0 and recorder.spent()["calls"] == 0
 
 
+def test_both_mimo_model_names_are_accepted(tmp_path: Path):
+    """旧模型名用于回放旧录制文件，新模型名用于真实调用；其他模型名仍被拒绝。"""
+    recorder, server = make(tmp_path)
+    for model in ("mimo-v2.5", "mimo-v2.6-flash"):
+        recorder(URL, headers=HEADERS, json=body(model=model), timeout=30)
+    assert server.calls == 2
+
+
 def test_failed_responses_cost_budget_but_are_not_cached(tmp_path: Path):
     def rate_limited(url: str, **_: Any) -> httpx.Response:
         return httpx.Response(429, json={"error": "slow down"}, request=httpx.Request("POST", url))

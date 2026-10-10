@@ -17,6 +17,7 @@ from pathlib import Path
 import httpx
 
 from medidiag.llm.budget import BudgetedTransport
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from scripts.verify_offline import ROOT, run_browser
 
 
@@ -90,7 +91,7 @@ def main() -> None:
             else:
                 raise RuntimeError("API 启动超时")
         run_browser("mimo-live.spec.ts", {**env, "MEDIDIAG_WEB_URL": base,
-            "MEDIDIAG_ALLOW_LIVE": "mimo-v2.5", "MEDIDIAG_LIVE_CASES": str(work / "cases.json")}, work, flags)
+            "MEDIDIAG_ALLOW_LIVE": ACTIVE_MIMO_MODEL, "MEDIDIAG_LIVE_CASES": str(work / "cases.json")}, work, flags)
         cases = json.loads((work / "cases.json").read_text(encoding="utf-8"))
         after = ledger.records()
         assert len(cases) == 4 and len(after) - len(before) == 3
@@ -112,7 +113,7 @@ def main() -> None:
         files = ["configs/application.yaml", "examples/public_health/sources.json", "examples/public_health/chunks.jsonl",
                  "src/medidiag/workflow/mimo_grounded.py", "src/medidiag/llm/budget.py"]
         report = {"schema_version": "mimo-application-acceptance-v1", "created_at": stamp,
-            "success": success, "mode": "mimo_grounded", "model": "mimo-v2.5", "provider": "mimo_v25",
+            "success": success, "mode": "mimo_grounded", "model": ACTIVE_MIMO_MODEL, "provider": "mimo_v25",
             "baseline_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             "implementation_state": "本轮源码在基线上未提交；随本报告提交，文件摘要用于定位验收实现。",
             "file_sha256": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in files},

@@ -48,7 +48,7 @@ flowchart LR
 | --- | --- | --- |
 | `fake_offline` | 固定证据和确定性 fixture | 只验证工程流程 |
 | `retrieval_mock` | 默认纯 BM25、中文按相邻两字切分；也可选向量检索方案（见下）；固定规则摘录原文 | 引用结构关联与 ComplianceGuard；非 NLI 语义审核 |
-| `mimo_grounded` | 同一检索；`mimo-v2.5` 以 JSON 选择完整原文，没有直接答案时拒答 | 二次原文绑定与 ComplianceGuard；非医学语义审核 |
+| `mimo_grounded` | 同一检索；`mimo-v2.6-flash` 以 JSON 选择完整原文，没有直接答案时拒答 | 二次原文绑定与 ComplianceGuard；非医学语义审核 |
 | 研究链路 | 独立 `eval` 配置、多专科 Agent 与 NLI | 保留研究评测门禁 |
 
 应用配置在加载时校验，只接受两种明确的检索方案：默认的单路 BM25（`configs/application.yaml`，不需要下载模型），或单路向量检索（`configs/application_dense.yaml`：固定模型 `BAAI/bge-small-zh-v1.5` 的固定版本，只读本地缓存，缓存不存在就报错而不是自动下载，语料为 51 篇 178 条短引的 v2）。混合检索、重排、浮动版本、允许联网下载、套用研究配置或关闭泄露检查都会被拒绝，也不会因为 `.env` 中存在密钥就切换到在线模式。选择向量检索方案的依据见 [评测文档第七节](evaluation.md#七应用接入向量检索--模型拒答--带原因的重试)。空检索在生成前拒答；词面命中但片段缺少答案的情况仍可能发生，这依赖模型或摘录层拒答，系统不承诺识别所有证据不足的问题。

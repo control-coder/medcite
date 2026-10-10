@@ -46,12 +46,13 @@ profiles:
       response_id: true
       system_fingerprint: false
 
+  # 名字沿用 mimo_v25，避免改动已写入记录的配置名；实际模型见 medidiag/llm/models.py。
   mimo_v25:
     adapter: openai_compatible
     provider_id: mimo
     base_url: ${MIMO_BASE_URL}
     api_key_env: MIMO_API_KEY
-    model: ${MIMO_MODEL:-mimo-v2.5}
+    model: ${MIMO_MODEL:-mimo-v2.6-flash}
     api_style: chat_completions
     temperature: null
     top_p: null

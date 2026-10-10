@@ -24,6 +24,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from medidiag.errors import MediDiagError
+from medidiag.llm.models import ALLOWED_MIMO_MODELS
 
 ALLOWED_HOST = "api.xiaomimimo.com"
 
@@ -141,7 +142,7 @@ class RecordingTransport:
                 or target.query or target.fragment or target.username or target.password
                 or target.port not in (None, 443)):
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="只允许指定官方 HTTPS 接口")
-        if (json.get("model") != "mimo-v2.5" or type(json.get("max_tokens")) is not int
+        if (json.get("model") not in ALLOWED_MIMO_MODELS or type(json.get("max_tokens")) is not int
                 or not 1 <= json["max_tokens"] <= 2048 or not 0 < timeout <= 60
                 or len(str(json.get("messages", []))) > 12000):
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="请求超出模型、Token、输入或超时边界")

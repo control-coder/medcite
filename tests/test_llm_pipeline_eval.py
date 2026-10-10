@@ -15,6 +15,7 @@ from eval import llm_pipeline_eval as ev
 from eval.retrieval_benchmark import Dataset
 from medidiag.errors import MediDiagError
 from medidiag.llm.cassette import Cassette, RecordingTransport, ReplayTransport
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 
 CHUNKS = [
     {"chunk_id": "c1", "source_id": "d1", "text": "流感是一种急性呼吸道传染病，由流感病毒引起。"},
@@ -57,13 +58,14 @@ class FakeModel:
             content = __import__("json").dumps({
                 "status": "sufficient" if pick else "insufficient",
                 "claims": [{"text": evidence[c], "citation_chunk_ids": [c]} for c in pick]}, ensure_ascii=False)
-        body = {"id": "r", "model": "mimo-v2.5", "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
+        body = {"id": "r", "model": ACTIVE_MIMO_MODEL, "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
                 "choices": [{"message": {"content": content}, "finish_reason": "stop"}]}
         return httpx.Response(200, json=body, request=httpx.Request("POST", url))
 
 
 def args(**kw: Any) -> argparse.Namespace:
-    base = dict(conditions=["bm25", "bm25_rewrite"], repeat_trials=2, workers=4, limit=0, embedding_revision=None)
+    base = dict(conditions=["bm25", "bm25_rewrite"], repeat_trials=2, workers=4, limit=0, embedding_revision=None,
+                model=ACTIVE_MIMO_MODEL)
     base.update(kw)
     return argparse.Namespace(**base)
 

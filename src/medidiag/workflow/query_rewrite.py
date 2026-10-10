@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from medidiag.llm.contracts import LLMRequest
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 
 REWRITE_PROMPT = (
     "你是公共卫生科普检索的查询改写助手。把用户的口语化问题改写成一句规范的书面表述，"
@@ -21,11 +22,11 @@ REWRITE_PROMPT = (
 MAX_REWRITE_CHARS = 120
 
 
-def build_rewrite_request(question: str) -> LLMRequest:
+def build_rewrite_request(question: str, model: str = ACTIVE_MIMO_MODEL) -> LLMRequest:
     return LLMRequest(
         messages=[{"role": "system", "content": REWRITE_PROMPT},
                   {"role": "user", "content": json.dumps({"question": question}, ensure_ascii=False)}],
-        model="mimo-v2.5", response_format={"type": "json_object"}, max_tokens=256,
+        model=model, response_format={"type": "json_object"}, max_tokens=256,
         reasoning_mode="disabled", prompt_version="query-rewrite-v1")
 
 
