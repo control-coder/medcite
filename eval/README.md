@@ -10,9 +10,8 @@
 
 ## 历史研究资料（只读保留）
 
-早期的多专科 Agent 加自然语言推理（NLI）研究评测，其执行与统计代码（原 `eval/runner.py` 及配套的报告、标注核对、Kappa、费用估算、阈值敏感性、路由诊断等）已经删除，需要时从 git 历史查看。保留的只有数据和说明：
+早期的多专科 Agent 加自然语言推理（NLI）研究评测，其执行与统计代码（原 `eval/runner.py` 及配套的报告、标注核对、Kappa、费用估算、阈值敏感性、路由诊断等）已经删除，需要时从 git 历史查看。保留的只有配置：
 
-- `datasets/`：公开数据和知识片段；下载的原始数据不入库。`knowledge_chunks.jsonl` 只含 1,028 段 PubMedQA 上下文，MedQA 教材原文受出版社版权约束，已从全部历史中移除。
 - `config.yaml`：旧的多专科工作流（`medidiag run --provider deepseek_default` 等）仍然读取它，所以保留。
 
 引用核对的人工标注资料和相关研究文档已删除，需要时从 git 历史查看；报告类型见 [报告索引](../artifacts/reports/README.md)。

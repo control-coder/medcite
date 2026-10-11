@@ -51,11 +51,6 @@ judge:
 dataset:
   version: "v1"
   public_ratio_min: 0.40
-  rag_eval_set_path: "eval/datasets/eval_set_pubmedqa.jsonl"
-  knowledge_base_path: "eval/datasets/knowledge_chunks.jsonl"
-  agent_eval_set_path: "eval/datasets/eval_set_medqa.jsonl"
-  # P0-A 正式门禁：版本化的 100 样本清单缺失时，formal 模式必须失败。
-  agent_sample_manifest_path: "eval/datasets/agent_eval_manifest_v1.jsonl"
   sources:
     - name: "MedQA"
       subset: "train"

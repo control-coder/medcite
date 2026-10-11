@@ -234,4 +234,4 @@ tests/            自动化测试
 
 ## 许可证
 
-本项目代码采用 [MIT License](LICENSE)。第三方组件与数据（HTMX、WHO 科普短引、PubMedQA、MedQA）的来源与使用条件见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+本项目代码采用 [MIT License](LICENSE)。第三方组件与数据（HTMX、WHO 科普短引）的来源与使用条件见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
