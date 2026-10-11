@@ -1,0 +1,543 @@
+{
+  "schema_version": "retrieval-matrix-v1",
+  "generated_at": "2026-10-11T03:00:39.416417+00:00",
+  "dataset": {
+    "dir": "D:\\resume_project\\medidiag\\examples\\public_health_v3",
+    "sha256": {
+      "chunks.jsonl": "67a2b747025e5c90ac91e68bb3d0fd3301cbfbb4317296e673f8c77dbefeb026",
+      "queries.jsonl": "f2b831a31733a54bc73442b3624a21ea3bfb4cf230b362b9362d8b2c773f55dd"
+    }
+  },
+  "sources": {
+    "llm_report": "llm-pipeline-v3-flash-20261010.json",
+    "retrieval_report": "retrieval-benchmark-v3-20261010.json",
+    "embedding_model": "BAAI/bge-small-zh-v1.5"
+  },
+  "external_model_calls": 0,
+  "split": "test",
+  "answerable_n": 56,
+  "hybrid_alpha": 0.2,
+  "matrix": {
+    "bm25_bigram": {
+      "ranking": "完整排名（前 10）",
+      "hit@1": {
+        "k": 34,
+        "n": 56,
+        "rate": 0.6071428571428571,
+        "ci95": [
+          0.4763,
+          0.7242
+        ]
+      },
+      "hit@3": {
+        "k": 38,
+        "n": 56,
+        "rate": 0.6785714285714286,
+        "ci95": [
+          0.5482,
+          0.786
+        ]
+      },
+      "recall@3": {
+        "mean": 0.6339,
+        "ci95": [
+          0.5179,
+          0.75
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.6339,
+        "ci95": [
+          0.5119,
+          0.753
+        ]
+      },
+      "mrr@10": {
+        "mean": 0.6477,
+        "ci95": [
+          0.5308,
+          0.764
+        ]
+      },
+      "ndcg@10": {
+        "mean": 0.6559,
+        "ci95": [
+          0.5463,
+          0.7665
+        ]
+      }
+    },
+    "dense": {
+      "ranking": "完整排名（前 10）",
+      "hit@1": {
+        "k": 47,
+        "n": 56,
+        "rate": 0.8392857142857143,
+        "ci95": [
+          0.7219,
+          0.9131
+        ]
+      },
+      "hit@3": {
+        "k": 52,
+        "n": 56,
+        "rate": 0.9285714285714286,
+        "ci95": [
+          0.8302,
+          0.9719
+        ]
+      },
+      "recall@3": {
+        "mean": 0.9196,
+        "ci95": [
+          0.8393,
+          0.9821
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.881,
+        "ci95": [
+          0.8036,
+          0.9524
+        ]
+      },
+      "mrr@10": {
+        "mean": 0.8973,
+        "ci95": [
+          0.8304,
+          0.9568
+        ]
+      },
+      "ndcg@10": {
+        "mean": 0.9136,
+        "ci95": [
+          0.8626,
+          0.9582
+        ]
+      }
+    },
+    "hybrid": {
+      "ranking": "完整排名（前 10）",
+      "hit@1": {
+        "k": 48,
+        "n": 56,
+        "rate": 0.8571428571428571,
+        "ci95": [
+          0.7426,
+          0.9258
+        ]
+      },
+      "hit@3": {
+        "k": 52,
+        "n": 56,
+        "rate": 0.9285714285714286,
+        "ci95": [
+          0.8302,
+          0.9719
+        ]
+      },
+      "recall@3": {
+        "mean": 0.9196,
+        "ci95": [
+          0.8393,
+          0.9821
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.8899,
+        "ci95": [
+          0.8095,
+          0.9554
+        ]
+      },
+      "mrr@10": {
+        "mean": 0.9062,
+        "ci95": [
+          0.8408,
+          0.9628
+        ]
+      },
+      "ndcg@10": {
+        "mean": 0.9216,
+        "ci95": [
+          0.8714,
+          0.9637
+        ]
+      }
+    },
+    "bm25_rewrite": {
+      "ranking": "最终 3 个片段",
+      "hit@3": {
+        "k": 49,
+        "n": 56,
+        "rate": 0.875,
+        "ci95": [
+          0.7637,
+          0.9381
+        ]
+      },
+      "recall@3": {
+        "mean": 0.8393,
+        "ci95": [
+          0.7411,
+          0.9196
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.7679,
+        "ci95": [
+          0.6667,
+          0.8601
+        ]
+      }
+    },
+    "bm25_agent": {
+      "ranking": "最终 3 个片段",
+      "hit@3": {
+        "k": 46,
+        "n": 56,
+        "rate": 0.8214285714285714,
+        "ci95": [
+          0.7016,
+          0.9
+        ]
+      },
+      "recall@3": {
+        "mean": 0.7857,
+        "ci95": [
+          0.6875,
+          0.8839
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.7113,
+        "ci95": [
+          0.6071,
+          0.8155
+        ]
+      }
+    },
+    "dense_agent": {
+      "ranking": "最终 3 个片段",
+      "hit@3": {
+        "k": 54,
+        "n": 56,
+        "rate": 0.9642857142857143,
+        "ci95": [
+          0.8788,
+          0.9902
+        ]
+      },
+      "recall@3": {
+        "mean": 0.9554,
+        "ci95": [
+          0.8929,
+          1.0
+        ]
+      },
+      "mrr@3": {
+        "mean": 0.9048,
+        "ci95": [
+          0.8333,
+          0.9643
+        ]
+      }
+    }
+  },
+  "paired_comparisons": [
+    {
+      "a": "hybrid",
+      "b": "dense",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9286,
+      "b_mean": 0.9286,
+      "diff": 0.0,
+      "diff_ci95": [
+        0.0,
+        0.0
+      ],
+      "a_better": 0,
+      "b_better": 0,
+      "tied": 56,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "hybrid",
+      "b": "dense",
+      "metric": "mrr@10",
+      "n": 56,
+      "a_mean": 0.9062,
+      "b_mean": 0.8973,
+      "diff": 0.0089,
+      "diff_ci95": [
+        0.0,
+        0.0268
+      ],
+      "a_better": 1,
+      "b_better": 0,
+      "tied": 55,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "hybrid",
+      "b": "dense",
+      "metric": "ndcg@10",
+      "n": 56,
+      "a_mean": 0.9216,
+      "b_mean": 0.9136,
+      "diff": 0.008,
+      "diff_ci95": [
+        0.0,
+        0.0226
+      ],
+      "a_better": 2,
+      "b_better": 0,
+      "tied": 54,
+      "sign_test_p": 0.5
+    },
+    {
+      "a": "dense",
+      "b": "bm25_bigram",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9286,
+      "b_mean": 0.6786,
+      "diff": 0.25,
+      "diff_ci95": [
+        0.125,
+        0.375
+      ],
+      "a_better": 15,
+      "b_better": 1,
+      "tied": 40,
+      "sign_test_p": 0.0005
+    },
+    {
+      "a": "dense",
+      "b": "bm25_bigram",
+      "metric": "mrr@10",
+      "n": 56,
+      "a_mean": 0.8973,
+      "b_mean": 0.6477,
+      "diff": 0.2496,
+      "diff_ci95": [
+        0.1432,
+        0.3566
+      ],
+      "a_better": 20,
+      "b_better": 2,
+      "tied": 34,
+      "sign_test_p": 0.0001
+    },
+    {
+      "a": "bm25_rewrite",
+      "b": "bm25_bigram",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.875,
+      "b_mean": 0.6786,
+      "diff": 0.1964,
+      "diff_ci95": [
+        0.0714,
+        0.3214
+      ],
+      "a_better": 13,
+      "b_better": 2,
+      "tied": 41,
+      "sign_test_p": 0.0074
+    },
+    {
+      "a": "bm25_rewrite",
+      "b": "bm25_bigram",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.8393,
+      "b_mean": 0.6339,
+      "diff": 0.2054,
+      "diff_ci95": [
+        0.0982,
+        0.3214
+      ],
+      "a_better": 13,
+      "b_better": 2,
+      "tied": 41,
+      "sign_test_p": 0.0074
+    },
+    {
+      "a": "bm25_rewrite",
+      "b": "bm25_bigram",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.7679,
+      "b_mean": 0.6339,
+      "diff": 0.1339,
+      "diff_ci95": [
+        0.0268,
+        0.247
+      ],
+      "a_better": 13,
+      "b_better": 5,
+      "tied": 38,
+      "sign_test_p": 0.0963
+    },
+    {
+      "a": "bm25_agent",
+      "b": "bm25_bigram",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.8214,
+      "b_mean": 0.6786,
+      "diff": 0.1429,
+      "diff_ci95": [
+        0.0536,
+        0.25
+      ],
+      "a_better": 9,
+      "b_better": 1,
+      "tied": 46,
+      "sign_test_p": 0.0215
+    },
+    {
+      "a": "bm25_agent",
+      "b": "bm25_bigram",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.7857,
+      "b_mean": 0.6339,
+      "diff": 0.1518,
+      "diff_ci95": [
+        0.0625,
+        0.25
+      ],
+      "a_better": 9,
+      "b_better": 1,
+      "tied": 46,
+      "sign_test_p": 0.0215
+    },
+    {
+      "a": "bm25_agent",
+      "b": "bm25_bigram",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.7113,
+      "b_mean": 0.6339,
+      "diff": 0.0774,
+      "diff_ci95": [
+        0.0268,
+        0.1339
+      ],
+      "a_better": 10,
+      "b_better": 1,
+      "tied": 45,
+      "sign_test_p": 0.0117
+    },
+    {
+      "a": "bm25_agent",
+      "b": "bm25_rewrite",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.8214,
+      "b_mean": 0.875,
+      "diff": -0.0536,
+      "diff_ci95": [
+        -0.1429,
+        0.0357
+      ],
+      "a_better": 2,
+      "b_better": 5,
+      "tied": 49,
+      "sign_test_p": 0.4531
+    },
+    {
+      "a": "bm25_agent",
+      "b": "bm25_rewrite",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.7113,
+      "b_mean": 0.7679,
+      "diff": -0.0565,
+      "diff_ci95": [
+        -0.1399,
+        0.0268
+      ],
+      "a_better": 7,
+      "b_better": 10,
+      "tied": 39,
+      "sign_test_p": 0.6291
+    },
+    {
+      "a": "dense_agent",
+      "b": "dense",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.9286,
+      "diff": 0.0357,
+      "diff_ci95": [
+        0.0,
+        0.0893
+      ],
+      "a_better": 2,
+      "b_better": 0,
+      "tied": 54,
+      "sign_test_p": 0.5
+    },
+    {
+      "a": "dense_agent",
+      "b": "dense",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9048,
+      "b_mean": 0.881,
+      "diff": 0.0238,
+      "diff_ci95": [
+        0.0,
+        0.0536
+      ],
+      "a_better": 3,
+      "b_better": 0,
+      "tied": 53,
+      "sign_test_p": 0.25
+    },
+    {
+      "a": "dense",
+      "b": "bm25_agent",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9286,
+      "b_mean": 0.8214,
+      "diff": 0.1071,
+      "diff_ci95": [
+        0.0179,
+        0.2143
+      ],
+      "a_better": 7,
+      "b_better": 1,
+      "tied": 48,
+      "sign_test_p": 0.0703
+    },
+    {
+      "a": "dense",
+      "b": "bm25_agent",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.881,
+      "b_mean": 0.7113,
+      "diff": 0.1696,
+      "diff_ci95": [
+        0.0714,
+        0.2738
+      ],
+      "a_better": 13,
+      "b_better": 2,
+      "tied": 41,
+      "sign_test_p": 0.0074
+    }
+  ],
+  "consistency_with_llm_report": {
+    "bm25_hit@3_same": 56,
+    "dense_hit@3_same": 56,
+    "queries": 56
+  }
+}
