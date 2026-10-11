@@ -23,13 +23,13 @@ def test_ideal_outcomes_are_not_failures() -> None:
 @pytest.mark.parametrize(
     "gold,retrieved,outcome,label",
     [
-        (["g1"], ["x", "y"], ABSTAIN, "检索缺失"),  # 缺正确片段，模型弃答
-        (["g1", "g2"], ["g1", "x"], ABSTAIN, "检索缺失"),  # 多片段问题缺一个
-        (["g1"], ["x", "y"], _ans(["x"]), "检索噪声"),  # 缺正确片段还拿噪声硬答
-        (["g1"], ["g1", "x"], _ans(["x"]), "检索噪声"),  # 正确片段在，却只引用了噪声
-        ([], ["x"], _ans(["x"]), "充分性误判"),  # 不可回答却作答
-        (["g1"], ["g1", "x"], ABSTAIN, "弃答误判"),  # 正确片段齐全却弃答
-        (["g1"], ["x"], BLOCKED, "检索缺失"),  # 缺正确片段，同时被拦截：先算检索
+        (["g1"], ["x", "y"], ABSTAIN, "检索未命中"),  # 缺相关片段，模型拒答
+        (["g1", "g2"], ["g1", "x"], ABSTAIN, "检索未命中"),  # 多片段问题缺一个
+        (["g1"], ["x", "y"], _ans(["x"]), "检索噪声"),  # 缺相关片段还拿噪声硬答
+        (["g1"], ["g1", "x"], _ans(["x"]), "检索噪声"),  # 相关片段在，却只引用了噪声
+        ([], ["x"], _ans(["x"]), "应拒答而作答"),  # 不可回答却作答
+        (["g1"], ["g1", "x"], ABSTAIN, "过度拒答"),  # 相关片段齐全却拒答
+        (["g1"], ["x"], BLOCKED, "检索未命中"),  # 缺相关片段，同时被拦截：先算检索
     ],
 )
 def test_each_failure_gets_exactly_one_label(gold, retrieved, outcome, label) -> None:
@@ -40,7 +40,7 @@ def test_each_failure_gets_exactly_one_label(gold, retrieved, outcome, label) ->
 def test_blocked_output_needs_manual_review() -> None:
     with pytest.raises(ValueError, match="人工复核"):
         fa.classify(["g1"], ["g1"], BLOCKED, None)
-    assert fa.classify(["g1"], ["g1"], BLOCKED, ("校验误判", "忠实但被拒"))[0] == "校验误判"
+    assert fa.classify(["g1"], ["g1"], BLOCKED, ("校验误拒", "忠实但被拒"))[0] == "校验误拒"
     with pytest.raises(ValueError, match="人工复核"):
         fa.classify([], ["x"], BLOCKED, None)
 
@@ -70,8 +70,8 @@ def _report() -> dict:
 def test_attribute_counts_every_failure_per_condition_and_dedups_queries() -> None:
     result = fa.attribute(_report())
     table = result["failures_by_condition_and_label"]
-    assert table["a"]["检索缺失"] == 1 and sum(table["a"].values()) == 1  # a 只有 q2 失败
-    assert table["b"]["检索缺失"] == 2 and table["b"]["充分性误判"] == 1
+    assert table["a"]["检索未命中"] == 1 and sum(table["a"].values()) == 1  # a 只有 q2 失败
+    assert table["b"]["检索未命中"] == 2 and table["b"]["应拒答而作答"] == 1
     assert result["failure_totals_by_condition"] == {"a": 1, "b": 3}
     assert result["retrieval_missing_partial_by_condition"] == {"a": 1, "b": 1}  # q2 的 g1 在片段里
     assert result["distinct_failing_queries"] == 3  # q1(b)、q2(a,b)、q3(b)

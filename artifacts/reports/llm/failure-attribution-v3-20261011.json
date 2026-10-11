@@ -1,6 +1,6 @@
 {
   "schema_version": "failure-attribution-v1",
-  "generated_at": "2026-10-11T03:03:40.507095+00:00",
+  "generated_at": "2026-10-11T04:55:33.663166+00:00",
   "source_report": "llm-pipeline-v3-flash-20261010.json",
   "external_model_calls": 0,
   "annotators": "1 人（项目作者），未做第二人独立标注",
@@ -38,55 +38,55 @@
   },
   "retry_key": "feedback_retry",
   "labels": [
-    "检索缺失",
+    "检索未命中",
     "检索噪声",
-    "充分性误判",
-    "生成违规",
-    "校验误判",
-    "弃答误判"
+    "应拒答而作答",
+    "引用违规",
+    "校验误拒",
+    "过度拒答"
   ],
   "answerable_n": 56,
   "unanswerable_n": 28,
   "failures_by_condition_and_label": {
     "bm25": {
-      "检索缺失": 20,
+      "检索未命中": 20,
       "检索噪声": 0,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 0,
-      "弃答误判": 0
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 0,
+      "过度拒答": 0
     },
     "bm25_rewrite": {
-      "检索缺失": 9,
+      "检索未命中": 9,
       "检索噪声": 1,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 0,
-      "弃答误判": 0
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 0,
+      "过度拒答": 0
     },
     "bm25_agent": {
-      "检索缺失": 12,
+      "检索未命中": 12,
       "检索噪声": 0,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 0,
-      "弃答误判": 0
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 0,
+      "过度拒答": 0
     },
     "dense": {
-      "检索缺失": 3,
+      "检索未命中": 3,
       "检索噪声": 1,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 0,
-      "弃答误判": 0
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 0,
+      "过度拒答": 0
     },
     "dense_agent": {
-      "检索缺失": 1,
+      "检索未命中": 1,
       "检索噪声": 1,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 0,
-      "弃答误判": 0
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 0,
+      "过度拒答": 0
     }
   },
   "failure_totals_by_condition": {
@@ -105,30 +105,30 @@
   },
   "repeated_trials": {
     "bm25/trial_1": {
-      "检索缺失": 21,
+      "检索未命中": 21,
       "检索噪声": 0,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 1,
-      "弃答误判": 1
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 1,
+      "过度拒答": 1
     },
     "bm25/trial_2": {
-      "检索缺失": 18,
+      "检索未命中": 18,
       "检索噪声": 0,
-      "充分性误判": 0,
-      "生成违规": 0,
-      "校验误判": 1,
-      "弃答误判": 1
+      "应拒答而作答": 0,
+      "引用违规": 0,
+      "校验误拒": 1,
+      "过度拒答": 1
     }
   },
   "distinct_failing_queries": 23,
   "distinct_queries_by_label": {
-    "检索缺失": 23,
+    "检索未命中": 23,
     "检索噪声": 2,
-    "充分性误判": 0,
-    "生成违规": 0,
-    "校验误判": 0,
-    "弃答误判": 0
+    "应拒答而作答": 0,
+    "引用违规": 0,
+    "校验误拒": 0,
+    "过度拒答": 0
   },
   "queries_failing_in_all_conditions": [
     "pv2_A_19",
@@ -138,7 +138,7 @@
     {
       "condition": "bm25",
       "sample_id": "pv2_D_11",
-      "label": "校验误判",
+      "label": "校验误拒",
       "reason": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。"
     }
   ],
@@ -148,8 +148,8 @@
       "trial": 0,
       "sample_id": "public_q12",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型拒答",
       "gold": [
         "kb_covid_ventilation_01"
       ],
@@ -161,8 +161,8 @@
       "trial": 1,
       "sample_id": "public_q12",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型拒答",
       "gold": [
         "kb_covid_ventilation_01"
       ],
@@ -174,8 +174,8 @@
       "trial": 2,
       "sample_id": "public_q12",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型拒答",
       "gold": [
         "kb_covid_ventilation_01"
       ],
@@ -187,8 +187,8 @@
       "trial": 1,
       "sample_id": "pv2_A_05",
       "bucket": "direct",
-      "label": "弃答误判",
-      "note": "必需的正确片段都在 3 个片段里，模型仍弃答",
+      "label": "过度拒答",
+      "note": "必需的相关片段都在 3 个片段里，模型仍拒答",
       "gold": [
         "kb_dengue_02"
       ],
@@ -204,8 +204,8 @@
       "trial": 0,
       "sample_id": "pv2_A_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型拒答",
       "gold": [
         "kb_tb_02"
       ],
@@ -221,8 +221,8 @@
       "trial": 1,
       "sample_id": "pv2_A_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型拒答",
       "gold": [
         "kb_tb_02"
       ],
@@ -238,8 +238,8 @@
       "trial": 2,
       "sample_id": "pv2_A_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型拒答",
       "gold": [
         "kb_tb_02"
       ],
@@ -255,8 +255,8 @@
       "trial": 0,
       "sample_id": "pv2_A_14",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型拒答",
       "gold": [
         "kb_tb_03"
       ],
@@ -271,8 +271,8 @@
       "trial": 1,
       "sample_id": "pv2_A_14",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型拒答",
       "gold": [
         "kb_tb_03"
       ],
@@ -287,8 +287,8 @@
       "trial": 2,
       "sample_id": "pv2_A_14",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型拒答",
       "gold": [
         "kb_tb_03"
       ],
@@ -303,8 +303,8 @@
       "trial": 0,
       "sample_id": "pv2_A_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型拒答",
       "gold": [
         "kb_rabies_03"
       ],
@@ -320,8 +320,8 @@
       "trial": 1,
       "sample_id": "pv2_A_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型拒答",
       "gold": [
         "kb_rabies_03"
       ],
@@ -337,8 +337,8 @@
       "trial": 2,
       "sample_id": "pv2_A_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型拒答",
       "gold": [
         "kb_rabies_03"
       ],
@@ -354,8 +354,8 @@
       "trial": 0,
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型拒答",
       "gold": [
         "kb_ebola_02"
       ],
@@ -371,8 +371,8 @@
       "trial": 1,
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型拒答",
       "gold": [
         "kb_ebola_02"
       ],
@@ -388,8 +388,8 @@
       "trial": 2,
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型拒答",
       "gold": [
         "kb_ebola_02"
       ],
@@ -405,8 +405,8 @@
       "trial": 0,
       "sample_id": "pv2_A_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型拒答",
       "gold": [
         "kb_cholera_03"
       ],
@@ -422,8 +422,8 @@
       "trial": 1,
       "sample_id": "pv2_A_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型拒答",
       "gold": [
         "kb_cholera_03"
       ],
@@ -439,8 +439,8 @@
       "trial": 2,
       "sample_id": "pv2_A_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型拒答",
       "gold": [
         "kb_cholera_03"
       ],
@@ -456,8 +456,8 @@
       "trial": 2,
       "sample_id": "pv2_A_22",
       "bucket": "paraphrase",
-      "label": "弃答误判",
-      "note": "必需的正确片段都在 3 个片段里，模型仍弃答",
+      "label": "过度拒答",
+      "note": "必需的相关片段都在 3 个片段里，模型仍拒答",
       "gold": [
         "kb_measles_04"
       ],
@@ -473,8 +473,8 @@
       "trial": 0,
       "sample_id": "pv2_A_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型拒答",
       "gold": [
         "kb_hiv_02",
         "kb_hepb_02"
@@ -491,8 +491,8 @@
       "trial": 1,
       "sample_id": "pv2_A_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型拒答",
       "gold": [
         "kb_hiv_02",
         "kb_hepb_02"
@@ -509,8 +509,8 @@
       "trial": 2,
       "sample_id": "pv2_A_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型拒答",
       "gold": [
         "kb_hiv_02",
         "kb_hepb_02"
@@ -527,8 +527,8 @@
       "trial": 0,
       "sample_id": "pv2_B_03",
       "bucket": "direct",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型拒答",
       "gold": [
         "kb_hypertension_01"
       ],
@@ -544,8 +544,8 @@
       "trial": 1,
       "sample_id": "pv2_B_03",
       "bucket": "direct",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型拒答",
       "gold": [
         "kb_hypertension_01"
       ],
@@ -561,8 +561,8 @@
       "trial": 2,
       "sample_id": "pv2_B_03",
       "bucket": "direct",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型拒答",
       "gold": [
         "kb_hypertension_01"
       ],
@@ -578,8 +578,8 @@
       "trial": 0,
       "sample_id": "pv2_B_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型拒答",
       "gold": [
         "kb_dementia_03"
       ],
@@ -595,8 +595,8 @@
       "trial": 1,
       "sample_id": "pv2_B_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型拒答",
       "gold": [
         "kb_dementia_03"
       ],
@@ -612,8 +612,8 @@
       "trial": 2,
       "sample_id": "pv2_B_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型拒答",
       "gold": [
         "kb_dementia_03"
       ],
@@ -629,8 +629,8 @@
       "trial": 0,
       "sample_id": "pv2_B_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_cancer_04"
       ],
@@ -646,8 +646,8 @@
       "trial": 1,
       "sample_id": "pv2_B_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_cancer_04"
       ],
@@ -663,8 +663,8 @@
       "trial": 2,
       "sample_id": "pv2_B_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_cancer_04"
       ],
@@ -680,8 +680,8 @@
       "trial": 0,
       "sample_id": "pv2_B_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型拒答",
       "gold": [
         "kb_oral_02"
       ],
@@ -697,8 +697,8 @@
       "trial": 1,
       "sample_id": "pv2_B_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型拒答",
       "gold": [
         "kb_oral_02"
       ],
@@ -714,8 +714,8 @@
       "trial": 2,
       "sample_id": "pv2_B_21",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型拒答",
       "gold": [
         "kb_oral_02"
       ],
@@ -731,8 +731,8 @@
       "trial": 0,
       "sample_id": "pv2_B_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_diabetes_04",
         "kb_cancer_04"
@@ -749,8 +749,8 @@
       "trial": 1,
       "sample_id": "pv2_B_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_diabetes_04",
         "kb_cancer_04"
@@ -767,8 +767,8 @@
       "trial": 0,
       "sample_id": "pv2_C_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型拒答",
       "gold": [
         "kb_healthy_diet_01"
       ],
@@ -784,8 +784,8 @@
       "trial": 1,
       "sample_id": "pv2_C_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型拒答",
       "gold": [
         "kb_healthy_diet_01"
       ],
@@ -801,8 +801,8 @@
       "trial": 2,
       "sample_id": "pv2_C_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型拒答",
       "gold": [
         "kb_healthy_diet_01"
       ],
@@ -818,8 +818,8 @@
       "trial": 0,
       "sample_id": "pv2_C_15",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型拒答",
       "gold": [
         "kb_physical_activity_04"
       ],
@@ -835,8 +835,8 @@
       "trial": 1,
       "sample_id": "pv2_C_15",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型拒答",
       "gold": [
         "kb_physical_activity_04"
       ],
@@ -852,8 +852,8 @@
       "trial": 2,
       "sample_id": "pv2_C_15",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型拒答",
       "gold": [
         "kb_physical_activity_04"
       ],
@@ -869,8 +869,8 @@
       "trial": 0,
       "sample_id": "pv2_C_16",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型拒答",
       "gold": [
         "kb_tobacco_02"
       ],
@@ -886,8 +886,8 @@
       "trial": 1,
       "sample_id": "pv2_C_16",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型拒答",
       "gold": [
         "kb_tobacco_02"
       ],
@@ -903,8 +903,8 @@
       "trial": 2,
       "sample_id": "pv2_C_16",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型拒答",
       "gold": [
         "kb_tobacco_02"
       ],
@@ -920,8 +920,8 @@
       "trial": 0,
       "sample_id": "pv2_C_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型拒答",
       "gold": [
         "kb_alcohol_04"
       ],
@@ -937,8 +937,8 @@
       "trial": 1,
       "sample_id": "pv2_C_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型拒答",
       "gold": [
         "kb_alcohol_04"
       ],
@@ -954,8 +954,8 @@
       "trial": 2,
       "sample_id": "pv2_C_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型拒答",
       "gold": [
         "kb_alcohol_04"
       ],
@@ -971,8 +971,8 @@
       "trial": 0,
       "sample_id": "pv2_C_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型拒答",
       "gold": [
         "kb_alcohol_02"
       ],
@@ -988,8 +988,8 @@
       "trial": 1,
       "sample_id": "pv2_C_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型拒答",
       "gold": [
         "kb_alcohol_02"
       ],
@@ -1005,8 +1005,8 @@
       "trial": 2,
       "sample_id": "pv2_C_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型拒答",
       "gold": [
         "kb_alcohol_02"
       ],
@@ -1022,8 +1022,8 @@
       "trial": 0,
       "sample_id": "pv2_C_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_trans_fat_01"
       ],
@@ -1039,8 +1039,8 @@
       "trial": 1,
       "sample_id": "pv2_C_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_trans_fat_01"
       ],
@@ -1056,8 +1056,8 @@
       "trial": 2,
       "sample_id": "pv2_C_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_trans_fat_01"
       ],
@@ -1073,8 +1073,8 @@
       "trial": 0,
       "sample_id": "pv2_C_22",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型拒答",
       "gold": [
         "kb_oral_health_03"
       ],
@@ -1090,8 +1090,8 @@
       "trial": 1,
       "sample_id": "pv2_C_22",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型拒答",
       "gold": [
         "kb_oral_health_03"
       ],
@@ -1107,8 +1107,8 @@
       "trial": 2,
       "sample_id": "pv2_C_22",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型拒答",
       "gold": [
         "kb_oral_health_03"
       ],
@@ -1124,8 +1124,8 @@
       "trial": 0,
       "sample_id": "pv2_C_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_02']；模型拒答",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"
@@ -1142,8 +1142,8 @@
       "trial": 1,
       "sample_id": "pv2_C_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_02']；模型拒答",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"
@@ -1160,8 +1160,8 @@
       "trial": 1,
       "sample_id": "pv2_C_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型拒答",
       "gold": [
         "kb_malnutrition_02",
         "kb_salt_04"
@@ -1178,7 +1178,7 @@
       "trial": 1,
       "sample_id": "pv2_D_11",
       "bucket": "direct",
-      "label": "校验误判",
+      "label": "校验误拒",
       "note": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。",
       "gold": [
         "kb_immunization_03"
@@ -1195,7 +1195,7 @@
       "trial": 2,
       "sample_id": "pv2_D_11",
       "bucket": "direct",
-      "label": "校验误判",
+      "label": "校验误拒",
       "note": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。",
       "gold": [
         "kb_immunization_03"
@@ -1212,8 +1212,8 @@
       "trial": 0,
       "sample_id": "pv2_A_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型拒答",
       "gold": [
         "kb_rabies_03"
       ],
@@ -1229,8 +1229,8 @@
       "trial": 0,
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型拒答",
       "gold": [
         "kb_ebola_02"
       ],
@@ -1246,8 +1246,8 @@
       "trial": 0,
       "sample_id": "pv2_A_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hiv_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hiv_02']；模型拒答",
       "gold": [
         "kb_hiv_02",
         "kb_hepb_02"
@@ -1264,8 +1264,8 @@
       "trial": 0,
       "sample_id": "pv2_B_03",
       "bucket": "direct",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型拒答",
       "gold": [
         "kb_hypertension_01"
       ],
@@ -1281,8 +1281,8 @@
       "trial": 0,
       "sample_id": "pv2_B_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型拒答",
       "gold": [
         "kb_dementia_03"
       ],
@@ -1298,8 +1298,8 @@
       "trial": 0,
       "sample_id": "pv2_B_20",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_cancer_04"
       ],
@@ -1315,8 +1315,8 @@
       "trial": 0,
       "sample_id": "pv2_B_22",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_stroke_01', 'kb_stroke_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_stroke_01', 'kb_stroke_04']；模型拒答",
       "gold": [
         "kb_stroke_04",
         "kb_stroke_01"
@@ -1333,8 +1333,8 @@
       "trial": 0,
       "sample_id": "pv2_B_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型拒答",
       "gold": [
         "kb_diabetes_04",
         "kb_cancer_04"
@@ -1352,7 +1352,7 @@
       "sample_id": "pv2_C_23",
       "bucket": "multi",
       "label": "检索噪声",
-      "note": "只引用了非正确片段 ['kb_hypertension_03']；缺少的正确片段 ['kb_salt_02', 'kb_trans_fat_01']",
+      "note": "只引用了非相关片段 ['kb_hypertension_03']；缺少的相关片段 ['kb_salt_02', 'kb_trans_fat_01']",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"
@@ -1369,8 +1369,8 @@
       "trial": 0,
       "sample_id": "pv2_C_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型拒答",
       "gold": [
         "kb_malnutrition_02",
         "kb_salt_04"
@@ -1387,8 +1387,8 @@
       "trial": 0,
       "sample_id": "pv2_A_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型拒答",
       "gold": [
         "kb_rabies_03"
       ],
@@ -1404,8 +1404,8 @@
       "trial": 0,
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型拒答",
       "gold": [
         "kb_ebola_02"
       ],
@@ -1421,8 +1421,8 @@
       "trial": 0,
       "sample_id": "pv2_A_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型拒答",
       "gold": [
         "kb_hiv_02",
         "kb_hepb_02"
@@ -1439,8 +1439,8 @@
       "trial": 0,
       "sample_id": "pv2_B_03",
       "bucket": "direct",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型拒答",
       "gold": [
         "kb_hypertension_01"
       ],
@@ -1456,8 +1456,8 @@
       "trial": 0,
       "sample_id": "pv2_B_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型拒答",
       "gold": [
         "kb_dementia_03"
       ],
@@ -1473,8 +1473,8 @@
       "trial": 0,
       "sample_id": "pv2_C_13",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型拒答",
       "gold": [
         "kb_healthy_diet_01"
       ],
@@ -1490,8 +1490,8 @@
       "trial": 0,
       "sample_id": "pv2_C_16",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型拒答",
       "gold": [
         "kb_tobacco_02"
       ],
@@ -1507,8 +1507,8 @@
       "trial": 0,
       "sample_id": "pv2_C_18",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型拒答",
       "gold": [
         "kb_alcohol_04"
       ],
@@ -1524,8 +1524,8 @@
       "trial": 0,
       "sample_id": "pv2_C_19",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型拒答",
       "gold": [
         "kb_alcohol_02"
       ],
@@ -1541,8 +1541,8 @@
       "trial": 0,
       "sample_id": "pv2_C_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"
@@ -1559,8 +1559,8 @@
       "trial": 0,
       "sample_id": "pv2_C_25",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型拒答",
       "gold": [
         "kb_malnutrition_02",
         "kb_salt_04"
@@ -1577,8 +1577,8 @@
       "trial": 0,
       "sample_id": "pv2_D_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_food_safety_03']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_food_safety_03']；模型拒答",
       "gold": [
         "kb_immunization_04",
         "kb_food_safety_03"
@@ -1596,7 +1596,7 @@
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
       "label": "检索噪声",
-      "note": "只引用了非正确片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的正确片段 ['kb_ebola_02']",
+      "note": "只引用了非相关片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的相关片段 ['kb_ebola_02']",
       "gold": [
         "kb_ebola_02"
       ],
@@ -1612,8 +1612,8 @@
       "trial": 0,
       "sample_id": "pv2_C_15",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型拒答",
       "gold": [
         "kb_physical_activity_04"
       ],
@@ -1629,8 +1629,8 @@
       "trial": 0,
       "sample_id": "pv2_C_16",
       "bucket": "paraphrase",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型拒答",
       "gold": [
         "kb_tobacco_02"
       ],
@@ -1646,8 +1646,8 @@
       "trial": 0,
       "sample_id": "pv2_C_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"
@@ -1665,7 +1665,7 @@
       "sample_id": "pv2_A_19",
       "bucket": "paraphrase",
       "label": "检索噪声",
-      "note": "只引用了非正确片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的正确片段 ['kb_ebola_02']",
+      "note": "只引用了非相关片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的相关片段 ['kb_ebola_02']",
       "gold": [
         "kb_ebola_02"
       ],
@@ -1681,8 +1681,8 @@
       "trial": 0,
       "sample_id": "pv2_C_23",
       "bucket": "multi",
-      "label": "检索缺失",
-      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "label": "检索未命中",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型拒答",
       "gold": [
         "kb_salt_02",
         "kb_trans_fat_01"

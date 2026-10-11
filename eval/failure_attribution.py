@@ -1,20 +1,18 @@
 """端到端失败归因：把每条没达到理想结果的查询归到六类原因之一，按条件统计。
 
-理想结果：可回答的问题，作答并选中正确片段；不可回答的问题，弃答。其余都算失败，**全部**打标签，不挑样本。
+理想结果：可回答的问题，作答并选中相关片段；不可回答的问题，拒答。其余都算失败，**全部**打标签，不挑样本。
 
 六类标签互斥，按流水线先后取第一个出问题的环节（规则由程序判定，见 ``classify``）：
 
-========== ============================================================================
-检索缺失   可回答，但交给生成阶段的 3 个片段里缺少至少一个必需的正确片段，且模型没有拿噪声作答
-           （弃答或被拦截）。模型这一步的行为没有问题，问题在检索。
-检索噪声   可回答，模型只引用了正确片段以外的片段作答（含正确片段缺失时拿相近片段硬答）。
-充分性误判 不可回答的问题，模型却作答（即误答）。
-生成违规   输出被校验拦截且重试后仍被拦截，经人工复核确认模型输出确实违反约束。
-校验误判   输出被校验拦截且重试后仍被拦截，但人工复核确认模型输出忠实于原文，是校验规则过严。
-弃答误判   可回答、所需正确片段都在 3 个片段里，模型却弃答。
-========== ============================================================================
+- 检索未命中：可回答，但交给生成阶段的 3 个片段里缺少至少一个必需的相关片段，且模型没有拿噪声作答
+  （拒答或被拦截）。模型这一步的行为没有问题，问题在检索。
+- 检索噪声：可回答，模型只引用了相关片段以外的片段作答（含相关片段缺失时拿相近片段硬答）。
+- 应拒答而作答：不可回答的问题，模型却作答（即误答）。
+- 引用违规：输出被校验拦截且重试后仍被拦截，经人工复核确认模型输出确实违反约束。
+- 校验误拒：输出被校验拦截且重试后仍被拦截，但人工复核确认模型输出忠实于原文，是校验规则过严。
+- 过度拒答：可回答、所需相关片段都在 3 个片段里，模型却拒答。
 
-"生成违规"与"校验误判"无法由程序区分，要读模型输出，所以放在 ``REVIEWED`` 里，每条写明理由与复核人。
+"引用违规"与"校验误拒"无法由程序区分，要读模型输出，所以放在 ``REVIEWED`` 里，每条写明理由与复核人。
 本次复核只有一位复核人（项目作者），没有第二人独立标注，也没有计算标注者一致性。
 
 用法::
@@ -37,13 +35,13 @@ from eval.llm_pipeline_eval import answer_f1, generation_metrics
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_VERSION = "failure-attribution-v1"
-LABELS = ("检索缺失", "检索噪声", "充分性误判", "生成违规", "校验误判", "弃答误判")
+LABELS = ("检索未命中", "检索噪声", "应拒答而作答", "引用违规", "校验误拒", "过度拒答")
 BLOCKED = {"invalid", "error"}
 
 # 人工复核：(条件, 样本 ID) -> (标签, 理由)。只收程序无法判定的“被拦截”类失败。
 REVIEWED: dict[tuple[str, str], tuple[str, str]] = {
     ("bm25", "pv2_D_11"): (
-        "校验误判",
+        "校验误拒",
         "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。"
         "带原因重试一次后模型仍截取半句。",
     ),
@@ -65,7 +63,7 @@ def classify(
         if decision == "abstained":
             return None
         if decision == "answered":
-            return "充分性误判", "不可回答的问题被作答"
+            return "应拒答而作答", "不可回答的问题被作答"
         if review:
             return review
         raise ValueError("不可回答的问题被拦截，需要人工复核后写入 REVIEWED")
@@ -73,16 +71,16 @@ def classify(
         return None
     missing = sorted(gold_set - pool)
     if decision == "answered":
-        return "检索噪声", f"只引用了非正确片段 {sorted(selected)}；缺少的正确片段 {missing or '无'}"
+        return "检索噪声", f"只引用了非相关片段 {sorted(selected)}；缺少的相关片段 {missing or '无'}"
     if decision == "abstained":
         if missing:
-            return "检索缺失", f"3 个片段里缺少 {missing}；模型弃答"
-        return "弃答误判", "必需的正确片段都在 3 个片段里，模型仍弃答"
+            return "检索未命中", f"3 个片段里缺少 {missing}；模型拒答"
+        return "过度拒答", "必需的相关片段都在 3 个片段里，模型仍拒答"
     if missing:
-        return "检索缺失", f"3 个片段里缺少 {missing}；输出另被拦截"
+        return "检索未命中", f"3 个片段里缺少 {missing}；输出另被拦截"
     if review:
         return review
-    raise ValueError("输出被拦截且正确片段齐全，需要人工复核后写入 REVIEWED")
+    raise ValueError("输出被拦截且相关片段齐全，需要人工复核后写入 REVIEWED")
 
 
 def attribute(report: dict[str, Any], retry_key: str | None = "feedback_retry") -> dict[str, Any]:
@@ -114,8 +112,8 @@ def attribute(report: dict[str, Any], retry_key: str | None = "feedback_retry") 
             repeats[f"{f['condition']}/trial_{f['trial']}"][f["label"]] += 1
 
     first_trial = [f for f in failures if f["trial"] == 0]
-    # 检索缺失里，有多少是“多片段问题只缺一部分”（片段里至少有一个正确片段）
-    partial_missing = {c: sum(1 for f in first_trial if f["condition"] == c and f["label"] == "检索缺失"
+    # 检索未命中里，有多少是“多片段问题只缺一部分”（片段里至少有一个相关片段）
+    partial_missing = {c: sum(1 for f in first_trial if f["condition"] == c and f["label"] == "检索未命中"
                               and set(f["gold"]) & set(f["retrieved"])) for c in conditions}
     by_query: dict[str, set[str]] = defaultdict(set)
     for f in first_trial:
