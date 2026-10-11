@@ -1,0 +1,503 @@
+{
+  "schema_version": "generation-matrix-v1",
+  "generated_at": "2026-10-11T03:08:00.565234+00:00",
+  "source_report": "llm-pipeline-v3-flash-20261010.json",
+  "external_model_calls": 0,
+  "model": "mimo-v2.6-flash",
+  "retry": "被拦截时带原因重试一次",
+  "matrix": {
+    "bm25": {
+      "trial_0": {
+        "model_calls": 82,
+        "binding_pass_first": {
+          "k": 80,
+          "n": 82,
+          "rate": 0.975609756097561,
+          "ci95": [
+            0.9154,
+            0.9933
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 82,
+          "n": 82,
+          "rate": 1.0,
+          "ci95": [
+            0.9552,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 20,
+          "n": 56,
+          "rate": 0.35714285714285715,
+          "ci95": [
+            0.2446,
+            0.4881
+          ]
+        },
+        "useful_answer": {
+          "k": 36,
+          "n": 56,
+          "rate": 0.6428571428571429,
+          "ci95": [
+            0.5119,
+            0.7554
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 34,
+          "n": 56,
+          "rate": 0.6071428571428571,
+          "ci95": [
+            0.4763,
+            0.7242
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.6428571428571429,
+        "f1": 0.7826,
+        "f1_ci95": [
+          0.6753,
+          0.8667
+        ]
+      },
+      "trial_1": {
+        "model_calls": 82,
+        "binding_pass_first": {
+          "k": 79,
+          "n": 82,
+          "rate": 0.9634146341463414,
+          "ci95": [
+            0.8979,
+            0.9875
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 81,
+          "n": 82,
+          "rate": 0.9878048780487805,
+          "ci95": [
+            0.9341,
+            0.9978
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 1,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 22,
+          "n": 56,
+          "rate": 0.39285714285714285,
+          "ci95": [
+            0.2758,
+            0.5237
+          ]
+        },
+        "useful_answer": {
+          "k": 33,
+          "n": 56,
+          "rate": 0.5892857142857143,
+          "ci95": [
+            0.4588,
+            0.7083
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 31,
+          "n": 56,
+          "rate": 0.5535714285714286,
+          "ci95": [
+            0.4241,
+            0.6761
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.5892857142857143,
+        "f1": 0.7416,
+        "f1_ci95": [
+          0.6316,
+          0.8352
+        ]
+      },
+      "trial_2": {
+        "model_calls": 82,
+        "binding_pass_first": {
+          "k": 79,
+          "n": 82,
+          "rate": 0.9634146341463414,
+          "ci95": [
+            0.8979,
+            0.9875
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 81,
+          "n": 82,
+          "rate": 0.9878048780487805,
+          "ci95": [
+            0.9341,
+            0.9978
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 1,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 19,
+          "n": 56,
+          "rate": 0.3392857142857143,
+          "ci95": [
+            0.2292,
+            0.47
+          ]
+        },
+        "useful_answer": {
+          "k": 36,
+          "n": 56,
+          "rate": 0.6428571428571429,
+          "ci95": [
+            0.5119,
+            0.7554
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 34,
+          "n": 56,
+          "rate": 0.6071428571428571,
+          "ci95": [
+            0.4763,
+            0.7242
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.6428571428571429,
+        "f1": 0.7826,
+        "f1_ci95": [
+          0.6809,
+          0.866
+        ]
+      }
+    },
+    "bm25_rewrite": {
+      "trial_0": {
+        "model_calls": 84,
+        "binding_pass_first": {
+          "k": 83,
+          "n": 84,
+          "rate": 0.9880952380952381,
+          "ci95": [
+            0.9356,
+            0.9979
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 84,
+          "n": 84,
+          "rate": 1.0,
+          "ci95": [
+            0.9563,
+            1.0
+          ]
+        },
+        "blocked_first": 1,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 9,
+          "n": 56,
+          "rate": 0.16071428571428573,
+          "ci95": [
+            0.0869,
+            0.2781
+          ]
+        },
+        "useful_answer": {
+          "k": 46,
+          "n": 56,
+          "rate": 0.8214285714285714,
+          "ci95": [
+            0.7016,
+            0.9
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 45,
+          "n": 56,
+          "rate": 0.8035714285714286,
+          "ci95": [
+            0.6816,
+            0.8866
+          ]
+        },
+        "precision": 0.9787234042553191,
+        "recall": 0.8214285714285714,
+        "f1": 0.8932,
+        "f1_ci95": [
+          0.82,
+          0.9524
+        ]
+      }
+    },
+    "bm25_agent": {
+      "trial_0": {
+        "model_calls": 84,
+        "binding_pass_first": {
+          "k": 82,
+          "n": 84,
+          "rate": 0.9761904761904762,
+          "ci95": [
+            0.9173,
+            0.9934
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 84,
+          "n": 84,
+          "rate": 1.0,
+          "ci95": [
+            0.9563,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 12,
+          "n": 56,
+          "rate": 0.21428571428571427,
+          "ci95": [
+            0.1271,
+            0.3382
+          ]
+        },
+        "useful_answer": {
+          "k": 44,
+          "n": 56,
+          "rate": 0.7857142857142857,
+          "ci95": [
+            0.6618,
+            0.8729
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 42,
+          "n": 56,
+          "rate": 0.75,
+          "ci95": [
+            0.6231,
+            0.8448
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.7857142857142857,
+        "f1": 0.88,
+        "f1_ci95": [
+          0.8046,
+          0.9412
+        ]
+      }
+    },
+    "dense": {
+      "trial_0": {
+        "model_calls": 84,
+        "binding_pass_first": {
+          "k": 81,
+          "n": 84,
+          "rate": 0.9642857142857143,
+          "ci95": [
+            0.9002,
+            0.9878
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 84,
+          "n": 84,
+          "rate": 1.0,
+          "ci95": [
+            0.9563,
+            1.0
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 3,
+          "n": 56,
+          "rate": 0.05357142857142857,
+          "ci95": [
+            0.0184,
+            0.1461
+          ]
+        },
+        "useful_answer": {
+          "k": 52,
+          "n": 56,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.8302,
+            0.9719
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 49,
+          "n": 56,
+          "rate": 0.875,
+          "ci95": [
+            0.7637,
+            0.9381
+          ]
+        },
+        "precision": 0.9811320754716981,
+        "recall": 0.9285714285714286,
+        "f1": 0.9541,
+        "f1_ci95": [
+          0.902,
+          0.9917
+        ]
+      }
+    },
+    "dense_agent": {
+      "trial_0": {
+        "model_calls": 84,
+        "binding_pass_first": {
+          "k": 81,
+          "n": 84,
+          "rate": 0.9642857142857143,
+          "ci95": [
+            0.9002,
+            0.9878
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 84,
+          "n": 84,
+          "rate": 1.0,
+          "ci95": [
+            0.9563,
+            1.0
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 28,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.1206
+          ]
+        },
+        "over_abstention": {
+          "k": 1,
+          "n": 56,
+          "rate": 0.017857142857142856,
+          "ci95": [
+            0.0032,
+            0.0945
+          ]
+        },
+        "useful_answer": {
+          "k": 54,
+          "n": 56,
+          "rate": 0.9642857142857143,
+          "ci95": [
+            0.8788,
+            0.9902
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 51,
+          "n": 56,
+          "rate": 0.9107142857142857,
+          "ci95": [
+            0.8074,
+            0.9613
+          ]
+        },
+        "precision": 0.9818181818181818,
+        "recall": 0.9642857142857143,
+        "f1": 0.973,
+        "f1_ci95": [
+          0.928,
+          1.0
+        ]
+      }
+    }
+  }
+}

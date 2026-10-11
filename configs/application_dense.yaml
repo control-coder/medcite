@@ -1,5 +1,5 @@
 # 应用向量检索方案：固定版本的 bge-small-zh，只读本地缓存，不联网下载；语料为 v2（51 篇、178 条短引）。
-# 评测依据见 docs/evaluation.md 第四、六节。需要先在本机准备好模型缓存。
+# 评测依据见 docs/evaluation.md 第三、五节。需要先在本机准备好模型缓存。
 application:
   mode: retrieval_mock
   topology: single

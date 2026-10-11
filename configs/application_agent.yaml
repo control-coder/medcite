@@ -1,5 +1,5 @@
 # 应用 BM25 + 检索智能体方案：不需要向量模型缓存，语料为 v2（51 篇、178 条短引）。
-# 评测依据见 docs/evaluation.md 第七节；搭配 mimo_grounded 使用，模型最多多调用 3 次来决定是否换说法再检索。
+# 评测依据见 docs/evaluation.md 第五节；搭配 mimo_grounded 使用，模型最多多调用 3 次来决定是否换说法再检索。
 application:
   mode: retrieval_mock
   topology: single

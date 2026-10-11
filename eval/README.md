@@ -1,17 +1,18 @@
-# 评测代码与历史研究资料
+# 评测代码
 
-业务应用代码在 `src/medidiag`，本目录的评测不阻塞应用交付。
+业务应用代码在 `src/medidiag`，本目录的评测不阻塞应用交付。方法、结果和限制见 [docs/evaluation.md](../docs/evaluation.md)。
 
-## 现在使用的部分
+## 评测入口
 
-- `llm_pipeline_eval.py`：真实模型端到端评测（拒答、查询改写、检索智能体、重复性、输出不合格后的重试）。每次模型调用的请求和回复存成调用记录，放在 `cassettes/`，之后可以零网络、零费用回放。方法和结果见 [docs/evaluation.md](../docs/evaluation.md)。
-- `retrieval_benchmark.py`：公开中文语料（`examples/public_health_v2`）上的检索基准，对比 BM25、向量检索等方案。
-- `cassettes/`：模型调用记录。文件名中带 `flash` 的是 `mimo-v2.6-flash` 的记录，其余是 `mimo-v2.5` 的记录；两者的回放测试分别是 `tests/test_llm_replay_flash.py` 和 `tests/test_llm_replay_committed.py`。文件名中带 `v3` 的是在 498 条摘录的 v3 语料（`examples/public_health_v3`）上的记录，回放测试是 `tests/test_llm_replay_v3.py`。
+- `llm_pipeline_eval.py`：真实模型端到端评测（拒答、查询改写、检索智能体、重复性、输出不合格后的重试）。每次模型调用的请求和回复存成调用记录，放在 `cassettes/`，之后可以零网络、零费用回放。
+- `retrieval_benchmark.py`：公开中文语料上的检索基准（BM25、向量、混合权重选择、语料规模衰减）。
+- `retrieval_matrix.py`：L1 检索层矩阵，Hit/Recall/MRR/nDCG、成对比较、符号检验与自助法区间；只读报告，不调用模型。
+- `generation_matrix.py`：L2/L3 矩阵，逐字绑定通过率、误答、拒答、作答且选对、回答 F1；只读报告。
+- `failure_attribution.py`：把端到端报告里的每个失败归到六类标签之一；被拦截输出的复核结论写在代码的 `REVIEWED` 里。
+- `regression_gate.py`：回归门槛，对照 `examples/rag_regression/thresholds.json`，CI 的 `eval-regression` 作业运行它。
 
-## 历史研究资料（只读保留）
+## 调用记录
 
-早期的多专科 Agent 加自然语言推理（NLI）研究评测，其执行与统计代码（原 `eval/runner.py` 及配套的报告、标注核对、Kappa、费用估算、阈值敏感性、路由诊断等）已经删除，需要时从 git 历史查看。保留的只有配置：
+`cassettes/` 里 9 份记录。文件名带 `flash` 的是 `mimo-v2.6-flash`，其余是 `mimo-v2.5`；带 `v3` 的是 498 条摘录的 v3 语料（`examples/public_health_v3`）。对应的回放测试是 `tests/test_llm_replay_committed.py`、`test_llm_replay_flash.py`、`test_llm_replay_v3.py`。
 
-- `config.yaml`：完整检索器（`rag/retrieval.py`）的权重和开关配置，相关测试读取它；旧的多专科命令行选项已删除。
-
-引用核对的人工标注资料和相关研究文档已删除，需要时从 git 历史查看；报告类型见 [报告索引](../artifacts/reports/README.md)。
+早期的多专科 Agent 加自然语言推理（NLI）研究评测、人工引用标注及其统计代码已经删除，需要时从 git 历史查看；入库报告类型见 [报告索引](../artifacts/reports/README.md)。

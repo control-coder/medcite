@@ -1,5 +1,5 @@
 # 应用 BM25 + 查询改写方案：不需要向量模型缓存，语料为 v2（51 篇、178 条短引）。
-# 评测依据见 docs/evaluation.md 第六、七节；搭配 mimo_grounded 使用，每个问题多 1 次改写调用。
+# 评测依据见 docs/evaluation.md 第三、五节；搭配 mimo_grounded 使用，每个问题多 1 次改写调用。
 application:
   mode: retrieval_mock
   topology: single
