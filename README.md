@@ -201,15 +201,15 @@ src/medidiag/
   api/            HTTP 接口、匿名会话、用户安全投影、兼容 HTML 页面
   workflow/       状态机、任务领取与租约、派发补偿、worker、应用 Provider
   rag/            检索、分块、术语归一化
-  review/  compliance/   引用审核与输出合规边界
-  llm/  agents/   模型适配、预算账本、真实调用的记录与回放、多专科 Agent 组件
+  review/  compliance/   复核轮次上限判定、输出合规边界
+  llm/            模型适配、预算账本、真实调用的记录与回放
   db/  observability/    数据模型、会话、结构化日志与追踪
 frontend/         React + TypeScript + Vite 应用与 Playwright 测试
 migrations/       Alembic 数据库迁移
 configs/          应用运行配置
 examples/         公开语料、固定查询与回归用例
 scripts/          数据准备与端到端验证脚本
-eval/             评测代码、模型调用记录；历史研究数据与标注
+eval/             评测代码、模型调用记录
 artifacts/        评测报告与运行追踪
 tests/            自动化测试
 ```

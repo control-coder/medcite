@@ -9,12 +9,10 @@ from typing import Any
 import pytest
 
 from medidiag.errors import MediDiagError
-from medidiag.llm import FakeProvider
 from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import SearchResult
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.schemas import KnowledgeChunk
-from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
 
 
 class _FakeRetriever:
@@ -191,13 +189,6 @@ def test_runtime_rag_runs_shared_leakage_gate_before_index(tmp_path: Path) -> No
             _minimal_config(tmp_path, leaked=True), root=tmp_path, build_index=False
         )
     assert caught.value.code == "EVAL_DATA_LEAKAGE_DETECTED"
-
-
-def test_live_workflow_requires_explicit_runtime_rag() -> None:
-    workflow = OpenAICompatibleWorkflowProvider(FakeProvider())
-    with pytest.raises(MediDiagError) as caught:
-        workflow.retrieve("fever")
-    assert caught.value.code == "RAG_CORPUS_INVALID"
 
 
 def test_worker_persists_evidence_bundle_for_reverse_audit(tmp_path: Path) -> None:

@@ -65,8 +65,7 @@ def test_error_does_not_become_no_evidence(provider, monkeypatch):
 
 
 def test_cli_uses_application_config_not_research():
-    p = _build_provider("retrieval_mock", "APPROVED", rag_config="不存在的研究配置.yaml",
-                        app_config=str(ROOT / "configs/application.yaml"))
+    p = _build_provider("retrieval_mock", "APPROVED", app_config=str(ROOT / "configs/application.yaml"))
     assert p.version == "retrieval-mock-v1"
 
 
@@ -137,10 +136,3 @@ def test_form_labels_and_default_background_are_not_query(provider):
     # 真实填写的背景不按子串删除，避免误删用户提供的信息。
     assert "未提供具体阈值" in provider.normalize(
         "症状：疫苗问题\n持续时间：模拟\n背景：未提供具体阈值")["normalized_query"]
-
-
-def test_model_pipeline_label_is_not_online_acceptance(provider):
-    from medidiag.llm import FakeProvider
-    from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
-    workflow = OpenAICompatibleWorkflowProvider(FakeProvider(), rag_stage=provider.rag_stage)
-    assert workflow.retrieve("通风空气")["execution_mode"] == "model_pipeline"

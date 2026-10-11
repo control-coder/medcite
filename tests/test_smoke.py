@@ -72,7 +72,6 @@ def test_every_registered_code_is_actually_raised() -> None:
     "REPORT_NOT_READY",
     "RAG_TIMEOUT",
     "LLM_TIMEOUT",
-    "LLM_JSON_INVALID",
     "JUDGE_TIMEOUT",
     "COMPLIANCE_BLOCKED",
     "EVAL_DATA_LEAKAGE_DETECTED",

@@ -140,39 +140,23 @@ def test_api_error_log_omits_rejected_input(log_stream, tmp_path) -> None:
 
 
 def test_provider_retry_decision_is_logged_without_response_body(log_stream) -> None:
-    from medidiag.agents.llm_client import LLMClient
     from medidiag.errors import MediDiagError
-    from medidiag.workflow.deepseek_provider import DeepSeekWorkflowProvider
     from medidiag.workflow.provider_runtime import ProviderCallRunner
 
     secret_body = "internal provider failure narrative that must not be logged"
 
-    def fake_post(url: str, **kwargs) -> httpx.Response:
-        request = httpx.Request("POST", url)
-        return httpx.Response(
+    def failing_operation() -> dict:
+        request = httpx.Request("POST", "https://provider.invalid/v1/chat")
+        response = httpx.Response(
             503,
             json={"error": {"message": secret_body}},
             headers={"x-request-id": "req-retry-1"},
             request=request,
         )
+        raise httpx.HTTPStatusError("service unavailable", request=request, response=response)
 
-    provider = DeepSeekWorkflowProvider(
-        LLMClient(
-            api_key=_API_KEY, model="demo-model", max_retries=0, post=fake_post
-        )
-    )
-    retrieval = {
-        "chunks": [
-            {"chunk_id": "c1", "source": "fixture", "text": _EVIDENCE_TEXT}
-        ]
-    }
     with pytest.raises(MediDiagError):
-        ProviderCallRunner(sleep=lambda _: None).call(
-            "generation",
-            lambda: provider.generate(
-                _CASE_QUESTION, retrieval, provider.plan("q", retrieval)
-            ),
-        )
+        ProviderCallRunner(sleep=lambda _: None).call("generation", failing_operation)
 
     output = log_stream.getvalue()
     assert "provider.attempt_failed" in output

@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import httpx
 import pytest
 
-from medidiag.agents.runtime import AgentTopologyConfig, RuntimeMedicalAgents
 from medidiag.errors import MediDiagError
 from medidiag.llm import FakeProvider, LLMRequest, OpenAICompatibleProvider, get_provider_profile
-from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
-from medidiag.workflow.provider import DeterministicWorkflowProvider
 
 
 def _response(
@@ -403,75 +399,3 @@ def test_structured_output_invalid_gets_one_controlled_regeneration(
         "json-repair",
         "json-repair:structured-retry-1",
     ]
-
-
-def test_workflow_assembly_switches_profiles_without_agent_code_changes(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    fake_workflow = DeterministicWorkflowProvider()
-    assert fake_workflow.version == "deterministic-provider-v1"
-
-    monkeypatch.setenv("MIMO_API_KEY", "test-key")
-    monkeypatch.setenv("MIMO_BASE_URL", "https://mimo.invalid/v1")
-    llm = OpenAICompatibleProvider(
-        get_provider_profile("mimo_v25"),
-        post=lambda *args, **kwargs: _response(
-            {
-                "id": "mimo-workflow-1",
-                "choices": [
-                    {
-                        "message": {
-                            "content": json.dumps(
-                                {
-                                    "specialty": "general_diagnosis",
-                                    "differential_diagnosis": [],
-                                    "claims": [
-                                        {
-                                            "text": "现有演示证据不足以形成确定性医学结论。",
-                                            "citation_chunk_ids": ["allowed"],
-                                            "confidence": 0.2,
-                                        }
-                                    ],
-                                    "uncertainty": "仅为工程演示，需由专业人员复核。",
-                                    "risk_flags": [],
-                                    "missing_info": [],
-                                    "recommended_tests": [],
-                                    "abstain": False,
-                                    "abstain_reason": "",
-                                },
-                                ensure_ascii=False,
-                            )
-                        }
-                    }
-                ],
-            }
-        ),
-    )
-    workflow = OpenAICompatibleWorkflowProvider(
-        llm,
-        agent_stage=RuntimeMedicalAgents(llm, config=AgentTopologyConfig(topology="single")),
-    )
-    chunks = [
-        {
-            "chunk_id": "allowed",
-            "source": "fixture",
-            "source_id": "fixture-v1",
-            "text": "demo",
-            "evidence_level": "level_5_other",
-            "metadata": {},
-        }
-    ]
-    retrieval = {
-        "evidence_bundle_id": "eb_contract_test",
-        "evidence_bundle": {
-            "bundle_id": "eb_contract_test",
-            "corpus_version": "fixture-v1",
-            "evidence": chunks,
-        },
-        "chunks": chunks,
-    }
-    generated = workflow.generate("脱敏输入", retrieval, workflow.plan("q", retrieval))
-
-    agent = generated["agents"][0]
-    assert agent["provider_provenance"]["profile_id"] == "mimo_v25"
-    assert agent["provider_provenance"]["response_id"] == "mimo-workflow-1"

@@ -12,23 +12,20 @@ import click
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from medidiag.agents.runtime import AgentTopologyConfig, RuntimeMedicalAgents
-from medidiag.config import get_settings, load_eval_config
+from medidiag.config import get_settings
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.llm import LLMRequest, build_llm_provider
 from medidiag.observability.logging import configure_logging
-from medidiag.rag.runtime import RuntimeMedicalRAG
-from medidiag.review.runtime import RuntimeMedicalReview
 from medidiag.workflow.application import build_application_provider
-from medidiag.workflow.openai_provider import OpenAICompatibleWorkflowProvider
 from medidiag.workflow.provider import WorkflowProvider
 from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
 
-_AGENT_TOPOLOGY_CHOICES = click.Choice(["single", "fixed_pair", "dynamic_pair"])
+# 应用可用的运行方式：确定性 fixture、真实检索加模拟生成、真实检索加模型生成。
+_PROVIDER_CHOICES = click.Choice(["fake_offline", "retrieval_mock", "mimo_grounded"], case_sensitive=False)
 
-_PROVIDER_CHOICES = click.Choice(
-    ["fake_offline", "retrieval_mock", "mimo_grounded", "deepseek_default", "mimo_v25", "openai_compatible_custom"],
-    case_sensitive=False,
+# 连接探测可用的模型配置档案，见 llm/profiles.yaml。
+_PROFILE_CHOICES = click.Choice(
+    ["fake_offline", "deepseek_default", "mimo_v25", "openai_compatible_custom"], case_sensitive=False
 )
 
 
@@ -76,42 +73,14 @@ def _build_provider(
     provider_name: str,
     review_verdict: str,
     *,
-    rag_config: str = "eval/config.yaml",
     app_config: str = "configs/application.yaml",
     live_budget: str | None = None,
-    agent_topology: str = "dynamic_pair",
-    specialist_pair: str = "cardiology,respiratory",
 ) -> WorkflowProvider:
-    if provider_name in {"fake_offline", "retrieval_mock", "mimo_grounded"}:
-        try:
-            return build_application_provider(provider_name, app_config=app_config,
-                                              review_verdict=review_verdict, live_budget=live_budget)
-        except ValueError as exc:
-            raise click.UsageError(str(exc)) from exc
-    provider = OpenAICompatibleWorkflowProvider(profile_id=provider_name)
-    if not provider.is_configured:
-        raise click.UsageError(
-            f"LLM profile {provider_name} 缺少 base URL、model 或 api_key_env 对应密钥；"
-            "可使用 --provider fake_offline 运行无网络 fixture。"
-        )
-    pair = tuple(item.strip() for item in specialist_pair.split(",") if item.strip())
-    if len(pair) != 2:
-        raise click.UsageError("--specialist-pair 必须是两个逗号分隔的专科标识")
-    config = load_eval_config(rag_config)
-    rag_stage = RuntimeMedicalRAG.from_config(config, root=Path.cwd())
-    provider.rag_stage = rag_stage
-    provider.agent_stage = RuntimeMedicalAgents(
-        provider.llm,
-        config=AgentTopologyConfig(
-            topology=agent_topology,  # type: ignore[arg-type]
-            fixed_pair=(pair[0], pair[1]),
-            timeout_s=float(config["generation"]["timeout_seconds"]),
-        ),
-        normalizer=rag_stage.normalizer,
-        evidence_level_scores=dict(config["retrieval"]["evidence_levels"]),
-    )
-    provider.review_stage = RuntimeMedicalReview.from_config(config)
-    return provider
+    try:
+        return build_application_provider(provider_name, app_config=app_config,
+                                          review_verdict=review_verdict, live_budget=live_budget)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
 
 
 @main.command()
@@ -122,34 +91,14 @@ def _build_provider(
     "--provider",
     "provider_name",
     type=_PROVIDER_CHOICES,
-    default="deepseek_default",
+    default="retrieval_mock",
     show_default=True,
-    help="显式选择模式；fake_offline 为 fixture，retrieval_mock 为真实检索/模拟生成。",
+    help="显式选择模式；fake_offline 为 fixture，retrieval_mock 为真实检索/模拟生成，mimo_grounded 调用模型。",
 )
 @click.option("--live-budget", type=click.Path(dir_okay=False), default=None,
               help="mimo_grounded 必填：已授权的持久调用账本；整轮最多8次，45秒，零自动重试。")
 @click.option("--app-config", default="configs/application.yaml", show_default=True,
               help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
-@click.option(
-    "--rag-config",
-    default="eval/config.yaml",
-    show_default=True,
-    type=click.Path(exists=False, dir_okay=False),
-    help="版本化医学 corpus、模型 revision、检索权重和 leakage gate 配置。",
-)
-@click.option(
-    "--agent-topology",
-    type=_AGENT_TOPOLOGY_CHOICES,
-    default="dynamic_pair",
-    show_default=True,
-    help="live provider 的 Agent topology；fake_offline 不使用该选项。",
-)
-@click.option(
-    "--specialist-pair",
-    default="cardiology,respiratory",
-    show_default=True,
-    help="fixed_pair 使用的两个逗号分隔专科标识。",
-)
 @click.option(
     "--review-verdict",
     type=click.Choice(["APPROVED", "REVISION_REQUIRED", "ESCALATED"]),
@@ -162,11 +111,8 @@ def worker(
     loop: bool,
     worker_id: str,
     provider_name: str,
-    rag_config: str,
     app_config: str,
     live_budget: str | None,
-    agent_topology: str,
-    specialist_pair: str,
     review_verdict: str,
 ) -> None:
     """运行一个使用在线或确定性 Provider 的本地 worker。"""
@@ -177,9 +123,7 @@ def worker(
         _build_provider(
             provider_name,
             review_verdict,
-            rag_config=rag_config, app_config=app_config, live_budget=live_budget,
-            agent_topology=agent_topology,
-            specialist_pair=specialist_pair,
+            app_config=app_config, live_budget=live_budget,
         ),
         worker_id=worker_id,
         max_review_rounds=get_settings().medidiag_max_review_rounds,
@@ -211,42 +155,19 @@ def worker(
     "--provider",
     "provider_name",
     type=_PROVIDER_CHOICES,
-    default="deepseek_default",
+    default="retrieval_mock",
     show_default=True,
 )
 @click.option("--live-budget", type=click.Path(dir_okay=False), default=None,
               help="mimo_grounded 必填：已授权的持久调用账本；整轮最多8次，45秒，零自动重试。")
 @click.option("--app-config", default="configs/application.yaml", show_default=True,
               help="retrieval_mock 专用安全应用配置；不读取研究模型配置。")
-@click.option(
-    "--rag-config",
-    default="eval/config.yaml",
-    show_default=True,
-    type=click.Path(exists=False, dir_okay=False),
-    help="版本化医学 corpus、模型 revision、检索权重和 leakage gate 配置。",
-)
-@click.option(
-    "--agent-topology",
-    type=_AGENT_TOPOLOGY_CHOICES,
-    default="dynamic_pair",
-    show_default=True,
-    help="live provider 的 Agent topology。",
-)
-@click.option(
-    "--specialist-pair",
-    default="cardiology,respiratory",
-    show_default=True,
-    help="fixed_pair 使用的两个逗号分隔专科标识。",
-)
 def demo(
     host: str,
     port: int,
     provider_name: str,
-    rag_config: str,
     app_config: str,
     live_budget: str | None,
-    agent_topology: str,
-    specialist_pair: str,
 ) -> None:
     """在同一进程中运行服务端渲染的演示和本地 worker。
 
@@ -263,9 +184,7 @@ def demo(
     provider = _build_provider(
         provider_name,
         "APPROVED",
-        rag_config=rag_config, app_config=app_config, live_budget=live_budget,
-        agent_topology=agent_topology,
-        specialist_pair=specialist_pair,
+        app_config=app_config, live_budget=live_budget,
     )
     runner = SingleMachineWorker(
         factory,
@@ -287,19 +206,10 @@ def demo(
             f"阶段执行使用 {provider.version}；检索与生成均为确定性测试 fixture，"
             "不构成医学 RAG 或正式评测。"
         )
-    elif provider_name in {"retrieval_mock", "mimo_grounded"}:
+    else:
         runtime_label = ("真实检索 / 模拟生成" if provider_name == "retrieval_mock"
                          else "真实检索 / MiMo 单路受约束摘录")
         runtime_detail = f"{provider.version}；仅完整短引与引用关联检查，未运行 NLI，不证明医学正确。"
-    else:
-        assert isinstance(provider, OpenAICompatibleWorkflowProvider)
-        assert provider.rag_stage is not None
-        runtime_label = f"{provider_name} {agent_topology} Agent + 版本化医学 RAG"
-        runtime_detail = (
-            f"生成阶段使用 {provider.version} 与 {agent_topology} topology；检索使用 corpus "
-            f"{provider.rag_stage.corpus_version} 并保存 EvidenceBundle。"
-            "审核使用固定 revision 的英文 NLI judge；该判定不代表临床有效性或正式评测结论。"
-        )
     app.state.demo_runtime = {
         "label": runtime_label,
         "detail": runtime_detail,
@@ -333,7 +243,7 @@ def _demo_worker_loop(stop: threading.Event, runner: SingleMachineWorker) -> Non
 @click.option(
     "--provider",
     "provider_name",
-    type=_PROVIDER_CHOICES,
+    type=_PROFILE_CHOICES,
     required=True,
     help="显式选择要探测的 profile；命令不会由 demo 或测试默认触发。",
 )

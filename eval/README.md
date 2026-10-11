@@ -12,6 +12,6 @@
 
 早期的多专科 Agent 加自然语言推理（NLI）研究评测，其执行与统计代码（原 `eval/runner.py` 及配套的报告、标注核对、Kappa、费用估算、阈值敏感性、路由诊断等）已经删除，需要时从 git 历史查看。保留的只有配置：
 
-- `config.yaml`：旧的多专科工作流（`medidiag run --provider deepseek_default` 等）仍然读取它，所以保留。
+- `config.yaml`：完整检索器（`rag/retrieval.py`）的权重和开关配置，相关测试读取它；旧的多专科命令行选项已删除。
 
 引用核对的人工标注资料和相关研究文档已删除，需要时从 git 历史查看；报告类型见 [报告索引](../artifacts/reports/README.md)。

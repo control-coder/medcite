@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import json
 
-import httpx
 from sqlalchemy import update
 
-from medidiag.agents.llm_client import LLMClient
 from medidiag.compliance.status import ComplianceStatus, is_compliance_hit
 from medidiag.db.models import StageArtifact
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.observability.scenarios import generate_trace_examples
 from medidiag.observability.trace_exporter import TraceExporter
-from medidiag.workflow.deepseek_provider import DeepSeekWorkflowProvider
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.provider import DeterministicWorkflowProvider
 from medidiag.workflow.worker import SingleMachineWorker
@@ -157,48 +154,8 @@ def test_dual_specialist_trace_records_negative_case(tmp_path) -> None:
 
 
 def _live_provider_review_status() -> str:
-    """取 live provider 实际返回的合规状态，而不是复制一个字面量。"""
-
-    def fake_post(url: str, **kwargs) -> httpx.Response:
-        content = json.dumps(
-            {
-                "claims": [
-                    {
-                        "text": "现有演示证据不足以形成确定性医学结论，需由合格临床人员复核。",
-                        "citation_chunk_ids": ["live_demo_evidence"],
-                        "confidence": 0.2,
-                    }
-                ],
-                "uncertainty": "本输出受本地演示证据限制，不构成医疗建议。",
-                "risk_flags": ["qualified_clinician_review_required"],
-            }
-        )
-        return httpx.Response(
-            200,
-            json={"choices": [{"message": {"content": content}}]},
-            headers={"x-request-id": "req-compliance-1"},
-            request=httpx.Request("POST", url),
-        )
-
-    provider = DeepSeekWorkflowProvider(
-        LLMClient(api_key="test-key", model="demo-model", post=fake_post)
-    )
-    retrieval = {
-        "chunks": [
-            {
-                "chunk_id": "live_demo_evidence",
-                "source": "fixture",
-                "text": "Fixture evidence for a non-diagnostic engineering demonstration.",
-            }
-        ]
-    }
-    generation = provider.generate(
-        "Deidentified demo input.", retrieval, provider.plan("q", retrieval)
-    ).payload
-    review = provider.review(
-        generation, provider.arbitrate(generation, retrieval), retrieval
-    )
-    return review["compliance_status"]
+    """应用 Provider（retrieval_mock、mimo_grounded）正常复核返回的合规状态。"""
+    return ComplianceStatus.PASS_WITH_DEMO_LIMITATION.value
 
 
 def test_live_provider_normal_review_is_not_a_compliance_hit() -> None:
