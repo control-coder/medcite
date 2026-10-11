@@ -2,7 +2,7 @@
 
 与评测（``eval/retrieval_benchmark.py`` 的 ``DenseScorer``）使用同一套做法：
 查询加 BGE 的检索前缀、向量归一化后用内积排序、同分按 chunk_id 稳定排序。
-对外满足 ``RuntimeMedicalRAG`` 要求的检索器接口，因此能替换 BM25 检索器而不改其他阶段。
+对外满足 ``RuntimeMedicalRAG`` 要求的检索器接口（``build_index``、``search``），因此能替换 BM25 检索器而不改其他阶段。
 """
 
 from __future__ import annotations
@@ -42,24 +42,19 @@ class DenseRetriever:
         self.chunks = list(chunks)
         self.embedding_model_name = model_name
         self.embedding_model_revision = model_revision
-        self.rerank_model_name = None
-        self.rerank_model_revision = None
         self._encoder = encoder
         self._query_prefix = query_prefix
         self._matrix: Any = None
 
-    def build_index(self, use_bm25: bool = True, use_embedding: bool = True) -> None:
+    def build_index(self) -> None:
         import numpy as np
 
-        del use_bm25, use_embedding  # 本检索器只有向量一路
         vectors = np.asarray(self._encoder([chunk.text for chunk in self.chunks]), dtype=np.float64)
         self._matrix = vectors / np.maximum(np.linalg.norm(vectors, axis=1, keepdims=True), 1e-12)
 
-    def search(self, query: str, top_k: int = 5,
-               experiment_config: dict[str, bool] | None = None) -> list[SearchResult]:
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
         import numpy as np
 
-        del experiment_config
         if self._matrix is None:
             raise MediDiagError("RAG_INDEX_BUILD_FAILED", detail="向量索引尚未构建")
         vector = np.asarray(self._encoder([self._query_prefix + query]), dtype=np.float64)[0]
@@ -68,7 +63,3 @@ class DenseRetriever:
         order = sorted(range(len(self.chunks)), key=lambda i: (-float(scores[i]), self.chunks[i].chunk_id))
         return [SearchResult(chunk_id=self.chunks[i].chunk_id, final_score=float(scores[i]),
                              embedding_score=float(scores[i]), chunk=self.chunks[i]) for i in order[:top_k]]
-
-    def rerank(self, query: str, candidates: list[SearchResult], top_k: int = 5) -> list[SearchResult]:
-        del query
-        return candidates[:top_k]

@@ -9,7 +9,6 @@ from typing import Any
 import pytest
 
 from medidiag.errors import MediDiagError
-from medidiag.rag.normalizer import TerminologyNormalizer
 from medidiag.rag.retrieval import SearchResult
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.schemas import KnowledgeChunk
@@ -20,34 +19,17 @@ class _FakeRetriever:
 
     embedding_model_name = "fake-embedding"
     embedding_model_revision = "fake-rev"
-    rerank_model_name = "fake-rerank"
-    rerank_model_revision = "fake-rerank-rev"
-    requested_device = "cpu"
-    actual_device = "cpu"
 
     def __init__(self, results: list[SearchResult]) -> None:
         self.results = results
-        self.search_config: dict[str, bool] | None = None
         self.built = False
 
-    def build_index(self, use_bm25: bool = True, use_embedding: bool = True) -> None:
-        self.built = use_bm25 and use_embedding
+    def build_index(self) -> None:
+        self.built = True
 
-    def search(
-        self,
-        query: str,
-        top_k: int = 5,
-        experiment_config: dict[str, bool] | None = None,
-    ) -> list[SearchResult]:
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
         del query
-        self.search_config = experiment_config
         return self.results[:top_k]
-
-    def rerank(
-        self, query: str, candidates: list[SearchResult], top_k: int = 5
-    ) -> list[SearchResult]:
-        del query
-        return list(reversed(candidates))[:top_k]
 
 
 def _chunk(chunk_id: str = "kb_1") -> KnowledgeChunk:
@@ -66,16 +48,7 @@ def _backend(results: list[SearchResult]) -> RuntimeMedicalRAG:
     return RuntimeMedicalRAG(
         chunks=[_chunk()],
         corpus_version="medical-corpus-v1",
-        retrieval_config={"top_k": 5, "candidate_k": 10},
-        experiment_config={
-            "use_bm25": True,
-            "use_embedding": True,
-            "use_evidence_weighting": True,
-            "use_term_normalization": True,
-            "use_rerank": True,
-            "use_citation_review": True,
-        },
-        normalizer=TerminologyNormalizer(),
+        retrieval_config={"method": "bm25", "top_k": 5},
         retriever=retriever,
         corpus_path="corpus.jsonl",
         leakage_gate={"status": "passed", "rule_version": "test"},
@@ -91,14 +64,12 @@ def test_runtime_rag_emits_versioned_evidence_bundle() -> None:
                 final_score=0.91,
                 bm25_score=0.8,
                 embedding_score=0.7,
-                evidence_level_score=1.0,
-                term_overlap=0.5,
                 chunk=chunk,
             )
         ]
     )
 
-    normalized = backend.normalize("Patient has pyrexia")
+    normalized = backend.normalize("  Patient   has fever ")
     payload = backend.retrieve(normalized["normalized_query"])
     bundle = payload["evidence_bundle"]
     evidence = bundle["evidence"][0]
@@ -152,34 +123,7 @@ def _minimal_config(tmp_path: Path, *, leaked: bool) -> dict[str, Any]:
             "check_question_text": True,
             "check_answer_key": True,
         },
-        "runtime": {"device": "cpu", "batch_size": 2},
-        "embedding": {"model": "fake", "revision": "r1", "batch_size": 2},
-        "rerank": {"model": "fake", "revision": "r1"},
-        "retrieval": {
-            "top_k": 1,
-            "candidate_k": 1,
-            "weights": {
-                "w1_bm25": 0.25,
-                "w2_embedding": 0.45,
-                "w3_evidence_level": 0.2,
-                "w4_term_overlap": 0.1,
-            },
-            "evidence_levels": {"level_1_guideline": 1.0},
-        },
-        "experiments": {
-            "rag": {
-                "rag_full": {
-                    "config": {
-                        "use_bm25": True,
-                        "use_embedding": True,
-                        "use_evidence_weighting": True,
-                        "use_term_normalization": True,
-                        "use_rerank": True,
-                        "use_citation_review": True,
-                    }
-                }
-            }
-        },
+        "retrieval": {"method": "bm25", "bm25_tokenizer": "cjk_bigram", "top_k": 1},
     }
 
 
@@ -209,8 +153,6 @@ def test_worker_persists_evidence_bundle_for_reverse_audit(tmp_path: Path) -> No
                 final_score=0.9,
                 bm25_score=0.7,
                 embedding_score=0.8,
-                evidence_level_score=1.0,
-                term_overlap=0.5,
                 chunk=chunk,
             )
         ]

@@ -102,7 +102,6 @@ python scripts/verify_offline.py
 python scripts/verify_offline.py --provider retrieval_mock --browser
 python scripts/verify_offline.py --provider fake_offline --browser
 # 检索回归（模拟主题集 / 公开中文语料），不调用模型
-python scripts/verify_rag.py
 python scripts/verify_public_rag.py
 ```
 

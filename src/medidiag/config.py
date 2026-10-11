@@ -1,19 +1,14 @@
 """配置加载。
 
-两层配置：
-1. 环境变量（pydantic-settings）：API key、数据库 URL、运行时参数。
-2. 评测配置（eval/config.yaml）：锁定模型、温度、seed、数据集版本、检索权重、运行命令。
-
-评测配置用于记录研究条件；修改后只重跑受影响的对照，不阻塞应用交付。
+环境变量（pydantic-settings）：API key、数据库 URL、运行时参数。
+应用的检索与生成方案在 ``configs/application*.yaml``，由 ``workflow/application.py`` 校验后加载。
 """
 
 from __future__ import annotations
 
 from functools import lru_cache
-from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
-import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -53,9 +48,7 @@ class Settings(BaseSettings):
     medidiag_lease_seconds: int = 60
     medidiag_heartbeat_seconds: int = 20
     medidiag_lease_scan_seconds: int = 30
-    # 复核轮次上限。与 eval/config.yaml 的 workflow.review.max_review_rounds
-    # 有意重复：运行时 worker 只读 Settings，评测器只读该 YAML，两条链路互不
-    # 依赖。改动其一时需同步另一处。
+    # 复核轮次上限：被驳回后连续失败达到该次数就升级人工。
     medidiag_max_review_rounds: int = 3
 
     # 日志
@@ -67,19 +60,3 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """单例 Settings。"""
     return Settings()
-
-
-@lru_cache(maxsize=8)
-def load_eval_config(path: str | Path) -> dict[str, Any]:
-    """加载评测配置 YAML。
-
-    评测配置用于复现研究条件，是否重跑基线与消融由本次改动范围决定。
-    """
-    path = Path(path)
-    if not path.exists():
-        raise FileNotFoundError(f"eval config not found: {path}")
-    with path.open("r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    if not isinstance(cfg, dict):
-        raise ValueError(f"eval config must be a mapping, got {type(cfg)}")
-    return cfg

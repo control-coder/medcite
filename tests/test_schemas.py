@@ -2,12 +2,10 @@
 
 验证:
 1. EvalSample / KnowledgeChunk 可创建、可序列化
-2. MeSH synonym map 存在
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from medidiag.schemas import (
@@ -79,18 +77,3 @@ def test_chunk_serialization(tmp_path: Path) -> None:
     write_jsonl([chunk_to_dict(c) for c in chunks], path)
     loaded = read_jsonl(path)
     assert loaded[0]["source"] == "MedQA_textbook"
-
-
-# ===== 术语表文件测试 =====
-
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_MESH_SYNONYMS = (
-    _PROJECT_ROOT / "src" / "medidiag" / "rag" / "medical_terms" / "mesh_synonyms.json"
-)
-
-
-def test_mesh_synonyms_exist() -> None:
-    assert _MESH_SYNONYMS.exists(), "mesh_synonyms.json not found"
-    with _MESH_SYNONYMS.open(encoding="utf-8") as f:
-        data = json.load(f)
-    assert len(data) > 100, f"too few mesh terms: {len(data)}"

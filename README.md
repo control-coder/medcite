@@ -200,7 +200,7 @@ CI 在每次推送到 `main` 和每个 Pull Request 上运行代码风格检查�
 src/medidiag/
   api/            HTTP 接口、匿名会话、用户安全投影、兼容 HTML 页面
   workflow/       状态机、任务领取与租约、派发补偿、worker、应用 Provider
-  rag/            检索、分块、术语归一化
+  rag/            BM25 与向量检索、证据包
   review/  compliance/   复核轮次上限判定、输出合规边界
   llm/            模型适配、预算账本、真实调用的记录与回放
   db/  observability/    数据模型、会话、结构化日志与追踪

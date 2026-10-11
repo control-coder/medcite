@@ -57,23 +57,20 @@ def test_dense_profile_is_accepted_and_bm25_profile_unchanged() -> None:
     assert retrieval_profile(load_application_config(ROOT / "configs/application.yaml")) == "bm25"
 
 
-@pytest.mark.parametrize("change", ["floating_revision", "downloadable", "other_model", "mixed_weights",
-                                    "bm25_too", "rerank", "gate", "bad_on_invalid"])
+@pytest.mark.parametrize("change", ["floating_revision", "downloadable", "other_model", "rerank_key",
+                                    "bm25_method", "gate", "bad_on_invalid"])
 def test_unsafe_dense_config_rejected(tmp_path, change) -> None:
     config = copy.deepcopy(load_application_config(ROOT / "configs/application_dense.yaml"))
-    flags = config["experiments"]["rag"]["rag_full"]["config"]
     if change == "floating_revision":
         config["embedding"]["revision"] = "main"
     elif change == "downloadable":
         config["embedding"]["local_files_only"] = False
     elif change == "other_model":
         config["embedding"]["model"] = "someone/else"
-    elif change == "mixed_weights":
-        config["retrieval"]["weights"]["w1_bm25"] = 0.5
-    elif change == "bm25_too":
-        flags["use_bm25"] = True
-    elif change == "rerank":
-        flags["use_rerank"] = True
+    elif change == "rerank_key":
+        config["rerank"] = {"model": "someone/else", "revision": "x"}
+    elif change == "bm25_method":
+        config["retrieval"]["method"] = "bm25"  # 带向量模型配置却声明单路 BM25
     elif change == "gate":
         config["leakage_check"]["check_question_text"] = False
     else:

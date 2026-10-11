@@ -40,7 +40,7 @@ def run_regression() -> dict:
         for case in cases:
             started = time.perf_counter()
             query = rag.normalize(case["question"])["normalized_query"]
-            results = rag.retriever.search(query, top_k=3, experiment_config=rag.experiment_config)
+            results = rag.retriever.search(query, top_k=3)
             elapsed = (time.perf_counter() - started) * 1000
             ids = [item.chunk_id for item in results]
             records.append({**case, "retrieved_ids": ids,
@@ -68,7 +68,7 @@ def run_regression() -> dict:
     return {"schema_version": "public-health-rag-regression-v1", "generated_at": datetime.now(UTC).isoformat(),
             "dataset": config["dataset"], "query_count": len(cases),
             "query_sha256": hashlib.sha256((ROOT / config["dataset"]["rag_eval_set_path"]).read_bytes()).hexdigest(),
-            "top_k": 3, "weights": config["retrieval"]["weights"], "runs": runs,
+            "top_k": 3, "runs": runs,
             "versions": {"python": platform.python_version(), "rank-bm25": version("rank-bm25"), "numpy": version("numpy")},
             "external_model_calls": 0,
             "limitations": ["8 篇 WHO 中文科普页面的短引，16 条 AI 辅助工程查询，非医学金标或盲测。",

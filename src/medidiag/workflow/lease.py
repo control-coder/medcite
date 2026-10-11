@@ -7,7 +7,7 @@ PLAN.md 租约策略:
 - worker 写入外部结果时必须把 lease 条件合并进同一条 UPDATE
 - 旧 worker 迟到写入被丢弃并记录 TASK_LEASE_LOST（防脑裂双写）
 
-租约参数沿用 eval/config.yaml:
+租约默认参数（可由环境变量覆盖）:
     lease_seconds: 60
     heartbeat_seconds: 20
     scan_interval_seconds: 30

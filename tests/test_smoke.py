@@ -3,7 +3,6 @@
 验证：
 1. errors 模块可导入、错误码注册表完整、关键错误码存在
 2. state_machine 状态枚举完整（14 状态）、终态判断正确、ESCALATED 非终态
-3. eval/config.yaml 可加载且锁定字段齐全
 """
 
 from __future__ import annotations
@@ -11,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 
 from medidiag.errors import (
     ErrorCategory,
@@ -209,95 +207,3 @@ def test_trigger_subject_count_is_6() -> None:
     assert TriggerSubject.REVIEWER_WORKER in subjects
     assert TriggerSubject.HUMAN in subjects
     assert TriggerSubject.SYSTEM in subjects
-
-
-# ===== eval/config.yaml 测试 =====
-
-@pytest.fixture
-def eval_config() -> dict:
-    config_path = Path(__file__).resolve().parent.parent / "eval" / "config.yaml"
-    with config_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def test_eval_config_locked_models(eval_config: dict) -> None:
-    """验证锁定模型版本。换模型必须重跑全部评测。"""
-    assert eval_config["generation"]["model"] == "deepseek-v4-flash"
-    assert eval_config["embedding"]["model"] == "sentence-transformers/all-MiniLM-L6-v2"
-    assert eval_config["rerank"]["model"] == "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    assert eval_config["judge"]["model"] == "cross-encoder/nli-MiniLM2-L6-H768"
-    assert eval_config["embedding"]["revision"] == "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
-    assert eval_config["rerank"]["revision"] == "c5ee24cb16019beea0893ab7796b1df96625c6b8"
-    assert eval_config["judge"]["revision"] == "b95119ce93d3e065de6214e38cd4a97b0f2f2c6d"
-    assert eval_config["judge"]["input_language"] == "en"
-
-
-def test_eval_config_reproducibility_params(eval_config: dict) -> None:
-    """温度、seed、数据集版本必须锁定。"""
-    assert eval_config["generation"]["temperature"] == 0
-    assert eval_config["generation"]["seed"] == 42
-    assert eval_config["dataset"]["version"] == "v1"
-
-
-def test_eval_config_public_ratio(eval_config: dict) -> None:
-    """公开题占比必须 >= 40%。"""
-    assert eval_config["dataset"]["public_ratio_min"] >= 0.40
-
-
-def test_eval_config_experiment_namespaces_complete(eval_config: dict) -> None:
-    """RAG 与 Agent 实验必须使用互不耦合的命名空间。"""
-    assert set(eval_config["experiments"]["rag"]) == {
-        "rag_embedding",
-        "rag_bm25",
-        "rag_evidence_weight",
-        "rag_term_norm",
-        "rag_citation_review",
-        "rag_full",
-    }
-    assert set(eval_config["experiments"]["agent"]) == {
-        "agent_single",
-        "agent_fixed_pair",
-        "agent_dynamic_pair",
-    }
-
-
-def test_eval_config_retrieval_weights_locked(eval_config: dict) -> None:
-    """检索权重必须写入 config，不得只在代码硬编码。"""
-    weights = eval_config["retrieval"]["weights"]
-    for w in ("w1_bm25", "w2_embedding", "w3_evidence_level", "w4_term_overlap"):
-        assert w in weights
-        assert isinstance(weights[w], (int, float))
-
-
-def test_eval_config_metrics_defined(eval_config: dict) -> None:
-    """PLAN.md 要求的 7 个核心指标必须定义。"""
-    metric_names = {m["name"] for m in eval_config["metrics"]}
-    required = {
-        "evidence_recall_at_5",
-        "gold_evidence_coverage",
-        "citation_precision",
-        "judge_agreement",
-        "unsupported_claim_rate",
-        "terminology_normalization_gain",
-        "workflow_success_rate",
-        "p95_latency_ms",
-    }
-    assert required.issubset(metric_names), f"missing metrics: {required - metric_names}"
-
-
-def test_eval_config_leakage_check_fields(eval_config: dict) -> None:
-    """泄露校验字段配置完整。"""
-    leak = eval_config["leakage_check"]
-    assert "source" in leak["chunk_fields_to_check"]
-    assert "source_id" in leak["chunk_fields_to_check"]
-    assert "metadata.raw_id" in leak["chunk_fields_to_check"]
-    assert leak["check_question_text"] is True
-    assert leak["check_answer_key"] is True
-
-
-def test_eval_config_compliance_rules(eval_config: dict) -> None:
-    """合规配置包含绝对化措辞拦截和强制风险提示。"""
-    comp = eval_config["compliance"]
-    assert len(comp["block_absolute_terms"]) > 0
-    assert "确诊" in comp["block_absolute_terms"]
-    assert comp["mandatory_disclaimer"]

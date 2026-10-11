@@ -1,7 +1,7 @@
 """运行时医学 RAG 与版本化 EvidenceBundle。
 
-真实运行时与评测可复用同一个 ``Retriever``。本模块只负责 corpus、泄露门禁、
-术语归一化、检索与可审计证据封装，不持有数据库会话，也不生成医学结论。
+本模块只负责 corpus、泄露门禁、检索与可审计证据封装，检索器是可替换的
+（BM25 或向量检索），不持有数据库会话，也不生成医学结论。
 """
 
 from __future__ import annotations
@@ -15,26 +15,20 @@ from typing import Any, Protocol
 
 from medidiag.errors import MediDiagError
 from medidiag.rag.leakage import LEAKAGE_FLAG, run_leakage_check_records
-from medidiag.rag.normalizer import TerminologyNormalizer
-from medidiag.rag.retrieval import Retriever, SearchResult
+from medidiag.rag.retrieval import Bm25Retriever, SearchResult
 from medidiag.schemas import KnowledgeChunk, load_knowledge_chunks, read_jsonl
 
 
 class RetrieverContract(Protocol):
     """运行时检索器最小契约，便于离线测试注入。"""
 
-    def build_index(self, use_bm25: bool = True, use_embedding: bool = True) -> None: ...
+    def build_index(self) -> None: ...
 
-    def search(
-        self,
-        query: str,
-        top_k: int = 5,
-        experiment_config: dict[str, bool] | None = None,
-    ) -> list[SearchResult]: ...
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]: ...
 
-    def rerank(
-        self, query: str, candidates: list[SearchResult], top_k: int = 5
-    ) -> list[SearchResult]: ...
+
+def _bm25_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> RetrieverContract:
+    return Bm25Retriever(chunks, bm25_tokenizer=str(config["retrieval"].get("bm25_tokenizer", "cjk_bigram")))
 
 
 @dataclass(frozen=True)
@@ -50,8 +44,6 @@ class EvidenceItem:
     final_score: float
     bm25_score: float
     embedding_score: float
-    evidence_level_score: float
-    term_overlap: float
     metadata: dict[str, Any]
 
 
@@ -87,8 +79,7 @@ class RuntimeMedicalRAG:
         chunks: list[KnowledgeChunk],
         corpus_version: str,
         retrieval_config: dict[str, Any],
-        experiment_config: dict[str, bool],
-        normalizer: TerminologyNormalizer,
+        embedding_config: dict[str, Any] | None = None,
         retriever: RetrieverContract,
         corpus_path: str,
         leakage_gate: dict[str, Any],
@@ -100,14 +91,13 @@ class RuntimeMedicalRAG:
         self.chunks = chunks
         self.corpus_version = corpus_version
         self.retrieval_config = retrieval_config
-        self.experiment_config = experiment_config
-        self.normalizer = normalizer
+        self.embedding_config = embedding_config
         self.retriever = retriever
         self.corpus_path = corpus_path
         self.leakage_gate = leakage_gate
         self.corpus_hash = _stable_hash([asdict(chunk) for chunk in chunks])
         self.retrieval_config_hash = _stable_hash(
-            {"retrieval": retrieval_config, "experiment": experiment_config}
+            {"retrieval": retrieval_config, "embedding": embedding_config}
         )
 
     @classmethod
@@ -117,7 +107,7 @@ class RuntimeMedicalRAG:
         *,
         root: str | Path = ".",
         build_index: bool = True,
-        retriever_factory: Callable[..., RetrieverContract] = Retriever,
+        retriever_factory: Callable[[list[KnowledgeChunk], dict[str, Any]], RetrieverContract] = _bm25_factory,
     ) -> RuntimeMedicalRAG:
         """从固定配置构建真实检索 backend，并在建索引前执行泄露门禁。"""
         base = Path(root).resolve()
@@ -147,31 +137,12 @@ class RuntimeMedicalRAG:
                 detail="运行时医学 corpus 未通过泄露门禁: " + "; ".join(hits[:5]),
             )
 
-        normalizer = TerminologyNormalizer(eval_set_path=eval_paths[0])
-        runtime = config.get("runtime", {})
-        batch_size = int(
-            runtime.get("batch_size", config["embedding"].get("batch_size", 32))
-        )
-        retriever = retriever_factory(
-            chunks,
-            weights=config["retrieval"]["weights"],
-            evidence_level_scores=config["retrieval"]["evidence_levels"],
-            embedding_model=config["embedding"]["model"],
-            rerank_model=config["rerank"]["model"],
-            normalizer=normalizer,
-            embedding_revision=config["embedding"]["revision"],
-            rerank_revision=config["rerank"]["revision"],
-            device=str(runtime.get("device", "auto")),
-            embedding_batch_size=batch_size,
-            rerank_batch_size=batch_size,
-            bm25_tokenizer=str(config["retrieval"].get("bm25_tokenizer", "whitespace")),
-        )
+        retriever = retriever_factory(chunks, config)
         backend = cls(
             chunks=chunks,
             corpus_version=str(dataset["version"]),
             retrieval_config=dict(config["retrieval"]),
-            experiment_config=dict(config["experiments"]["rag"]["rag_full"]["config"]),
-            normalizer=normalizer,
+            embedding_config=dict(config["embedding"]) if "embedding" in config else None,
             retriever=retriever,
             corpus_path=str(corpus_path),
             leakage_gate={
@@ -182,10 +153,7 @@ class RuntimeMedicalRAG:
         )
         if build_index:
             try:
-                retriever.build_index(
-                    use_bm25=backend.experiment_config.get("use_bm25", True),
-                    use_embedding=backend.experiment_config.get("use_embedding", True),
-                )
+                retriever.build_index()
             except Exception as exc:
                 raise MediDiagError(
                     "RAG_INDEX_BUILD_FAILED", detail=f"医学检索索引构建失败: {exc}"
@@ -193,20 +161,12 @@ class RuntimeMedicalRAG:
         return backend
 
     def normalize(self, question: str) -> dict[str, Any]:
-        """输出版本化术语归一化结果。"""
-        if not self.experiment_config.get("use_term_normalization", True):
-            return {
-                "normalized_query": " ".join(question.strip().split()),
-                "normalizer_version": "whitespace-only-v1",
-                "coverage": 0.0,
-                "matched_terms": [],
-            }
-        normalized = self.normalizer.normalize(question)
+        """只合并空白，不做术语替换（术语归一化代码已删除）。"""
         return {
-            "normalized_query": normalized.normalized,
-            "normalizer_version": "terminology-normalizer-v1",
-            "coverage": normalized.coverage,
-            "matched_terms": [asdict(item) for item in normalized.matched_terms],
+            "normalized_query": " ".join(question.strip().split()),
+            "normalizer_version": "whitespace-only-v1",
+            "coverage": 0.0,
+            "matched_terms": [],
         }
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
@@ -221,23 +181,12 @@ class RuntimeMedicalRAG:
 
     def search_evidence(self, query: str) -> tuple[EvidenceItem, ...]:
         """只检索、不冻结；可能返回空元组。检索智能体用它做多次检索。"""
-        candidate_k = int(self.retrieval_config.get("candidate_k", 10))
         top_k = int(self.retrieval_config.get("top_k", 5))
-        candidates = self.retriever.search(
-            query,
-            top_k=max(candidate_k, top_k),
-            experiment_config=self.experiment_config,
-        )
-        results = (
-            self.retriever.rerank(query, candidates, top_k=top_k)
-            if self.experiment_config.get("use_rerank", False)
-            else candidates[:top_k]
-        )
+        results = self.retriever.search(query, top_k=top_k)
         return tuple(self._evidence_item(item) for item in results if item.chunk)
 
     def freeze_evidence(self, normalized_query: str, evidence: tuple[EvidenceItem, ...]) -> dict[str, Any]:
         """把给定证据冻结成带哈希的 EvidenceBundle，并返回流程各阶段使用的检索结果。"""
-        candidate_k = int(self.retrieval_config.get("candidate_k", 10))
         top_k = int(self.retrieval_config.get("top_k", 5))
         bundle_seed = {
             "query": normalized_query,
@@ -261,18 +210,11 @@ class RuntimeMedicalRAG:
                 "backend_version": self.version,
                 "corpus_path": self.corpus_path,
                 "top_k": top_k,
-                "candidate_k": candidate_k,
+                "method": self.retrieval_config.get("method"),
                 "embedding_model": getattr(self.retriever, "embedding_model_name", None),
                 "embedding_revision": getattr(
                     self.retriever, "embedding_model_revision", None
                 ),
-                "rerank_model": getattr(self.retriever, "rerank_model_name", None),
-                "rerank_revision": getattr(
-                    self.retriever, "rerank_model_revision", None
-                ),
-                "requested_device": getattr(self.retriever, "requested_device", None),
-                "actual_device": getattr(self.retriever, "actual_device", None),
-                "experiment_config": self.experiment_config,
                 "leakage_gate": self.leakage_gate,
             },
         )
@@ -300,8 +242,6 @@ class RuntimeMedicalRAG:
             final_score=result.final_score,
             bm25_score=result.bm25_score,
             embedding_score=result.embedding_score,
-            evidence_level_score=result.evidence_level_score,
-            term_overlap=result.term_overlap,
             metadata=dict(chunk.metadata),
         )
 
@@ -318,8 +258,6 @@ class RuntimeMedicalRAG:
             "final_score": item.final_score,
             "bm25_score": item.bm25_score,
             "embedding_score": item.embedding_score,
-            "evidence_level_score": item.evidence_level_score,
-            "term_overlap": item.term_overlap,
             "text": item.text,
             "source_url": item.metadata.get("source_url"),
             "metadata": item.metadata,

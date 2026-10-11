@@ -43,7 +43,7 @@ class ComplianceResult:
         }
 
 
-# 绝对化措辞（从 eval/config.yaml compliance.block_absolute_terms 同步）
+# 绝对化措辞
 BLOCKED_ABSOLUTE_TERMS: list[str] = [
     "确诊",
     "保证治愈",

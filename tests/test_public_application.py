@@ -13,7 +13,6 @@ from medidiag.api.app import create_app
 from medidiag.cli import _build_provider
 from medidiag.db.session import create_db_engine, get_session_factory, init_db
 from medidiag.errors import MediDiagError
-from medidiag.rag.retrieval import Retriever
 from medidiag.workflow.application import build_application_provider, load_application_config
 from medidiag.workflow.worker import SingleMachineWorker
 
@@ -21,12 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
-def provider(monkeypatch):
-    def forbidden(*args, **kwargs):
-        raise AssertionError("本模式不得加载或调用向量、重排模型")
-    monkeypatch.setattr(Retriever, "_build_embedding_index", forbidden)
-    monkeypatch.setattr(Retriever, "_get_embedding_scores", forbidden)
-    monkeypatch.setattr(Retriever, "rerank", forbidden)
+def provider():
     return build_application_provider("retrieval_mock", root=ROOT)
 
 
@@ -41,15 +35,19 @@ def test_distinct_chinese_evidence_and_source(provider):
     assert tokens == ["中文", "文输", "输入", "covid", "19"]
 
 
-@pytest.mark.parametrize("change", ["use_embedding", "use_rerank", "research", "gate"])
+@pytest.mark.parametrize("change", ["extra_embedding", "unknown_key", "no_method", "research", "gate"])
 def test_unsafe_application_config_rejected(tmp_path, change):
     config = copy.deepcopy(load_application_config(ROOT / "configs/application.yaml"))
     if change == "research":
         del config["application"]
     elif change == "gate":
         config["leakage_check"]["check_answer_key"] = False
+    elif change == "extra_embedding":
+        config["embedding"] = {"model": "x", "revision": "y", "local_files_only": True}
+    elif change == "unknown_key":
+        config["experiments"] = {"rag": {"rag_full": {"config": {"use_rerank": True}}}}
     else:
-        config["experiments"]["rag"]["rag_full"]["config"][change] = True
+        del config["retrieval"]["method"]
     p = tmp_path / "config.yaml"
     p.write_text(yaml.safe_dump(config), encoding="utf-8")
     with pytest.raises(ValueError):
