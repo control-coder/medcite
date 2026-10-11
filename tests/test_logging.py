@@ -26,7 +26,7 @@ _CASE_QUESTION = (
     "68 岁脱敏模拟病例：反复胸骨后压榨性疼痛伴放射至左臂，联系方式 "
     "patient@example.com / 13800138000，证件号 11010119800101001X。"
 )
-_API_KEY = "sk-super-secret-deepseek-key-value"
+_API_KEY = "sk-super-secret-api-key-value"
 _EVIDENCE_TEXT = "Fixture evidence body that must never appear in a log line."
 
 
@@ -48,7 +48,7 @@ def test_sensitive_keys_and_patterns_are_redacted(log_stream) -> None:
     logger.warning(
         "test.event",
         question=_CASE_QUESTION,
-        deepseek_api_key=_API_KEY,
+        llm_api_key=_API_KEY,
         authorization=f"Bearer {_API_KEY}",
         contact="reach me at patient@example.com or 13800138000",
         case_id="case_abc123",
@@ -75,7 +75,7 @@ def test_oversized_values_are_truncated_not_emitted(log_stream) -> None:
 def test_redaction_contract_is_shared_with_trace_exporter() -> None:
     from medidiag.observability.trace_exporter import TraceExporter
 
-    payload = {"question": _CASE_QUESTION, "deepseek_api_key": _API_KEY}
+    payload = {"question": _CASE_QUESTION, "llm_api_key": _API_KEY}
     assert TraceExporter._sanitize(payload) == sanitize(payload)
 
 

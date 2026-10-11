@@ -64,14 +64,14 @@ def test_demo_home_and_non_htmx_create_fallback(demo_runtime) -> None:
 def test_demo_home_shows_attached_runtime_mode(demo_runtime) -> None:
     client, _ = demo_runtime
     client.app.state.demo_runtime = {
-        "label": "DeepSeek 实时起草",
+        "label": "远程模型实时起草",
         "detail": "生成阶段仅使用远程提供方。",
     }
 
     home = client.get("/demo")
 
     assert home.status_code == 200
-    assert "DeepSeek 实时起草" in home.text
+    assert "远程模型实时起草" in home.text
     assert "生成阶段仅使用远程提供方" in home.text
 
 

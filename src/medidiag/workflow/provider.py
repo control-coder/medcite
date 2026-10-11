@@ -14,8 +14,8 @@ from medidiag.workflow.provider_runtime import ProviderResponse
 
 # ProviderCallRunner.call 接受每个阶段的两种返回形态：裸载荷，
 # 或带有请求 ID 和 Provider 计数器的 ProviderResponse，后者用于
-# 审计。DeepSeekWorkflowProvider.generate 已经返回后一种形态，因此
-# Protocol 必须同时允许两者，否则会与唯一的在线实现矛盾。
+# 审计。MimoGroundedWorkflowProvider 返回后一种形态，因此 Protocol
+# 必须同时允许两者，否则会与在线实现矛盾。
 StageResult = dict[str, Any] | ProviderResponse
 
 

@@ -17,7 +17,7 @@ from medidiag.workflow.worker import SingleMachineWorker
 class UnavailableGenerationProvider(DeterministicWorkflowProvider):
     """保持本地演示阶段确定，只让在线边界失败。"""
 
-    version = "deepseek-live-demo:test-unavailable"
+    version = "live-demo:test-unavailable"
 
     def generate(self, question: str, retrieval: dict, plan: dict) -> dict:
         request = httpx.Request("POST", "https://provider.invalid/v1/chat/completions")
@@ -52,7 +52,7 @@ def test_demo_stops_after_bounded_generation_failure_and_renders_safe_notice(tmp
             result = SingleMachineWorker(
                 factory,
                 UnavailableGenerationProvider(
-                    version="deepseek-live-demo:test-unavailable"
+                    version="live-demo:test-unavailable"
                 ),
                 worker_id="demo-provider-failure-worker",
                 call_runner=ProviderCallRunner(max_attempts=1, sleep=lambda _: None),
@@ -82,7 +82,7 @@ def test_demo_stops_after_bounded_generation_failure_and_renders_safe_notice(tmp
                     "stage": "generation",
                     "attempt": 0,
                     "error_code": "PROVIDER_UNAVAILABLE",
-                    "component_version": "deepseek-live-demo:test-unavailable",
+                    "component_version": "live-demo:test-unavailable",
                     "provider_request_id": "req-demo-unavailable",
                     "provider_retry_count": 0,
                     "retry_decision": "exhausted",

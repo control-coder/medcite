@@ -11,6 +11,13 @@ from medidiag.errors import MediDiagError
 from medidiag.llm import FakeProvider, LLMRequest, OpenAICompatibleProvider, get_provider_profile
 
 
+def _custom_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """为 openai_compatible_custom 档案补齐环境变量。"""
+    monkeypatch.setenv("CUSTOM_LLM_API_KEY", "test-key")
+    monkeypatch.setenv("CUSTOM_LLM_BASE_URL", "https://provider.invalid")
+    monkeypatch.setenv("CUSTOM_LLM_MODEL", "custom-test")
+
+
 def _response(
     payload: dict,
     *,
@@ -133,16 +140,16 @@ def test_mimo_profile_filters_unsupported_sampling_parameters(
     assert result.provenance_mode == "provider_response_id"
 
 
-def test_deepseek_profile_preserves_fingerprint_tool_calls_and_usage(
+def test_custom_profile_preserves_fingerprint_tool_calls_and_usage(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
 
     def fake_post(url: str, **kwargs) -> httpx.Response:
         return _response(
             {
                 "id": "chatcmpl-1",
-                "model": "deepseek-test",
+                "model": "custom-test",
                 "system_fingerprint": "fp-1",
                 "choices": [
                     {
@@ -163,7 +170,7 @@ def test_deepseek_profile_preserves_fingerprint_tool_calls_and_usage(
             }
         )
 
-    provider = OpenAICompatibleProvider(get_provider_profile("deepseek_default"), post=fake_post)
+    provider = OpenAICompatibleProvider(get_provider_profile("openai_compatible_custom"), post=fake_post)
     result = provider.generate(
         LLMRequest(
             messages=[{"role": "user", "content": "test"}],
@@ -183,7 +190,7 @@ def test_deepseek_profile_preserves_fingerprint_tool_calls_and_usage(
 def test_openai_compatible_provider_retries_429_then_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     calls = 0
     sleeps: list[float] = []
 
@@ -199,7 +206,7 @@ def test_openai_compatible_provider_retries_429_then_succeeds(
         return _response({"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]})
 
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=fake_post,
         sleep=sleeps.append,
         max_retries=1,
@@ -231,9 +238,9 @@ def test_openai_compatible_provider_maps_non_retryable_errors(
     body: dict,
     expected_code: str,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=lambda *args, **kwargs: _response(body, status=status),
         max_retries=0,
     )
@@ -249,9 +256,10 @@ def test_openai_compatible_provider_maps_non_retryable_errors(
 
 
 def test_missing_api_key_maps_to_provider_auth_failed(monkeypatch: pytest.MonkeyPatch) -> None:
-    profile = get_provider_profile("deepseek_default")
+    _custom_env(monkeypatch)
+    profile = get_provider_profile("openai_compatible_custom")
     # profile 加载会读取项目 .env；显式空值用于验证 adapter 的缺密钥错误映射。
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "")
+    monkeypatch.setenv("CUSTOM_LLM_API_KEY", "")
     provider = OpenAICompatibleProvider(profile, max_retries=0)
 
     with pytest.raises(MediDiagError) as caught:
@@ -276,7 +284,7 @@ def test_transport_errors_are_mapped_after_retry_budget_exhausted(
     transport_error: httpx.RequestError,
     expected_code: str,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     calls = 0
 
     def failing_post(url: str, **kwargs) -> httpx.Response:
@@ -285,7 +293,7 @@ def test_transport_errors_are_mapped_after_retry_budget_exhausted(
         raise transport_error
 
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=failing_post,
         sleep=lambda _: None,
         max_retries=1,
@@ -303,7 +311,7 @@ def test_transport_errors_are_mapped_after_retry_budget_exhausted(
 
 
 def test_profile_defaults_are_applied_to_request_body(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     captured: dict = {}
 
     def fake_post(url: str, **kwargs) -> httpx.Response:
@@ -311,7 +319,7 @@ def test_profile_defaults_are_applied_to_request_body(monkeypatch: pytest.Monkey
         return _response({"choices": [{"message": {"content": "ok"}}]})
 
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=fake_post,
         max_retries=0,
     )
@@ -323,15 +331,15 @@ def test_profile_defaults_are_applied_to_request_body(monkeypatch: pytest.Monkey
 
     assert captured["json"]["temperature"] == 0
     assert captured["json"]["max_tokens"] == 1200
-    assert captured["json"]["thinking"] == {"type": "disabled"}
+    assert "thinking" not in captured["json"]  # 该档案的 reasoning_mode 是 provider_default，不下发思考开关
 
 
 def test_structured_output_invalid_is_not_coerced_to_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=lambda *args, **kwargs: _response({"choices": [{"message": {"content": "not-json"}}]}),
         max_retries=0,
     )
@@ -352,7 +360,7 @@ def test_structured_output_invalid_is_not_coerced_to_success(
 def test_structured_output_invalid_gets_one_controlled_regeneration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    _custom_env(monkeypatch)
     responses = iter(
         [
             _response(
@@ -378,7 +386,7 @@ def test_structured_output_invalid_gets_one_controlled_regeneration(
         return next(responses)
 
     provider = OpenAICompatibleProvider(
-        get_provider_profile("deepseek_default"),
+        get_provider_profile("openai_compatible_custom"),
         post=fake_post,
         sleep=lambda _: None,
         max_retries=2,

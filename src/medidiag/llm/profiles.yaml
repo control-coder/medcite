@@ -21,31 +21,6 @@ profiles:
       response_id: true
       system_fingerprint: true
 
-  deepseek_default:
-    adapter: openai_compatible
-    provider_id: deepseek
-    base_url: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-    api_key_env: DEEPSEEK_API_KEY
-    model: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
-    api_style: chat_completions
-    temperature: 0
-    max_tokens: 1200
-    reasoning_mode: disabled
-    timeout_s: 60
-    require_response_id: false
-    capabilities:
-      chat_completions: true
-      responses: false
-      structured_output: true
-      tool_calling: true
-      reasoning_mode: true
-      temperature: true
-      top_p: true
-      streaming: false
-      max_output_tokens: true
-      response_id: true
-      system_fingerprint: false
-
   # 名字沿用 mimo_v25，避免改动已写入记录的配置名；实际模型见 medidiag/llm/models.py。
   mimo_v25:
     adapter: openai_compatible

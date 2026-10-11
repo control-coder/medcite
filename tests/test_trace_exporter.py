@@ -65,8 +65,8 @@ def test_exporter_emits_required_fields_and_redacted_links(tmp_path) -> None:
     assert "secret-idempotency-value" not in result.raw_path.read_text(encoding="utf-8")
     created = next(item for item in raw if item["event_type"] == "case_created")
     assert created["detail"]["idempotency_key"] == "[REDACTED]"
-    assert TraceExporter._sanitize({"deepseek_api_key": "key-value"}) == {
-        "deepseek_api_key": "[REDACTED]"
+    assert TraceExporter._sanitize({"llm_api_key": "key-value"}) == {
+        "llm_api_key": "[REDACTED]"
     }
     assert TraceExporter._sanitize("Bearer token-value") == "Bearer [REDACTED]"
     stage_events = [item for item in raw if item["event_type"] == "stage_completed"]

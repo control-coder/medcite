@@ -85,7 +85,7 @@ class ProviderResponse:
 
     payload: dict[str, Any]
     request_id: str | None = None
-    # 非敏感的 Provider 计数器，例如 DeepSeek 提示缓存使用量。
+    # 非敏感的 Provider 计数器，例如模型服务返回的缓存命中 Token 数。
     metadata: dict[str, Any] = field(default_factory=dict)
 
 

@@ -21,13 +21,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # 大语言模型
-    deepseek_api_key: str = ""
-    # DeepSeek 官方 OpenAI-compatible API。
-    deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_model: str = "deepseek-v4-flash"
-    deepseek_timeout_seconds: int = 60
-
     # 数据库
     database_url: str = "sqlite:///./medidiag.db"
 

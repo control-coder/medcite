@@ -25,7 +25,7 @@ _PROVIDER_CHOICES = click.Choice(["fake_offline", "retrieval_mock", "mimo_ground
 
 # 连接探测可用的模型配置档案，见 llm/profiles.yaml。
 _PROFILE_CHOICES = click.Choice(
-    ["fake_offline", "deepseek_default", "mimo_v25", "openai_compatible_custom"], case_sensitive=False
+    ["fake_offline", "mimo_v25", "openai_compatible_custom"], case_sensitive=False
 )
 
 
