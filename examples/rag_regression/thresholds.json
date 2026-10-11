@@ -1,0 +1,22 @@
+{
+  "description": "端到端回归门槛：取自入库报告的观测值，含义是不得比现在更差，不是质量证明。",
+  "report": "artifacts/reports/llm/llm-pipeline-v3-flash-20261010.json",
+  "rules": {
+    "max_false_answers": 0,
+    "max_first_pass_violations_per_trial": 3,
+    "max_unrecovered_violations_per_trial": 1,
+    "min_useful_answers": {
+      "bm25": 33,
+      "bm25_rewrite": 46,
+      "bm25_agent": 44,
+      "dense": 52,
+      "dense_agent": 54
+    }
+  },
+  "basis": {
+    "max_false_answers": "28 条不可回答的问题，所有条件、所有采样、两条统计路径下都是 0 条误答；0/28 的 95% 区间上限约 12%，所以这条只能发现退化。",
+    "max_first_pass_violations_per_trial": "84 个请求里，一次通过时观测到 1 到 3 次逐字绑定违规。",
+    "max_unrecovered_violations_per_trial": "带原因重试一次后，除 BM25 的第 1、2 次采样各剩 1 次（pv2_D_11：摘录只取了片段后半句）外都是 0。",
+    "min_useful_answers": "取各条件重试后有用回答数在所有采样里的最小值（共 56 条可回答的问题）；BM25 有 3 次采样，最小值 33。"
+  }
+}

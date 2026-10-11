@@ -46,6 +46,41 @@ jobs:
       - name: Mypy
         run: mypy src
 
+  # 零网络回归门槛：回放仓库内的模型调用记录，核对指标与入库报告逐项一致，再对照阈值。
+  # 退化即失败；向量检索依赖本地嵌入模型，不在这里重新检索。
+  eval-regression:
+    runs-on: ubuntu-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: 安装项目依赖
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: 回放调用记录并核对入库报告
+        run: >
+          python -m pytest -q
+          tests/test_llm_replay_committed.py
+          tests/test_llm_replay_flash.py
+          tests/test_llm_replay_v3.py
+
+      - name: 回归集与阈值
+        run: python -m pytest -q tests/test_regression_gate.py tests/test_failure_attribution.py tests/test_retrieval_matrix.py
+
+      - name: 回归门槛
+        run: python -m eval.regression_gate
+
   # 浏览器级端到端：真实 API + 独立 worker + retrieval_mock（真实 BM25 检索，无模型、无密钥）。
   # 使用 Playwright 自带 Chromium；本机验收仍默认用已安装的 Edge。
   e2e:
