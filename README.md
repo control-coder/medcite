@@ -224,16 +224,13 @@ tests/            自动化测试
 | [API 与前端行为](docs/api.md) | 接口、输入约束、结果投影与失败语义 |
 | [开发与运行](docs/development.md) | 安装、各运行模式、验证命令、演示路线与排障 |
 | [评测与验证](docs/evaluation.md) | 检索对照、故障压测、真实模型验证、失败案例与限制 |
-| [研究评测协议](docs/research/evaluation-protocol.md) | 历史 formal 评测与人工 citation 复核流程（对应代码已删除） |
-| [NLI 语言兼容性复盘](docs/research/nli-language-compatibility.md) | 历史评测中中英文混杂对 NLI 的影响 |
-| [评测目录说明](eval/README.md)、[报告索引](artifacts/reports/README.md) | 评测代码、历史数据与报告说明 |
+| [评测目录说明](eval/README.md)、[报告索引](artifacts/reports/README.md) | 评测代码、模型调用记录与报告说明 |
 
 ## 局限
 
 - 引用关联只证明内容可追溯到原文，不证明语义正确或医学适用；中文应用路径未使用 NLI 做语义审核。
 - 默认配置仍是 BM25；向量检索方案需要本机先准备模型缓存，且每个问题都会调用一次模型；BM25 加问题改写（`configs/application_rewrite.yaml`）每个问题还要多一次调用，BM25 加检索智能体（`configs/application_agent.yaml`）平均每题要多 2 次左右，两者在评测里都不如向量检索，检索智能体只用 3 个问题做过真实调用冒烟。评测问题由 AI 辅助撰写，不可回答的问题只有 28 条，真实用户问题上的表现没有测过。
 - 匿名会话不支持账号找回或跨设备迁移；未做公网生产部署、多机容量与临床效果验证。
-- 历史研究 formal 报告受中英文 NLI 输入混杂影响，相关指标仅作历史测量，见 [复盘](docs/research/nli-language-compatibility.md)。
 
 ## 许可证
 

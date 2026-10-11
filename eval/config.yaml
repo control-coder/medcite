@@ -68,10 +68,6 @@ dataset:
     kappa_below_threshold: 0.60
     kappa_discuss_range: [0.60, 0.80]
     kappa_stable_threshold: 0.80
-    citation_sample_path: "eval/annotations/citation_sample_v1.jsonl"
-    annotator_a_path: "eval/annotations/citation_labels_a_v1.jsonl"
-    annotator_b_path: "eval/annotations/citation_labels_b_v1.jsonl"
-    adjudication_path: "eval/annotations/citation_adjudication_v1.jsonl"
 
 retrieval:
   top_k: 5

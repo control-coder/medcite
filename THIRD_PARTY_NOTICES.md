@@ -28,5 +28,4 @@ examples/public_health 中的 8 个片段来自世界卫生组织中文公开科
 - 来源：Jin et al., "What Disease does this Patient Have? A Large-scale Open Domain Question Answering Dataset from Medical Exams", Applied Sciences 2021；`https://github.com/jind11/MedQA`
 - 许可：上游仓库为 MIT。
 - 使用：`eval/datasets/eval_set_medqa.jsonl` 为 MedQA US 测试题转换结果。MedQA 附带的英文教材著作权属原出版社，本仓库不分发教材语料，完整知识库须按 [eval/README.md](eval/README.md) 本地重建。
-- 例外：`eval/annotations/` 中的 citation 抽样与模型预标注为审计引用关联，保留了评测时检索到的少量教材短片段（单段不超过 800 字符），仅用于研究评测；权利人如有异议请提交 Issue，将移除相应片段。
 
