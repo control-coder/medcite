@@ -48,8 +48,7 @@ desktop.ini
 
 # 运行产物；已有版本化历史记录仍保留
 artifacts/visual/
-artifacts/reports/raw/**
-!artifacts/reports/raw/.gitkeep
+artifacts/reports/raw/
 artifacts/traces/raw/*.jsonl
 artifacts/traces/summary/*.json
 eval/config.formal.yaml
