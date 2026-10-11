@@ -1,0 +1,1698 @@
+{
+  "schema_version": "failure-attribution-v1",
+  "generated_at": "2026-10-11T03:03:40.507095+00:00",
+  "source_report": "llm-pipeline-v3-flash-20261010.json",
+  "external_model_calls": 0,
+  "annotators": "1 人（项目作者），未做第二人独立标注",
+  "headline": {
+    "bm25": {
+      "useful": "36/56",
+      "false_answer": "0/28",
+      "over_abstention": "20/56",
+      "f1": 0.7826
+    },
+    "bm25_rewrite": {
+      "useful": "46/56",
+      "false_answer": "0/28",
+      "over_abstention": "9/56",
+      "f1": 0.8932
+    },
+    "bm25_agent": {
+      "useful": "44/56",
+      "false_answer": "0/28",
+      "over_abstention": "12/56",
+      "f1": 0.88
+    },
+    "dense": {
+      "useful": "52/56",
+      "false_answer": "0/28",
+      "over_abstention": "3/56",
+      "f1": 0.9541
+    },
+    "dense_agent": {
+      "useful": "54/56",
+      "false_answer": "0/28",
+      "over_abstention": "1/56",
+      "f1": 0.973
+    }
+  },
+  "retry_key": "feedback_retry",
+  "labels": [
+    "检索缺失",
+    "检索噪声",
+    "充分性误判",
+    "生成违规",
+    "校验误判",
+    "弃答误判"
+  ],
+  "answerable_n": 56,
+  "unanswerable_n": 28,
+  "failures_by_condition_and_label": {
+    "bm25": {
+      "检索缺失": 20,
+      "检索噪声": 0,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 0,
+      "弃答误判": 0
+    },
+    "bm25_rewrite": {
+      "检索缺失": 9,
+      "检索噪声": 1,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 0,
+      "弃答误判": 0
+    },
+    "bm25_agent": {
+      "检索缺失": 12,
+      "检索噪声": 0,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 0,
+      "弃答误判": 0
+    },
+    "dense": {
+      "检索缺失": 3,
+      "检索噪声": 1,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 0,
+      "弃答误判": 0
+    },
+    "dense_agent": {
+      "检索缺失": 1,
+      "检索噪声": 1,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 0,
+      "弃答误判": 0
+    }
+  },
+  "failure_totals_by_condition": {
+    "bm25": 20,
+    "bm25_rewrite": 10,
+    "bm25_agent": 12,
+    "dense": 4,
+    "dense_agent": 2
+  },
+  "retrieval_missing_partial_by_condition": {
+    "bm25": 2,
+    "bm25_rewrite": 3,
+    "bm25_agent": 2,
+    "dense": 0,
+    "dense_agent": 0
+  },
+  "repeated_trials": {
+    "bm25/trial_1": {
+      "检索缺失": 21,
+      "检索噪声": 0,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 1,
+      "弃答误判": 1
+    },
+    "bm25/trial_2": {
+      "检索缺失": 18,
+      "检索噪声": 0,
+      "充分性误判": 0,
+      "生成违规": 0,
+      "校验误判": 1,
+      "弃答误判": 1
+    }
+  },
+  "distinct_failing_queries": 23,
+  "distinct_queries_by_label": {
+    "检索缺失": 23,
+    "检索噪声": 2,
+    "充分性误判": 0,
+    "生成违规": 0,
+    "校验误判": 0,
+    "弃答误判": 0
+  },
+  "queries_failing_in_all_conditions": [
+    "pv2_A_19",
+    "pv2_C_23"
+  ],
+  "reviewed": [
+    {
+      "condition": "bm25",
+      "sample_id": "pv2_D_11",
+      "label": "校验误判",
+      "reason": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。"
+    }
+  ],
+  "failures": [
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "public_q12",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "gold": [
+        "kb_covid_ventilation_01"
+      ],
+      "retrieved": [],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "public_q12",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "gold": [
+        "kb_covid_ventilation_01"
+      ],
+      "retrieved": [],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "public_q12",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_covid_ventilation_01']；模型弃答",
+      "gold": [
+        "kb_covid_ventilation_01"
+      ],
+      "retrieved": [],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_05",
+      "bucket": "direct",
+      "label": "弃答误判",
+      "note": "必需的正确片段都在 3 个片段里，模型仍弃答",
+      "gold": [
+        "kb_dengue_02"
+      ],
+      "retrieved": [
+        "kb_dengue_02",
+        "kb_dengue_04",
+        "kb_vector_borne_diseases_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "gold": [
+        "kb_tb_02"
+      ],
+      "retrieved": [
+        "kb_foodborne_trematode_infections_01",
+        "kb_nipah_virus_03",
+        "kb_epilepsy_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "gold": [
+        "kb_tb_02"
+      ],
+      "retrieved": [
+        "kb_foodborne_trematode_infections_01",
+        "kb_nipah_virus_03",
+        "kb_epilepsy_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_02']；模型弃答",
+      "gold": [
+        "kb_tb_02"
+      ],
+      "retrieved": [
+        "kb_foodborne_trematode_infections_01",
+        "kb_nipah_virus_03",
+        "kb_epilepsy_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_14",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "gold": [
+        "kb_tb_03"
+      ],
+      "retrieved": [
+        "kb_sand_and_dust_storms_02",
+        "kb_ageing_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_14",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "gold": [
+        "kb_tb_03"
+      ],
+      "retrieved": [
+        "kb_sand_and_dust_storms_02",
+        "kb_ageing_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_14",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tb_03']；模型弃答",
+      "gold": [
+        "kb_tb_03"
+      ],
+      "retrieved": [
+        "kb_sand_and_dust_storms_02",
+        "kb_ageing_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "gold": [
+        "kb_rabies_03"
+      ],
+      "retrieved": [
+        "kb_newborn_mortality_01",
+        "kb_oropouche_virus_disease_03",
+        "kb_healthy_diet_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "gold": [
+        "kb_rabies_03"
+      ],
+      "retrieved": [
+        "kb_newborn_mortality_01",
+        "kb_oropouche_virus_disease_03",
+        "kb_healthy_diet_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "gold": [
+        "kb_rabies_03"
+      ],
+      "retrieved": [
+        "kb_newborn_mortality_01",
+        "kb_oropouche_virus_disease_03",
+        "kb_healthy_diet_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_stroke_01",
+        "kb_yf_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_stroke_01",
+        "kb_yf_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_stroke_01",
+        "kb_yf_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "gold": [
+        "kb_cholera_03"
+      ],
+      "retrieved": [
+        "kb_cholera_01",
+        "kb_campylobacter_01",
+        "kb_nipah_virus_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "gold": [
+        "kb_cholera_03"
+      ],
+      "retrieved": [
+        "kb_cholera_01",
+        "kb_campylobacter_01",
+        "kb_nipah_virus_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cholera_03']；模型弃答",
+      "gold": [
+        "kb_cholera_03"
+      ],
+      "retrieved": [
+        "kb_cholera_01",
+        "kb_campylobacter_01",
+        "kb_nipah_virus_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_22",
+      "bucket": "paraphrase",
+      "label": "弃答误判",
+      "note": "必需的正确片段都在 3 个片段里，模型仍弃答",
+      "gold": [
+        "kb_measles_04"
+      ],
+      "retrieved": [
+        "kb_measles_04",
+        "kb_tb_01",
+        "kb_adolescents_health_risks_and_solutions_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_A_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "gold": [
+        "kb_hiv_02",
+        "kb_hepb_02"
+      ],
+      "retrieved": [
+        "kb_family_planning_contraception_02",
+        "kb_trichomoniasis_04",
+        "kb_tb_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_A_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "gold": [
+        "kb_hiv_02",
+        "kb_hepb_02"
+      ],
+      "retrieved": [
+        "kb_family_planning_contraception_02",
+        "kb_trichomoniasis_04",
+        "kb_tb_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_A_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "gold": [
+        "kb_hiv_02",
+        "kb_hepb_02"
+      ],
+      "retrieved": [
+        "kb_family_planning_contraception_02",
+        "kb_trichomoniasis_04",
+        "kb_tb_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_B_03",
+      "bucket": "direct",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "gold": [
+        "kb_hypertension_01"
+      ],
+      "retrieved": [
+        "kb_stroke_03",
+        "kb_hypertension_02",
+        "kb_hypertension_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_B_03",
+      "bucket": "direct",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "gold": [
+        "kb_hypertension_01"
+      ],
+      "retrieved": [
+        "kb_stroke_03",
+        "kb_hypertension_02",
+        "kb_hypertension_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_B_03",
+      "bucket": "direct",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "gold": [
+        "kb_hypertension_01"
+      ],
+      "retrieved": [
+        "kb_stroke_03",
+        "kb_hypertension_02",
+        "kb_hypertension_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_B_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "gold": [
+        "kb_dementia_03"
+      ],
+      "retrieved": [
+        "kb_depression_02",
+        "kb_depression_01",
+        "kb_female_genital_mutilation_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_B_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "gold": [
+        "kb_dementia_03"
+      ],
+      "retrieved": [
+        "kb_depression_02",
+        "kb_depression_01",
+        "kb_female_genital_mutilation_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_B_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "gold": [
+        "kb_dementia_03"
+      ],
+      "retrieved": [
+        "kb_depression_02",
+        "kb_depression_01",
+        "kb_female_genital_mutilation_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_B_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_asbestos_01",
+        "kb_suicide_01",
+        "kb_musculoskeletal_conditions_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_B_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_asbestos_01",
+        "kb_suicide_01",
+        "kb_musculoskeletal_conditions_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_B_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_asbestos_01",
+        "kb_suicide_01",
+        "kb_musculoskeletal_conditions_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_B_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "gold": [
+        "kb_oral_02"
+      ],
+      "retrieved": [
+        "kb_musculoskeletal_conditions_01",
+        "kb_foodborne_trematode_infections_01",
+        "kb_salmonella_non_typhoidal_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_B_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "gold": [
+        "kb_oral_02"
+      ],
+      "retrieved": [
+        "kb_musculoskeletal_conditions_01",
+        "kb_foodborne_trematode_infections_01",
+        "kb_salmonella_non_typhoidal_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_B_21",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_02']；模型弃答",
+      "gold": [
+        "kb_oral_02"
+      ],
+      "retrieved": [
+        "kb_musculoskeletal_conditions_01",
+        "kb_foodborne_trematode_infections_01",
+        "kb_salmonella_non_typhoidal_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_B_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_diabetes_04",
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_obesity_04",
+        "kb_epilepsy_04",
+        "kb_diabetes_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_B_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_diabetes_04",
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_obesity_04",
+        "kb_epilepsy_04",
+        "kb_diabetes_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "gold": [
+        "kb_healthy_diet_01"
+      ],
+      "retrieved": [
+        "kb_yaws_04",
+        "kb_opioid_overdose_01",
+        "kb_electricity_in_health_care_facilities_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "gold": [
+        "kb_healthy_diet_01"
+      ],
+      "retrieved": [
+        "kb_yaws_04",
+        "kb_opioid_overdose_01",
+        "kb_electricity_in_health_care_facilities_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "gold": [
+        "kb_healthy_diet_01"
+      ],
+      "retrieved": [
+        "kb_yaws_04",
+        "kb_opioid_overdose_01",
+        "kb_electricity_in_health_care_facilities_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_15",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "gold": [
+        "kb_physical_activity_04"
+      ],
+      "retrieved": [
+        "kb_tb_04",
+        "kb_road_traffic_02",
+        "kb_lead_poisoning_and_health_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_15",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "gold": [
+        "kb_physical_activity_04"
+      ],
+      "retrieved": [
+        "kb_tb_04",
+        "kb_road_traffic_02",
+        "kb_lead_poisoning_and_health_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_15",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "gold": [
+        "kb_physical_activity_04"
+      ],
+      "retrieved": [
+        "kb_tb_04",
+        "kb_road_traffic_02",
+        "kb_lead_poisoning_and_health_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_16",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "gold": [
+        "kb_tobacco_02"
+      ],
+      "retrieved": [
+        "kb_violence_against_children_02",
+        "kb_drowning_04",
+        "kb_newborn_mortality_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_16",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "gold": [
+        "kb_tobacco_02"
+      ],
+      "retrieved": [
+        "kb_violence_against_children_02",
+        "kb_drowning_04",
+        "kb_newborn_mortality_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_16",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "gold": [
+        "kb_tobacco_02"
+      ],
+      "retrieved": [
+        "kb_violence_against_children_02",
+        "kb_drowning_04",
+        "kb_newborn_mortality_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "gold": [
+        "kb_alcohol_04"
+      ],
+      "retrieved": [
+        "kb_refugee_and_migrant_health_02",
+        "kb_nipah_virus_04",
+        "kb_ebola_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "gold": [
+        "kb_alcohol_04"
+      ],
+      "retrieved": [
+        "kb_refugee_and_migrant_health_02",
+        "kb_nipah_virus_04",
+        "kb_ebola_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "gold": [
+        "kb_alcohol_04"
+      ],
+      "retrieved": [
+        "kb_refugee_and_migrant_health_02",
+        "kb_nipah_virus_04",
+        "kb_ebola_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "gold": [
+        "kb_alcohol_02"
+      ],
+      "retrieved": [
+        "kb_cvd_03",
+        "kb_rehabilitation_04",
+        "kb_air_outdoor_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "gold": [
+        "kb_alcohol_02"
+      ],
+      "retrieved": [
+        "kb_cvd_03",
+        "kb_rehabilitation_04",
+        "kb_air_outdoor_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "gold": [
+        "kb_alcohol_02"
+      ],
+      "retrieved": [
+        "kb_cvd_03",
+        "kb_rehabilitation_04",
+        "kb_air_outdoor_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_depression_03",
+        "kb_electronic_waste_e_waste_04",
+        "kb_hiv_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_depression_03",
+        "kb_electronic_waste_e_waste_04",
+        "kb_hiv_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_depression_03",
+        "kb_electronic_waste_e_waste_04",
+        "kb_hiv_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_22",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "gold": [
+        "kb_oral_health_03"
+      ],
+      "retrieved": [
+        "kb_epilepsy_01",
+        "kb_hypertension_01",
+        "kb_oral_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_22",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "gold": [
+        "kb_oral_health_03"
+      ],
+      "retrieved": [
+        "kb_epilepsy_01",
+        "kb_hypertension_01",
+        "kb_oral_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_C_22",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_oral_health_03']；模型弃答",
+      "gold": [
+        "kb_oral_health_03"
+      ],
+      "retrieved": [
+        "kb_epilepsy_01",
+        "kb_hypertension_01",
+        "kb_oral_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 0,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_02']；模型弃答",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_03",
+        "kb_trans_fat_04",
+        "kb_trans_fat_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_02']；模型弃答",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_03",
+        "kb_trans_fat_04",
+        "kb_trans_fat_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_C_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "gold": [
+        "kb_malnutrition_02",
+        "kb_salt_04"
+      ],
+      "retrieved": [
+        "kb_malnutrition_02",
+        "kb_malnutrition_01",
+        "kb_nipah_virus_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25",
+      "trial": 1,
+      "sample_id": "pv2_D_11",
+      "bucket": "direct",
+      "label": "校验误判",
+      "note": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。",
+      "gold": [
+        "kb_immunization_03"
+      ],
+      "retrieved": [
+        "kb_immunization_03",
+        "kb_oral_04",
+        "kb_hantavirus_02"
+      ],
+      "decision": "invalid"
+    },
+    {
+      "condition": "bm25",
+      "trial": 2,
+      "sample_id": "pv2_D_11",
+      "bucket": "direct",
+      "label": "校验误判",
+      "note": "第二条引用 kb_oral_04 的摘录是该片段后半句的原文，内容忠实、引用正确；被拒是因为规则要求摘录等于整段原文。带原因重试一次后模型仍截取半句。",
+      "gold": [
+        "kb_immunization_03"
+      ],
+      "retrieved": [
+        "kb_immunization_03",
+        "kb_oral_04",
+        "kb_hantavirus_02"
+      ],
+      "decision": "invalid"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_A_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "gold": [
+        "kb_rabies_03"
+      ],
+      "retrieved": [
+        "kb_campylobacter_03",
+        "kb_newborn_mortality_01",
+        "kb_oropouche_virus_disease_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_syphilis_02",
+        "kb_ionizing_radiation_and_health_effects_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_A_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hiv_02']；模型弃答",
+      "gold": [
+        "kb_hiv_02",
+        "kb_hepb_02"
+      ],
+      "retrieved": [
+        "kb_family_planning_contraception_02",
+        "kb_trichomoniasis_04",
+        "kb_hepb_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_B_03",
+      "bucket": "direct",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "gold": [
+        "kb_hypertension_01"
+      ],
+      "retrieved": [
+        "kb_stroke_03",
+        "kb_hypertension_02",
+        "kb_hypertension_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_B_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "gold": [
+        "kb_dementia_03"
+      ],
+      "retrieved": [
+        "kb_depression_02",
+        "kb_depression_01",
+        "kb_anaemia_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_B_20",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_asbestos_01",
+        "kb_rabies_01",
+        "kb_corporal_punishment_and_health_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_B_22",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_stroke_01', 'kb_stroke_04']；模型弃答",
+      "gold": [
+        "kb_stroke_04",
+        "kb_stroke_01"
+      ],
+      "retrieved": [
+        "kb_leishmaniasis_04",
+        "kb_rabies_03",
+        "kb_rabies_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_B_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_cancer_04']；模型弃答",
+      "gold": [
+        "kb_diabetes_04",
+        "kb_cancer_04"
+      ],
+      "retrieved": [
+        "kb_epilepsy_04",
+        "kb_obesity_04",
+        "kb_diabetes_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索噪声",
+      "note": "只引用了非正确片段 ['kb_hypertension_03']；缺少的正确片段 ['kb_salt_02', 'kb_trans_fat_01']",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_04",
+        "kb_trans_fat_03",
+        "kb_hypertension_03"
+      ],
+      "decision": "answered"
+    },
+    {
+      "condition": "bm25_rewrite",
+      "trial": 0,
+      "sample_id": "pv2_C_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "gold": [
+        "kb_malnutrition_02",
+        "kb_salt_04"
+      ],
+      "retrieved": [
+        "kb_malnutrition_02",
+        "kb_malnutrition_01",
+        "kb_electronic_waste_e_waste_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_A_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_rabies_03']；模型弃答",
+      "gold": [
+        "kb_rabies_03"
+      ],
+      "retrieved": [
+        "kb_newborn_mortality_01",
+        "kb_rabies_04",
+        "kb_oropouche_virus_disease_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_ebola_02']；模型弃答",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_crimean_congo_haemorrhagic_fever_01",
+        "kb_stroke_01",
+        "kb_yf_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_A_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hepb_02', 'kb_hiv_02']；模型弃答",
+      "gold": [
+        "kb_hiv_02",
+        "kb_hepb_02"
+      ],
+      "retrieved": [
+        "kb_tb_04",
+        "kb_family_planning_contraception_02",
+        "kb_hiv_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_B_03",
+      "bucket": "direct",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_hypertension_01']；模型弃答",
+      "gold": [
+        "kb_hypertension_01"
+      ],
+      "retrieved": [
+        "kb_stroke_03",
+        "kb_hypertension_02",
+        "kb_hypertension_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_B_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_dementia_03']；模型弃答",
+      "gold": [
+        "kb_dementia_03"
+      ],
+      "retrieved": [
+        "kb_depression_02",
+        "kb_abuse_of_older_people_02",
+        "kb_hearing_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_13",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_healthy_diet_01']；模型弃答",
+      "gold": [
+        "kb_healthy_diet_01"
+      ],
+      "retrieved": [
+        "kb_yaws_04",
+        "kb_opioid_overdose_01",
+        "kb_electricity_in_health_care_facilities_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_16",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "gold": [
+        "kb_tobacco_02"
+      ],
+      "retrieved": [
+        "kb_violence_against_children_02",
+        "kb_tobacco_04",
+        "kb_drowning_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_18",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_04']；模型弃答",
+      "gold": [
+        "kb_alcohol_04"
+      ],
+      "retrieved": [
+        "kb_refugee_and_migrant_health_02",
+        "kb_mercury_and_health_01",
+        "kb_nipah_virus_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_19",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_alcohol_02']；模型弃答",
+      "gold": [
+        "kb_alcohol_02"
+      ],
+      "retrieved": [
+        "kb_cvd_03",
+        "kb_tobacco_02",
+        "kb_rehabilitation_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_03",
+        "kb_cvd_01",
+        "kb_trans_fat_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_25",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_04']；模型弃答",
+      "gold": [
+        "kb_malnutrition_02",
+        "kb_salt_04"
+      ],
+      "retrieved": [
+        "kb_malnutrition_02",
+        "kb_biodiversity_04",
+        "kb_tobacco_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "bm25_agent",
+      "trial": 0,
+      "sample_id": "pv2_D_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_food_safety_03']；模型弃答",
+      "gold": [
+        "kb_immunization_04",
+        "kb_food_safety_03"
+      ],
+      "retrieved": [
+        "kb_immunization_04",
+        "kb_salmonella_non_typhoidal_04",
+        "kb_cholera_02"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "dense",
+      "trial": 0,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索噪声",
+      "note": "只引用了非正确片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的正确片段 ['kb_ebola_02']",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_yf_02",
+        "kb_crimean_congo_haemorrhagic_fever_02",
+        "kb_schistosomiasis_02"
+      ],
+      "decision": "answered"
+    },
+    {
+      "condition": "dense",
+      "trial": 0,
+      "sample_id": "pv2_C_15",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_physical_activity_04']；模型弃答",
+      "gold": [
+        "kb_physical_activity_04"
+      ],
+      "retrieved": [
+        "kb_musculoskeletal_conditions_02",
+        "kb_physical_activity_02",
+        "kb_adolescents_health_risks_and_solutions_01"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "dense",
+      "trial": 0,
+      "sample_id": "pv2_C_16",
+      "bucket": "paraphrase",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_tobacco_02']；模型弃答",
+      "gold": [
+        "kb_tobacco_02"
+      ],
+      "retrieved": [
+        "kb_alcohol_02",
+        "kb_tobacco_01",
+        "kb_corporal_punishment_and_health_04"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "dense",
+      "trial": 0,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_03",
+        "kb_trans_fat_04",
+        "kb_hypertension_03"
+      ],
+      "decision": "abstained"
+    },
+    {
+      "condition": "dense_agent",
+      "trial": 0,
+      "sample_id": "pv2_A_19",
+      "bucket": "paraphrase",
+      "label": "检索噪声",
+      "note": "只引用了非正确片段 ['kb_crimean_congo_haemorrhagic_fever_02']；缺少的正确片段 ['kb_ebola_02']",
+      "gold": [
+        "kb_ebola_02"
+      ],
+      "retrieved": [
+        "kb_yf_02",
+        "kb_crimean_congo_haemorrhagic_fever_02",
+        "kb_schistosomiasis_02"
+      ],
+      "decision": "answered"
+    },
+    {
+      "condition": "dense_agent",
+      "trial": 0,
+      "sample_id": "pv2_C_23",
+      "bucket": "multi",
+      "label": "检索缺失",
+      "note": "3 个片段里缺少 ['kb_salt_02', 'kb_trans_fat_01']；模型弃答",
+      "gold": [
+        "kb_salt_02",
+        "kb_trans_fat_01"
+      ],
+      "retrieved": [
+        "kb_trans_fat_03",
+        "kb_trans_fat_04",
+        "kb_hypertension_03"
+      ],
+      "decision": "abstained"
+    }
+  ]
+}
