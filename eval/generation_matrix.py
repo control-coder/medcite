@@ -1,9 +1,9 @@
-"""生成层与端到端矩阵：由一份端到端评测报告算出各条件的逐字绑定通过率、误答、拒答、作答且选对、回答 F1。
+"""生成层与端到端矩阵：由一份端到端评测报告算出各条件的引用校验通过率、误答、过度拒答、正确作答数、回答 F1。
 
 只读报告 JSON，不联网、不调用模型。统计口径与 ``eval.llm_pipeline_eval`` 完全一致（直接调用它的
 ``generation_metrics`` 和 ``answer_f1``）；这里额外给出 95% 区间：比例用 Wilson 区间，F1 用按查询重抽样的自助法区间。
 
-逐字绑定检查只核对“摘录是否等于本轮给出的某段完整原文、引用是否存在且不重复”。它是确定性的忠实度检查，
+引用校验只核对“摘录是否等于本轮给出的某段完整原文、引用是否存在且不重复”。它是确定性的忠实度检查，
 不判断摘录是否真正回答了问题，更不是语义层面的忠实度。
 
 用法::
@@ -68,7 +68,7 @@ def condition_row(report: dict[str, Any], condition: str, trial: int = 0) -> dic
     f1 = answer_f1(final)
     return {
         "model_calls": called,
-        # L2：逐字绑定通过率 = 模型被调用的请求里，输出一次通过校验的比例；重试一次后再算一遍
+        # L2：引用校验通过率 = 模型被调用的请求里，输出一次通过校验的比例；重试一次后再算一遍
         "binding_pass_first": proportion(called - first_blocked, called),
         "binding_pass_after_retry": proportion(called - final_blocked, called),
         "blocked_first": first_blocked, "blocked_after_retry": final_blocked,

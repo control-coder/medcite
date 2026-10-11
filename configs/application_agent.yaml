@@ -1,5 +1,5 @@
-# 应用 BM25 + 检索智能体方案：不需要向量模型缓存，语料为 v2（51 篇、178 条短引）。
-# 评测依据见 docs/evaluation.md 第五节；搭配 mimo_grounded 使用，模型最多多调用 3 次来决定是否换说法再检索。
+# 应用 BM25 + 检索 Agent 方案：不需要向量模型缓存，语料为 v2（51 篇、178 个片段）。
+# 评测依据见 docs/evaluation.md 第五节；搭配 mimo_grounded 使用，模型最多多调用 3 次来决定是否换用规范表述再检索。
 application:
   mode: retrieval_mock
   topology: single
@@ -12,7 +12,7 @@ retrieval:
   method: bm25
   bm25_tokenizer: cjk_bigram
   top_k: 3
-# 模型输出不合格时带原因重试一次；检索阶段由模型看第一批结果后决定是否换说法再检索（出错时沿用已有结果）。
+# 模型输出未通过校验时带反馈重试一次；检索阶段由模型看第一批结果后决定是否换用规范表述再检索（出错时沿用已有结果）。
 generation:
   on_invalid: feedback
   agent: true

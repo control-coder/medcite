@@ -71,7 +71,7 @@ def run_regression() -> dict:
             "top_k": 3, "runs": runs,
             "versions": {"python": platform.python_version(), "rank-bm25": version("rank-bm25"), "numpy": version("numpy")},
             "external_model_calls": 0,
-            "limitations": ["8 篇 WHO 中文科普页面的短引，16 条 AI 辅助工程查询，非医学金标或盲测。",
+            "limitations": ["8 篇 WHO 中文科普页面的摘录，16 条项目内部构造的查询，不是医学标准答案，也不是盲测。",
                             "只改变 BM25 切分规则；check 结果不用于调参。",
                             "字面相关不等于能回答；无证据参考上的误命中单独保留。",
                             "单进程微型检索耗时不含生成/网络，不作吞吐、P95 或临床效果宣传。"]}

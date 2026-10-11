@@ -1,4 +1,4 @@
-# 应用 BM25 + 查询改写方案：不需要向量模型缓存，语料为 v2（51 篇、178 条短引）。
+# 应用 BM25 + 查询改写方案：不需要向量模型缓存，语料为 v2（51 篇、178 个片段）。
 # 评测依据见 docs/evaluation.md 第三、五节；搭配 mimo_grounded 使用，每个问题多 1 次改写调用。
 application:
   mode: retrieval_mock
@@ -12,7 +12,7 @@ retrieval:
   method: bm25
   bm25_tokenizer: cjk_bigram
   top_k: 3
-# 模型输出不合格时带原因重试一次；检索前先改写问题（失败时回退到原问题）。
+# 模型输出未通过校验时带反馈重试一次；检索前先改写查询（失败时回退到原问题）。
 generation:
   on_invalid: feedback
   rewrite: true
