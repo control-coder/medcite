@@ -24,7 +24,7 @@
 - 任务状态机；幂等键去重；乐观锁；worker 领取任务后在租约内独占并定期续约；各阶段结果落库，中断后可从断点继续；定时扫描数据库，补发已保存但未发出的队列消息。
 - 服务端签发匿名会话，每个用户只能访问自己的数据，访问他人或不存在的数据一律返回 404。
 - 三种运行模式，互不静默切换：`fake_offline`（固定证据与输出，用于无依赖地演示流程）、`retrieval_mock`（真实检索加固定规则摘录，默认演示，不需要模型或密钥）、`mimo_grounded`（真实检索，由 LLM 从检索结果中选择原文片段，有调用预算限制）。
-- 四种检索配置，需显式指定：BM25（`configs/application.yaml`，默认，中文按相邻两字切分）、向量检索（`application_dense.yaml`，固定版本的 bge-small-zh，只读本地缓存）、BM25 加查询改写（`application_rewrite.yaml`）、BM25 加检索 Agent（`application_agent.yaml`）。后三种配置搭配 `mimo_grounded` 使用时，输出校验失败会带反馈重试一次。选型依据见 [架构与取舍](docs/architecture.md)。
+- 四种检索配置，需显式指定：BM25（`configs/application.yaml`，默认，中文按相邻两字切分）、向量检索（`application_dense.yaml`，固定版本的 bge-small-zh，只读本地缓存）、BM25 加查询改写（`application_rewrite.yaml`）、BM25 加检索 Agent（`application_agent.yaml`）、向量检索加检索 Agent（`application_dense_agent.yaml`，v3 语料，与测试集评测的方案一致）。后四种配置搭配 `mimo_grounded` 使用时，输出校验失败会带反馈重试一次。选型依据见 [架构与取舍](docs/architecture.md)。
 - 真实模型调用有预算账本：先扣额度再发请求，失败不退还，重启后不重置，不跟随重定向。
 - 评测代码在 `eval/`，真实模型调用的请求与响应存为调用记录入库，CI 中可不联网回放。
 

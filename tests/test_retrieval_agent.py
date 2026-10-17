@@ -174,3 +174,32 @@ def test_shipped_agent_config_builds_the_agent_provider(monkeypatch, tmp_path) -
     provider = build_application_provider("mimo_grounded", app_config="configs/application_agent.yaml", root=ROOT,
                                           live_budget=tmp_path / "ledger.db")
     assert isinstance(provider, RetrievalAgentWorkflowProvider)
+
+
+def test_shipped_dense_agent_config_builds_agent_on_dense_v3(monkeypatch, tmp_path) -> None:
+    """向量检索 + 检索 Agent：与评测同一语料（v3）和同一嵌入模型版本；用假编码器替代本地模型缓存。"""
+    import numpy as np
+
+    from medidiag.rag.dense import DenseRetriever
+    from medidiag.workflow import application
+
+    def fake_dense(chunks, config):
+        def encode(texts):
+            return np.array([[float(len(t)), 1.0] for t in texts])
+        return DenseRetriever(chunks, encoder=encode, model_name=config["embedding"]["model"],
+                              model_revision=config["embedding"]["revision"])
+
+    monkeypatch.setattr(application, "_dense_factory", fake_dense)
+    monkeypatch.setenv("MIMO_API_KEY", "test-not-a-secret")
+    monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
+    config = load_application_config(ROOT / "configs/application_dense_agent.yaml")
+    assert config["retrieval"]["method"] == "dense" and config["generation"]["agent"] is True
+    assert config["dataset"]["version"] == "public-health-excerpts-v3"
+    assert config["embedding"]["revision"] == load_application_config(
+        ROOT / "configs/application_dense.yaml")["embedding"]["revision"]
+    provider = application.build_application_provider(
+        "mimo_grounded", app_config="configs/application_dense_agent.yaml", root=ROOT,
+        live_budget=tmp_path / "ledger.db")
+    assert isinstance(provider, RetrievalAgentWorkflowProvider)
+    assert isinstance(provider.rag_stage.retriever, DenseRetriever)
+    assert len(provider.rag_stage.chunks) == 498

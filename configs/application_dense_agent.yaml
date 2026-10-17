@@ -1,0 +1,29 @@
+# 应用向量检索 + 检索 Agent：固定版本的 bge-small-zh（只读本地缓存，不自动下载），语料为 v3（131 篇页面，498 个片段），
+# 与 docs/evaluation.md 第三节测试集评测的配置一致。仅供 mimo_grounded 使用：先按原问题检索一次，再由模型通过工具调用
+# 决定是否换用规范表述继续检索（最多再检索 2 次），多轮结果用 RRF 融合取前 3 段交给受约束摘录。需要本机准备好模型缓存。
+application:
+  mode: retrieval_mock
+  topology: single
+runtime:
+  device: cpu
+  batch_size: 8
+embedding:
+  model: BAAI/bge-small-zh-v1.5
+  revision: 7999e1d3359715c523056ef9478215996d62a620
+  local_files_only: true
+dataset:
+  version: public-health-excerpts-v3
+  knowledge_base_path: examples/public_health_v3/chunks.jsonl
+  rag_eval_set_path: examples/public_health_v3/queries.jsonl
+  agent_eval_set_path: examples/public_health_v3/queries.jsonl
+retrieval:
+  method: dense
+  top_k: 3
+# 摘录未通过校验时带上原因重试一次；检索 Agent 不能与固定的问题改写同时开启。
+generation:
+  on_invalid: feedback
+  agent: true
+leakage_check:
+  chunk_fields_to_check: [source, source_id, metadata.raw_id]
+  check_question_text: true
+  check_answer_key: true

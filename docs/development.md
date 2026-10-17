@@ -149,6 +149,15 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/rewri
 python -I scripts/verify_dense_application.py --allow-live --ledger .cache/agent-ledger.db --app-config configs/application_agent.yaml --cases 2
 ```
 
+### 向量检索加检索 Agent
+
+`configs/application_dense_agent.yaml`：首次检索与追加检索都用固定版本的向量检索，语料为 v3（131 篇页面，498 个片段），与 `docs/evaluation.md` 第三节测试集评测使用的检索方案、语料和嵌入模型版本一致。检索 Agent 的行为与上一节相同。需要本机已有模型缓存；首次启动需要给 498 个片段建立索引。配合 `--provider retrieval_mock` 时只做向量检索、不调用模型，可以先确认模型缓存和索引可用：
+
+```powershell
+python -m medidiag.cli demo --provider retrieval_mock --app-config configs/application_dense_agent.yaml --port 8400
+python -I scripts/verify_dense_application.py --allow-live --ledger .cache/dense-agent-ledger.db --app-config configs/application_dense_agent.yaml --cases 2
+```
+
 ### 评测的调用记录
 
 评测（`eval/llm_pipeline_eval.py`）把每次模型调用的请求和回复存成调用记录（`eval/cassettes/`），之后可以零网络、零费用回放。`--model` 指定请求用的模型名：新的调用并记录用默认的 `mimo-v2.6-flash`，回放 v2.5 的旧记录要加 `--model mimo-v2.5`。改动提示词、检索分词、证据排序或检索 Agent 的提示词与工具定义，都会使请求哈希变化而回放失败，需要重新调用并记录（付费，先确认账本额度）。回放测试为 `tests/test_llm_replay_committed.py`（v2.5）、`tests/test_llm_replay_flash.py`（v2.6-flash，v2 语料）和 `tests/test_llm_replay_v3.py`（v2.6-flash，v3 语料）。
