@@ -1,0 +1,36 @@
+# 应用配置：向量检索 + 检索 Agent + 交叉编码器重排。固定版本的 bge-small-zh 与 bge-reranker-v2-m3，只读本地缓存，
+# 不自动下载；语料为 v3（131 篇页面，498 个片段）。仅供 mimo_grounded 使用：先按原问题检索一次，由模型判断是否需要
+# 换成规范术语再检索（最多再检索 2 次），模型每次只看前 3 段；各次检索的前 5 段合并后按原问题重排，取前 3 段交给
+# 带引用约束的摘录。候选数 5 只在 v3 开发集上选定（eval/rerank_matrix.py），在扩充测试集上效果最好，
+# 见 docs/evaluation.md。需要先准备两个模型的本地缓存。
+application:
+  mode: retrieval_mock
+  topology: single
+runtime:
+  device: cpu
+  batch_size: 8
+embedding:
+  model: BAAI/bge-small-zh-v1.5
+  revision: 7999e1d3359715c523056ef9478215996d62a620
+  local_files_only: true
+dataset:
+  version: public-health-excerpts-v3
+  knowledge_base_path: examples/public_health_v3/chunks.jsonl
+  rag_eval_set_path: examples/public_health_v3/queries.jsonl
+  agent_eval_set_path: examples/public_health_v3/queries.jsonl
+retrieval:
+  method: dense
+  top_k: 3
+  rerank:
+    model: BAAI/bge-reranker-v2-m3
+    revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+    local_files_only: true
+    candidates: 5
+# 摘录未通过校验时，带原因重试一次；检索 Agent 不能与固定的问题改写同时开启
+generation:
+  on_invalid: feedback
+  agent: true
+leakage_check:
+  chunk_fields_to_check: [source, source_id, metadata.raw_id]
+  check_question_text: true
+  check_answer_key: true

@@ -1,0 +1,858 @@
+{
+  "schema_version": "generation-matrix-v1",
+  "generated_at": "2026-10-18T05:35:26.216198+00:00",
+  "source_report": "llm-pipeline-v3-ext-20261017.json",
+  "external_model_calls": 0,
+  "model": "mimo-v2.6-flash",
+  "retry": "被拦截时带原因重试一次",
+  "matrix": {
+    "bm25": {
+      "trial_0": {
+        "model_calls": 161,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "blocked_first": 0,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 96,
+          "n": 127,
+          "rate": 0.7559055118110236,
+          "ci95": [
+            0.6744,
+            0.8224
+          ]
+        },
+        "useful_answer": {
+          "k": 29,
+          "n": 127,
+          "rate": 0.2283464566929134,
+          "ci95": [
+            0.164,
+            0.3087
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 29,
+          "n": 127,
+          "rate": 0.2283464566929134,
+          "ci95": [
+            0.164,
+            0.3087
+          ]
+        },
+        "precision": 0.9354838709677419,
+        "recall": 0.2283464566929134,
+        "f1": 0.3671,
+        "f1_ci95": [
+          0.259,
+          0.4551
+        ]
+      },
+      "trial_1": {
+        "model_calls": 161,
+        "binding_pass_first": {
+          "k": 160,
+          "n": 161,
+          "rate": 0.9937888198757764,
+          "ci95": [
+            0.9657,
+            0.9989
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "blocked_first": 1,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 96,
+          "n": 127,
+          "rate": 0.7559055118110236,
+          "ci95": [
+            0.6744,
+            0.8224
+          ]
+        },
+        "useful_answer": {
+          "k": 31,
+          "n": 127,
+          "rate": 0.2440944881889764,
+          "ci95": [
+            0.1776,
+            0.3256
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 30,
+          "n": 127,
+          "rate": 0.23622047244094488,
+          "ci95": [
+            0.1708,
+            0.3172
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.2440944881889764,
+        "f1": 0.3924,
+        "f1_ci95": [
+          0.2877,
+          0.4824
+        ]
+      },
+      "trial_2": {
+        "model_calls": 161,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "blocked_first": 0,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 95,
+          "n": 127,
+          "rate": 0.7480314960629921,
+          "ci95": [
+            0.666,
+            0.8155
+          ]
+        },
+        "useful_answer": {
+          "k": 31,
+          "n": 127,
+          "rate": 0.2440944881889764,
+          "ci95": [
+            0.1776,
+            0.3256
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 31,
+          "n": 127,
+          "rate": 0.2440944881889764,
+          "ci95": [
+            0.1776,
+            0.3256
+          ]
+        },
+        "precision": 0.96875,
+        "recall": 0.2440944881889764,
+        "f1": 0.3899,
+        "f1_ci95": [
+          0.2857,
+          0.4795
+        ]
+      }
+    },
+    "bm25_rewrite": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 163,
+          "rate": 0.9877300613496932,
+          "ci95": [
+            0.9564,
+            0.9966
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 49,
+          "n": 127,
+          "rate": 0.3858267716535433,
+          "ci95": [
+            0.3057,
+            0.4727
+          ]
+        },
+        "useful_answer": {
+          "k": 76,
+          "n": 127,
+          "rate": 0.5984251968503937,
+          "ci95": [
+            0.5115,
+            0.6796
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 74,
+          "n": 127,
+          "rate": 0.5826771653543307,
+          "ci95": [
+            0.4957,
+            0.6648
+          ]
+        },
+        "precision": 0.9743589743589743,
+        "recall": 0.5984251968503937,
+        "f1": 0.7415,
+        "f1_ci95": [
+          0.6667,
+          0.8039
+        ]
+      }
+    },
+    "bm25_agent": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 162,
+          "n": 163,
+          "rate": 0.9938650306748467,
+          "ci95": [
+            0.9661,
+            0.9989
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 1,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 44,
+          "n": 127,
+          "rate": 0.3464566929133858,
+          "ci95": [
+            0.2693,
+            0.4326
+          ]
+        },
+        "useful_answer": {
+          "k": 83,
+          "n": 127,
+          "rate": 0.6535433070866141,
+          "ci95": [
+            0.5674,
+            0.7307
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 82,
+          "n": 127,
+          "rate": 0.6456692913385826,
+          "ci95": [
+            0.5593,
+            0.7235
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.6535433070866141,
+        "f1": 0.7905,
+        "f1_ci95": [
+          0.7245,
+          0.8458
+        ]
+      }
+    },
+    "dense": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 163,
+          "rate": 0.9877300613496932,
+          "ci95": [
+            0.9564,
+            0.9966
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "provider 结构化输出不是 JSON object",
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 40,
+          "n": 127,
+          "rate": 0.31496062992125984,
+          "ci95": [
+            0.2406,
+            0.4002
+          ]
+        },
+        "useful_answer": {
+          "k": 86,
+          "n": 127,
+          "rate": 0.6771653543307087,
+          "ci95": [
+            0.5917,
+            0.7522
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 84,
+          "n": 127,
+          "rate": 0.6614173228346457,
+          "ci95": [
+            0.5755,
+            0.7379
+          ]
+        },
+        "precision": 0.9885057471264368,
+        "recall": 0.6771653543307087,
+        "f1": 0.8037,
+        "f1_ci95": [
+          0.7429,
+          0.8584
+        ]
+      }
+    },
+    "dense_agent": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 163,
+          "rate": 0.9877300613496932,
+          "ci95": [
+            0.9564,
+            0.9966
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "provider 结构化输出不是 JSON object",
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 16,
+          "n": 127,
+          "rate": 0.12598425196850394,
+          "ci95": [
+            0.0791,
+            0.1949
+          ]
+        },
+        "useful_answer": {
+          "k": 107,
+          "n": 127,
+          "rate": 0.84251968503937,
+          "ci95": [
+            0.7692,
+            0.8957
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 105,
+          "n": 127,
+          "rate": 0.8267716535433071,
+          "ci95": [
+            0.7516,
+            0.8827
+          ]
+        },
+        "precision": 0.963963963963964,
+        "recall": 0.84251968503937,
+        "f1": 0.8992,
+        "f1_ci95": [
+          0.8505,
+          0.9402
+        ]
+      }
+    },
+    "bm25_rerank": {
+      "trial_0": {
+        "model_calls": 161,
+        "binding_pass_first": {
+          "k": 160,
+          "n": 161,
+          "rate": 0.9937888198757764,
+          "ci95": [
+            0.9657,
+            0.9989
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 161,
+          "n": 161,
+          "rate": 1.0,
+          "ci95": [
+            0.9767,
+            1.0
+          ]
+        },
+        "blocked_first": 1,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "provider 结构化输出不是 JSON object"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 66,
+          "n": 127,
+          "rate": 0.5196850393700787,
+          "ci95": [
+            0.4335,
+            0.6047
+          ]
+        },
+        "useful_answer": {
+          "k": 58,
+          "n": 127,
+          "rate": 0.4566929133858268,
+          "ci95": [
+            0.3726,
+            0.5433
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 58,
+          "n": 127,
+          "rate": 0.4566929133858268,
+          "ci95": [
+            0.3726,
+            0.5433
+          ]
+        },
+        "precision": 0.9508196721311475,
+        "recall": 0.4566929133858268,
+        "f1": 0.617,
+        "f1_ci95": [
+          0.5304,
+          0.6961
+        ]
+      }
+    },
+    "bm25_rewrite_rerank": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 160,
+          "n": 163,
+          "rate": 0.9815950920245399,
+          "ci95": [
+            0.9473,
+            0.9937
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 162,
+          "n": 163,
+          "rate": 0.9938650306748467,
+          "ci95": [
+            0.9661,
+            0.9989
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 1,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 22,
+          "n": 127,
+          "rate": 0.1732283464566929,
+          "ci95": [
+            0.1173,
+            0.2484
+          ]
+        },
+        "useful_answer": {
+          "k": 101,
+          "n": 127,
+          "rate": 0.7952755905511811,
+          "ci95": [
+            0.7169,
+            0.8563
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 100,
+          "n": 127,
+          "rate": 0.7874015748031497,
+          "ci95": [
+            0.7084,
+            0.8496
+          ]
+        },
+        "precision": 0.9711538461538461,
+        "recall": 0.7952755905511811,
+        "f1": 0.8745,
+        "f1_ci95": [
+          0.8246,
+          0.917
+        ]
+      }
+    },
+    "bm25_agent_rerank": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 161,
+          "n": 163,
+          "rate": 0.9877300613496932,
+          "ci95": [
+            0.9564,
+            0.9966
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 2,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "provider 结构化输出不是 JSON object",
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 24,
+          "n": 127,
+          "rate": 0.1889763779527559,
+          "ci95": [
+            0.1304,
+            0.2658
+          ]
+        },
+        "useful_answer": {
+          "k": 103,
+          "n": 127,
+          "rate": 0.8110236220472441,
+          "ci95": [
+            0.7342,
+            0.8696
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 102,
+          "n": 127,
+          "rate": 0.8031496062992126,
+          "ci95": [
+            0.7255,
+            0.863
+          ]
+        },
+        "precision": 1.0,
+        "recall": 0.8110236220472441,
+        "f1": 0.8957,
+        "f1_ci95": [
+          0.8517,
+          0.9333
+        ]
+      }
+    },
+    "dense_rerank": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 162,
+          "n": 163,
+          "rate": 0.9938650306748467,
+          "ci95": [
+            0.9661,
+            0.9989
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 1,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 24,
+          "n": 127,
+          "rate": 0.1889763779527559,
+          "ci95": [
+            0.1304,
+            0.2658
+          ]
+        },
+        "useful_answer": {
+          "k": 102,
+          "n": 127,
+          "rate": 0.8031496062992126,
+          "ci95": [
+            0.7255,
+            0.863
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 101,
+          "n": 127,
+          "rate": 0.7952755905511811,
+          "ci95": [
+            0.7169,
+            0.8563
+          ]
+        },
+        "precision": 0.9902912621359223,
+        "recall": 0.8031496062992126,
+        "f1": 0.887,
+        "f1_ci95": [
+          0.8426,
+          0.9277
+        ]
+      }
+    },
+    "dense_agent_rerank": {
+      "trial_0": {
+        "model_calls": 163,
+        "binding_pass_first": {
+          "k": 160,
+          "n": 163,
+          "rate": 0.9815950920245399,
+          "ci95": [
+            0.9473,
+            0.9937
+          ]
+        },
+        "binding_pass_after_retry": {
+          "k": 163,
+          "n": 163,
+          "rate": 1.0,
+          "ci95": [
+            0.977,
+            1.0
+          ]
+        },
+        "blocked_first": 3,
+        "blocked_after_retry": 0,
+        "blocked_reasons": [
+          "provider 结构化输出不是 JSON object",
+          "摘录不是本轮完整原文、引用未知或重复"
+        ],
+        "false_answer": {
+          "k": 0,
+          "n": 36,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0964
+          ]
+        },
+        "over_abstention": {
+          "k": 15,
+          "n": 127,
+          "rate": 0.11811023622047244,
+          "ci95": [
+            0.0729,
+            0.1857
+          ]
+        },
+        "useful_answer": {
+          "k": 111,
+          "n": 127,
+          "rate": 0.8740157480314961,
+          "ci95": [
+            0.8051,
+            0.9209
+          ]
+        },
+        "useful_answer_first_pass": {
+          "k": 109,
+          "n": 127,
+          "rate": 0.8582677165354331,
+          "ci95": [
+            0.7871,
+            0.9084
+          ]
+        },
+        "precision": 0.9910714285714286,
+        "recall": 0.8740157480314961,
+        "f1": 0.9289,
+        "f1_ci95": [
+          0.8909,
+          0.9623
+        ]
+      }
+    }
+  }
+}

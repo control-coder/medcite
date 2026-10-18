@@ -203,3 +203,40 @@ def test_shipped_dense_agent_config_builds_agent_on_dense_v3(monkeypatch, tmp_pa
     assert isinstance(provider, RetrievalAgentWorkflowProvider)
     assert isinstance(provider.rag_stage.retriever, DenseRetriever)
     assert len(provider.rag_stage.chunks) == 498
+
+
+def test_shipped_dense_agent_rerank_config_uses_the_selected_reranker(monkeypatch, tmp_path) -> None:
+    """向量检索 + 检索 Agent + 重排：模型版本与候选数必须等于重排对照报告的选定配置；用假模型替代本地缓存。"""
+    import numpy as np
+
+    from medidiag.rag.dense import DenseRetriever
+    from medidiag.rag.rerank import Reranker
+    from medidiag.workflow import application
+
+    def fake_dense(chunks, config):
+        def encode(texts):
+            return np.array([[float(len(t)), 1.0] for t in texts])
+        return DenseRetriever(chunks, encoder=encode, model_name=config["embedding"]["model"],
+                              model_revision=config["embedding"]["revision"])
+
+    def fake_rerank(config):
+        rerank = config["retrieval"]["rerank"]
+        return Reranker(lambda pairs: [0.0] * len(pairs), model_name=rerank["model"], model_revision=rerank["revision"],
+                        candidates=rerank["candidates"])
+
+    monkeypatch.setattr(application, "_dense_factory", fake_dense)
+    monkeypatch.setattr(application, "_rerank_factory", fake_rerank)
+    monkeypatch.setenv("MIMO_API_KEY", "test-not-a-secret")
+    monkeypatch.setenv("MIMO_BASE_URL", "https://api.xiaomimimo.com")
+    config = load_application_config(ROOT / "configs/application_dense_agent_rerank.yaml")
+    selected = json.loads((ROOT / "artifacts/reports/retrieval/rerank-matrix-v3-20261017.json")
+                          .read_text(encoding="utf-8"))["selected"]
+    rerank = config["retrieval"]["rerank"]
+    assert (rerank["model"], rerank["revision"]) == (selected["model"], selected["revision"])
+    assert rerank["candidates"] == selected["candidates"]["dense_agent"]
+    provider = application.build_application_provider(
+        "mimo_grounded", app_config="configs/application_dense_agent_rerank.yaml", root=ROOT,
+        live_budget=tmp_path / "ledger.db")
+    assert isinstance(provider, RetrievalAgentWorkflowProvider)
+    assert isinstance(provider.rag_stage.retriever, DenseRetriever)
+    assert provider.rag_stage.reranker is not None and provider.rag_stage.reranker.candidates == 5

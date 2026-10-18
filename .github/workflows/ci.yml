@@ -74,9 +74,13 @@ jobs:
           tests/test_llm_replay_committed.py
           tests/test_llm_replay_flash.py
           tests/test_llm_replay_v3.py
+          tests/test_llm_replay_v3_ext.py
 
       - name: 回归集与阈值
-        run: python -m pytest -q tests/test_regression_gate.py tests/test_failure_attribution.py tests/test_retrieval_matrix.py
+        run: >
+          python -m pytest -q
+          tests/test_regression_gate.py tests/test_failure_attribution.py tests/test_retrieval_matrix.py
+          tests/test_extension_set.py
 
       - name: 回归门槛
         run: python -m eval.regression_gate
