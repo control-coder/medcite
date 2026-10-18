@@ -1,8 +1,7 @@
 # 调用记录的哈希需跨平台稳定，禁止换行转换
 eval/cassettes/*.jsonl -text
 
-# 评测报告记录了数据集文件的哈希：v3 语料与查询按 CRLF 计算，扩充测试集新写的文件按 LF 计算；检出时固定换行，保证各平台哈希与报告一致
-examples/public_health_v3/*.jsonl text eol=crlf
-examples/public_health_v3_ext/chunks.jsonl text eol=crlf
+# 评测报告记录了数据集文件的哈希：既有语料与查询按 CRLF 计算，扩充测试集新写的文件按 LF 计算；检出时固定换行，保证各平台哈希与报告一致
+examples/public_health*/*.jsonl text eol=crlf
 examples/public_health_v3_ext/queries.jsonl -text
 examples/public_health_v3_ext/pooled_judgments.jsonl -text
