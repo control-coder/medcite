@@ -1,0 +1,5716 @@
+{
+  "schema_version": "rerank-matrix-v1",
+  "generated_at": "2026-10-17T05:17:34.324948+00:00",
+  "dataset": {
+    "dir": "D:\\resume_project\\medidiag\\examples\\public_health_v3",
+    "sha256": {
+      "chunks.jsonl": "67a2b747025e5c90ac91e68bb3d0fd3301cbfbb4317296e673f8c77dbefeb026",
+      "queries.jsonl": "f2b831a31733a54bc73442b3624a21ea3bfb4cf230b362b9362d8b2c773f55dd"
+    }
+  },
+  "sources": {
+    "llm_report": "llm-pipeline-v3-flash-20261010.json",
+    "embedding_model": "BAAI/bge-small-zh-v1.5",
+    "embedding_revision": "7999e1d3359715c523056ef9478215996d62a620",
+    "rerank_models": {
+      "BAAI/bge-reranker-base": "2cfc18c9415c912f9d8155881c133215df768a70",
+      "BAAI/bge-reranker-v2-m3": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+    }
+  },
+  "external_model_calls": 0,
+  "pairs_scored": {
+    "BAAI/bge-reranker-base": 3017,
+    "BAAI/bge-reranker-v2-m3": 5568
+  },
+  "selected": {
+    "model": "BAAI/bge-reranker-v2-m3",
+    "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "candidates": {
+      "bm25": 20,
+      "bm25_rewrite": 20,
+      "bm25_agent": 10,
+      "dense": 10,
+      "dense_agent": 5
+    },
+    "dev_totals": {
+      "BAAI/bge-reranker-base": [
+        259.0,
+        247.1667,
+        245.1667
+      ],
+      "BAAI/bge-reranker-v2-m3": [
+        259.0,
+        248.5,
+        250.8333
+      ]
+    },
+    "rule": "1. 对每个重排模型、每个系统，在候选深度网格里按 Hit@3、Recall@3、MRR@3 依次取最大，仍并列取更小的深度；\n2. 两个模型各自在选定深度下，五个系统的 Hit@3、Recall@3、MRR@3 之和依次比较，取更大的，并列取更小的模型。"
+  },
+  "dev_grid": [
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rerank",
+      "candidates": 5,
+      "hit@3": 0.6964,
+      "recall@3": 0.6518,
+      "mrr@3": 0.6845
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rerank",
+      "candidates": 10,
+      "hit@3": 0.7143,
+      "recall@3": 0.6756,
+      "mrr@3": 0.7054
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rerank",
+      "candidates": 20,
+      "hit@3": 0.7679,
+      "recall@3": 0.7202,
+      "mrr@3": 0.7411
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 5,
+      "hit@3": 0.8214,
+      "recall@3": 0.756,
+      "mrr@3": 0.7946
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 10,
+      "hit@3": 0.8929,
+      "recall@3": 0.8512,
+      "mrr@3": 0.8571
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 20,
+      "hit@3": 0.9107,
+      "recall@3": 0.8661,
+      "mrr@3": 0.875
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_agent_rerank",
+      "candidates": 3,
+      "hit@3": 0.9464,
+      "recall@3": 0.9018,
+      "mrr@3": 0.9048
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_agent_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9375,
+      "mrr@3": 0.9286
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "bm25_agent_rerank",
+      "candidates": 10,
+      "hit@3": 0.9821,
+      "recall@3": 0.9315,
+      "mrr@3": 0.9137
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9375,
+      "mrr@3": 0.9167
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_rerank",
+      "candidates": 10,
+      "hit@3": 0.9643,
+      "recall@3": 0.9226,
+      "mrr@3": 0.9077
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_rerank",
+      "candidates": 20,
+      "hit@3": 0.9643,
+      "recall@3": 0.9226,
+      "mrr@3": 0.8929
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_agent_rerank",
+      "candidates": 3,
+      "hit@3": 0.9821,
+      "recall@3": 0.9435,
+      "mrr@3": 0.9256
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_agent_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9524,
+      "mrr@3": 0.9167
+    },
+    {
+      "model": "BAAI/bge-reranker-base",
+      "system": "dense_agent_rerank",
+      "candidates": 10,
+      "hit@3": 0.9643,
+      "recall@3": 0.9226,
+      "mrr@3": 0.9077
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rerank",
+      "candidates": 5,
+      "hit@3": 0.6964,
+      "recall@3": 0.6518,
+      "mrr@3": 0.6786
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rerank",
+      "candidates": 10,
+      "hit@3": 0.7143,
+      "recall@3": 0.6815,
+      "mrr@3": 0.6964
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rerank",
+      "candidates": 20,
+      "hit@3": 0.7679,
+      "recall@3": 0.7202,
+      "mrr@3": 0.75
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 5,
+      "hit@3": 0.8036,
+      "recall@3": 0.753,
+      "mrr@3": 0.7738
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 10,
+      "hit@3": 0.8571,
+      "recall@3": 0.8274,
+      "mrr@3": 0.8095
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_rewrite_rerank",
+      "candidates": 20,
+      "hit@3": 0.9107,
+      "recall@3": 0.8601,
+      "mrr@3": 0.8542
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_agent_rerank",
+      "candidates": 3,
+      "hit@3": 0.9464,
+      "recall@3": 0.9018,
+      "mrr@3": 0.9196
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_agent_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9405,
+      "mrr@3": 0.9643
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "bm25_agent_rerank",
+      "candidates": 10,
+      "hit@3": 0.9821,
+      "recall@3": 0.9464,
+      "mrr@3": 0.9643
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9464,
+      "mrr@3": 0.9554
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_rerank",
+      "candidates": 10,
+      "hit@3": 0.9821,
+      "recall@3": 0.9554,
+      "mrr@3": 0.9554
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_rerank",
+      "candidates": 20,
+      "hit@3": 0.9821,
+      "recall@3": 0.9554,
+      "mrr@3": 0.9554
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_agent_rerank",
+      "candidates": 3,
+      "hit@3": 0.9821,
+      "recall@3": 0.9435,
+      "mrr@3": 0.9732
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_agent_rerank",
+      "candidates": 5,
+      "hit@3": 0.9821,
+      "recall@3": 0.9554,
+      "mrr@3": 0.9554
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "system": "dense_agent_rerank",
+      "candidates": 10,
+      "hit@3": 0.9821,
+      "recall@3": 0.9554,
+      "mrr@3": 0.9554
+    }
+  ],
+  "matrix": {
+    "dev": {
+      "bm25": {
+        "hit@3": {
+          "k": 36,
+          "n": 56,
+          "rate": 0.6428571428571429,
+          "ci95": [
+            0.5119,
+            0.7554
+          ]
+        },
+        "recall@3": {
+          "mean": 0.6101,
+          "ci95": [
+            0.4851,
+            0.7351
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.5417,
+          "ci95": [
+            0.4196,
+            0.6607
+          ]
+        }
+      },
+      "bm25_rewrite": {
+        "hit@3": {
+          "k": 43,
+          "n": 56,
+          "rate": 0.7678571428571429,
+          "ci95": [
+            0.6423,
+            0.859
+          ]
+        },
+        "recall@3": {
+          "mean": 0.7113,
+          "ci95": [
+            0.5923,
+            0.8155
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.6994,
+          "ci95": [
+            0.5833,
+            0.8095
+          ]
+        }
+      },
+      "bm25_agent": {
+        "hit@3": {
+          "k": 46,
+          "n": 56,
+          "rate": 0.8214285714285714,
+          "ci95": [
+            0.7016,
+            0.9
+          ]
+        },
+        "recall@3": {
+          "mean": 0.7619,
+          "ci95": [
+            0.6518,
+            0.8601
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.619,
+          "ci95": [
+            0.5149,
+            0.7173
+          ]
+        }
+      },
+      "dense": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9077,
+          "ci95": [
+            0.8452,
+            0.9583
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9226,
+          "ci95": [
+            0.8631,
+            0.9732
+          ]
+        }
+      },
+      "dense_agent": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9315,
+          "ci95": [
+            0.875,
+            0.9762
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9226,
+          "ci95": [
+            0.8631,
+            0.9732
+          ]
+        }
+      },
+      "bm25_rerank": {
+        "hit@3": {
+          "k": 43,
+          "n": 56,
+          "rate": 0.7678571428571429,
+          "ci95": [
+            0.6423,
+            0.859
+          ]
+        },
+        "recall@3": {
+          "mean": 0.7202,
+          "ci95": [
+            0.6101,
+            0.8244
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.75,
+          "ci95": [
+            0.6429,
+            0.8482
+          ]
+        }
+      },
+      "bm25_rewrite_rerank": {
+        "hit@3": {
+          "k": 51,
+          "n": 56,
+          "rate": 0.9107142857142857,
+          "ci95": [
+            0.8074,
+            0.9613
+          ]
+        },
+        "recall@3": {
+          "mean": 0.8601,
+          "ci95": [
+            0.7708,
+            0.9315
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.8542,
+          "ci95": [
+            0.7649,
+            0.9286
+          ]
+        }
+      },
+      "bm25_agent_rerank": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9464,
+          "ci95": [
+            0.8958,
+            0.9881
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9643,
+          "ci95": [
+            0.9196,
+            1.0
+          ]
+        }
+      },
+      "dense_rerank": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.9077,
+            0.9911
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.9018,
+            0.9911
+          ]
+        }
+      },
+      "dense_agent_rerank": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.9077,
+            0.9911
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.9018,
+            0.9911
+          ]
+        }
+      }
+    },
+    "test": {
+      "bm25": {
+        "hit@3": {
+          "k": 38,
+          "n": 56,
+          "rate": 0.6785714285714286,
+          "ci95": [
+            0.5482,
+            0.786
+          ]
+        },
+        "recall@3": {
+          "mean": 0.6339,
+          "ci95": [
+            0.5179,
+            0.75
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.6339,
+          "ci95": [
+            0.5119,
+            0.753
+          ]
+        }
+      },
+      "bm25_rewrite": {
+        "hit@3": {
+          "k": 49,
+          "n": 56,
+          "rate": 0.875,
+          "ci95": [
+            0.7637,
+            0.9381
+          ]
+        },
+        "recall@3": {
+          "mean": 0.8393,
+          "ci95": [
+            0.7411,
+            0.9196
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.7679,
+          "ci95": [
+            0.6667,
+            0.8601
+          ]
+        }
+      },
+      "bm25_agent": {
+        "hit@3": {
+          "k": 46,
+          "n": 56,
+          "rate": 0.8214285714285714,
+          "ci95": [
+            0.7016,
+            0.9
+          ]
+        },
+        "recall@3": {
+          "mean": 0.7857,
+          "ci95": [
+            0.6875,
+            0.8839
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.7113,
+          "ci95": [
+            0.6071,
+            0.8155
+          ]
+        }
+      },
+      "dense": {
+        "hit@3": {
+          "k": 52,
+          "n": 56,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.8302,
+            0.9719
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9196,
+          "ci95": [
+            0.8393,
+            0.9821
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.881,
+          "ci95": [
+            0.8036,
+            0.9524
+          ]
+        }
+      },
+      "dense_agent": {
+        "hit@3": {
+          "k": 54,
+          "n": 56,
+          "rate": 0.9642857142857143,
+          "ci95": [
+            0.8788,
+            0.9902
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.8929,
+            1.0
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9048,
+          "ci95": [
+            0.8333,
+            0.9643
+          ]
+        }
+      },
+      "bm25_rerank": {
+        "hit@3": {
+          "k": 44,
+          "n": 56,
+          "rate": 0.7857142857142857,
+          "ci95": [
+            0.6618,
+            0.8729
+          ]
+        },
+        "recall@3": {
+          "mean": 0.7589,
+          "ci95": [
+            0.6429,
+            0.8661
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.7649,
+          "ci95": [
+            0.6518,
+            0.875
+          ]
+        }
+      },
+      "bm25_rewrite_rerank": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9554,
+          "ci95": [
+            0.9107,
+            0.9911
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9613,
+          "ci95": [
+            0.9137,
+            1.0
+          ]
+        }
+      },
+      "bm25_agent_rerank": {
+        "hit@3": {
+          "k": 54,
+          "n": 56,
+          "rate": 0.9642857142857143,
+          "ci95": [
+            0.8788,
+            0.9902
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9464,
+          "ci95": [
+            0.8839,
+            0.9911
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9375,
+          "ci95": [
+            0.875,
+            0.9821
+          ]
+        }
+      },
+      "dense_rerank": {
+        "hit@3": {
+          "k": 56,
+          "n": 56,
+          "rate": 1.0,
+          "ci95": [
+            0.9358,
+            1.0
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9821,
+          "ci95": [
+            0.9554,
+            1.0
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9613,
+          "ci95": [
+            0.9226,
+            0.9911
+          ]
+        }
+      },
+      "dense_agent_rerank": {
+        "hit@3": {
+          "k": 55,
+          "n": 56,
+          "rate": 0.9821428571428571,
+          "ci95": [
+            0.9055,
+            0.9968
+          ]
+        },
+        "recall@3": {
+          "mean": 0.9643,
+          "ci95": [
+            0.9196,
+            1.0
+          ]
+        },
+        "mrr@3": {
+          "mean": 0.9464,
+          "ci95": [
+            0.8929,
+            0.9911
+          ]
+        }
+      }
+    }
+  },
+  "paired_comparisons_test": [
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_agent",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.8214,
+      "diff": 0.1429,
+      "diff_ci95": [
+        0.0536,
+        0.25
+      ],
+      "a_better": 8,
+      "b_better": 0,
+      "tied": 48,
+      "sign_test_p": 0.0078
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_agent",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.7857,
+      "diff": 0.1607,
+      "diff_ci95": [
+        0.0714,
+        0.2589
+      ],
+      "a_better": 11,
+      "b_better": 0,
+      "tied": 45,
+      "sign_test_p": 0.001
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_agent",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9375,
+      "b_mean": 0.7113,
+      "diff": 0.2262,
+      "diff_ci95": [
+        0.125,
+        0.3333
+      ],
+      "a_better": 18,
+      "b_better": 2,
+      "tied": 36,
+      "sign_test_p": 0.0004
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rerank",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.7857,
+      "diff": 0.1786,
+      "diff_ci95": [
+        0.0893,
+        0.2857
+      ],
+      "a_better": 10,
+      "b_better": 0,
+      "tied": 46,
+      "sign_test_p": 0.002
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rerank",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.7589,
+      "diff": 0.1875,
+      "diff_ci95": [
+        0.0893,
+        0.2946
+      ],
+      "a_better": 11,
+      "b_better": 0,
+      "tied": 45,
+      "sign_test_p": 0.001
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rerank",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9375,
+      "b_mean": 0.7649,
+      "diff": 0.1726,
+      "diff_ci95": [
+        0.0804,
+        0.2738
+      ],
+      "a_better": 11,
+      "b_better": 0,
+      "tied": 45,
+      "sign_test_p": 0.001
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rewrite_rerank",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.9821,
+      "diff": -0.0179,
+      "diff_ci95": [
+        -0.0893,
+        0.0357
+      ],
+      "a_better": 1,
+      "b_better": 2,
+      "tied": 53,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rewrite_rerank",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.9554,
+      "diff": -0.0089,
+      "diff_ci95": [
+        -0.0804,
+        0.0625
+      ],
+      "a_better": 3,
+      "b_better": 3,
+      "tied": 50,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "bm25_rewrite_rerank",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9375,
+      "b_mean": 0.9613,
+      "diff": -0.0238,
+      "diff_ci95": [
+        -0.0952,
+        0.0446
+      ],
+      "a_better": 2,
+      "b_better": 4,
+      "tied": 50,
+      "sign_test_p": 0.6875
+    },
+    {
+      "a": "bm25_rewrite_rerank",
+      "b": "bm25_rewrite",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9821,
+      "b_mean": 0.875,
+      "diff": 0.1071,
+      "diff_ci95": [
+        0.0357,
+        0.1964
+      ],
+      "a_better": 6,
+      "b_better": 0,
+      "tied": 50,
+      "sign_test_p": 0.0312
+    },
+    {
+      "a": "bm25_rewrite_rerank",
+      "b": "bm25_rewrite",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9554,
+      "b_mean": 0.8393,
+      "diff": 0.1161,
+      "diff_ci95": [
+        0.0446,
+        0.2054
+      ],
+      "a_better": 8,
+      "b_better": 0,
+      "tied": 48,
+      "sign_test_p": 0.0078
+    },
+    {
+      "a": "bm25_rewrite_rerank",
+      "b": "bm25_rewrite",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9613,
+      "b_mean": 0.7679,
+      "diff": 0.1935,
+      "diff_ci95": [
+        0.1101,
+        0.2857
+      ],
+      "a_better": 16,
+      "b_better": 0,
+      "tied": 40,
+      "sign_test_p": 0.0
+    },
+    {
+      "a": "dense_rerank",
+      "b": "dense",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 1.0,
+      "b_mean": 0.9286,
+      "diff": 0.0714,
+      "diff_ci95": [
+        0.0179,
+        0.1429
+      ],
+      "a_better": 4,
+      "b_better": 0,
+      "tied": 52,
+      "sign_test_p": 0.125
+    },
+    {
+      "a": "dense_rerank",
+      "b": "dense",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9821,
+      "b_mean": 0.9196,
+      "diff": 0.0625,
+      "diff_ci95": [
+        0.0089,
+        0.1339
+      ],
+      "a_better": 4,
+      "b_better": 0,
+      "tied": 52,
+      "sign_test_p": 0.125
+    },
+    {
+      "a": "dense_rerank",
+      "b": "dense",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9613,
+      "b_mean": 0.881,
+      "diff": 0.0804,
+      "diff_ci95": [
+        0.0179,
+        0.1548
+      ],
+      "a_better": 8,
+      "b_better": 1,
+      "tied": 47,
+      "sign_test_p": 0.0391
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_rerank",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9821,
+      "b_mean": 1.0,
+      "diff": -0.0179,
+      "diff_ci95": [
+        -0.0536,
+        0.0
+      ],
+      "a_better": 0,
+      "b_better": 1,
+      "tied": 55,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_rerank",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.9821,
+      "diff": -0.0179,
+      "diff_ci95": [
+        -0.0536,
+        0.0
+      ],
+      "a_better": 0,
+      "b_better": 1,
+      "tied": 55,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_rerank",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.9613,
+      "diff": -0.0149,
+      "diff_ci95": [
+        -0.0536,
+        0.0089
+      ],
+      "a_better": 1,
+      "b_better": 1,
+      "tied": 54,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_agent",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9821,
+      "b_mean": 0.9643,
+      "diff": 0.0179,
+      "diff_ci95": [
+        0.0,
+        0.0536
+      ],
+      "a_better": 1,
+      "b_better": 0,
+      "tied": 55,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_agent",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.9554,
+      "diff": 0.0089,
+      "diff_ci95": [
+        0.0,
+        0.0268
+      ],
+      "a_better": 1,
+      "b_better": 0,
+      "tied": 55,
+      "sign_test_p": 1.0
+    },
+    {
+      "a": "dense_agent_rerank",
+      "b": "dense_agent",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.9048,
+      "diff": 0.0417,
+      "diff_ci95": [
+        -0.0119,
+        0.1012
+      ],
+      "a_better": 7,
+      "b_better": 2,
+      "tied": 47,
+      "sign_test_p": 0.1797
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "dense",
+      "metric": "hit@3",
+      "n": 56,
+      "a_mean": 0.9643,
+      "b_mean": 0.9286,
+      "diff": 0.0357,
+      "diff_ci95": [
+        -0.0357,
+        0.1071
+      ],
+      "a_better": 3,
+      "b_better": 1,
+      "tied": 52,
+      "sign_test_p": 0.625
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "dense",
+      "metric": "recall@3",
+      "n": 56,
+      "a_mean": 0.9464,
+      "b_mean": 0.9196,
+      "diff": 0.0268,
+      "diff_ci95": [
+        -0.0357,
+        0.0893
+      ],
+      "a_better": 3,
+      "b_better": 1,
+      "tied": 52,
+      "sign_test_p": 0.625
+    },
+    {
+      "a": "bm25_agent_rerank",
+      "b": "dense",
+      "metric": "mrr@3",
+      "n": 56,
+      "a_mean": 0.9375,
+      "b_mean": 0.881,
+      "diff": 0.0565,
+      "diff_ci95": [
+        -0.0179,
+        0.1369
+      ],
+      "a_better": 7,
+      "b_better": 2,
+      "tied": 47,
+      "sign_test_p": 0.1797
+    }
+  ],
+  "per_query_test": {
+    "bm25": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_14": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_20": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_21": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.3065735963827292
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_15": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_22": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_23": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.3065735963827292
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      }
+    },
+    "bm25_rewrite": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.3065735963827292
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_20": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_25": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.3065735963827292
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_C_13": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_15": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      }
+    },
+    "bm25_agent": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_14": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_20": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_B_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.38685280723454163
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_15": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_22": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_C_23": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      }
+    },
+    "dense": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_15": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      }
+    },
+    "dense_agent": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_15": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      }
+    },
+    "bm25_rerank": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_14": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_15": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_22": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      }
+    },
+    "bm25_rewrite_rerank": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.3065735963827292
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_15": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      }
+    },
+    "bm25_agent_rerank": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_13": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_C_15": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      }
+    },
+    "dense_rerank": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_15": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.3333333333333333,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.5
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      }
+    },
+    "dense_agent_rerank": {
+      "public_q09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q12": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "public_q13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "public_q14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_09": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_12": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_14": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_16": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_19": {
+        "hit@1": 0.0,
+        "hit@3": 0.0,
+        "recall@3": 0.0,
+        "mrr@3": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      "pv2_A_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_21": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_A_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_A_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_03": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_09": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_B_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_21": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_B_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_B_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_13": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_15": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_16": {
+        "hit@1": 0.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 0.5,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      "pv2_C_18": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_19": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_20": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_22": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_C_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 0.5,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      "pv2_C_25": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_01": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_02": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_05": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_06": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_07": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_10": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_11": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_17": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      "pv2_D_23": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "mrr@3": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      }
+    }
+  },
+  "seconds_per_query_cpu": {
+    "bm25_rerank": 1.516,
+    "bm25_rewrite_rerank": 1.924,
+    "bm25_agent_rerank": 0.356,
+    "dense_rerank": 0.429,
+    "dense_agent_rerank": 0.013
+  }
+}

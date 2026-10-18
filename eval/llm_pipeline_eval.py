@@ -7,6 +7,10 @@
 2. 预算受限的查询改写（每个问题最多 1 次额外调用，不看语料）能否补上 BM25 在口语同义改写上的漏检？
 3. 同一请求重复采样，模型的作答/弃答与选段是否稳定？
 
+带 ``_rerank`` 后缀的条件在对应方案的候选上做交叉编码器重排，模型与候选数取自 ``--rerank-report``
+（``eval.rerank_matrix`` 只在 v3 dev 上选定），这里不再调参。检索 Agent 加重排时，模型每次仍只看前 3 段，
+请求与不重排时相同，可直接复用已有调用记录；``--base-cassette`` 指向旧调用记录，只读，新记录写入 ``--cassette``。
+
 模式：``record`` 需要真实凭据并占用持久预算；``replay`` 只读调用记录，绝不联网，未命中即失败。
 
 用法::
@@ -31,6 +35,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from eval.rerank_matrix import CachedScorer
 from eval.retrieval_benchmark import (
     BGE_ZH_QUERY_PREFIX,
     DEFAULT_EMBEDDING_MODEL,
@@ -42,11 +47,13 @@ from eval.retrieval_benchmark import (
     proportion,
     rank_chunks,
 )
+from eval.retrieval_matrix import POOL_METRICS, compare, query_metrics, summarize
 from medidiag.errors import MediDiagError
 from medidiag.llm.cassette import Cassette, RecordingTransport, ReplayTransport
 from medidiag.llm.models import ACTIVE_MIMO_MODEL, ALLOWED_MIMO_MODELS
 from medidiag.llm.openai_compatible import OpenAICompatibleProvider
 from medidiag.llm.profiles import get_provider_profile
+from medidiag.rag.rerank import PairScorer, Reranker, load_local_reranker
 from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
 from medidiag.workflow.query_rewrite import REWRITE_PROMPT, build_rewrite_request, parse_rewrite
 from medidiag.workflow.retrieval_agent import SearchAgentResult, run_search_agent
@@ -56,6 +63,20 @@ SCHEMA_VERSION = "llm-pipeline-eval-v1"
 TOP_K = 3
 RETRYABLE = {"PROVIDER_RATE_LIMITED", "PROVIDER_UNAVAILABLE", "LLM_TIMEOUT", "PROVIDER_NETWORK_ERROR"}
 CONTRACT_VIOLATIONS = {"STRUCTURED_OUTPUT_INVALID", "PROVIDER_SCHEMA_INVALID"}
+CONDITIONS = ("bm25", "bm25_rewrite", "dense", "bm25_agent", "dense_agent",
+              "bm25_rerank", "bm25_rewrite_rerank", "bm25_agent_rerank", "dense_rerank", "dense_agent_rerank")
+# (条件甲, 条件乙)：检索层比较“甲 − 乙”，两个条件都在本次运行里才计算
+RETRIEVAL_PAIRS: tuple[tuple[str, str], ...] = (
+    ("bm25_agent", "bm25"),
+    ("bm25_agent_rerank", "bm25_agent"),
+    ("bm25_agent_rerank", "bm25_rerank"),
+    ("bm25_agent_rerank", "bm25_rewrite_rerank"),
+    ("bm25_rewrite_rerank", "bm25_rewrite"),
+    ("dense_rerank", "dense"),
+    ("dense_agent", "dense"),
+    ("dense_agent_rerank", "dense_rerank"),
+    ("dense_agent_rerank", "dense_agent"),
+)
 
 
 # ----------------------------------------------------------------- 统计
@@ -246,15 +267,44 @@ def agent_effect(queries: Sequence[dict[str, Any]], runs: dict[str, SearchAgentR
 
 def agent_summary(runs: dict[str, SearchAgentResult]) -> dict[str, Any]:
     searches = Counter(sum(1 for s in r.steps if s["action"] == "search") for r in runs.values())
-    stops = Counter(s.get("reason", s["action"]) for r in runs.values() for s in r.steps if s["action"] != "search")
+    # 合并步骤（重排或其失败回退）记录证据怎么合并，不是停止原因，单独统计
+    stops = Counter(s.get("reason", s["action"]) for r in runs.values() for s in r.steps
+                    if s["action"] not in {"search", "merge"})
+    merges = Counter(s.get("reason", s["method"]) for r in runs.values() for s in r.steps if s["action"] == "merge")
     usage: Counter[str] = Counter()
     for r in runs.values():
         usage.update(r.usage)
-    return {"queries": len(runs), "status": dict(Counter(r.status for r in runs.values())),
-            "codes": dict(Counter(r.code for r in runs.values() if r.code)),
-            "searches_per_query": {str(k): v for k, v in sorted(searches.items())},
-            "how_it_stopped": dict(stops), "model_calls": sum(r.model_calls for r in runs.values()),
-            "usage": dict(usage)}
+    summary = {"queries": len(runs), "status": dict(Counter(r.status for r in runs.values())),
+               "codes": dict(Counter(r.code for r in runs.values() if r.code)),
+               "searches_per_query": {str(k): v for k, v in sorted(searches.items())},
+               "how_it_stopped": dict(stops), "model_calls": sum(r.model_calls for r in runs.values()),
+               "usage": dict(usage)}
+    if merges:  # 不重排时没有合并步骤，报告字段与旧报告保持一致
+        summary["how_it_merged"] = dict(merges)
+    return summary
+
+
+def retrieval_summary(queries: Sequence[dict[str, Any]], retrieval: dict[str, dict[str, list[str]]]) -> dict[str, Any]:
+    """各条件最终交给生成的 3 段的检索指标（可回答问题，全部 split 合计），以及成对比较。"""
+    answerable = [q for q in queries if q["gold_evidence_ids"]]
+    per_query = {
+        c: {q["sample_id"]: query_metrics([i for i, cid in enumerate(ids[q["sample_id"]], 1) if cid in set(q["gold_evidence_ids"])],
+                                          len(q["gold_evidence_ids"])) for q in answerable}
+        for c, ids in retrieval.items()}
+    ids = [q["sample_id"] for q in answerable]
+    by_bucket = {c: {b: proportion(int(sum(rows[q["sample_id"]]["hit@3"] for q in answerable if q["bucket"] == b)),
+                                   sum(1 for q in answerable if q["bucket"] == b))
+                     for b in ("direct", "paraphrase", "multi") if any(q["bucket"] == b for q in answerable)}
+                 for c, rows in per_query.items()}
+    return {
+        "n_answerable": len(ids),
+        "matrix": {c: summarize([rows[i] for i in ids], POOL_METRICS) for c, rows in per_query.items()},
+        "hit@3_by_bucket": by_bucket,
+        "paired_comparisons": [{"a": a, "b": b, "metric": metric,
+                                **compare([per_query[a][i][metric] for i in ids], [per_query[b][i][metric] for i in ids])}
+                               for a, b in RETRIEVAL_PAIRS if a in per_query and b in per_query and ids
+                               for metric in POOL_METRICS],
+    }
 
 
 def rewrite_status(queries: Sequence[dict[str, Any]], rewrites: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -264,46 +314,75 @@ def rewrite_status(queries: Sequence[dict[str, Any]], rewrites: dict[str, dict[s
 
 # ----------------------------------------------------------------- 编排
 
-def build_retrievers(conditions: Sequence[str], dataset: Any, embedding_revision: str | None) -> dict[str, Callable[[dict[str, Any], str], list[tuple[str, float]]]]:
+Retriever = Callable[..., list[tuple[str, float]]]  # (query, text, depth=TOP_K) -> [(chunk_id, 分数)]
+
+
+def build_retrievers(conditions: Sequence[str], dataset: Any, embedding_revision: str | None) -> dict[str, Retriever]:
     chunk_ids = [c["chunk_id"] for c in dataset.chunks]
     bm25 = Bm25Scorer("bm25_bigram", "cjk_bigram")
     bm25.fit(dataset.chunks)
-    retrievers: dict[str, Callable[[dict[str, Any], str], list[tuple[str, float]]]] = {
-        "bm25": lambda q, text: rank_chunks(bm25.score(text), chunk_ids, True, TOP_K)}
-    if "dense" in conditions or "dense_agent" in conditions:
+    # depth 只在重排条件下大于 TOP_K：先多取候选，再由重排选出前 3 段
+    retrievers: dict[str, Retriever] = {
+        "bm25": lambda q, text, depth=TOP_K: rank_chunks(bm25.score(text), chunk_ids, True, depth)}
+    if any(c.split("_")[0] == "dense" for c in conditions):
         cache = EmbeddingCache(load_sentence_transformer(DEFAULT_EMBEDDING_MODEL, embedding_revision))
         dense = DenseScorer("dense", cache, BGE_ZH_QUERY_PREFIX)
         dense.fit(dataset.chunks)
-        retrievers["dense"] = lambda q, text: rank_chunks(dense.score(text), chunk_ids, False, TOP_K)
+        retrievers["dense"] = lambda q, text, depth=TOP_K: rank_chunks(dense.score(text), chunk_ids, False, depth)
     return retrievers
 
 
-def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> dict[str, Any]:
+def build_rerankers(conditions: Sequence[str], selected: dict[str, Any] | None,
+                    scorer: PairScorer | None) -> dict[str, Reranker]:
+    """``selected`` 是重排对照报告的选定配置（模型、版本、每个方案的候选数）。"""
+    names = [c for c in conditions if c.endswith("_rerank")]
+    if not names:
+        return {}
+    if selected is None or scorer is None:
+        raise ValueError("重排条件需要 --rerank-report 给出的选定配置")
+    return {c: Reranker(scorer, model_name=selected["model"], model_revision=selected["revision"],
+                        candidates=int(selected["candidates"][c.removesuffix("_rerank")])) for c in names}
+
+
+def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any,
+        rerank_scorer: PairScorer | None = None) -> dict[str, Any]:
     conditions: list[str] = args.conditions
     chunk_text = {c["chunk_id"]: c["text"] for c in dataset.chunks}
     queries = list(dataset.queries)
     if args.limit:
         queries = [q for s in ("dev", "test") for q in [x for x in queries if x["split"] == s][: args.limit]]
     retrievers = build_retrievers(conditions, dataset, args.embedding_revision)
+    rerankers = build_rerankers(conditions, getattr(args, "rerank_selected", None), rerank_scorer)
     providers = {trial: make_provider(t) for trial, t in transports.items()}
     retry_enabled = bool(getattr(args, "retry_on_violation", False))
     feedback_enabled = bool(getattr(args, "feedback_retry", False))
 
     started = time.perf_counter()
     rewrites: dict[str, dict[str, Any]] = {}
-    if "bm25_rewrite" in conditions:
+    if any("_rewrite" in c for c in conditions):
         with ThreadPoolExecutor(args.workers) as pool:
             for query, result in zip(queries, pool.map(lambda q: rewrite_query(providers[0], q["question"], args.model), queries), strict=True):
                 rewrites[query["sample_id"]] = result
 
     agent_runs: dict[str, dict[str, SearchAgentResult]] = {}
-    for condition in (c for c in conditions if c.endswith("_agent")):
-        base_retriever = retrievers[condition.removesuffix("_agent")]
+    for condition in (c for c in conditions if c.removesuffix("_rerank").endswith("_agent")):
+        base_retriever = retrievers[condition.split("_")[0]]
+        condition_reranker = rerankers.get(condition)
 
-        def agent_for(query: dict[str, Any], base_retriever: Any = base_retriever) -> SearchAgentResult:
+        def agent_for(query: dict[str, Any], base_retriever: Any = base_retriever,
+                      reranker: Reranker | None = condition_reranker) -> SearchAgentResult:
+            depth = reranker.candidates if reranker else TOP_K
+
             def search(text: str) -> list[_Hit]:
-                return [_Hit(cid, chunk_text[cid]) for cid, _ in base_retriever(query, text)]
-            return run_search_agent(providers[0], search, query["question"], search(query["question"]), args.model)
+                return [_Hit(cid, chunk_text[cid]) for cid, _ in base_retriever(query, text, depth)]
+            if reranker is None:
+                return run_search_agent(providers[0], search, query["question"], search(query["question"]), args.model)
+
+            # 与应用一致：模型每次只看前 3 段（请求与不重排时相同），各次检索的候选合并后按原问题重排
+            def merge(result_lists: Sequence[Sequence[_Hit]]) -> list[_Hit]:
+                return [hit for hit, _ in reranker.rerank(query["question"], [h for hits in result_lists for h in hits], TOP_K)]
+            return run_search_agent(providers[0], search, query["question"], search(query["question"]), args.model,
+                                    observe=TOP_K, merge=merge)
 
         with ThreadPoolExecutor(args.workers) as pool:
             agent_runs[condition] = {q["sample_id"]: r for q, r in zip(queries, pool.map(agent_for, queries), strict=True)}
@@ -311,10 +390,16 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
     def retrieved(condition: str, query: dict[str, Any]) -> list[tuple[str, float]]:
         if condition in agent_runs:
             return [(hit.chunk_id, 0.0) for hit in agent_runs[condition][query["sample_id"]].chunks]
-        if condition == "bm25_rewrite":
-            rewritten = rewrites[query["sample_id"]]["query"]
-            return retrievers["bm25"](query, f"{query['question']} {rewritten}".strip())
-        return retrievers[condition](query, query["question"])
+        base = condition.split("_")[0]
+        text = query["question"]
+        if "_rewrite" in condition:
+            text = f"{query['question']} {rewrites[query['sample_id']]['query']}".strip()
+        reranker = rerankers.get(condition)
+        if reranker is None:
+            return retrievers[base](query, text)
+        # 与应用一致：改写条件按“原问题 + 改写句”检索，也按它重排
+        hits = [_Hit(cid, chunk_text[cid]) for cid, _ in retrievers[base](query, text, reranker.candidates)]
+        return [(hit.chunk_id, score) for hit, score in reranker.rerank(text, hits, TOP_K)]
 
     retrieval: dict[str, dict[str, list[str]]] = {
         c: {q["sample_id"]: [cid for cid, _ in retrieved(c, q)] for q in queries} for c in conditions}
@@ -373,6 +458,7 @@ def run(args: argparse.Namespace, transports: dict[int, Any], dataset: Any) -> d
                 "still_invalid": sum(1 for r in rows for o in r["conditions"][c]["trials"]
                                      if "feedback_retry" in o and o["feedback_retry"]["decision"] in {"invalid", "error"})}
             for c in conditions}
+    report["retrieval"] = retrieval_summary(queries, retrieval)
     if agent_runs:
         report["agent"] = {
             c: {"summary": agent_summary(runs),
@@ -405,8 +491,15 @@ def main() -> None:
     parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2.jsonl")
     parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/llm-pipeline-ledger.db")
     parser.add_argument("--max-calls", type=int, default=800, help="record 模式的持久调用上限（含失败与重试）")
-    parser.add_argument("--conditions", nargs="+", default=["bm25", "bm25_rewrite", "dense"],
-                        choices=["bm25", "bm25_rewrite", "dense", "bm25_agent", "dense_agent"])
+    parser.add_argument("--base-cassette", type=Path, default=None,
+                        help="只读的旧调用记录：--cassette 未命中时再查它，新记录只写入 --cassette")
+    parser.add_argument("--base-retry-cassette", type=Path, default=None, help="同上，对应 --retry-cassette")
+    parser.add_argument("--base-feedback-cassette", type=Path, default=None, help="同上，对应 --feedback-cassette")
+    parser.add_argument("--conditions", nargs="+", default=["bm25", "bm25_rewrite", "dense"], choices=CONDITIONS)
+    parser.add_argument("--rerank-report", type=Path, default=None,
+                        help="eval.rerank_matrix 的报告，重排条件按其中选定的模型与候选数运行")
+    parser.add_argument("--rerank-device", choices=["cpu", "cuda"], default="cpu",
+                        help="重排模型的推理设备；两者分数差在 1e-6 量级，录制与回放用同一设备")
     parser.add_argument("--repeat-trials", type=int, default=3)
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--retry-cassette", type=Path, default=ROOT / "eval/cassettes/llm-pipeline-v2-retry.jsonl",
@@ -424,18 +517,30 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset = load_dataset(args.dataset_dir)
-    cassette = Cassette(args.cassette)
+    def open_cassette(path: Path, base: Path | None) -> Cassette:
+        return Cassette(path, base=Cassette(base) if base else None)
+
+    cassette = open_cassette(args.cassette, args.base_cassette)
     trials = max(args.repeat_trials, 1)
+    args.rerank_selected = None
+    rerank_scorer: PairScorer | None = None
+    if any(c.endswith("_rerank") for c in args.conditions):
+        if args.rerank_report is None:
+            parser.error("重排条件需要 --rerank-report")
+        args.rerank_selected = json.loads(args.rerank_report.read_text(encoding="utf-8"))["selected"]
+        # 各条件、各线程共用一个模型：同一对只打一次分，串行推理
+        rerank_scorer = CachedScorer(load_local_reranker(args.rerank_selected["model"], args.rerank_selected["revision"],
+                                                         device=args.rerank_device))
     transports: dict[int, Any]
     spent: dict[str, Any] | None = None
     if args.mode == "record":
         transports = {t: RecordingTransport(cassette, args.ledger, max_calls=args.max_calls, trial=t) for t in range(trials)}
         if args.retry_on_violation:
-            retry_cassette = Cassette(args.retry_cassette)
+            retry_cassette = open_cassette(args.retry_cassette, args.base_retry_cassette)
             transports.update({RETRY_BASE + t: RecordingTransport(retry_cassette, args.ledger, max_calls=args.max_calls, trial=RETRY_BASE + t)
                                for t in range(trials)})
         if args.feedback_retry:
-            feedback_cassette = Cassette(args.feedback_cassette)
+            feedback_cassette = open_cassette(args.feedback_cassette, args.base_feedback_cassette)
             transports.update({FEEDBACK_BASE + t: RecordingTransport(feedback_cassette, args.ledger, max_calls=args.max_calls,
                                                                      trial=FEEDBACK_BASE + t) for t in range(trials)})
     else:
@@ -443,13 +548,13 @@ def main() -> None:
         os.environ["MIMO_BASE_URL"] = "https://api.xiaomimimo.com"
         transports = {t: ReplayTransport(cassette, trial=t) for t in range(trials)}
         if args.retry_on_violation:
-            retry_cassette = Cassette(args.retry_cassette)
+            retry_cassette = open_cassette(args.retry_cassette, args.base_retry_cassette)
             transports.update({RETRY_BASE + t: ReplayTransport(retry_cassette, trial=RETRY_BASE + t) for t in range(trials)})
         if args.feedback_retry:
-            feedback_cassette = Cassette(args.feedback_cassette)
+            feedback_cassette = open_cassette(args.feedback_cassette, args.base_feedback_cassette)
             transports.update({FEEDBACK_BASE + t: ReplayTransport(feedback_cassette, trial=FEEDBACK_BASE + t)
                                for t in range(trials)})
-    report = run(args, transports, dataset)
+    report = run(args, transports, dataset, rerank_scorer)
     if args.mode == "record":
         spent = transports[0].spent()
     report = {
@@ -459,6 +564,11 @@ def main() -> None:
                    "rewrite_prompt": REWRITE_PROMPT, "temperature": "供应商默认（该 profile 不支持设置）",
                    "dataset_sha256": dataset.fingerprints, "cassette_entries": len(cassette),
                    "cassette_sha256": sha256_of(args.cassette),
+                   "base_cassette_sha256": {name: sha256_of(path) for name, path in (
+                       ("main", args.base_cassette), ("retry", args.base_retry_cassette),
+                       ("feedback", args.base_feedback_cassette)) if path},
+                   "rerank": ({**args.rerank_selected, "report": args.rerank_report.name, "device": args.rerank_device}
+                              if args.rerank_selected else None),
                    "retry_on_violation": bool(args.retry_on_violation),
                    "retry_cassette_sha256": sha256_of(args.retry_cassette) if args.retry_on_violation else None,
                    "feedback_retry": bool(args.feedback_retry),
@@ -471,9 +581,11 @@ def main() -> None:
             handle.write(text + "\n")
     for cond, trials_report in report["generation"].items():
         for name, metrics in trials_report.items():
-            print(f"{cond:13s}{name:8s} false_answer={metrics['false_answer_rate']['rate']} "
+            print(f"{cond:20s}{name:8s} false_answer={metrics['false_answer_rate']['rate']} "
                   f"over_abstain={metrics['over_abstention_rate']['rate']} useful={metrics['useful_answer_rate']['rate']} "
                   f"violations={metrics['contract_violations_or_errors']}")
+    for cond, row in report["retrieval"]["matrix"].items():
+        print(f"{cond:20s}检索 hit@3={row['hit@3']['rate']} recall@3={row['recall@3']['mean']} mrr@3={row['mrr@3']['mean']}")
     if spent:
         print("花费：", spent)
 

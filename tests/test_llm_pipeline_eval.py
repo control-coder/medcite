@@ -201,3 +201,63 @@ def test_answer_f1_from_generation_metrics():
     assert scores["f1"] == pytest.approx(0.7473, abs=1e-4)
     nothing = {"precision_when_answered": ev.proportion(0, 0), "useful_answer_rate": ev.proportion(0, 56)}
     assert ev.answer_f1(nothing)["f1"] == 0.0
+
+
+SELECTED = {"model": "BAAI/bge-reranker-v2-m3", "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+            "candidates": {"bm25": 3, "bm25_rewrite": 3, "bm25_agent": 3}}
+
+
+def later_chunks_first(pairs: list[tuple[str, str]]) -> list[float]:
+    """假重排：越靠后的片段分数越高，与 BM25 的顺序无关。"""
+    order = [c["text"] for c in CHUNKS]
+    return [float(order.index(text)) for _, text in pairs]
+
+
+class AgentModel(FakeModel):
+    """检索 Agent 的请求（带工具）一律直接结束；其余请求同 FakeModel。"""
+
+    def __call__(self, url: str, **kw: Any) -> httpx.Response:
+        if not kw["json"].get("tools"):
+            return super().__call__(url, **kw)
+        with self.lock:
+            self.model_calls += 1
+        body = {"id": "r", "model": ACTIVE_MIMO_MODEL, "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
+                "choices": [{"message": {"content": "结束"}, "finish_reason": "stop"}]}
+        return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+
+def test_rerank_condition_reorders_the_same_candidates_by_the_reranker(tmp_path: Path):
+    transports = {0: RecordingTransport(tmp_path / "c.jsonl", tmp_path / "l.db", max_calls=100, post=FakeModel())}
+    report = ev.run(args(conditions=["bm25", "bm25_rerank"], repeat_trials=1, rerank_selected=SELECTED), transports,
+                    Dataset(chunks=CHUNKS, queries=QUERIES), later_chunks_first)
+    order = [c["chunk_id"] for c in CHUNKS]
+    for row in report["per_query"]:
+        plain, reranked = (row["conditions"][c]["retrieved"] for c in ("bm25", "bm25_rerank"))
+        assert reranked == sorted(plain, key=order.index, reverse=True)  # 候选数为 3：同一批候选，只换顺序
+    retrieval = report["retrieval"]
+    assert retrieval["n_answerable"] == 3 and set(retrieval["matrix"]) == {"bm25", "bm25_rerank"}
+    assert retrieval["paired_comparisons"] == []  # 这两个条件不在预设的比较对里
+
+
+def test_rerank_conditions_require_the_selected_configuration(tmp_path: Path):
+    transports = {0: RecordingTransport(tmp_path / "c.jsonl", tmp_path / "l.db", max_calls=100, post=FakeModel())}
+    with pytest.raises(ValueError, match="rerank-report"):
+        ev.run(args(conditions=["bm25_rerank"], repeat_trials=1), transports, Dataset(chunks=CHUNKS, queries=QUERIES))
+
+
+def test_agent_with_rerank_replays_the_agent_recording_without_new_agent_calls(tmp_path: Path):
+    dataset = Dataset(chunks=CHUNKS, queries=QUERIES)
+    server = AgentModel()
+    recording = {0: RecordingTransport(tmp_path / "c.jsonl", tmp_path / "l.db", max_calls=100, post=server)}
+    plain = ev.run(args(conditions=["bm25_agent"], repeat_trials=1), recording, dataset)
+    # 只回放：检索 Agent 的请求必须全部命中；生成请求是否命中取决于重排后的 3 段，这里不关心
+    replay = {0: ReplayTransport(Cassette(tmp_path / "c.jsonl"))}
+    reranked = ev.run(args(conditions=["bm25_agent_rerank"], repeat_trials=1, rerank_selected=SELECTED), replay,
+                      dataset, later_chunks_first)
+    summary = reranked["agent"]["bm25_agent_rerank"]["summary"]
+    assert summary["status"] == {"ok": len(QUERIES)} and summary["how_it_merged"] == {"rerank": len(QUERIES)}
+    assert summary["how_it_stopped"] == plain["agent"]["bm25_agent"]["summary"]["how_it_stopped"]
+    assert "how_it_merged" not in plain["agent"]["bm25_agent"]["summary"]
+    for sid, trace in reranked["agent"]["bm25_agent_rerank"]["traces"].items():
+        steps = [s for s in trace["steps"] if s["action"] != "merge"]
+        assert steps == plain["agent"]["bm25_agent"]["traces"][sid]["steps"]
