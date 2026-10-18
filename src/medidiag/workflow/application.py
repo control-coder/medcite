@@ -5,11 +5,13 @@ from typing import Any
 
 import yaml
 
+from medidiag.rag.rerank import RERANK_MODEL
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
+MAX_RERANK_CANDIDATES = 50
 ON_INVALID_CHOICES = ("none", "resample", "feedback")
 _ALLOWED_KEYS = {"application", "runtime", "embedding", "dataset", "retrieval", "generation", "leakage_check"}
 
@@ -19,7 +21,7 @@ def _is_revision(value: object) -> bool:
 
 
 def load_application_config(path: str | Path) -> dict[str, Any]:
-    """只接受两种显式检索方案：单路 BM25，或单路向量检索（固定版本、只读本地缓存）。"""
+    """只接受两种显式检索方案：单路 BM25，或单路向量检索（固定版本、只读本地缓存）；两者都可加固定版本的重排。"""
     config: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     try:
         generation = config.get("generation", {})
@@ -45,12 +47,26 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         rewrite_ok = not (dense and generation.get("rewrite", False))
         # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
         agent_ok = not (generation.get("agent", False) and generation.get("rewrite", False))
-        safe = common and (bm25 or dense) and rewrite_ok and agent_ok
+        safe = common and (bm25 or dense) and rewrite_ok and agent_ok and _rerank_ok(config["retrieval"])
     except (KeyError, TypeError, AttributeError) as exc:
         raise ValueError("应用配置缺少明确的安全检索参数。") from exc
     if not safe:
         raise ValueError("应用模式仅允许显式的单路 BM25 或单路固定版本向量检索配置，禁止套用研究/在线配置或禁用泄露检查。")
     return config
+
+
+def _rerank_ok(retrieval: dict[str, Any]) -> bool:
+    """重排可选；开启时只接受固定的交叉编码器、固定版本、只读本地缓存，候选数不少于最终段数。"""
+    rerank = retrieval.get("rerank")
+    if rerank is None:
+        return True
+    candidates = rerank.get("candidates") if isinstance(rerank, dict) else None
+    return (
+        isinstance(rerank, dict) and set(rerank) == {"model", "revision", "local_files_only", "candidates"}
+        and rerank["model"] == RERANK_MODEL and _is_revision(rerank["revision"])
+        and rerank["local_files_only"] is True
+        and type(candidates) is int and int(retrieval.get("top_k", 5)) <= candidates <= MAX_RERANK_CANDIDATES
+    )
 
 
 def retrieval_profile(config: dict[str, Any]) -> str:
@@ -67,6 +83,15 @@ def _dense_factory(chunks: Any, config: dict[str, Any]) -> Any:
     return DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision)
 
 
+def _rerank_factory(config: dict[str, Any]) -> Any:
+    from medidiag.rag.rerank import Reranker, load_local_reranker
+
+    rerank = config["retrieval"]["rerank"]
+    device = str(config.get("runtime", {}).get("device", "cpu"))
+    return Reranker(load_local_reranker(rerank["model"], rerank["revision"], device=device),
+                    model_name=rerank["model"], model_revision=rerank["revision"], candidates=rerank["candidates"])
+
+
 def build_application_provider(mode: str = "fake_offline", *,
                                app_config: str = "configs/application.yaml",
                                root: str | Path = ".", review_verdict: str = "APPROVED",
@@ -80,10 +105,12 @@ def build_application_provider(mode: str = "fake_offline", *,
         raise ValueError("真实应用必须显式指定 --live-budget 持久账本；选择该模式表示已授权调用。")
     path = Path(app_config)
     config = load_application_config(path if path.is_absolute() else Path(root) / path)
+    reranker_factory = _rerank_factory if config["retrieval"].get("rerank") else None
     if retrieval_profile(config) == "dense":
-        rag = RuntimeMedicalRAG.from_config(config, root=root, retriever_factory=_dense_factory)
+        rag = RuntimeMedicalRAG.from_config(config, root=root, retriever_factory=_dense_factory,
+                                            reranker_factory=reranker_factory)
     else:
-        rag = RuntimeMedicalRAG.from_config(config, root=root)
+        rag = RuntimeMedicalRAG.from_config(config, root=root, reranker_factory=reranker_factory)
     if mode == "retrieval_mock":
         return RetrievalMockWorkflowProvider(rag)
     from medidiag.llm.budget import BudgetedTransport

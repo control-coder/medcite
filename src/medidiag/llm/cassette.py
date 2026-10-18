@@ -67,10 +67,15 @@ def sanitize(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 class Cassette:
-    """追加写的 JSONL 调用记录；读写都受锁保护，可被多线程共享。"""
+    """追加写的 JSONL 调用记录；读写都受锁保护，可被多线程共享。
 
-    def __init__(self, path: str | Path) -> None:
+    ``base`` 是只读的已有调用记录：本文件未命中时再查它，新记录只写入本文件。
+    新一轮评测复用旧一轮的部分请求（例如同一检索 Agent 轨迹）时，不必复制旧记录，也不改变旧文件的指纹。
+    """
+
+    def __init__(self, path: str | Path, *, base: Cassette | None = None) -> None:
         self.path = Path(path)
+        self.base = base
         self._lock = threading.Lock()
         self._entries: dict[str, dict[str, Any]] = {}
         if self.path.exists():
@@ -84,7 +89,10 @@ class Cassette:
 
     def get(self, key: str) -> dict[str, Any] | None:
         with self._lock:
-            return self._entries.get(key)
+            entry = self._entries.get(key)
+        if entry is None and self.base is not None:
+            return self.base.get(key)
+        return entry
 
     def put(self, key: str, body: dict[str, Any], elapsed_ms: int) -> None:
         entry = {"key": key, "status": 200, "elapsed_ms": elapsed_ms, "body": sanitize(body)}

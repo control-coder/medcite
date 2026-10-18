@@ -2,6 +2,8 @@
 
 和固定流程的区别：固定流程只检索一次（或把改写句拼在原问题后面再检索一次），而这里每一步做什么由模型决定：
 结果够用就结束，不相关就调用 ``search_kb`` 换成规范术语再检索，最多再检索两次。
+多次检索的结果默认按倒数排名融合；配置了重排时，改为把各次检索的候选合在一起，按原问题重排后取前 3 段。
+倒数排名融合偏向先出现的结果：模型换说法再检索，往往正是因为第一批不相关，这时融合仍会留下第一批的两段。
 它只负责准备证据，最终回答仍走 ``MimoGroundedWorkflowProvider`` 的受约束摘录，
 所以“摘录必须与证据原文逐字一致”的检查对智能体同样生效，智能体不能绕过它。
 
@@ -88,20 +90,35 @@ def _observation(hits: Sequence[Any]) -> list[dict[str, str]]:
 
 def run_search_agent(llm: LLMProvider, search: Callable[[str], Sequence[Any]], question: str,
                      first_hits: Sequence[Any], model: str, *, max_extra_searches: int = MAX_EXTRA_SEARCHES,
-                     pool_size: int = POOL_SIZE, timeout_s: float = 45) -> SearchAgentResult:
-    """``first_hits`` 是按原问题检索的结果；``search`` 负责后续检索，返回带 chunk_id 与 text 的对象。"""
+                     pool_size: int = POOL_SIZE, timeout_s: float = 45, observe: int | None = None,
+                     merge: Callable[[Sequence[Sequence[Any]]], list[Any]] | None = None) -> SearchAgentResult:
+    """``first_hits`` 是按原问题检索的结果；``search`` 负责后续检索，返回带 chunk_id 与 text 的对象。
+
+    ``observe`` 是每次检索给模型看的段数（默认全部）；配合重排时检索会多取候选，模型仍只看前几段，
+    它的决策与不重排时相同。``merge`` 替换默认的倒数排名融合，出错时退回倒数排名融合并记入步骤。
+    """
     result_lists: list[Sequence[Any]] = [first_hits]
     queries = {question.strip()}
     steps: list[dict[str, Any]] = [
-        {"action": "search", "query": question, "chunk_ids": [hit.chunk_id for hit in first_hits]}]
+        {"action": "search", "query": question, "chunk_ids": [hit.chunk_id for hit in first_hits[:observe]]}]
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": AGENT_PROMPT},
         {"role": "user", "content": json.dumps(
-            {"question": question, "first_search": _observation(first_hits)}, ensure_ascii=False)}]
+            {"question": question, "first_search": _observation(first_hits[:observe])}, ensure_ascii=False)}]
     outcome = SearchAgentResult(chunks=[], steps=steps)
 
     def finish() -> SearchAgentResult:
-        outcome.chunks = merge_hits(result_lists, pool_size)
+        if merge is None:
+            outcome.chunks = merge_hits(result_lists, pool_size)
+            return outcome
+        try:
+            outcome.chunks = merge(result_lists)[:pool_size]
+            steps.append({"action": "merge", "method": "rerank",
+                          "candidates": len({hit.chunk_id for hits in result_lists for hit in hits})})
+        except Exception as exc:  # 重排是证据排序的增强，失败时不让问题失败
+            outcome.chunks = merge_hits(result_lists, pool_size)
+            steps.append({"action": "merge", "method": "rrf", "reason": "rerank_failed",
+                          "code": getattr(exc, "code", type(exc).__name__)})
         return outcome
 
     for _ in range(max_extra_searches + 1):  # 最后一次调用只用来让模型有机会说“结束”，不再执行检索
@@ -140,10 +157,10 @@ def run_search_agent(llm: LLMProvider, search: Callable[[str], Sequence[Any]], q
         queries.add(query)
         hits = search(query)
         result_lists.append(hits)
-        steps.append({"action": "search", "query": query, "chunk_ids": [hit.chunk_id for hit in hits]})
+        steps.append({"action": "search", "query": query, "chunk_ids": [hit.chunk_id for hit in hits[:observe]]})
         messages.append({"role": "assistant", "content": "", "tool_calls": [call]})
         messages.append({"role": "tool", "tool_call_id": call["id"],
-                         "content": json.dumps(_observation(hits), ensure_ascii=False)})
+                         "content": json.dumps(_observation(hits[:observe]), ensure_ascii=False)})
     steps.append({"action": "stop", "reason": "search_limit"})
     return finish()
 
@@ -172,8 +189,22 @@ class RetrievalAgentWorkflowProvider(MimoGroundedWorkflowProvider):
         if self.llm is None:
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
         rag = self.rag_stage
-        outcome = run_search_agent(self.llm, rag.search_evidence, normalized_query,
-                                   rag.search_evidence(normalized_query), self.model)
+        if rag.reranker is None:
+            outcome = run_search_agent(self.llm, rag.search_evidence, normalized_query,
+                                       rag.search_evidence(normalized_query), self.model)
+        else:
+            # 每次检索多取候选，模型仍只看前 top_k 段；多次检索的并集按原问题重排，取代倒数排名融合。
+            depth = rag.reranker.candidates
+            observe = int(rag.retrieval_config.get("top_k", POOL_SIZE))
+
+            def search(query: str) -> Sequence[Any]:
+                return rag.search_evidence(query, top_k=depth)
+
+            def rerank(result_lists: Sequence[Sequence[Any]]) -> list[Any]:
+                return list(rag.rerank_evidence(normalized_query, [hit for hits in result_lists for hit in hits], POOL_SIZE))
+
+            outcome = run_search_agent(self.llm, search, normalized_query, search(normalized_query), self.model,
+                                       observe=observe, merge=rerank)
         if outcome.chunks:
             result = rag.freeze_evidence(normalized_query, tuple(outcome.chunks))
         else:  # 与固定流程一致：没有证据时不进入生成，也不调用模型
