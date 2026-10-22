@@ -5,3 +5,4 @@ eval/cassettes/*.jsonl -text
 examples/public_health*/*.jsonl text eol=crlf
 examples/public_health_v3_ext/queries.jsonl -text
 examples/public_health_v3_ext/pooled_judgments.jsonl -text
+examples/public_health_v3_multiturn/*.jsonl -text
