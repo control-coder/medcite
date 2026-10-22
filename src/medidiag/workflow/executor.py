@@ -95,6 +95,7 @@ class WorkflowExecutor:
         input_kind: str = "deidentified_simulation",
         source_ref: str | None = None,
         owner_id: str | None = None,
+        parent_case_id: str | None = None,
     ) -> Case:
         """幂等创建病例。
 
@@ -107,6 +108,7 @@ class WorkflowExecutor:
             idempotency_key: 调用方提供的幂等键。
             user_scope: 用户作用域（配合幂等键去重）。
             gold_answer: 标准答案（评测用，可选）。
+            parent_case_id: 多轮追问的上一轮病例；归属与状态由调用方校验。
 
         Returns:
             Case 对象（新建或已有）。
@@ -131,6 +133,7 @@ class WorkflowExecutor:
             gold_answer=gold_answer,
             input_kind=input_kind,
             source_ref=source_ref,
+            parent_case_id=parent_case_id,
             idempotency_key=idempotency_key,
             idempotency_user_scope=user_scope,
         )

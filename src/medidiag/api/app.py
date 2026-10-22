@@ -169,6 +169,11 @@ def create_app(
         if not idempotency_key:
             raise MediDiagError("IDEMPOTENCY_KEY_MISSING")
         _ensure_deidentified(payload)
+        if payload.parent_case_id is not None:
+            # 只能追问自己的病例：不存在与越权统一返回 404；上一轮未结束时没有可作为历史的回答
+            parent = _case_or_404(session, payload.parent_case_id)
+            if not is_terminal(CaseState(parent.status)):
+                raise MediDiagError("CASE_INVALID_INPUT", detail="parent case must be closed before a follow-up")
         case = app.state.executor.create_case(
             session,
             payload.question,
@@ -177,6 +182,7 @@ def create_app(
             owner_id=session.info["owner_id"],
             input_kind=payload.input_kind,
             source_ref=payload.source_ref,
+            parent_case_id=payload.parent_case_id,
         )
         return _case_response(session, case)
 
@@ -718,6 +724,7 @@ def _case_response(session: Session, case: Case) -> CaseResponse:
         normalized_query=case.normalized_query,
         active_task=_task_response(active) if active else None,
         available_human_actions=actions,
+        parent_case_id=case.parent_case_id,
     )
 
 

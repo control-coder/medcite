@@ -34,6 +34,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and generation.get("on_invalid", "none") in ON_INVALID_CHOICES
             and isinstance(generation.get("rewrite", False), bool)
             and isinstance(generation.get("agent", False), bool)
+            and isinstance(generation.get("context_rewrite", False), bool)
         )
         method = config["retrieval"]["method"]
         bm25 = method == "bm25" and "embedding" not in config
@@ -125,7 +126,10 @@ def build_application_provider(mode: str = "fake_offline", *,
     if not llm.is_configured:
         raise ValueError("mimo_v25 配置不完整，请通过安全环境配置凭据。")
     generation = config.get("generation", {})
+    # 多轮追问检索前先补全问题；只影响带上一轮的病例，单轮问题的请求不变
+    context_rewrite = bool(generation.get("context_rewrite", False))
     if generation.get("agent", False):
-        return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"))
+        return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
+                                              context_rewrite=context_rewrite)
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                                        rewrite=bool(generation.get("rewrite", False)))
+                                        rewrite=bool(generation.get("rewrite", False)), context_rewrite=context_rewrite)

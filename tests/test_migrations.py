@@ -63,3 +63,25 @@ def test_p0b_migration_upgrade_downgrade_round_trip(
         column["name"] for column in inspect(engine).get_columns("cases")
     }
     engine.dispose()
+
+
+def test_parent_case_migration_round_trip(tmp_path: Path, monkeypatch) -> None:
+    """多轮追问的 parent_case_id 可升级、可回退，回退不影响其他列。"""
+    project_root = Path(__file__).resolve().parent.parent
+    database_path = tmp_path / "parent.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_path.as_posix()}")
+    config = _config(project_root)
+
+    def columns() -> set[str]:
+        engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+        try:
+            return {column["name"] for column in inspect(engine).get_columns("cases")}
+        finally:
+            engine.dispose()
+
+    command.upgrade(config, "head")
+    assert {"parent_case_id", "owner_id"} <= columns()
+    command.downgrade(config, "d28f91b703ac")
+    assert "parent_case_id" not in columns() and "owner_id" in columns()
+    command.upgrade(config, "head")
+    assert "parent_case_id" in columns()

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -11,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from medidiag.errors import MediDiagError
 from medidiag.llm.contracts import LLMProvider, LLMRequest
 from medidiag.llm.models import ACTIVE_MIMO_MODEL
+from medidiag.workflow.context_rewrite import Turn, contextualize, recent_turns
 from medidiag.workflow.provider_runtime import ProviderResponse
 from medidiag.workflow.query_rewrite import build_rewrite_request, parse_rewrite
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
@@ -51,6 +53,21 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     rewrite: bool = False
     # 请求的模型名；返回的模型名必须与它一致。回放旧调用记录时传 PREVIOUS_MIMO_MODEL。
     model: str = ACTIVE_MIMO_MODEL
+    # 追问时先用对话历史把问题补全成可以单独理解的问题，再检索与生成（每个追问多 1 次调用）；单轮问题不受影响
+    context_rewrite: bool = False
+
+    def retrieve_in_context(self, normalized_query: str, history: Sequence[Turn]) -> dict[str, Any]:
+        """追问的检索：补全成功时检索（含检索 Agent 与重排）都用补全后的问题，失败时回退到原问题。
+
+        补全结果写在 ``context_rewrite``，worker 据此决定生成步骤使用哪个问题。
+        """
+        if not self.context_rewrite:
+            return {**self.retrieve(normalized_query),
+                    "context_rewrite": {"status": "disabled", "history_turns": len(recent_turns(history))}}
+        if self.llm is None:
+            raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
+        standalone, info = contextualize(self.llm, normalized_query, history, self.model)
+        return {**self.retrieve(standalone), "context_rewrite": {**info, "original_question": normalized_query}}
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
         query, rewrite_info = (self._rewritten(normalized_query) if self.rewrite else (normalized_query, None))

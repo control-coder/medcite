@@ -35,6 +35,8 @@
 - `input_kind`：`public_dataset` 或 `deidentified_simulation`；`source_ref` 可空、最多 128 字符。
 - `non_sensitive_confirmed` 必须为 `true`。这些字段不意味着允许输入真实患者隐私。
 - 旧 `cases` 入口沿用 `question`、`input_kind`、`source_ref`，不为兼容而绕过归属控制。
+- 多轮追问：`cases` 入口可选 `parent_case_id`，指向当前会话自己的、已结束的上一轮病例。不存在或不属于当前会话时返回 404，上一轮未结束时返回 400 `CASE_INVALID_INPUT`。带 `parent_case_id` 时 `question` 下限放宽到 2 个字符，不带时仍为 10 个字符。病例响应多一个 `parent_case_id` 字段，单轮为 `null`。咨询入口和前端暂不提供追问。
+- 追问的处理：worker 沿 `parent_case_id` 取最近 3 轮历史（每轮是当时的问题和成功关闭时交付的摘录，或拒答；未成功结束的记为没有回答）。配置开启 `generation.context_rewrite` 时，检索前先由模型把追问补全成可以单独理解的问题，检索与生成都用补全后的问题，失败时回退到原问题，结果记在检索产物的 `context_rewrite`。没有开启或 provider 不支持时，追问按单轮问题处理。历史不交给生成步骤，摘录与拒答规则不变。
 
 ## 用户投影与失败语义
 

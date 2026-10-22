@@ -29,6 +29,7 @@ from medidiag.workflow.assistant_pipeline import (
     StageContext,
     StageExecution,
 )
+from medidiag.workflow.context_rewrite import MAX_HISTORY_TURNS, Turn
 from medidiag.workflow.executor import WorkflowExecutor
 from medidiag.workflow.idempotency import compute_input_hash
 from medidiag.workflow.lease import LeaseHeartbeat
@@ -240,12 +241,21 @@ class SingleMachineWorker:
 
                 if state == CaseState.NORMALIZED:
                     self._renew(session, task)
+                    query = case.normalized_query or case.question
+                    history = self._history(session, case)
+                    in_context = getattr(self.provider, "retrieve_in_context", None)
+                    # 只有追问且 provider 支持时才带历史；单轮问题与不支持的 provider 走原来的检索调用
+                    retrieve_operation: Callable[[], Any] = (
+                        (lambda: in_context(query, history))
+                        if history and in_context is not None
+                        else (lambda: self.provider.retrieve(query))
+                    )
                     outcome = self._invoke(
                         session,
                         case,
                         task,
                         "retrieval",
-                        lambda: self.provider.retrieve(case.normalized_query or case.question),
+                        retrieve_operation,
                     )
                     payload = outcome.payload
                     artifact = self._artifact(case, task, outcome)
@@ -260,6 +270,7 @@ class SingleMachineWorker:
                         records=[artifact],
                         detail={
                             "chunk_count": len(payload.get("chunks", [])),
+                            **({"history_turns": len(history)} if case.parent_case_id else {}),
                             **self._provider_detail(outcome),
                         },
                     )
@@ -306,18 +317,19 @@ class SingleMachineWorker:
                         continue
                     retrieval = artifacts["retrieval"].payload
                     plan = artifacts["plan"].payload
+                    question = self._generation_question(case, retrieval)
                     self._renew(session, task)
                     outcome = self._invoke(
                         session,
                         case,
                         task,
                         "generation",
-                        lambda: self.provider.generate(case.question, retrieval, plan),
+                        lambda: self.provider.generate(question, retrieval, plan),
                     )
                     payload = outcome.payload
                     records: list[Any] = [self._artifact(case, task, outcome)]
                     default_input = {
-                        "question": case.question,
+                        "question": question,
                         "retrieval": retrieval,
                         "plan": plan,
                     }
@@ -688,12 +700,13 @@ class SingleMachineWorker:
         if stage == "normalize":
             return {"question": case.question}
         if stage == "retrieval":
-            return {"normalized_query": case.normalized_query}
+            history = self._history(session, case)
+            return {"normalized_query": case.normalized_query, **({"history": history} if history else {})}
         if stage == "plan":
             return artifacts["retrieval"].payload
         if stage == "generation":
             return {
-                "question": case.question,
+                "question": self._generation_question(case, artifacts["retrieval"].payload),
                 "retrieval": artifacts["retrieval"].payload,
                 "plan": artifacts["plan"].payload,
             }
@@ -715,6 +728,45 @@ class SingleMachineWorker:
                 "review": artifacts["review"].payload,
             }
         raise ValueError(f"unsupported pipeline stage: {stage}")
+
+    def _history(self, session: Session, case: Case) -> list[Turn]:
+        """追问的对话历史：沿 ``parent_case_id`` 向前取最近几轮，按时间先后排列；单轮问题返回空列表。
+
+        只接受与本病例同一归属的上一轮（API 创建时已校验，这里再挡一次），遇到环或缺失即停止。
+        """
+        turns: list[Turn] = []
+        seen = {case.case_id}
+        parent_id = case.parent_case_id
+        while parent_id and parent_id not in seen and len(turns) < MAX_HISTORY_TURNS:
+            seen.add(parent_id)
+            parent = session.scalar(select(Case).where(Case.case_id == parent_id))
+            if parent is None or parent.owner_id != case.owner_id:
+                break
+            turns.append(self._turn_of(session, parent))
+            parent_id = parent.parent_case_id
+        return list(reversed(turns))
+
+    @staticmethod
+    def _turn_of(session: Session, case: Case) -> Turn:
+        """一轮历史的回答只取用户实际看到的结果：成功关闭时的摘录或拒答，其余记为没有回答。"""
+        if case.status != CaseState.CLOSED_SUCCESS.value:
+            return {"question": case.question, "outcome": "no_answer", "answer": []}
+        generation = session.scalar(
+            select(StageArtifact)
+            .where(StageArtifact.case_id == case.case_id, StageArtifact.stage == "generation")
+            .order_by(StageArtifact.id.desc())
+            .limit(1)
+        )
+        claims = [str(c["text"]) for c in (generation.payload.get("claims", []) if generation else [])]
+        return {"question": case.question, "outcome": "answered" if claims else "abstained", "answer": claims}
+
+    @staticmethod
+    def _generation_question(case: Case, retrieval: dict[str, Any]) -> str:
+        """补全成功时生成步骤使用补全后的问题，否则使用用户原问题（单轮问题始终是原问题）。"""
+        info = retrieval.get("context_rewrite")
+        if isinstance(info, dict) and info.get("status") == "ok" and isinstance(info.get("standalone_question"), str):
+            return str(info["standalone_question"])
+        return case.question
 
     def _record_provider_attempt(
         self,

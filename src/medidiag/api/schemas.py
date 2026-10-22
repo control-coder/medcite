@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+QUESTION_MIN_CHARS = 10
+# 追问常常很短（“那要吃药吗？”），有上一轮作为上下文时放宽下限
+FOLLOW_UP_MIN_CHARS = 2
 
 
 class CaseCreateRequest(BaseModel):
-    question: str = Field(min_length=10, max_length=12000)
+    question: str = Field(min_length=FOLLOW_UP_MIN_CHARS, max_length=12000)
     input_kind: Literal["public_dataset", "deidentified_simulation"]
     source_ref: str | None = Field(default=None, max_length=128)
+    # 多轮追问：同一会话归属下已结束的上一轮病例；为空时与原来的单轮问题完全相同
+    parent_case_id: str | None = Field(default=None, min_length=1, max_length=64)
 
     @field_validator("question", mode="before")
     @classmethod
@@ -19,6 +25,12 @@ class CaseCreateRequest(BaseModel):
         if not value:
             raise ValueError("question must not be blank")
         return value
+
+    @model_validator(mode="after")
+    def single_turn_question_length(self) -> CaseCreateRequest:
+        if self.parent_case_id is None and len(self.question) < QUESTION_MIN_CHARS:
+            raise ValueError(f"question must have at least {QUESTION_MIN_CHARS} characters")
+        return self
 
 
 class WorkflowStartResponse(BaseModel):
@@ -38,6 +50,7 @@ class CaseResponse(BaseModel):
     normalized_query: str | None
     active_task: WorkflowStartResponse | None
     available_human_actions: list[str]
+    parent_case_id: str | None = None
 
 
 class EventResponse(BaseModel):

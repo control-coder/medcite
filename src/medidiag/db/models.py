@@ -84,6 +84,9 @@ class Case(Base):
         default=lambda: f"trace_{uuid.uuid4().hex}",
     )
     review_round: Mapped[int] = mapped_column(Integer, default=0)
+    # 多轮对话：追问指向同一归属的上一轮病例（cases.case_id 的逻辑引用，不设外键，理由同 active_task_id）；
+    # 单轮问题为空
+    parent_case_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     # 指向 workflow_tasks.task_id 的逻辑引用。这里刻意不设置外键，
     # 因为 workflow_tasks 已引用 cases，而 SQLite 无法在不重建两张表的情况下
     # 添加由此产生的循环外键。
