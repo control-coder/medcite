@@ -27,6 +27,7 @@ dependencies = [
     "sentence-transformers>=2.7",
     "transformers>=4.41",
     "rank-bm25>=0.2.2",
+    "jieba>=0.42",
     "numpy>=1.26",
     "pyyaml>=6.0",
     "click>=8.1",

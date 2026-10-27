@@ -13,6 +13,8 @@ from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
 MAX_RERANK_CANDIDATES = 50
 ON_INVALID_CHOICES = ("none", "resample", "feedback")
+BM25_TOKENIZERS = ("cjk_bigram", "jieba")
+_HYBRID_KEYS = {"candidates", "rrf_k", "mmr_lambda"}
 _ALLOWED_KEYS = {"application", "runtime", "embedding", "dataset", "retrieval", "generation", "leakage_check"}
 
 
@@ -20,8 +22,16 @@ def _is_revision(value: object) -> bool:
     return isinstance(value, str) and len(value) == 40 and all(ch in "0123456789abcdef" for ch in value)
 
 
+def _embedding_fixed(embedding: dict[str, Any]) -> bool:
+    """固定版本的向量模型、只读本地缓存；dense 与 hybrid 使用同一校验。"""
+    return (
+        embedding.get("model") == DENSE_MODEL and _is_revision(embedding.get("revision"))
+        and embedding.get("local_files_only") is True
+    )
+
+
 def load_application_config(path: str | Path) -> dict[str, Any]:
-    """只接受两种显式检索方案：单路 BM25，或单路向量检索（固定版本、只读本地缓存）；两者都可加固定版本的重排。"""
+    """只接受三种显式检索方案：单路 BM25、单路向量检索、BM25 加向量的混合检索（均需固定版本、只读本地缓存）；都可加固定版本的重排。"""
     config: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     try:
         generation = config.get("generation", {})
@@ -35,25 +45,44 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and isinstance(generation.get("rewrite", False), bool)
             and isinstance(generation.get("agent", False), bool)
             and isinstance(generation.get("context_rewrite", False), bool)
+            and config["retrieval"].get("bm25_tokenizer", "cjk_bigram") in BM25_TOKENIZERS
         )
         method = config["retrieval"]["method"]
         bm25 = method == "bm25" and "embedding" not in config
         embedding = config.get("embedding", {})
-        dense = (
-            method == "dense"
-            and embedding.get("model") == DENSE_MODEL and _is_revision(embedding.get("revision"))
-            and embedding.get("local_files_only") is True
-        )
-        # 改写只对字面匹配检索有用；向量检索下几乎没有收益，却要多一次调用，所以不接受这种组合
-        rewrite_ok = not (dense and generation.get("rewrite", False))
+        dense = method == "dense" and _embedding_fixed(embedding)
+        hybrid = method == "hybrid" and _embedding_fixed(embedding)
+        # 改写只对字面匹配检索有用；向量检索（含混合检索的向量一路）下几乎没有收益，却要多一次调用，所以不接受这种组合
+        rewrite_ok = not ((dense or hybrid) and generation.get("rewrite", False))
         # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
         agent_ok = not (generation.get("agent", False) and generation.get("rewrite", False))
-        safe = common and (bm25 or dense) and rewrite_ok and agent_ok and _rerank_ok(config["retrieval"])
+        safe = (
+            common and (bm25 or dense or hybrid) and rewrite_ok and agent_ok
+            and _rerank_ok(config["retrieval"]) and _hybrid_ok(config["retrieval"], method)
+        )
     except (KeyError, TypeError, AttributeError) as exc:
         raise ValueError("应用配置缺少明确的安全检索参数。") from exc
     if not safe:
-        raise ValueError("应用模式仅允许显式的单路 BM25 或单路固定版本向量检索配置，禁止套用研究/在线配置或禁用泄露检查。")
+        raise ValueError("应用模式仅允许显式的单路 BM25、单路固定版本向量检索或混合检索配置，禁止套用研究/在线配置或禁用泄露检查。")
     return config
+
+
+def _hybrid_ok(retrieval: dict[str, Any], method: str) -> bool:
+    """混合检索参数只在 method=hybrid 时给出；键集合固定、取值范围有限。"""
+    hybrid = retrieval.get("hybrid")
+    if hybrid is None:
+        return True
+    if method != "hybrid" or not isinstance(hybrid, dict) or not set(hybrid) <= _HYBRID_KEYS:
+        return False
+    candidates = hybrid.get("candidates", 20)
+    rrf_k = hybrid.get("rrf_k", 60)
+    mmr_lambda = hybrid.get("mmr_lambda", 0.7)
+    return (
+        type(candidates) is int and 5 <= candidates <= MAX_RERANK_CANDIDATES
+        and type(rrf_k) is int and 1 <= rrf_k <= 1000
+        and isinstance(mmr_lambda, (int, float)) and not isinstance(mmr_lambda, bool)
+        and 0.0 <= float(mmr_lambda) <= 1.0
+    )
 
 
 def _rerank_ok(retrieval: dict[str, Any]) -> bool:
@@ -107,8 +136,14 @@ def build_application_provider(mode: str = "fake_offline", *,
     path = Path(app_config)
     config = load_application_config(path if path.is_absolute() else Path(root) / path)
     reranker_factory = _rerank_factory if config["retrieval"].get("rerank") else None
-    if retrieval_profile(config) == "dense":
+    method = retrieval_profile(config)
+    if method == "dense":
         rag = RuntimeMedicalRAG.from_config(config, root=root, retriever_factory=_dense_factory,
+                                            reranker_factory=reranker_factory)
+    elif method == "hybrid":
+        from medidiag.rag.runtime import _hybrid_factory
+
+        rag = RuntimeMedicalRAG.from_config(config, root=root, retriever_factory=_hybrid_factory,
                                             reranker_factory=reranker_factory)
     else:
         rag = RuntimeMedicalRAG.from_config(config, root=root, reranker_factory=reranker_factory)

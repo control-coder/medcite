@@ -62,4 +62,17 @@ class DenseRetriever:
         scores = self._matrix @ vector
         order = sorted(range(len(self.chunks)), key=lambda i: (-float(scores[i]), self.chunks[i].chunk_id))
         return [SearchResult(chunk_id=self.chunks[i].chunk_id, final_score=float(scores[i]),
-                             embedding_score=float(scores[i]), chunk=self.chunks[i]) for i in order[:top_k]]
+                             embedding_score=float(scores[i]), chunk=self.chunks[i],
+                             score_sources=("dense",)) for i in order[:top_k]]
+
+    def vector_for(self, chunk_id: str) -> Any | None:
+        """按 chunk_id 取已建索引的归一化向量（不重复编码）；未建索引或未收录返回 None。
+
+        供混合检索后的 MMR 去冗余直接复用子块向量，见 ``hybrid.py``。
+        """
+        if self._matrix is None:
+            return None
+        for index, chunk in enumerate(self.chunks):
+            if chunk.chunk_id == chunk_id:
+                return self._matrix[index]
+        return None

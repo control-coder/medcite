@@ -1,7 +1,8 @@
 """运行时医学 RAG 与版本化 EvidenceBundle。
 
 本模块只负责 corpus、泄露门禁、检索与可审计证据封装，检索器是可替换的
-（BM25 或向量检索），可选交叉编码器重排；不持有数据库会话，也不生成医学结论。
+（BM25、向量或混合检索），可选交叉编码器重排与 MMR 去冗余；
+不持有数据库会话，也不生成医学结论。
 """
 
 from __future__ import annotations
@@ -30,6 +31,37 @@ class RetrieverContract(Protocol):
 
 def _bm25_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> RetrieverContract:
     return Bm25Retriever(chunks, bm25_tokenizer=str(config["retrieval"].get("bm25_tokenizer", "cjk_bigram")))
+
+
+def _hybrid_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> RetrieverContract:
+    """混合检索工厂：按配置建 BM25（可选 jieba 自定义词典）与向量检索器，再融合。"""
+    from medidiag.rag.dense import DenseRetriever, load_local_encoder
+    from medidiag.rag.hybrid import DEFAULT_CANDIDATES, DEFAULT_RRF_K, HybridRetriever
+    from medidiag.rag.lexicon import build_lexicon
+
+    retrieval = config["retrieval"]
+    tokenizer = str(retrieval.get("bm25_tokenizer", "cjk_bigram"))
+    lexicon = build_lexicon(chunks) if tokenizer == "jieba" else None
+    bm25 = Bm25Retriever(chunks, bm25_tokenizer=tokenizer, lexicon=lexicon)
+    name, revision = config["embedding"]["model"], config["embedding"]["revision"]
+    runtime = config.get("runtime", {})
+    encoder = load_local_encoder(name, revision, device=str(runtime.get("device", "cpu")),
+                                 batch_size=int(runtime.get("batch_size", 8)))
+    dense = DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision)
+    hybrid = retrieval.get("hybrid", {})
+    return HybridRetriever(
+        chunks, bm25=bm25, dense=dense,
+        candidates=int(hybrid.get("candidates", DEFAULT_CANDIDATES)),
+        rrf_k=int(hybrid.get("rrf_k", DEFAULT_RRF_K)),
+    )
+
+
+def _mmr_lambda(retrieval_config: dict[str, Any]) -> float | None:
+    """MMR 只在混合检索的 retrieval.hybrid.mmr_lambda 显式给出时开启。"""
+    hybrid = retrieval_config.get("hybrid")
+    if not isinstance(hybrid, dict) or "mmr_lambda" not in hybrid:
+        return None
+    return float(hybrid["mmr_lambda"])
 
 
 @dataclass(frozen=True)
@@ -197,6 +229,7 @@ class RuntimeMedicalRAG:
         """只检索、不冻结；可能返回空元组。检索智能体用它做多次检索。
 
         配置了重排时返回的是重排后的前 top_k 段；``top_k`` 只供检索智能体取更多候选，不重排。
+        配置了 MMR（retrieval.hybrid.mmr_lambda）时，去冗余作用于重排之后；没有重排时直接作用于 RRF 结果。
         """
         if top_k is not None:
             results = self.retriever.search(query, top_k=top_k)
@@ -204,15 +237,34 @@ class RuntimeMedicalRAG:
         top_k = int(self.retrieval_config.get("top_k", 5))
         if self.reranker is None:
             results = self.retriever.search(query, top_k=top_k)
-            return tuple(self._evidence_item(item) for item in results if item.chunk)
+            return self._apply_mmr(tuple(self._evidence_item(item) for item in results if item.chunk), top_k)
         candidates = self.search_evidence(query, top_k=self.reranker.candidates)
         return self.rerank_evidence(query, candidates, top_k)
 
     def rerank_evidence(self, question: str, items: Sequence[EvidenceItem], top_k: int) -> tuple[EvidenceItem, ...]:
-        """按交叉编码器分数重排候选并去重；final_score 换成重排分数，原检索分数保留在对应字段。"""
+        """按交叉编码器分数重排候选并去重；final_score 换成重排分数，原检索分数保留在对应字段。
+
+        重排前多取 top_k 个候选供 MMR 挑选，保证去冗余后仍能凑满 top_k 段。
+        """
         if self.reranker is None:
             raise MediDiagError("RAG_CORPUS_INVALID", detail="没有配置重排模型")
-        return tuple(replace(item, final_score=score) for item, score in self.reranker.rerank(question, items, top_k))
+        pool = top_k * 2 if _mmr_lambda(self.retrieval_config) is not None else top_k
+        reranked = tuple(
+            replace(item, final_score=score) for item, score in self.reranker.rerank(question, items, pool)
+        )
+        return self._apply_mmr(reranked, top_k)
+
+    def _apply_mmr(self, items: tuple[EvidenceItem, ...], top_k: int) -> tuple[EvidenceItem, ...]:
+        """混合检索开启 MMR 时按子块向量去冗余；向量复用检索阶段的编码结果。"""
+        mmr_lambda = _mmr_lambda(self.retrieval_config)
+        if mmr_lambda is None or not items:
+            return items
+        vector_for = getattr(self.retriever, "vector_for", None)
+        if vector_for is None:
+            return items
+        from medidiag.rag.hybrid import mmr_select
+
+        return tuple(mmr_select(items, vector_for=vector_for, top_k=top_k, mmr_lambda=mmr_lambda))
 
     def freeze_evidence(self, normalized_query: str, evidence: tuple[EvidenceItem, ...]) -> dict[str, Any]:
         """把给定证据冻结成带哈希的 EvidenceBundle，并返回流程各阶段使用的检索结果。"""
@@ -240,11 +292,14 @@ class RuntimeMedicalRAG:
                 "corpus_path": self.corpus_path,
                 "top_k": top_k,
                 "method": self.retrieval_config.get("method"),
+                "bm25_tokenizer": self.retrieval_config.get("bm25_tokenizer", "cjk_bigram"),
                 "embedding_model": getattr(self.retriever, "embedding_model_name", None),
                 "embedding_revision": getattr(
                     self.retriever, "embedding_model_revision", None
                 ),
                 "leakage_gate": self.leakage_gate,
+                **({"hybrid": dict(self.retrieval_config["hybrid"])}
+                   if isinstance(self.retrieval_config.get("hybrid"), dict) else {}),
                 **({} if self.reranker is None else {"reranker": {
                     "model": self.reranker.model_name, "revision": self.reranker.model_revision,
                     "candidates": self.reranker.candidates}}),
