@@ -34,7 +34,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from medidiag.rag.ingest.clean import normalize_text  # noqa: E402
+from medidiag.rag.ingest.clean import _full_alnum_space_to_half  # noqa: E402
 from medidiag.schemas import read_jsonl  # noqa: E402
 from scripts.verify_v3_excerpts import (  # noqa: E402  # noqa: E402
     _SLUG_ALIASES,
@@ -45,12 +45,12 @@ from scripts.verify_v3_excerpts import (  # noqa: E402  # noqa: E402
 
 
 def squash(text: str) -> str:
-    """逐字比较用：先做与 M5 清洗一致的全半角/空白归一，再去掉全部空白。
+    """逐字比较用：全角字母/数字/空格转半角后去掉全部空白；中文标点保持原样。
 
-    M5 的 ``clean_document`` 把全角标点统一为半角，而 v3 摘录保留了原始全角
-    标点；若不做同样归一，含全角标点的摘录会全部失配（并非内容差异）。
+    与 M5 清洗的归一规则一致（``clean._full_alnum_space_to_half``），只忽略
+    空白与全半角字母数字差异；不做 NFKC，避免全角标点被改写造成假失配或假命中。
     """
-    return re.sub(r"\s+", "", normalize_text(text))
+    return re.sub(r"\s+", "", _full_alnum_space_to_half(text))
 
 
 def build_v3_to_v4_doc(v3_dir: Path, v4_sources: Path) -> dict[str, str]:

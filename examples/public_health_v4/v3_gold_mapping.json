@@ -4749,8 +4749,8 @@
     },
     "parent_child": {
       "stats": {
-        "exact": 459,
-        "span": 27,
+        "exact": 453,
+        "span": 33,
         "failed": 12
       },
       "answerable_queries": 112,
@@ -5830,9 +5830,11 @@
           "reason": null
         },
         "kb_amr_03": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
-            "who_fs_antimicrobial_resistance:4:pc:5"
+            "who_fs_antimicrobial_resistance:4:pc:5",
+            "who_fs_antimicrobial_resistance:4:pc:6",
+            "who_fs_antimicrobial_resistance:4:pc:7"
           ],
           "reason": null
         },
@@ -6545,7 +6547,7 @@
         "kb_abortion_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_abortion:5:pc:9"
+            "who_fs_abortion:5:pc:11"
           ],
           "reason": null
         },
@@ -6838,7 +6840,7 @@
         "kb_onchocerciasis_02": {
           "mapping": "exact",
           "gold": [
-            "who_fs_onchocerciasis:4:pc:2"
+            "who_fs_onchocerciasis:4:pc:3"
           ],
           "reason": null
         },
@@ -6871,8 +6873,9 @@
           "reason": null
         },
         "kb_universal_health_coverage_uhc_03": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
+            "who_fs_universal_health_coverage_uhc:4:pc:1",
             "who_fs_universal_health_coverage_uhc:4:pc:2"
           ],
           "reason": null
@@ -6930,7 +6933,7 @@
         "kb_mercury_and_health_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_mercury_and_health:5:pc:4"
+            "who_fs_mercury_and_health:5:pc:5"
           ],
           "reason": null
         },
@@ -7134,7 +7137,7 @@
         "kb_natural_toxins_in_food_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_natural_toxins_in_food:11:pc:2"
+            "who_fs_natural_toxins_in_food:11:pc:3"
           ],
           "reason": null
         },
@@ -7370,9 +7373,10 @@
           "reason": null
         },
         "kb_candidiasis_yeast_infection_02": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
-            "who_fs_candidiasis_yeast_infection:3:pc:2"
+            "who_fs_candidiasis_yeast_infection:3:pc:2",
+            "who_fs_candidiasis_yeast_infection:3:pc:3"
           ],
           "reason": null
         },
@@ -7610,7 +7614,7 @@
         "kb_adolescent_pregnancy_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_adolescent_pregnancy:5:pc:13"
+            "who_fs_adolescent_pregnancy:5:pc:14"
           ],
           "reason": null
         },
@@ -7706,9 +7710,10 @@
           "reason": null
         },
         "kb_patient_safety_02": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
-            "who_fs_patient_safety:4:pc:0"
+            "who_fs_patient_safety:4:pc:0",
+            "who_fs_patient_safety:4:pc:1"
           ],
           "reason": null
         },
@@ -7796,9 +7801,10 @@
           "reason": null
         },
         "kb_suicide_03": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
-            "who_fs_suicide:4:pc:1"
+            "who_fs_suicide:4:pc:1",
+            "who_fs_suicide:4:pc:2"
           ],
           "reason": null
         },
@@ -8141,7 +8147,7 @@
         "kb_sugars_and_dental_caries_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_sugars_and_dental_caries:4:pc:4"
+            "who_fs_sugars_and_dental_caries:4:pc:6"
           ],
           "reason": null
         },
@@ -8169,7 +8175,7 @@
         "kb_herpes_simplex_virus_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_herpes_simplex_virus:7:pc:2"
+            "who_fs_herpes_simplex_virus:7:pc:3"
           ],
           "reason": null
         },
@@ -8209,9 +8215,10 @@
           "reason": null
         },
         "kb_electronic_waste_e_waste_02": {
-          "mapping": "exact",
+          "mapping": "span",
           "gold": [
-            "who_fs_electronic_waste_e_waste:4:pc:0"
+            "who_fs_electronic_waste_e_waste:4:pc:0",
+            "who_fs_electronic_waste_e_waste:4:pc:1"
           ],
           "reason": null
         },

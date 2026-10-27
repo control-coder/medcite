@@ -8,23 +8,38 @@
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import dataclass
 
 from medidiag.rag.ingest.document import Document, Element
 
-_FULL_TO_HALF = str.maketrans({
-    "，": ",", "。": "。", "；": ";", "：": ":", "（": "(", "）": ")",
-    "【": "[", "】": "]", "％": "%", "　": " ",
-})
+
+# 全角 → 半角仅限：数字（U+FF10–FF19）、大写字母（FF21–FF3A）、小写字母（FF41–FF5A）、
+# 全角空格（U+3000）。中文全角标点（，：；？！（）【】、。％等）保持全角不变，
+# 保证展示给用户的证据原文与来源一致（可溯源、逐字原文）。
+def _full_alnum_space_to_half(text: str) -> str:
+    out: list[str] = []
+    for ch in text:
+        o = ord(ch)
+        if o == 0x3000:  # 全角空格
+            out.append(" ")
+        elif 0xFF10 <= o <= 0xFF19 or 0xFF21 <= o <= 0xFF3A or 0xFF41 <= o <= 0xFF5A:
+            out.append(chr(o - 0xFEE0))
+        else:
+            out.append(ch)
+    return "".join(out)
+
 
 _WS_RUN = re.compile(r"[ \t　\xa0]+")
 _BLANK_LINES = re.compile(r"\n{3,}")
 
 
 def normalize_text(text: str) -> str:
-    """通用归一：NFKC 全半角、统一空白。所有来源都应用。"""
-    text = unicodedata.normalize("NFKC", text)
+    """通用归一：全角字母/数字/空格转半角、统一空白；中文全角标点保持原样。
+
+    不做整体 NFKC（它会把中文全角标点转成 ASCII 半角，导致证据原文与来源不一致）。
+    所有来源都应用。
+    """
+    text = _full_alnum_space_to_half(text)
     text = _WS_RUN.sub(" ", text)
     return text.strip()
 

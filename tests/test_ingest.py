@@ -359,7 +359,9 @@ def test_parse_csv(tmp_path: Path) -> None:
 
 
 def test_normalize_text_fullwidth() -> None:
-    assert normalize_text("（一）　感冒，发热　50％") == "(一) 感冒,发热 50%"
+    # 全角字母/数字/空格转半角；中文全角标点（，：（）％等）保持全角
+    assert normalize_text("（一）　感冒，发热　50％") == "（一） 感冒，发热 50％"
+    assert normalize_text("ＡＢＣ　１２３") == "ABC 123"
 
 
 def test_clean_removes_reference_markers() -> None:

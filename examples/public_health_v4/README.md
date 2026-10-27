@@ -100,6 +100,8 @@ v3 摘录核对（`scripts/verify_v3_excerpts.py`，按 source_url 映射到新 
 - kb_poliomyelitis_01：摘录出自页面图片说明（图说）而非正文段落，新解析器按语义排除图片区，属历史定位差异。
 - ebola 页面 slug 更新（ebola-virus-disease → ebola-disease）已登记别名映射，其 4 条摘录在新页面逐字存在，不计入缺失。
 
+**清洗归一规则**（`clean.normalize_text`，2026-10-27 修订）：全角字母、数字、空格（U+FF10–FF19、FF21–FF3A、FF41–FF5A、U+3000）转半角并统一空白；**中文全角标点（，：；？！（）【】、。％等）保持全角不变**，不做整体 NFKC。此前整体 NFKC 会把中文标点转成 ASCII 半角，导致证据原文与来源不一致、且下游 quote 校验易假失配；修订后段落正文与来源逐字一致。参考文献编号（如正文末尾的 `（3）`）仍按规则去除（编号非正文内容）。
+
 ## 分块（M6）
 
 对应《RAG升级计划.md》M6。对 M5 解析产物（495 篇，文档级去重剔除 1 篇、跳过 2 篇 DOC 不计）做两种策略分块，实现在 `src/medidiag/rag/ingest/chunking.py`，CLI 为 `medidiag corpus chunk --parsed .cache/corpus/parsed/documents.jsonl --strategy <recursive|parent_child> --out .cache/corpus/chunks/<strategy>/`。产物（`chunks.jsonl` 检索块、`parents.jsonl` 父块）只存本机，不入库。
@@ -117,19 +119,19 @@ v3 摘录核对（`scripts/verify_v3_excerpts.py`，按 source_url 映射到新 
 
 | 策略 | 检索块（子块） | 父块 | 子块平均字数 | 父块平均字数 | 表格行块 |
 | --- | --- | --- | --- | --- | --- |
-| recursive | 11985 | 0 | 207.3 | — | 3067 |
-| parent_child | 43602 | 22471 | 56.8 | 104.6 | 3026 |
+| recursive | 11987 | 0 | 207.2 | — | 3067 |
+| parent_child | 44223 | 22476 | 56.0 | 104.6 | 3026 |
 
-递归切分全部块 ≤588 字（512+76 重叠）。父子分块有 4 个父块 >600 字（单个不可分割的参考文献/长定义列表条目，22471 个父块中的 0.018%）、24 个子块为超长表格行（个别 PDF 把整段正文误抽成单行表格），属已记录的边界情况。
+递归切分全部块 ≤588 字（512+76 重叠）。父子分块有 4 个父块 >600 字（单个不可分割的参考文献/长定义列表条目，22476 个父块中的 0.018%）、24 个子块为超长表格行（个别 PDF 把整段正文误抽成单行表格），属已记录的边界情况。
 
-**标注迁移**（`scripts/migrate_v3_gold.py` → `v3_gold_mapping.json`）：v3 的 498 条摘录按包含关系（先做与 M5 清洗一致的全半角/空白归一，再去空白逐字比较）映射到 v4 子块。`exact` = 单子块逐字包含；`span` = 跨相邻子块、全部计为 gold；`failed` = 映射失败。
+**标注迁移**（`scripts/migrate_v3_gold.py` → `v3_gold_mapping.json`）：v3 的 498 条摘录按包含关系映射到 v4 子块。逐字比较只忽略空白与全半角字母/数字差异（中文全角标点保持原样，与清洗规则一致），不做整体 NFKC。`exact` = 单子块逐字包含；`span` = 跨相邻子块、全部计为 gold；`failed` = 映射失败。
 
 | 策略 | exact | span | failed |
 | --- | --- | --- | --- |
 | recursive | 486 | 0 | 12 |
-| parent_child | 459 | 27 | 12 |
+| parent_child | 453 | 33 | 12 |
 
-12 条失败：M5 已知的 9 条（covid_etiquette、covid_masks、covid_ventilation、heat_children、salt_01–04、poliomyelitis，快照缺失或定位差异），加 3 条内容经清洗后不再逐字一致（obesity_04、tobacco_02、campylobacter_04，含参考文献编号/数值清洗）。112 条 v3 可回答查询中 104 条完成迁移（dev 51、test 53），8 条因全部 gold 摘录失败被排除（public_q04/05/06/12/14、pv2_C_06/08/16）。
+12 条失败：M5 已知的 9 条（covid_etiquette、covid_masks、covid_ventilation、heat_children、salt_01–04、poliomyelitis，快照缺失或定位差异），加 3 条与清洗/去重相关：obesity_04、tobacco_02 的 v3 摘录本身含 WHO 正文参考文献编号（`（3）`/`（1）`），清洗按规则去除了正文中的该标记，故含编号的摘录不再逐字匹配（编号非正文内容，保留清洗行为）；campylobacter_04 的摘录段落被 M5 跨来源段落级去重剔除（该段在更高权威来源中重复出现）。112 条 v3 可回答查询中 104 条完成迁移（dev 51、test 53），8 条因全部 gold 摘录失败被排除（public_q04/05/06/12/14、pv2_C_06/08/16）。
 
 **离线对比**（`eval/chunking_matrix.py` → `artifacts/reports/retrieval/chunking-matrix-v4-20261027.json`，不产生调用费用）：在迁移后的 104 条可回答查询上，2 策略 × 2 检索（BM25 cjk_bigram、bge-small-zh 向量，GPU 编码）。检索语料为 v4 全部子块（父块不进索引）；送入模型字数按 top_k=3 计，父子分块取命中子块的父块去重、递归切分按块计。映射失败的 8 条查询从分母排除。
 
@@ -138,17 +140,17 @@ dev（51 条）：
 | 策略 | 检索 | Hit@3 | MRR@10 | 平均送入字数 |
 | --- | --- | --- | --- | --- |
 | recursive | BM25 | 0.431 | 0.396 | 678 |
-| recursive | 向量 | 0.373 | 0.338 | 553 |
-| parent_child | BM25 | 0.294 | 0.261 | 409 |
-| parent_child | **向量** | **0.490** | **0.410** | **344** |
+| recursive | 向量 | 0.471 | 0.389 | 738 |
+| parent_child | BM25 | 0.275 | 0.250 | 449 |
+| parent_child | 向量 | 0.451 | 0.408 | 426 |
 
 test（53 条，只报告不调参）：
 
 | 策略 | 检索 | Hit@3 | MRR@10 | 平均送入字数 |
 | --- | --- | --- | --- | --- |
 | recursive | BM25 | 0.472 | 0.409 | 789 |
-| recursive | 向量 | 0.321 | 0.237 | 528 |
-| parent_child | BM25 | 0.340 | 0.290 | 436 |
-| parent_child | 向量 | 0.396 | 0.361 | 396 |
+| recursive | 向量 | 0.434 | 0.329 | 716 |
+| parent_child | BM25 | 0.321 | 0.275 | 444 |
+| parent_child | 向量 | 0.623 | 0.486 | 447 |
 
-**基于 dev 的结论**：父子分块 + 向量检索在 dev 上 Hit@3 最高（0.490）、MRR@10 最高（0.410），且平均送入模型字数最少（344，因只取命中子块的父块），作为 M8 之后的推荐组合；递归切分 + BM25 是稳妥基线（dev Hit@3 0.431）。父子分块 + BM25 明显偏弱（子块过短、词法信号稀疏），符合小块利于语义检索、不利于词法检索的预期。test 上各组合相对关系与 dev 一致，未见反转。
+**基于 dev 的结论**：向量检索明显优于 BM25（两种策略都如此）。dev 上递归切分 + 向量 Hit@3 略高（0.471 vs 0.451，95% 置信区间重叠），父子分块 + 向量 MRR@10 略高（0.408 vs 0.389）且送入字数明显更少（426 vs 738）；两者 Hit@3 无统计差异，父子分块在排序质量与上下文成本上占优。test 上父子分块 + 向量 Hit@3 反超（0.623 vs 0.434），未削弱该结论。综合 dev（选参依据）推荐 **父子分块 + 向量检索**，递归切分 + 向量为可接受的更简单备选；BM25 在两种策略下都偏弱（父子分块子块过短、词法信号尤其稀疏），混合检索留待 M8 验证。
