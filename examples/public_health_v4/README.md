@@ -70,3 +70,32 @@ python -m ruff check scripts/corpus_fetch.py tests/test_corpus_fetch.py
 - 疫情月报「发布日期」以页面时间为准记录在快照中，清单只填统计周期 `period`。
 - 维基条目内容按 revid 定位版本，但维基百科的医学内容未经专业审核，只作低权威对照来源。
 - 许可核实是工程自查，不构成法律意见；WHO 与维基内容再分发须分别遵守 CC BY-NC-SA 3.0 IGO 与 CC BY-SA 4.0 的署名/相同方式共享要求。
+
+## 解析检查（M5）
+
+对应《RAG升级计划.md》M5。498 份快照经 `medidiag corpus ingest` 全量解析（2026-10-27）：**成功 496、失败 0、跳过 2**（2 份 DOC 因本机无 LibreOffice 记入报告跳过，不静默丢弃）。解析产物在 `.cache/corpus/parsed/`（`documents.jsonl` 与 `report.json`，不入库）。
+
+各格式规模：HTML 277 份（8509 元素、33 表）、JSON 200 份（7404 元素、96 表）、PDF 17 份（6867 元素、393 表、46 扫描页）、DOCX 2 份（9 元素、3 表）。疫情月报 24 期 `period` 全部进入元数据。近重复检测（字符 5-gram MinHash，Jaccard ≥ 0.85）：文档级剔除 1 篇（wiki_017 与 wiki_199 全文重复，保留先出现者），段落级跨来源重复 124 对。
+
+每类格式抽样由 AI 对照原文件检查，记录标题层级、表格、断行的错误数：
+
+| 格式 | 文件 | 标题层级 | 表格 | 断行 |
+| --- | --- | --- | --- | --- |
+| HTML | who_fs_measles / who_fs_diabetes / who_fs_coronavirus_disease_covid_19 | 0 错（h2/h3/h4 计数与原文一致） | — | 0 错 |
+| JSON（维基） | wiki_010 / wiki_050 / wiki_100 | 0 错（wiki_050 的 h2=14、h3=25、h4=11 与原文完全一致） | 正确 | 0 错 |
+| PDF | nhc_flu_2025_attach / nhc_measles_2024_attach1 | 0 错（「一、」「（一）」层级正确） | — | 0 错 |
+| PDF | who_pub_9789240086395 | 3 错（2 处列表项合并误判为标题、1 处表格标题误为章节标题，正文段落完整） | 正确（25 个） | 0 错 |
+| DOCX | nhc_township_hospital_standard_attach1 | 0 错（「一、」「二、」识别为 1 级标题） | 正确（2 个，表头 序号/病种/ICD代码 正确） | 0 错 |
+| DOCX | nhc_outpatient_info_page_attach | 0 错（表单式文档，无编号标题，按段落处理） | 正确（1 个信息页示例表） | 0 错 |
+| 表格（疫情月报 HTML 表） | cdc_report_202608 / 202501 / 202409 | — | 表头与数值正确（59/50/49 行） | — |
+
+DOCX 只有 2 份真实文件，不足验收条款的 3 份抽样数，已如实列出全部 2 份。两份均无 Heading 样式，靠编号文字组织：乡镇卫生院标准按「一、（一）」编号、门诊信息页为表单。「第 X 条」类条款按约定不作标题（「第X章/节/篇/部分」作标题、「第X条」作条款正文开头）；这两份 DOCX 实际不含「第X条」，规则按通用公文约定并补了单测。2 份 DOC（安宁疗护、县域慢性病附件一）因本机无 LibreOffice 记入报告跳过。
+
+WHO 事实清单 242 篇全量核对标题标签数与原文一致；2 篇（登革热、心血管疾病）小节标题退化为 `<p><strong>标题</strong></p>`（无 h2），已按 strong 标题模式识别为 2 级标题。疫情月报正文容器 `<div id="articleCon">` 按来源限定，导航与页脚噪声不进入正文；24 期中 23 期为标准月报（各 1 个统计表），`cdc_report_202411` 为猴痘疫情通报（无统计表），属来源内容差异而非解析错误。
+
+v3 摘录核对（`scripts/verify_v3_excerpts.py`，按 source_url 映射到新 doc_id）：**489/498 逐字找到**（忽略空白）。未逐字找到的 9 条逐条说明：
+
+- kb_covid_etiquette_01、kb_covid_masks_01、kb_covid_ventilation_01、kb_heat_children_01：来源为 WHO questions-and-answers 页面，不在 v4 采集范围（v4 只收 fact-sheets），快照缺失。
+- kb_salt_01–04：salt-reduction 页面已被 WHO 下架（v4 清单与本机旧缓存均无），属页面更新导致的缺失。
+- kb_poliomyelitis_01：摘录出自页面图片说明（图说）而非正文段落，新解析器按语义排除图片区，属历史定位差异。
+- ebola 页面 slug 更新（ebola-virus-disease → ebola-disease）已登记别名映射，其 4 条摘录在新页面逐字存在，不计入缺失。

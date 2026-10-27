@@ -354,5 +354,45 @@ def trace_examples(output_root: Path) -> None:
         )
 
 
+@main.group()
+def corpus() -> None:
+    """语料处理子命令。"""
+
+
+@corpus.command("ingest")
+@click.option(
+    "--sources",
+    "sources_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    required=True,
+    help="来源清单 JSON（examples/public_health_v4/sources.json）。",
+)
+@click.option(
+    "--cache",
+    "cache_dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=Path(".cache/corpus"),
+    show_default=True,
+    help="语料缓存目录；快照读 raw/，解析结果写 parsed/。",
+)
+def corpus_ingest(sources_path: Path, cache_dir: Path) -> None:
+    """按来源清单解析、清洗与去重，输出统一文档模型 JSONL 与解析报告。"""
+    from medidiag.rag.ingest.pipeline import run_ingest
+
+    report = run_ingest(sources_path, cache_dir)
+    ok = sum(1 for f in report.files if f.status == "ok")
+    failed = [f for f in report.files if f.status == "failed"]
+    skipped = [f for f in report.files if f.status == "skipped"]
+    click.echo(
+        f"解析完成：成功 {ok}，失败 {len(failed)}，跳过 {len(skipped)}；"
+        f"文档级去重剔除 {len(report.dropped_doc_ids)} 篇；"
+        f"报告见 {cache_dir / 'parsed' / 'report.json'}"
+    )
+    for item in failed:
+        click.echo(f"  失败 {item.doc_id}（{item.format}）：{item.failure_reason}", err=True)
+    for item in skipped:
+        click.echo(f"  跳过 {item.doc_id}（{item.format}）：{item.failure_reason}")
+
+
 if __name__ == "__main__":
     main()
