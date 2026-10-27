@@ -99,3 +99,56 @@ v3 摘录核对（`scripts/verify_v3_excerpts.py`，按 source_url 映射到新 
 - kb_salt_01–04：salt-reduction 页面已被 WHO 下架（v4 清单与本机旧缓存均无），属页面更新导致的缺失。
 - kb_poliomyelitis_01：摘录出自页面图片说明（图说）而非正文段落，新解析器按语义排除图片区，属历史定位差异。
 - ebola 页面 slug 更新（ebola-virus-disease → ebola-disease）已登记别名映射，其 4 条摘录在新页面逐字存在，不计入缺失。
+
+## 分块（M6）
+
+对应《RAG升级计划.md》M6。对 M5 解析产物（495 篇，文档级去重剔除 1 篇、跳过 2 篇 DOC 不计）做两种策略分块，实现在 `src/medidiag/rag/ingest/chunking.py`，CLI 为 `medidiag corpus chunk --parsed .cache/corpus/parsed/documents.jsonl --strategy <recursive|parent_child> --out .cache/corpus/chunks/<strategy>/`。产物（`chunks.jsonl` 检索块、`parents.jsonl` 父块）只存本机，不入库。
+
+**策略参数**
+
+- 递归切分（recursive，基线）：512 字，重叠约 15%（76 字，字符级前缀重叠），按段落 → 句号类 → 逗号类优先级递归切分，不跨章节。
+- 父子分块（parent_child）：子块 1–2 句（≤110 字）进索引，父块为同一章节内的段落（≤600 字，超长段落按句切成多个父块），子块记录 `parent_id`；父块只作送入模型的上下文，不进检索索引。
+- 表格：两种策略都把表格行（序列化文本「列名：值；…」）单独成块、不与正文混切；父子分块另把整表摘要作为父块。取舍：表格行是独立的结构化事实，混切会稀释检索信号，且引用校验对比的就是序列化文本。
+- 跳过 M5 文档级去重剔除的文档与段落级跨来源重复中被判剔除的一方（重跑 `dedup.dedup_paragraphs` 重建剔除清单）。
+
+**chunk_id 规则**：`{doc_id}:{章节序号}:{策略}:{序号}`，章节序号为文档内从 0 起的全局下标；策略短码 `rc`（递归）、`pc`（父子子块）、`pp`（父子父块）；序号在每个 `(doc_id, 章节序号, 策略)` 组内从 0 起按生成顺序编号，同样输入得到同样的 chunk_id 与顺序。另存 `chunk_hash`（文本 sha256）。`source_id` 用 `doc_id`，`source` 用文档标题；新增字段（parent_id、section_path、strategy、chunk_hash、role、source_type、published_at、period、license、content_kind 等）放进 `metadata`，`KnowledgeChunk` 字段集合不变，旧 JSONL 照常加载。
+
+**语料统计**
+
+| 策略 | 检索块（子块） | 父块 | 子块平均字数 | 父块平均字数 | 表格行块 |
+| --- | --- | --- | --- | --- | --- |
+| recursive | 11985 | 0 | 207.3 | — | 3067 |
+| parent_child | 43602 | 22471 | 56.8 | 104.6 | 3026 |
+
+递归切分全部块 ≤588 字（512+76 重叠）。父子分块有 4 个父块 >600 字（单个不可分割的参考文献/长定义列表条目，22471 个父块中的 0.018%）、24 个子块为超长表格行（个别 PDF 把整段正文误抽成单行表格），属已记录的边界情况。
+
+**标注迁移**（`scripts/migrate_v3_gold.py` → `v3_gold_mapping.json`）：v3 的 498 条摘录按包含关系（先做与 M5 清洗一致的全半角/空白归一，再去空白逐字比较）映射到 v4 子块。`exact` = 单子块逐字包含；`span` = 跨相邻子块、全部计为 gold；`failed` = 映射失败。
+
+| 策略 | exact | span | failed |
+| --- | --- | --- | --- |
+| recursive | 486 | 0 | 12 |
+| parent_child | 459 | 27 | 12 |
+
+12 条失败：M5 已知的 9 条（covid_etiquette、covid_masks、covid_ventilation、heat_children、salt_01–04、poliomyelitis，快照缺失或定位差异），加 3 条内容经清洗后不再逐字一致（obesity_04、tobacco_02、campylobacter_04，含参考文献编号/数值清洗）。112 条 v3 可回答查询中 104 条完成迁移（dev 51、test 53），8 条因全部 gold 摘录失败被排除（public_q04/05/06/12/14、pv2_C_06/08/16）。
+
+**离线对比**（`eval/chunking_matrix.py` → `artifacts/reports/retrieval/chunking-matrix-v4-20261027.json`，不产生调用费用）：在迁移后的 104 条可回答查询上，2 策略 × 2 检索（BM25 cjk_bigram、bge-small-zh 向量，GPU 编码）。检索语料为 v4 全部子块（父块不进索引）；送入模型字数按 top_k=3 计，父子分块取命中子块的父块去重、递归切分按块计。映射失败的 8 条查询从分母排除。
+
+dev（51 条）：
+
+| 策略 | 检索 | Hit@3 | MRR@10 | 平均送入字数 |
+| --- | --- | --- | --- | --- |
+| recursive | BM25 | 0.431 | 0.396 | 678 |
+| recursive | 向量 | 0.373 | 0.338 | 553 |
+| parent_child | BM25 | 0.294 | 0.261 | 409 |
+| parent_child | **向量** | **0.490** | **0.410** | **344** |
+
+test（53 条，只报告不调参）：
+
+| 策略 | 检索 | Hit@3 | MRR@10 | 平均送入字数 |
+| --- | --- | --- | --- | --- |
+| recursive | BM25 | 0.472 | 0.409 | 789 |
+| recursive | 向量 | 0.321 | 0.237 | 528 |
+| parent_child | BM25 | 0.340 | 0.290 | 436 |
+| parent_child | 向量 | 0.396 | 0.361 | 396 |
+
+**基于 dev 的结论**：父子分块 + 向量检索在 dev 上 Hit@3 最高（0.490）、MRR@10 最高（0.410），且平均送入模型字数最少（344，因只取命中子块的父块），作为 M8 之后的推荐组合；递归切分 + BM25 是稳妥基线（dev Hit@3 0.431）。父子分块 + BM25 明显偏弱（子块过短、词法信号稀疏），符合小块利于语义检索、不利于词法检索的预期。test 上各组合相对关系与 dev 一致，未见反转。

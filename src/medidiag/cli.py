@@ -394,5 +394,38 @@ def corpus_ingest(sources_path: Path, cache_dir: Path) -> None:
         click.echo(f"  跳过 {item.doc_id}（{item.format}）：{item.failure_reason}")
 
 
+@corpus.command("chunk")
+@click.option(
+    "--parsed",
+    "parsed_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    required=True,
+    help="M5 解析产物 documents.jsonl。",
+)
+@click.option(
+    "--strategy",
+    type=click.Choice(["recursive", "parent_child"]),
+    required=True,
+    help="分块策略：递归切分或父子分块。",
+)
+@click.option(
+    "--out",
+    "out_dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    required=True,
+    help="输出目录（如 .cache/corpus/chunks/recursive）。",
+)
+def corpus_chunk(parsed_path: Path, strategy: str, out_dir: Path) -> None:
+    """按策略分块，输出检索块 chunks.jsonl；父子分块另出 parents.jsonl。"""
+    from medidiag.rag.ingest.chunking import run_chunking
+
+    report = run_chunking(parsed_path, strategy, out_dir)
+    click.echo(
+        f"分块完成（{report.strategy}）：文档 {report.document_count}，"
+        f"检索块 {report.child_count}（平均 {report.child_chars_mean} 字），"
+        f"父块 {report.parent_count}；产物见 {out_dir}"
+    )
+
+
 if __name__ == "__main__":
     main()

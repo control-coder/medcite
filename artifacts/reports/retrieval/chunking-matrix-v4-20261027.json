@@ -1,0 +1,280 @@
+{
+  "schema_version": "chunking-matrix-v1",
+  "generated_at": "2026-10-27T12:11:25.555419+00:00",
+  "config": {
+    "strategies": [
+      "recursive",
+      "parent_child"
+    ],
+    "retrievers": [
+      "bm25_bigram",
+      "dense"
+    ],
+    "embedding_model": "BAAI/bge-small-zh-v1.5",
+    "embedding_revision": "7999e1d3359715c523056ef9478215996d62a620",
+    "device": "cuda",
+    "top_k": 3,
+    "metrics": [
+      "hit@3",
+      "mrr@10",
+      "context_chars_mean"
+    ],
+    "corpus": "v4 全部子块（递归切分块 / 父子子块），父块不进索引",
+    "selection_rule": "结论只按 dev 给出；test 只报告不调参",
+    "external_model_calls": 0
+  },
+  "dataset": {
+    "mapping": "D:\\resume_project\\medcite\\examples\\public_health_v4\\v3_gold_mapping.json",
+    "v3_queries": "D:\\resume_project\\medcite\\examples\\public_health_v3\\queries.jsonl"
+  },
+  "strategies": {
+    "recursive": {
+      "corpus": {
+        "child_chunks": 11985,
+        "parent_chunks": 0,
+        "table_row_chunks": 3067,
+        "child_chars_mean": 207.3,
+        "parent_chars_mean": 0.0,
+        "documents": 495
+      },
+      "usable_answerable": 104,
+      "excluded_count": 8,
+      "excluded_queries": [
+        "public_q04",
+        "public_q05",
+        "public_q06",
+        "public_q12",
+        "public_q14",
+        "pv2_C_06",
+        "pv2_C_08",
+        "pv2_C_16"
+      ],
+      "retrievers": {
+        "bm25_bigram": {
+          "dev": {
+            "n": 51,
+            "hit@3": {
+              "k": 22,
+              "n": 51,
+              "rate": 0.43137254901960786,
+              "ci95": [
+                0.305,
+                0.5673
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.3958,
+              "ci95": [
+                0.2783,
+                0.5214
+              ]
+            },
+            "context_chars_mean": 678.1,
+            "context_chars_ci95": [
+              609.4314,
+              750.8824
+            ]
+          },
+          "test": {
+            "n": 53,
+            "hit@3": {
+              "k": 25,
+              "n": 53,
+              "rate": 0.4716981132075472,
+              "ci95": [
+                0.3438,
+                0.6034
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.4092,
+              "ci95": [
+                0.294,
+                0.5238
+              ]
+            },
+            "context_chars_mean": 789.4,
+            "context_chars_ci95": [
+              714.7547,
+              861.6792
+            ]
+          }
+        },
+        "dense": {
+          "dev": {
+            "n": 51,
+            "hit@3": {
+              "k": 19,
+              "n": 51,
+              "rate": 0.37254901960784315,
+              "ci95": [
+                0.2532,
+                0.5098
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.3384,
+              "ci95": [
+                0.2343,
+                0.4481
+              ]
+            },
+            "context_chars_mean": 553.2,
+            "context_chars_ci95": [
+              479.9804,
+              628.8039
+            ]
+          },
+          "test": {
+            "n": 53,
+            "hit@3": {
+              "k": 17,
+              "n": 53,
+              "rate": 0.32075471698113206,
+              "ci95": [
+                0.2109,
+                0.4548
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.237,
+              "ci95": [
+                0.1566,
+                0.3253
+              ]
+            },
+            "context_chars_mean": 527.8,
+            "context_chars_ci95": [
+              438.6792,
+              617.3019
+            ]
+          }
+        }
+      }
+    },
+    "parent_child": {
+      "corpus": {
+        "child_chunks": 43602,
+        "parent_chunks": 22471,
+        "table_row_chunks": 3026,
+        "child_chars_mean": 56.8,
+        "parent_chars_mean": 104.6,
+        "documents": 495
+      },
+      "usable_answerable": 104,
+      "excluded_count": 8,
+      "excluded_queries": [
+        "public_q04",
+        "public_q05",
+        "public_q06",
+        "public_q12",
+        "public_q14",
+        "pv2_C_06",
+        "pv2_C_08",
+        "pv2_C_16"
+      ],
+      "retrievers": {
+        "bm25_bigram": {
+          "dev": {
+            "n": 51,
+            "hit@3": {
+              "k": 15,
+              "n": 51,
+              "rate": 0.29411764705882354,
+              "ci95": [
+                0.1871,
+                0.43
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.2611,
+              "ci95": [
+                0.1608,
+                0.3748
+              ]
+            },
+            "context_chars_mean": 408.9,
+            "context_chars_ci95": [
+              353.098,
+              462.1373
+            ]
+          },
+          "test": {
+            "n": 53,
+            "hit@3": {
+              "k": 18,
+              "n": 53,
+              "rate": 0.33962264150943394,
+              "ci95": [
+                0.2269,
+                0.4741
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.2898,
+              "ci95": [
+                0.1986,
+                0.3938
+              ]
+            },
+            "context_chars_mean": 435.5,
+            "context_chars_ci95": [
+              383.4151,
+              489.2453
+            ]
+          }
+        },
+        "dense": {
+          "dev": {
+            "n": 51,
+            "hit@3": {
+              "k": 25,
+              "n": 51,
+              "rate": 0.49019607843137253,
+              "ci95": [
+                0.3586,
+                0.6232
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.4099,
+              "ci95": [
+                0.2984,
+                0.5249
+              ]
+            },
+            "context_chars_mean": 343.6,
+            "context_chars_ci95": [
+              293.7647,
+              395.7647
+            ]
+          },
+          "test": {
+            "n": 53,
+            "hit@3": {
+              "k": 21,
+              "n": 53,
+              "rate": 0.39622641509433965,
+              "ci95": [
+                0.2759,
+                0.5306
+              ]
+            },
+            "mrr@10": {
+              "mean": 0.3613,
+              "ci95": [
+                0.2691,
+                0.4631
+              ]
+            },
+            "context_chars_mean": 395.6,
+            "context_chars_ci95": [
+              344.434,
+              449.1698
+            ]
+          }
+        }
+      }
+    }
+  }
+}
