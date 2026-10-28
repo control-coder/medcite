@@ -97,8 +97,8 @@ def test_parent_child_child_limits_and_parent_id() -> None:
     assert parent_ids == {out.parents[0].chunk_id}
     for chunk in out.children:
         assert len(chunk.text) <= CHILD_MAX_CHARS
-        # 每个子块 1–2 句
-        assert len(_split_sentences(chunk.text)) <= 2
+        # 每个子块 1–2 句；短碎片合并后（数据质量修复）最多 3 句
+        assert len(_split_sentences(chunk.text)) <= 3
     assert len(out.parents[0].text) <= PARENT_MAX_CHARS
     assert out.parents[0].metadata["role"] == "parent"
 
@@ -202,6 +202,61 @@ def test_load_knowledge_chunks_reads_new_and_old(tmp_path: Path) -> None:
     old_path.write_text(json.dumps(old, ensure_ascii=False) + "\n", encoding="utf-8")
     loaded = load_knowledge_chunks(old_path)
     assert loaded[0].chunk_id == "kb_flu_01"
+
+
+# ---------- 数据质量修复：短碎片合并与控件文字 ----------
+
+
+def test_child_control_lines_dropped() -> None:
+    """纯日期、纯控件文字（「实况报道」、页码）的独立行/块直接丢弃，不进检索。"""
+    doc = _doc([Section(title="概述", level=2, elements=[
+        Element(kind="paragraph", text="2025年12月8日"),
+        Element(kind="paragraph", text="实况报道"),
+        Element(kind="paragraph", text="vi"),
+        Element(kind="paragraph", text="麻疹是一种传染性很强的病毒性疾病，可接种疫苗预防。"),
+    ])])
+    out = chunk_document(doc, "parent_child")
+    texts = [c.text for c in out.children]
+    assert not any("2025年12月8日" in t for t in texts)
+    assert not any(t == "实况报道" for t in texts)
+    assert not any(t == "vi" for t in texts)
+    assert any("传染性很强" in t for t in texts)
+
+
+def test_child_short_fragments_merged() -> None:
+    """不足 15 字的短句与相邻句合并；合并后仍 ≤130 字。"""
+    sentences = ["麻疹会致命。", "它是一种传染性很强的病毒性疾病，", "可通过接种疫苗有效预防。"]
+    doc = _doc([Section(title="概述", level=2, elements=[
+        Element(kind="paragraph", text="".join(sentences))])])
+    out = chunk_document(doc, "parent_child")
+    assert out.children
+    for chunk in out.children:
+        assert len(chunk.text) <= 130
+    # 短句「麻疹会致命。」（6 字）与相邻句合并，不单独成块
+    assert not any(c.text == "麻疹会致命。" for c in out.children)
+    assert any("麻疹会致命" in c.text for c in out.children)
+
+
+def test_child_merge_respects_merge_limit() -> None:
+    """合并上限放宽到 130 字只用于合并；超过 110 字的单句硬切仍按 110 字。"""
+    long_sentence = "甲" * 120 + "。"  # 121 字单句，硬切
+    doc = _doc([Section(title="概述", level=2, elements=[
+        Element(kind="paragraph", text=long_sentence)])])
+    out = chunk_document(doc, "parent_child")
+    for chunk in out.children:
+        assert len(chunk.text) <= CHILD_MAX_CHARS
+
+
+def test_recursive_drops_control_lines() -> None:
+    """递归切分同样丢弃纯日期/控件文字行。"""
+    doc = _doc([Section(title="概述", level=2, elements=[
+        Element(kind="paragraph", text="实况报道"),
+        Element(kind="paragraph", text="麻疹是一种传染性很强的病毒性疾病，可接种疫苗预防。"),
+    ])])
+    out = chunk_document(doc, "recursive")
+    texts = [c.text for c in out.children]
+    assert not any(t == "实况报道" for t in texts)
+    assert any("传染性很强" in t for t in texts)
 
 
 # ---------- 标注迁移 ----------

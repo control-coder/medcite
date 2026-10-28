@@ -17,7 +17,7 @@ from medidiag.rag.ingest.document import (
     serialize_table_row,
 )
 from medidiag.rag.ingest.encoding import decode_bytes
-from medidiag.rag.ingest.html import parse_html, parse_mediawiki_json
+from medidiag.rag.ingest.html import extract_who_page_date, parse_html, parse_mediawiki_json
 from medidiag.rag.ingest.pdf import (
     classify_heading,
     detect_header_footer,
@@ -355,6 +355,177 @@ def test_parse_csv(tmp_path: Path) -> None:
     assert report.row_count == 2
 
 
+# ---------- 数据质量修复：元数据回填与页首杂质 ----------
+
+
+def test_who_factsheet_backfills_title_and_published_at() -> None:  # noqa: E501
+    """WHO 事实清单：h1 回填 title，页首日期行提取为 published_at。"""
+    html = """
+    <html><head><title>麻疹</title></head><body>
+    <article>
+    <div class="sf-item-header-wrapper">
+      <h1>麻疹</h1>
+      <div class="date"><span class="timestamp">2026年7月15日</span></div>
+    </div>
+    <p>麻疹是一种传染性很强的病毒性疾病。</p>
+    <h2>重要事实</h2>
+    <ul><li>麻疹可通过接种疫苗预防。</li></ul>
+    </article>
+    </body></html>
+    """
+    doc = parse_html(html, "who_fs_measles", source_type="who_factsheet")
+    assert doc.metadata.title == "麻疹"
+    assert doc.metadata.published_at == "2026-07-15"
+    assert "传染性很强" in doc.full_text()
+
+
+def test_extract_who_page_date() -> None:
+    assert extract_who_page_date('<span class="timestamp">2025年12月8日</span>') == "2025-12-08"
+    assert extract_who_page_date("<p>无日期</p>") is None
+
+
+def test_who_header_noise_and_cr_removed_by_clean() -> None:
+    """WHO 页首杂质（跳转链接/日期行/栏目标签）与 \\r 在清洗后不存在。"""
+    doc = Document(doc_id="d", metadata=DocumentMetadata(source_type="who_factsheet"), sections=[
+        Section(title="", level=1, elements=[
+            Element(kind="paragraph", text="麻疹\r\n \r\n Skip to main content"),
+            Element(kind="paragraph", text="2026年7月15日"),
+            Element(kind="paragraph", text="实况报道"),
+            Element(kind="paragraph", text="麻疹是病毒性疾病。"),
+        ]),
+    ])
+    clean_document(doc)
+    text = doc.full_text()
+    assert "\r" not in text
+    assert "Skip to main content" not in text
+    assert "麻疹是病毒性疾病" in text
+
+
+def test_clean_drops_reference_section_by_source() -> None:
+    """参考文献/外部链接类章节按来源整节丢弃，正文章节不受影响。"""
+    for stype in ("who_factsheet", "wikipedia", "nhc_document"):
+        doc = Document(doc_id="d", metadata=DocumentMetadata(source_type=stype), sections=[
+            Section(title="概述", level=2, elements=[
+                Element(kind="paragraph", text="麻疹是传染性很强的病毒性疾病，可接种疫苗预防。"),
+            ]),
+            Section(title="参考文献", level=2, elements=[
+                Element(kind="paragraph", text="1. 《柳叶刀》2024年；403:2162-2203。"),
+            ]),
+            Section(title="外部链接", level=2, elements=[
+                Element(kind="paragraph", text="https://example.org/more"),
+            ]),
+        ])
+        clean_document(doc)
+        titles = [s.title for s in doc.sections]
+        assert "概述" in titles
+        assert "参考文献" not in titles
+        assert "外部链接" not in titles
+        assert "传染性很强" in doc.full_text()
+
+
+def test_clean_drops_page_number_lines_who_publication() -> None:
+    """WHO 出版物：罗马数字页码孤立行删除；无标题参考文献列表（连续编号+年份/URL）丢弃。"""
+    doc = Document(doc_id="d", metadata=DocumentMetadata(source_type="who_publication"), sections=[
+        Section(title="前言", level=1, elements=[
+            Element(kind="paragraph", text="vi"),
+            Element(kind="paragraph", text="本指南旨在提供建议。"),
+        ]),
+        Section(title="正文", level=1, elements=[
+            Element(kind="paragraph", text="第一条建议内容，足够长的正文段落，不应被误删。"),
+            Element(kind="paragraph", text="1. 世界卫生组织；2024年。https://iris.who.int/handle/10665/68571。"),
+            Element(kind="paragraph", text="2. 日内瓦：世界卫生组织；2023年。https://iris.who.int/handle/10665/272452。"),
+            Element(kind="paragraph", text="3. 《柳叶刀》2024年；403:2162-2203。"),
+        ]),
+    ])
+    clean_document(doc)
+    text = doc.full_text()
+    assert "vi" not in [e.text for s in doc.sections for e in s.elements]
+    assert "本指南旨在提供建议" in text
+    assert "第一条建议内容" in text
+    # 连续 3 行无标题参考文献被丢弃
+    assert "iris.who.int" not in text
+    assert "2162-2203" not in text
+
+
+def test_clean_drops_untitled_english_bibliography_who_factsheet() -> None:
+    """WHO 事实清单：正文末尾章节里连续 2 行以上的英文书目按参考文献丢弃。
+
+    覆盖「世卫组织的应对」章节末尾带英文参考文献、无「参考文献」标题的形态。
+    """
+    doc = Document(doc_id="d", metadata=DocumentMetadata(source_type="who_factsheet"), sections=[
+        Section(title="世卫组织的应对", level=2, elements=[
+            Element(kind="paragraph", text="世卫组织提供全球技术指导，正文段落应保留。"),
+            Element(kind="paragraph", text="(1) Bearak J, Popinchalk A, et al. Lancet Glob Health. 2020 Sep."),
+            Element(kind="paragraph", text="(2) Ganatra B, et al. doi: 10.1016/S2214-109X(20)30315-6."),
+        ]),
+    ])
+    clean_document(doc)
+    text = doc.full_text()
+    assert "世卫组织提供全球技术指导" in text
+    assert "Bearak" not in text
+    assert "Ganatra" not in text
+
+
+def test_clean_keeps_short_untitled_reference_runs() -> None:
+    """连续不足 3 行的编号引用不判为参考文献（避免误删正文编号段落）。"""
+    doc = Document(doc_id="d", metadata=DocumentMetadata(source_type="who_publication"), sections=[
+        Section(title="正文", level=1, elements=[
+            Element(kind="paragraph", text="1. 世界卫生组织2024年报告提到相关建议。"),
+            Element(kind="paragraph", text="后续正文段落，内容足够长，不应被误删。"),
+        ]),
+    ])
+    clean_document(doc)
+    assert "世界卫生组织2024年报告" in doc.full_text()
+
+
+def test_epidemic_report_title_backfilled_from_h5() -> None:
+    """疫情月报：标题（<h5>）在正文容器外，按来源规则回填 metadata.title。"""
+    html = """
+    <html><body>
+    <div class="containerBox">
+      <h5><a>2024年10月全国法定传染病疫情概况</a></h5>
+      <div class="xqCon"><span class="fb">时间：<em>2024-11-20</em></span></div>
+      <div class="content" id="articleCon"><p>2024年10月，全国共报告法定传染病563572例。</p></div>
+    </div>
+    </body></html>
+    """
+    doc = parse_html(html, "cdc_report_202410", source_type="epidemic_report")
+    assert doc.metadata.title == "2024年10月全国法定传染病疫情概况"
+    assert doc.metadata.published_at == "2024-11-20"
+    assert "563572例" in doc.full_text()
+
+
+def test_pipeline_backfills_accessed_at_from_fetch_report(tmp_path: Path) -> None:
+    """pipeline 从 fetch_report.json 回填 accessed_at；清单显式值优先。"""
+    from medidiag.rag.ingest.pipeline import run_ingest
+
+    raw = tmp_path / "raw" / "who_factsheet"
+    raw.mkdir(parents=True)
+    (raw / "flu.html").write_text(
+        "<article><h1>季节性流感</h1><p>流感通过飞沫传播。</p></article>", encoding="utf-8")
+    sources = {
+        "version": "test",
+        "source_types": {"who_factsheet": {"publisher": "世界卫生组织"}},
+        "documents": [
+            {"doc_id": "flu", "source_type": "who_factsheet", "title": "季节性流感",
+             "url": "https://example.org/flu", "format": "html", "license_conclusion": "纳入"},
+        ],
+    }
+    (tmp_path / "sources.json").write_text(
+        json.dumps(sources, ensure_ascii=False), encoding="utf-8")
+    fetch_report = {"records": [
+        {"doc_id": "flu", "accessed_at": "2026-10-27T08:39:16Z"},
+    ]}
+    (tmp_path / "fetch_report.json").write_text(
+        json.dumps(fetch_report, ensure_ascii=False), encoding="utf-8")
+
+    report = run_ingest(tmp_path / "sources.json", tmp_path)
+    assert report.files[0].status == "ok"
+    line = (tmp_path / "parsed" / "documents.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    loaded = Document.from_json(line)
+    assert loaded.metadata.accessed_at == "2026-10-27T08:39:16Z"
+
+
 # ---------- clean.py ----------
 
 
@@ -387,6 +558,12 @@ def test_clean_drops_control_lines_by_source() -> None:
     clean_document(doc)
     texts = [e.text for s in doc.sections for e in s.elements]
     assert texts == ["流行性感冒是传染病。"]
+
+
+def test_normalize_text_unifies_cr() -> None:
+    # \r\n / \r 统一为 \n；全半角归一不受影响
+    assert normalize_text("麻疹\r\n \r\n 概述") == "麻疹\n \n 概述"
+    assert normalize_text("a\rb") == "a\nb"
 
 
 def test_clean_keeps_table_elements() -> None:

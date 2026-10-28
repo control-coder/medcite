@@ -4749,8 +4749,8 @@
     },
     "parent_child": {
       "stats": {
-        "exact": 453,
-        "span": 33,
+        "exact": 455,
+        "span": 31,
         "failed": 12
       },
       "answerable_queries": 112,
@@ -4843,25 +4843,24 @@
           "reason": null
         },
         "kb_malaria_01": {
-          "mapping": "span",
+          "mapping": "exact",
           "gold": [
-            "who_fs_malaria:3:pc:0",
-            "who_fs_malaria:3:pc:1"
+            "who_fs_malaria:3:pc:0"
           ],
           "reason": null
         },
         "kb_malaria_02": {
           "mapping": "span",
           "gold": [
-            "who_fs_malaria:3:pc:3",
-            "who_fs_malaria:3:pc:4"
+            "who_fs_malaria:3:pc:2",
+            "who_fs_malaria:3:pc:3"
           ],
           "reason": null
         },
         "kb_malaria_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_malaria:3:pc:7"
+            "who_fs_malaria:3:pc:6"
           ],
           "reason": null
         },
@@ -4880,10 +4879,9 @@
           "reason": null
         },
         "kb_hiv_02": {
-          "mapping": "span",
+          "mapping": "exact",
           "gold": [
-            "who_fs_hiv_aids:3:pc:2",
-            "who_fs_hiv_aids:3:pc:3"
+            "who_fs_hiv_aids:3:pc:2"
           ],
           "reason": null
         },
@@ -4948,7 +4946,7 @@
         "kb_hepb_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_hepatitis_b:5:pc:6"
+            "who_fs_hepatitis_b:5:pc:4"
           ],
           "reason": null
         },
@@ -5120,8 +5118,8 @@
         "kb_diabetes_03": {
           "mapping": "span",
           "gold": [
-            "who_fs_diabetes:4:pc:6",
-            "who_fs_diabetes:4:pc:7"
+            "who_fs_diabetes:4:pc:4",
+            "who_fs_diabetes:4:pc:5"
           ],
           "reason": null
         },
@@ -5156,8 +5154,8 @@
         "kb_hypertension_04": {
           "mapping": "span",
           "gold": [
-            "who_fs_hypertension:8:pc:4",
-            "who_fs_hypertension:8:pc:5"
+            "who_fs_hypertension:8:pc:3",
+            "who_fs_hypertension:8:pc:4"
           ],
           "reason": null
         },
@@ -5340,7 +5338,7 @@
         "kb_stroke_02": {
           "mapping": "exact",
           "gold": [
-            "who_fs_stroke:3:pc:3"
+            "who_fs_stroke:3:pc:2"
           ],
           "reason": null
         },
@@ -5697,7 +5695,7 @@
         "kb_depression_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_depression:3:pc:4"
+            "who_fs_depression:3:pc:3"
           ],
           "reason": null
         },
@@ -5869,7 +5867,7 @@
         "kb_immunization_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_immunization_coverage:4:pc:30"
+            "who_fs_immunization_coverage:4:pc:29"
           ],
           "reason": null
         },
@@ -5892,8 +5890,7 @@
           "gold": [
             "who_fs_maternal_mortality:5:pc:1",
             "who_fs_maternal_mortality:5:pc:2",
-            "who_fs_maternal_mortality:5:pc:3",
-            "who_fs_maternal_mortality:5:pc:4"
+            "who_fs_maternal_mortality:5:pc:3"
           ],
           "reason": null
         },
@@ -6064,7 +6061,7 @@
         "kb_opioid_overdose_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_opioid_overdose:4:pc:3"
+            "who_fs_opioid_overdose:4:pc:2"
           ],
           "reason": null
         },
@@ -6281,7 +6278,7 @@
         "kb_low_back_pain_02": {
           "mapping": "exact",
           "gold": [
-            "who_fs_low_back_pain:4:pc:5"
+            "who_fs_low_back_pain:4:pc:4"
           ],
           "reason": null
         },
@@ -6316,7 +6313,7 @@
         "kb_botulism_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_botulism:6:pc:7"
+            "who_fs_botulism:6:pc:6"
           ],
           "reason": null
         },
@@ -6407,7 +6404,7 @@
         "kb_lung_cancer_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_lung_cancer:8:pc:4"
+            "who_fs_lung_cancer:8:pc:2"
           ],
           "reason": null
         },
@@ -6804,15 +6801,15 @@
         "kb_preterm_birth_01": {
           "mapping": "exact",
           "gold": [
-            "who_fs_preterm_birth:4:pc:3"
+            "who_fs_preterm_birth:4:pc:2"
           ],
           "reason": null
         },
         "kb_preterm_birth_02": {
           "mapping": "span",
           "gold": [
-            "who_fs_preterm_birth:4:pc:7",
-            "who_fs_preterm_birth:4:pc:8"
+            "who_fs_preterm_birth:4:pc:6",
+            "who_fs_preterm_birth:4:pc:7"
           ],
           "reason": null
         },
@@ -6890,7 +6887,7 @@
         "kb_plague_01": {
           "mapping": "exact",
           "gold": [
-            "who_fs_plague:1:pc:5"
+            "who_fs_plague:1:pc:3"
           ],
           "reason": null
         },
@@ -6940,7 +6937,7 @@
         "kb_mercury_and_health_04": {
           "mapping": "exact",
           "gold": [
-            "who_fs_mercury_and_health:6:pc:15"
+            "who_fs_mercury_and_health:6:pc:14"
           ],
           "reason": null
         },
@@ -7495,7 +7492,7 @@
         "kb_crimean_congo_haemorrhagic_fever_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_crimean_congo_haemorrhagic_fever:6:pc:5"
+            "who_fs_crimean_congo_haemorrhagic_fever:6:pc:4"
           ],
           "reason": null
         },
@@ -8140,7 +8137,7 @@
         "kb_sugars_and_dental_caries_03": {
           "mapping": "exact",
           "gold": [
-            "who_fs_sugars_and_dental_caries:3:pc:9"
+            "who_fs_sugars_and_dental_caries:3:pc:8"
           ],
           "reason": null
         },
@@ -8402,7 +8399,7 @@
           "split": "dev",
           "bucket": "direct",
           "gold": [
-            "who_fs_malaria:3:pc:7"
+            "who_fs_malaria:3:pc:6"
           ],
           "failed_excerpts": []
         },
@@ -8410,8 +8407,7 @@
           "split": "test",
           "bucket": "direct",
           "gold": [
-            "who_fs_hiv_aids:3:pc:2",
-            "who_fs_hiv_aids:3:pc:3"
+            "who_fs_hiv_aids:3:pc:2"
           ],
           "failed_excerpts": []
         },
@@ -8520,7 +8516,7 @@
           "split": "test",
           "bucket": "paraphrase",
           "gold": [
-            "who_fs_hepatitis_b:5:pc:6"
+            "who_fs_hepatitis_b:5:pc:4"
           ],
           "failed_excerpts": []
         },
@@ -8528,8 +8524,7 @@
           "split": "dev",
           "bucket": "paraphrase",
           "gold": [
-            "who_fs_hiv_aids:3:pc:2",
-            "who_fs_hiv_aids:3:pc:3"
+            "who_fs_hiv_aids:3:pc:2"
           ],
           "failed_excerpts": []
         },
@@ -8589,8 +8584,8 @@
           "gold": [
             "who_fs_dengue_and_severe_dengue:3:pc:1",
             "who_fs_dengue_and_severe_dengue:3:pc:2",
-            "who_fs_malaria:3:pc:3",
-            "who_fs_malaria:3:pc:4"
+            "who_fs_malaria:3:pc:2",
+            "who_fs_malaria:3:pc:3"
           ],
           "failed_excerpts": []
         },
@@ -8599,8 +8594,7 @@
           "bucket": "multi",
           "gold": [
             "who_fs_hepatitis_b:2:pc:1",
-            "who_fs_hiv_aids:3:pc:2",
-            "who_fs_hiv_aids:3:pc:3"
+            "who_fs_hiv_aids:3:pc:2"
           ],
           "failed_excerpts": []
         },
@@ -8774,8 +8768,8 @@
           "split": "dev",
           "bucket": "paraphrase",
           "gold": [
-            "who_fs_diabetes:4:pc:6",
-            "who_fs_diabetes:4:pc:7"
+            "who_fs_diabetes:4:pc:4",
+            "who_fs_diabetes:4:pc:5"
           ],
           "failed_excerpts": []
         },
@@ -8783,7 +8777,7 @@
           "split": "dev",
           "bucket": "paraphrase",
           "gold": [
-            "who_fs_stroke:3:pc:3"
+            "who_fs_stroke:3:pc:2"
           ],
           "failed_excerpts": []
         },
@@ -8848,10 +8842,10 @@
           "split": "dev",
           "bucket": "multi",
           "gold": [
-            "who_fs_diabetes:4:pc:6",
-            "who_fs_diabetes:4:pc:7",
+            "who_fs_diabetes:4:pc:4",
+            "who_fs_diabetes:4:pc:5",
+            "who_fs_hypertension:8:pc:3",
             "who_fs_hypertension:8:pc:4",
-            "who_fs_hypertension:8:pc:5",
             "who_fs_stroke:4:pc:2"
           ],
           "failed_excerpts": []
@@ -9201,7 +9195,7 @@
           "split": "test",
           "bucket": "direct",
           "gold": [
-            "who_fs_depression:3:pc:4"
+            "who_fs_depression:3:pc:3"
           ],
           "failed_excerpts": []
         },
@@ -9252,8 +9246,7 @@
             "who_fs_maternal_mortality:5:pc:0",
             "who_fs_maternal_mortality:5:pc:1",
             "who_fs_maternal_mortality:5:pc:2",
-            "who_fs_maternal_mortality:5:pc:3",
-            "who_fs_maternal_mortality:5:pc:4"
+            "who_fs_maternal_mortality:5:pc:3"
           ],
           "failed_excerpts": []
         },
@@ -9348,7 +9341,7 @@
           "bucket": "multi",
           "gold": [
             "who_fs_food_safety:5:pc:3",
-            "who_fs_immunization_coverage:4:pc:30"
+            "who_fs_immunization_coverage:4:pc:29"
           ],
           "failed_excerpts": []
         },

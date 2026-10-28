@@ -3,6 +3,10 @@
 只处理清单中 license_conclusion 为「纳入」的文档。解析后的文档写到
 ``<cache>/parsed/<doc_id>.json``（每行一个 Document JSON），报告写到
 ``<cache>/parsed/report.json``。
+
+元数据回填：清单（sources.json）显式值优先；清单缺省时由解析阶段从快照提取
+（WHO 页首日期行、疫情月报标题、维基条目标题等）。``accessed_at`` 来自
+sources.json 旁的 ``fetch_report.json``（每篇的抓取时间），清单显式值仍优先。
 """
 
 from __future__ import annotations
@@ -18,6 +22,9 @@ from medidiag.rag.ingest.document import Document, DocumentMetadata
 from medidiag.rag.ingest.encoding import decode_bytes
 
 _FORMAT_TO_PARSER = {"html", "pdf", "docx", "xlsx", "csv", "json", "doc", "wps"}
+
+# 每解析多少篇文档打印一次进度（长任务可观测性要求）
+_PROGRESS_EVERY = 50
 
 
 @dataclass
@@ -66,8 +73,29 @@ def _metadata_from_source(entry: dict[str, Any], source_types: dict[str, Any]) -
         license=entry.get("license") or type_info.get("license"),
         period=entry.get("period"),
         source_url=entry.get("url"),
-        title=str(entry.get("title", "")),
+        title=str(entry.get("title") or ""),
     )
+
+
+def load_accessed_at(sources_path: Path) -> dict[str, str]:
+    """从 sources.json 旁的 fetch_report.json 读每篇文档的抓取时间（ISO 时间戳）。
+
+    文件不存在或条目缺失时该文档不填 accessed_at（保持 None）。
+    """
+    fetch_path = sources_path.parent / "fetch_report.json"
+    if not fetch_path.exists():
+        return {}
+    try:
+        payload = json.loads(fetch_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    out: dict[str, str] = {}
+    for record in payload.get("records", []):
+        doc_id = str(record.get("doc_id", ""))
+        accessed_at = record.get("accessed_at")
+        if doc_id and accessed_at:
+            out[doc_id] = str(accessed_at)
+    return out
 
 
 def _parse_one(path: Path, doc_id: str, fmt: str, meta: DocumentMetadata,
@@ -144,6 +172,8 @@ def run_ingest(sources_path: Path, cache_dir: Path) -> IngestReport:
     - ``<cache>/parsed/documents.jsonl``：每行一个 Document JSON；
     - ``<cache>/parsed/report.json``：解析报告。
     """
+    import time
+
     # utf-8-sig 兼容 Windows 工具写出的带 BOM 清单
     sources = json.loads(sources_path.read_text(encoding="utf-8-sig"))
     source_types = sources.get("source_types", {})
@@ -151,12 +181,16 @@ def run_ingest(sources_path: Path, cache_dir: Path) -> IngestReport:
     parsed_dir = cache_dir / "parsed"
     parsed_dir.mkdir(parents=True, exist_ok=True)
 
+    accessed_at_map = load_accessed_at(sources_path)
+    entries = [e for e in sources.get("documents", [])
+               if e.get("license_conclusion") == "纳入"]
+    total = len(entries)
+
     report = IngestReport()
     documents: list[Document] = []
+    start = time.monotonic()
 
-    for entry in sources.get("documents", []):
-        if entry.get("license_conclusion") != "纳入":
-            continue
+    for index, entry in enumerate(entries, 1):
         doc_id = str(entry["doc_id"])
         fmt = str(entry.get("format", "")).lower()
         if fmt not in _FORMAT_TO_PARSER:
@@ -171,11 +205,17 @@ def run_ingest(sources_path: Path, cache_dir: Path) -> IngestReport:
                 failure_reason=f"快照不存在：{raw_path}"))
             continue
         meta = _metadata_from_source(entry, source_types)
+        # accessed_at：清单显式值优先，缺省时取 fetch_report.json 的抓取时间
+        if not meta.accessed_at:
+            meta.accessed_at = accessed_at_map.get(doc_id)
         document, file_report = _parse_one(raw_path, doc_id, fmt, meta, cache_dir)
         report.files.append(file_report)
         if document is not None:
             clean.clean_document(document)
             documents.append(document)
+        if index % _PROGRESS_EVERY == 0 or index == total:
+            elapsed = time.monotonic() - start
+            print(f"解析进度 {index}/{total} 篇，耗时 {elapsed:.1f}s", flush=True)
 
     # 文档级去重
     doc_dedup = dedup.dedup_documents(documents)

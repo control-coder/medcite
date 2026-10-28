@@ -41,7 +41,13 @@ RECURSIVE_MAX_CHARS = 512
 RECURSIVE_OVERLAP_RATIO = 0.15  # 重叠约 15%
 RECURSIVE_OVERLAP_CHARS = int(RECURSIVE_MAX_CHARS * RECURSIVE_OVERLAP_RATIO)  # 76
 CHILD_MAX_CHARS = 110
+# 短碎片合并时允许的子块上限放宽值（2026-10-28 数据质量修复：不足 15 字的
+# 相邻短句合并，合并后仍不超过 110 字优先；仅合并需要时可到 130 字并说明）
+CHILD_MERGE_MAX_CHARS = 130
 PARENT_MAX_CHARS = 600
+# 低于该长度的子块视为短碎片，需与相邻句合并（仍遵守上限）；纯日期/纯控件文字
+# 直接丢弃；合并不了的孤立短碎片仍保留（一句完整但短的正文不丢弃，如「疟疾会致命。」）
+CHILD_MIN_CHARS = 15
 
 _STRATEGY_CODES = {"recursive": "rc", "child": "pc", "parent": "pp"}
 
@@ -49,12 +55,15 @@ _STRATEGY_CODES = {"recursive": "rc", "child": "pc", "parent": "pp"}
 _SENTENCE_END_RE = re.compile(r"[。！？；][”’」』）)]*")
 _COMMA_RE = re.compile(r"[，、：][”’」』）)]*")
 
-# 页面控件残留文字（清洗阶段按来源裁剪，这里兜底，避免进入分块）
+# 页面控件残留文字（清洗阶段按来源裁剪，这里兜底，避免进入分块）：
+# 含 WHO 页首杂质（跳转链接、「实况报道」栏目标签、页面日期行、罗马数字/纯数字页码）。
 _CONTROL_LINE_PATTERNS = (
     r"^Skip to main content$", r"^阅读时间$", r"^打印$", r"^分享$", r"^分享本页",
-    r"^世卫组织\s*/\s*媒体中心", r"^媒体中心\s*/",
+    r"^世卫组织\s*/\s*媒体中心", r"^媒体中心\s*/", r"^实况报道$",
+    r"^\d{4}年\d{1,2}月\d{1,2}日$", r"^\d{4}年\d{1,2}月$",
+    r"^[ivxlcdm]{1,8}$", r"^\d{1,4}$",
 )
-_CONTROL_LINE_RE = re.compile("|".join(f"(?:{p})" for p in _CONTROL_LINE_PATTERNS))
+_CONTROL_LINE_RE = re.compile("|".join(f"(?:{p})" for p in _CONTROL_LINE_PATTERNS), re.I)
 
 
 def _squash(text: str) -> str:
@@ -369,6 +378,9 @@ def _group_child_sentences(sentences: list[str], max_chars: int = CHILD_MAX_CHAR
     """把句子聚成子块：每块 1–2 句，不超过 max_chars。
 
     单句超限时按逗号类边界硬切（取不超过上限的最近逗号，否则字符切）。
+    不足 ``CHILD_MIN_CHARS`` 的短碎片与相邻句合并（合并上限放宽到
+    ``CHILD_MERGE_MAX_CHARS``，只用于合并、不用于硬切）；纯日期/纯控件文字
+    直接丢弃（不进检索）。丢弃与合并不改变句子顺序，保证 chunk_id 幂等。
     """
     children: list[str] = []
     i = 0
@@ -385,7 +397,29 @@ def _group_child_sentences(sentences: list[str], max_chars: int = CHILD_MAX_CHAR
         else:
             children.append(first)
             i += 1
+    # 不足 15 字的短碎片与相邻子块合并（合并上限放宽到 130 字，只用于合并）；
+    # 纯日期/纯控件文字丢弃；合并不了的孤立短碎片保留（短句正文不静默丢弃）
+    children = [c for c in _merge_short_children(children)
+                if not _CONTROL_LINE_RE.match(c.strip())]
     return children
+
+
+def _merge_short_children(children: list[str]) -> list[str]:
+    """把不足 ``CHILD_MIN_CHARS`` 的子块并入前一个子块；合并不了的孤立短碎片保留。
+
+    只在左邻本身是短/中等块时合并：合并后不超过 ``CHILD_MERGE_MAX_CHARS``
+    且左邻短于 ``CHILD_MAX_CHARS``（硬切好的超限单句尾巴不并回，避免把
+    刚按 110 字上限切开的单句重新并成超限块）。合并不了的孤立短碎片保留。
+    """
+    out: list[str] = []
+    for child in children:
+        if (len(child) < CHILD_MIN_CHARS and out
+                and len(out[-1]) < CHILD_MAX_CHARS
+                and len(out[-1]) + len(child) <= CHILD_MERGE_MAX_CHARS):
+            out[-1] = out[-1] + child
+            continue
+        out.append(child)
+    return out
 
 
 def _pack_by_limit(items: list[str], max_chars: int) -> list[list[str]]:

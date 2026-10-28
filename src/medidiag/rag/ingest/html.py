@@ -51,7 +51,10 @@ class HtmlRules:
     content_classes: frozenset[str] = frozenset()  # 非空时只取含这些 class 的容器
 
 
-# 世界卫生组织实况报道：正文在 article 里，toolbox/面包屑/语言选择器是噪声
+# 世界卫生组织实况报道：正文在 article 里，toolbox/面包屑/语言选择器是噪声。
+# 页首杂质：「Skip to main content」跳转链接、面包屑、「实况报道」栏目标签、
+# 页面日期行（YYYY年M月D日 整行）按控件文字删除；日期在解析时另提取为
+# metadata.published_at（见 ``extract_who_page_date``）。
 _WHO_RULES = HtmlRules(
     skip_classes=frozenset(
         {
@@ -63,7 +66,8 @@ _WHO_RULES = HtmlRules(
     skip_placeholder_labels=frozenset({"Toolbox", "Images"}),
     drop_line_patterns=(
         r"^阅读时间$", r"^打印$", r"^分享$", r"^分享本页", r"^Skip to main content",
-        r"^世卫组织\s*/\s*媒体中心", r"^媒体中心\s*/",
+        r"^世卫组织\s*/\s*媒体中心", r"^媒体中心\s*/", r"^实况报道$",
+        r"^\d{4}年\d{1,2}月\d{1,2}日$",
     ),
 )
 
@@ -450,6 +454,44 @@ def _find_content_roots(root: _Node, rules: HtmlRules) -> list[_Node]:
     return matches or [root]
 
 
+def _html_title(html: str) -> str:
+    """从 <title> 标签提取标题文本（去站点后缀由调用方处理）。"""
+    match = re.search(r"<title[^>]*>(.*?)</title>", html, re.S | re.I)
+    return _collapse_ws(match.group(1)) if match else ""
+
+
+# 疫情月报标题：<h5><a>2024年10月全国法定传染病疫情概况</a></h5>，在正文容器外；
+# 发布日期：标题旁的「时间：<em>YYYY-MM-DD</em>」（也在正文容器外，不进正文）
+_EPIDEMIC_TITLE_RE = re.compile(r"<h5[^>]*>\s*<a[^>]*>(.*?)</a>", re.S | re.I)
+_EPIDEMIC_DATE_RE = re.compile(r"时间：\s*<em>\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*</em>")
+
+
+def extract_epidemic_page_date(html: str) -> str | None:
+    """从疫情月报页面提取发布日期（「时间：<em>YYYY-MM-DD</em>」），返回 ISO 日期。
+
+    页面无该结构时返回 None（统计周期 ``period`` 已在清单元数据中）。
+    """
+    match = _EPIDEMIC_DATE_RE.search(html)
+    if not match:
+        return None
+    year, month, day = (int(g) for g in match.groups())
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def extract_who_page_date(html: str) -> str | None:
+    """从 WHO 事实清单页面提取页首日期行（``<span class="timestamp">YYYY年M月D日</span>``）。
+
+    返回 ISO 日期 ``YYYY-MM-DD``；页面无日期行时返回 None。该日期同时按
+    ``_WHO_RULES.drop_line_patterns`` 从正文删除（日期已入元数据，不再作正文行）。
+    """
+    match = re.search(
+        r'class="timestamp"[^>]*>\s*(\d{4})年(\d{1,2})月(\d{1,2})日\s*<', html)
+    if not match:
+        return None
+    year, month, day = (int(g) for g in match.groups())
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
 def parse_html(
     html: str,
     doc_id: str,
@@ -483,6 +525,17 @@ def parse_html(
             if section.level == 1 and section.title:
                 meta.title = section.title
                 break
+    # 疫情月报正文容器限定在 articleCon，标题（<h5>）与发布时间在容器外，
+    # h1 回填取不到，这里按来源规则从页面提取
+    if source_type == "epidemic_report":
+        if not meta.title:
+            match = _EPIDEMIC_TITLE_RE.search(html)
+            if match:
+                meta.title = _collapse_ws(match.group(1))
+        if not meta.published_at:
+            meta.published_at = extract_epidemic_page_date(html)
+    if source_type == "who_factsheet" and not meta.published_at:
+        meta.published_at = extract_who_page_date(html)
     return Document(doc_id=doc_id, metadata=meta, sections=sections)
 
 
