@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from medidiag.api.schemas import (
     AnalysisResponse,
+    CitationResponse,
     ClaimResponse,
     EvidenceResponse,
     ObservationResponse,
@@ -53,11 +54,15 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
             result.outcome, result.message = "failed", "未找到兼容的辅助分析报告。"
             return result
         ids = {item.chunk_id for item in evidence}
+        if data.get("answer_mode") == "generative":
+            result.answer_mode = "generative"
         for claim in data.get("claims", []):
             links = claim.get("citation_chunk_ids", [])
             if links and all(item in ids for item in links):
+                citations = [CitationResponse(**item) for item in claim.get("citations", [])
+                             if item.get("chunk_id") in ids]
                 result.claims.append(ClaimResponse(claim_id=claim["claim_id"], text=claim["text"],
-                                                   evidence_ids=links))
+                                                   evidence_ids=links, citations=citations))
         result.limitations = list(data.get("limitations", []))
         if data.get("uncertainty"):
             result.limitations.append(str(data["uncertainty"]))

@@ -131,10 +131,19 @@ class EvidenceResponse(BaseModel):
     evidence_level: str
 
 
+class CitationResponse(BaseModel):
+    """生成式回答的句子级引用：quote 逐字出自 chunk_id 对应证据，entailment 为模型的蕴含判定。"""
+
+    chunk_id: str
+    quote: str
+    entailment: Literal["entailed", "partial"]
+
+
 class ClaimResponse(BaseModel):
     claim_id: str
     text: str
     evidence_ids: list[str]
+    citations: list[CitationResponse] = Field(default_factory=list)
 
 
 class ObservationResponse(BaseModel):
@@ -155,6 +164,7 @@ class AnalysisResponse(BaseModel):
     status: str
     execution_mode: Literal["unknown", "fake_offline", "retrieval_mock", "mimo_grounded", "model_pipeline"] = "unknown"
     outcome: Literal["processing", "ready", "insufficient_evidence", "failed", "cancelled"]
+    answer_mode: Literal["extractive", "generative"] = "extractive"
     message: str
     summary: str | None = None
     observation: ObservationResponse = Field(default_factory=ObservationResponse)

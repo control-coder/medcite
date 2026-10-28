@@ -13,6 +13,7 @@ from medidiag.errors import MediDiagError
 from medidiag.llm.contracts import LLMProvider, LLMRequest
 from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from medidiag.workflow.context_rewrite import Turn, contextualize, recent_turns
+from medidiag.workflow.generative_answer import DEGRADED_NOTE, GenerativeAnswerWorkflowProvider
 from medidiag.workflow.provider_runtime import ProviderResponse
 from medidiag.workflow.query_rewrite import build_rewrite_request, parse_rewrite
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
@@ -39,7 +40,7 @@ class _Answer(BaseModel):
 
 
 @dataclass
-class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
+class MimoGroundedWorkflowProvider(GenerativeAnswerWorkflowProvider, RetrievalMockWorkflowProvider):
     """只在显式装配时联网；外层与适配器都禁止自动重试付费生成。"""
 
     llm: LLMProvider | None = None
@@ -55,6 +56,8 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
     model: str = ACTIVE_MIMO_MODEL
     # 追问时先用对话历史把问题补全成可以单独理解的问题，再检索与生成（每个追问多 1 次调用）；单轮问题不受影响
     context_rewrite: bool = False
+    # extractive 为抽取式回答（默认）；generative 为 M12 的句子级引用生成式回答，失败时降级为抽取式
+    answer_mode: Literal["extractive", "generative"] = "extractive"
 
     def retrieve_in_context(self, normalized_query: str, history: Sequence[Turn]) -> dict[str, Any]:
         """追问的检索：补全成功时检索（含检索 Agent 与重排）都用补全后的问题，失败时回退到原问题。
@@ -99,10 +102,19 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
                  feedback: str | None = None) -> ProviderResponse:
         """``feedback`` 只供评测单独复现“带原因的第二次请求”；应用路径由 ``on_invalid`` 控制。"""
         chunks = {item["chunk_id"]: item["text"] for item in retrieval["chunks"]}
+        generative = self.answer_mode == "generative" and feedback is None
         if not chunks:
-            return ProviderResponse({"agents": [], "claims": [], "abstained": True, "uncertainty": LIMITATION})
+            payload: dict[str, Any] = {"agents": [], "claims": [], "abstained": True, "uncertainty": LIMITATION}
+            if generative:
+                payload["answer_mode"] = "generative"
+            return ProviderResponse(payload)
         if self.llm is None:
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
+        if generative:
+            return self._generate_answer(question, chunks, lambda: self._generate_extractive(question, chunks, None))
+        return self._generate_extractive(question, chunks, feedback)
+
+    def _generate_extractive(self, question: str, chunks: dict[str, str], feedback: str | None) -> ProviderResponse:
         try:
             return self._generate_once(question, chunks, feedback)
         except MediDiagError as exc:
@@ -148,12 +160,15 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
                       "prompt_version": "mimo-grounded-v1", "finish_reason": result.finish_reason})
 
     def arbitrate(self, generation: dict[str, Any], retrieval: dict[str, Any]) -> dict[str, Any]:
-        return {"verdict": "SINGLE_GROUNDED_EXCERPTS", "conflicts": [],
+        verdict = "GENERATIVE_CITED_SENTENCES" if generation.get("answer_mode") == "generative" else "SINGLE_GROUNDED_EXCERPTS"
+        return {"verdict": verdict, "conflicts": [],
                 "selected_claim_ids": [c["claim_id"] for c in generation["claims"]], "limitation": LIMITATION}
 
     def review(self, generation: dict[str, Any], arbitration: dict[str, Any],
                retrieval: dict[str, Any]) -> dict[str, Any]:
         result = super().review(generation, arbitration, retrieval)
+        if generation.get("answer_mode") == "generative":
+            return self._review_generative(result, generation, retrieval)
         chunks = {item["chunk_id"]: item["text"] for item in retrieval["chunks"]}
         invalid = any(len(c["citation_chunk_ids"]) != 1 or c["text"] != chunks.get(c["citation_chunk_ids"][0])
                       for c in generation["claims"])
@@ -168,8 +183,13 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
         result = super().report(case_id, generation, review)
+        if generation.get("answer_mode") == "generative":
+            return self._report_generative(result, generation, self._page_count())
         result.update(title="公开证据短引（真实 MiMo 受约束生成）", summary="仅展示模型选择的完整原文，不生成诊疗结论。",
                       abstained=generation.get("abstained", False),
                       limitations=[LIMITATION, f"仅 {self._page_count()} 篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"],
                       provenance={"provider": self.version, "execution_mode": "mimo_grounded"})
+        if generation.get("degraded_from") == "generative":
+            result["answer_mode"] = "extractive"
+            result["limitations"].append(DEGRADED_NOTE)
         return result

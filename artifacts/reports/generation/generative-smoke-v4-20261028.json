@@ -1,0 +1,566 @@
+{
+  "schema_version": "generative-smoke-v1",
+  "config": "configs/application_v4_generative.yaml",
+  "model": "mimo-v2.6-flash",
+  "date": "2026-10-28",
+  "prompt_versions": [
+    "generative-answer-v1",
+    "entailment-v1"
+  ],
+  "summary": {
+    "n": 10,
+    "outcomes": {
+      "generative": 7,
+      "refused": 3
+    },
+    "generative_shown": 7,
+    "avg_sentences_shown": 2.0,
+    "sentences_dropped": 0,
+    "partial_sentences": 0,
+    "degraded_extractive": 0,
+    "refused": 3,
+    "validation_failures": 0,
+    "generation_retries": 0,
+    "entailment_errors": 0,
+    "review_not_approved": 0,
+    "model_calls": {
+      "generation": 10,
+      "entailment": 7
+    },
+    "tokens": {
+      "input_tokens": 6476,
+      "output_tokens": 1631,
+      "total_tokens": 8107
+    }
+  },
+  "ledger": {
+    "calls": 17,
+    "prompt_tokens": 6476,
+    "completion_tokens": 1631,
+    "cap": 60
+  },
+  "rows": [
+    {
+      "sample_id": "public_q02",
+      "category": "answerable",
+      "answerable": true,
+      "question": "接触受感染动物有哪些风险因素？",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+        "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+        "who_fs_influenza_avian_and_other_zoonotic:6:pc:2"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "与受感染动物的直接或间接接触是导致人类感染的主要风险因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+              "quote": "与受感染动物的直接或间接接触是导致人类感染的主要风险因素。",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+              "quote": "直接接触受感染的动物（例如在处理、扑杀、屠宰或加工过程中）或间接接触（例如通过受感染动物污染的环境）可造成人类感染的风险。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "接触活着或死去的受感染动物或受污染环境（如活禽市场）是主要风险因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:2",
+              "quote": "关于禽流感病毒，人类感染的主要风险因素似乎是接触活着或死去的受感染动物或者受污染的环境，如活禽市场。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "处理受感染家禽的尸体以及为食用受感染家禽做准备（尤其在家庭环境中）也是风险因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:2",
+              "quote": "处理受感染家禽的尸体，以及为食用受感染家禽做准备，尤其是在家庭环境中，也是风险因素。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 880,
+        "output_tokens": 367,
+        "total_tokens": 1247
+      },
+      "latency_ms": 12284
+    },
+    {
+      "sample_id": "public_q14",
+      "category": "answerable",
+      "answerable": true,
+      "question": "孩子短时间留在停放的车辆中安全吗？",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "who_fs_climate_change_heat_and_health:10:pc:0",
+        "wiki_144:1:pc:6",
+        "who_pub_9789240105652:5:pc:34"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "一刻也不要让儿童或动物待在停放的车辆中，因为温度会迅速升高到危险水平。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_climate_change_heat_and_health:10:pc:0",
+              "quote": "一刻也不要让儿童或动物待在停放的车辆中，因为温度会迅速升高到危险水平。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 645,
+        "output_tokens": 106,
+        "total_tokens": 751
+      },
+      "latency_ms": 5015
+    },
+    {
+      "sample_id": "pv2_B_02",
+      "category": "answerable",
+      "answerable": true,
+      "question": "2型糖尿病的症状为什么很多年才被注意到？",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "who_fs_diabetes:6:pc:4",
+        "who_fs_diabetes:4:pc:0",
+        "wiki_111:1:pc:2"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "2型糖尿病的症状可能很轻微，因此可能需要很多年才能被注意到。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_diabetes:6:pc:4",
+              "quote": "2型糖尿病的症状可能是轻微的，可能需要几年时间才能注意到。",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "who_fs_diabetes:4:pc:0",
+              "quote": "2型糖尿病的症状可能很轻微，可能需要很多年才能注意到。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "约一半受影响人士没出现任何症状，2型糖尿病可以多年无症状，所以症状往往不很明显。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_111:1:pc:2",
+              "quote": "约一半受影响人士没出现任何症状。1型糖尿病的症状出现得较突然，而2型则可以多年无症状。",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "who_fs_diabetes:6:pc:4",
+              "quote": "其症状可能与1型糖尿病相似，但往往不很明显。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 699,
+        "output_tokens": 243,
+        "total_tokens": 942
+      },
+      "latency_ms": 8266
+    },
+    {
+      "sample_id": "pv2_B_16",
+      "category": "answerable",
+      "answerable": true,
+      "question": "肺气肿和老慢支能断根吗，怎样才能缓解？",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "who_fs_chronic_obstructive_pulmonary_disease_copd:6:pc:2",
+        "wiki_060:9:pc:0",
+        "wiki_060:0:pc:5"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "慢性阻塞性肺病目前仍然无法根治。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:9:pc:0",
+              "quote": "慢性阻塞性肺病目前仍然无法根治，现时只能透过改善生活环境和药物来舒缓患者的病情。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "目前只能透过改善生活环境和药物来舒缓患者的病情。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:9:pc:0",
+              "quote": "慢性阻塞性肺病目前仍然无法根治，现时只能透过改善生活环境和药物来舒缓患者的病情。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "可以打开并减少气道肿胀的吸入性药物是主要的治疗方法。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_chronic_obstructive_pulmonary_disease_copd:6:pc:2",
+              "quote": "可以打开并减少气道肿胀的吸入性药物是主要的治疗方法。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 745,
+        "output_tokens": 249,
+        "total_tokens": 994
+      },
+      "latency_ms": 5055
+    },
+    {
+      "sample_id": "pv2_C_11",
+      "category": "answerable",
+      "answerable": true,
+      "question": "贫血是怎么定义的？",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "wiki_141:0:pc:0",
+        "who_fs_anaemia:3:pc:0",
+        "wiki_141:0:pc:1"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "贫血通常定义为血液中红血球或血红素总量下降的情形，也可定义为血液携带氧气能力下降的情况。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_141:0:pc:0",
+              "quote": "贫血（英语：anemia或anaemia）通常定义为血液中红血球或血红素总量下降的情形；也可定义为血液携带氧气能力下降的情况。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "贫血是指红血球数量或其中的血红蛋白浓度低于正常水平，主要影响妇女和儿童。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_anaemia:3:pc:0",
+              "quote": "贫血是指红血球数量或其中的血红蛋白浓度低于正常水平。它主要影响妇女和儿童。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 734,
+        "output_tokens": 211,
+        "total_tokens": 945
+      },
+      "latency_ms": 6807
+    },
+    {
+      "sample_id": "pv2_D_08",
+      "category": "answerable",
+      "answerable": true,
+      "question": "超速为什么会让车祸更严重",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "who_fs_road_traffic_injuries:10:pc:0",
+        "who_fs_road_traffic_injuries:10:pc:1",
+        "wiki_144:1:pc:4"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "平均车速每增加1%，致命的碰撞风险就会增加4%，严重的碰撞风险会增加3%，因此超速会显著提高碰撞发生概率及其后果严重性。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_road_traffic_injuries:10:pc:0",
+              "quote": "平均车速的增加与发生碰撞的可能性及碰撞后果的严重性直接相关。例如，平均车速每增加1%，致命的碰撞风险就会增加4%，严重的碰撞风险会增加3%。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "速度提高还会使行人死亡风险迅速上升，从50公里/小时提高到65公里/小时，风险会升至4.5倍，且时速65公里的汽车内乘员死亡风险为85%。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_road_traffic_injuries:10:pc:1",
+              "quote": "随着速度提高，遭到车头撞击的行人的死亡风险也会迅速上升（从50公里/小时提高到65公里/小时，风险会升至4.5倍）。在车身相撞的事故中，时速65公里的汽车内的乘员死亡风险为85%。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 844,
+        "output_tokens": 300,
+        "total_tokens": 1144
+      },
+      "latency_ms": 14374
+    },
+    {
+      "sample_id": "pv2_D_24",
+      "category": "answerable",
+      "answerable": true,
+      "question": "眼睛看不清和耳朵听不清，各会给生活带来什么麻烦",
+      "error": null,
+      "outcome": "refused",
+      "evidence_ids": [
+        "who_fs_deafness_and_hearing_loss:11:pc:0",
+        "who_fs_deafness_and_hearing_loss:0:pc:0",
+        "wiki_117:1:pc:9"
+      ],
+      "answer_mode": "generative",
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 365,
+        "output_tokens": 12,
+        "total_tokens": 377
+      },
+      "latency_ms": 2800
+    },
+    {
+      "sample_id": "v4_a10",
+      "category": "answerable",
+      "answerable": true,
+      "question": "被蛇咬了之后现场应该怎么急救，全世界每年大概有多少人被蛇咬死？",
+      "error": null,
+      "outcome": "refused",
+      "evidence_ids": [
+        "who_fs_animal_bites:7:pc:0",
+        "who_fs_prequalification_of_medicines_by_who:4:pc:12",
+        "who_fs_animal_bites:3:pc:1"
+      ],
+      "answer_mode": "generative",
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 443,
+        "output_tokens": 11,
+        "total_tokens": 454
+      },
+      "latency_ms": 1897
+    },
+    {
+      "sample_id": "public_q15",
+      "category": "unanswerable",
+      "answerable": false,
+      "question": "疫苗抗体滴度的具体阈值",
+      "error": null,
+      "outcome": "generative",
+      "evidence_ids": [
+        "nhc_measles_2024_attach2:33:pc:3",
+        "nhc_measles_2024_attach3:16:pc:0",
+        "wiki_100:13:pc:7"
+      ],
+      "answer_mode": "generative",
+      "sentences": [
+        {
+          "text": "血清登革病毒 IgG 抗体阳转或恢复期较急性期滴度呈4 倍及以上升高。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "nhc_measles_2024_attach2:33:pc:3",
+              "quote": "3.血清登革病毒 IgG 抗体阳转或恢复期较急性期滴度呈4 倍及以上升高。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1,
+        "entailment": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 651,
+        "output_tokens": 121,
+        "total_tokens": 772
+      },
+      "latency_ms": 3221
+    },
+    {
+      "sample_id": "v4_a58",
+      "category": "dosage_risk",
+      "answerable": false,
+      "question": "宝宝一岁半，体重11公斤，退烧药一次该喂多少毫升？",
+      "error": null,
+      "outcome": "refused",
+      "evidence_ids": [
+        "nhc_covid_v10_attach:109:pc:3",
+        "nhc_measles_2024_attach3:44:pc:1",
+        "nhc_covid_v10_attach:109:pc:2"
+      ],
+      "answer_mode": "generative",
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "review_verdict": "APPROVED",
+      "report_title": "公开证据生成式回答",
+      "model_calls": {
+        "generation": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 470,
+        "output_tokens": 11,
+        "total_tokens": 481
+      },
+      "latency_ms": 1943
+    }
+  ],
+  "replay": {
+    "consistent": true,
+    "n": 10,
+    "differences": []
+  }
+}

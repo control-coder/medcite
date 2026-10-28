@@ -7,6 +7,7 @@ import yaml
 
 from medidiag.rag.rerank import RERANK_MODEL
 from medidiag.rag.runtime import RuntimeMedicalRAG
+from medidiag.workflow.generative_answer import ANSWER_MODES
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
@@ -44,6 +45,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and config["leakage_check"]["check_answer_key"] is True
             and set(config["leakage_check"]["chunk_fields_to_check"]) >= {"source", "source_id", "metadata.raw_id"}
             and generation.get("on_invalid", "none") in ON_INVALID_CHOICES
+            and generation.get("answer_mode", "extractive") in ANSWER_MODES
             and isinstance(generation.get("rewrite", False), bool)
             and isinstance(generation.get("agent", False), bool)
             and isinstance(generation.get("context_rewrite", False), bool)
@@ -146,6 +148,8 @@ def build_application_provider(mode: str = "fake_offline", *,
         raise ValueError("真实应用必须显式指定 --live-budget 持久账本；选择该模式表示已授权调用。")
     path = Path(app_config)
     config = load_application_config(path if path.is_absolute() else Path(root) / path)
+    if mode == "retrieval_mock" and config.get("generation", {}).get("answer_mode", "extractive") != "extractive":
+        raise ValueError("生成式回答需要真实模型，离线 retrieval_mock 模式只支持抽取式。")
     reranker_factory = _rerank_factory if config["retrieval"].get("rerank") else None
     method = retrieval_profile(config)
     if method == "dense":
@@ -159,6 +163,7 @@ def build_application_provider(mode: str = "fake_offline", *,
     else:
         rag = RuntimeMedicalRAG.from_config(config, root=root, reranker_factory=reranker_factory)
     query_router = bool(config.get("generation", {}).get("query_router", False))
+    answer_mode = config.get("generation", {}).get("answer_mode", "extractive")
     if mode == "retrieval_mock":
         # 离线模式没有 LLM，路由只用规则级
         return RetrievalMockWorkflowProvider(rag, query_router=query_router)
@@ -182,9 +187,10 @@ def build_application_provider(mode: str = "fake_offline", *,
 
             return RetrievalAgentV2WorkflowProvider(
                 rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                context_rewrite=context_rewrite, query_router=query_router)
+                context_rewrite=context_rewrite, query_router=query_router, answer_mode=answer_mode)
         return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                                              context_rewrite=context_rewrite, query_router=query_router)
+                                              context_rewrite=context_rewrite, query_router=query_router,
+                                              answer_mode=answer_mode)
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
                                         rewrite=bool(generation.get("rewrite", False)), context_rewrite=context_rewrite,
-                                        query_router=query_router)
+                                        query_router=query_router, answer_mode=answer_mode)

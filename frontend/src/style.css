@@ -421,6 +421,31 @@ section.notice h3::before { content: "⚠"; margin-right: 8px; color: #8a6d1f }
   font-weight: 600;
 }
 .citation:hover { background: #d9e8dc; text-decoration: none }
+/* 生成式回答：句末引用编号按钮、部分支持标记、证据中被引用的原文 */
+.cite-ref {
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary-soft);
+  border: 1px solid var(--border-strong);
+  color: var(--primary-dark);
+  padding: 0 6px;
+  margin: 0 2px 0 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cite-ref:hover { background: #d9e8dc }
+.cite-ref:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px }
+.partial-mark {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c6d1f;
+  background: #fbf3d9;
+  border: 1px dashed #c9a227;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+}
+.quote-hit { background: #fff1a8; color: inherit; border-radius: 3px; padding: 0 1px }
 .evidence {
   scroll-margin-top: 90px;
   margin: 14px 0;
