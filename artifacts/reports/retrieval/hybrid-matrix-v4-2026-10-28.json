@@ -1,0 +1,89 @@
+{
+  "schema_version": "hybrid-matrix-v1",
+  "date": "2026-10-28",
+  "corpus": ".cache\\corpus\\chunks\\parent_child\\chunks.jsonl",
+  "queries_evaluated": 23,
+  "excluded_dev_queries": {
+    "out_of_scope": 3,
+    "popular_science_unanswerable": 11,
+    "emergency": 2,
+    "individual_care": 9
+  },
+  "note": "只统计 answerable 的 popular_science 查询；emergency/individual_care/out_of_scope 排除",
+  "params": {
+    "candidates": 20,
+    "rrf_k": 60,
+    "mmr_lambda": 0.7,
+    "chunking": "parent_child",
+    "split": "dev"
+  },
+  "methods": [
+    {
+      "method": "bm25_bigram",
+      "queries": 23,
+      "hit@3": 0.1739,
+      "mrr@10": 0.1946,
+      "ndcg@5": 0.1519,
+      "recall@20": 0.3232,
+      "context_chars_mean": 322.5
+    },
+    {
+      "method": "bm25_jieba",
+      "queries": 23,
+      "hit@3": 0.087,
+      "mrr@10": 0.091,
+      "ndcg@5": 0.0645,
+      "recall@20": 0.2428,
+      "context_chars_mean": 424.0
+    },
+    {
+      "method": "dense",
+      "queries": 23,
+      "hit@3": 0.4348,
+      "mrr@10": 0.3337,
+      "ndcg@5": 0.2459,
+      "recall@20": 0.5246,
+      "context_chars_mean": 389.4
+    },
+    {
+      "method": "hybrid_bigram",
+      "queries": 23,
+      "hit@3": 0.2174,
+      "mrr@10": 0.2103,
+      "ndcg@5": 0.1266,
+      "recall@20": 0.5949,
+      "context_chars_mean": 400.7
+    },
+    {
+      "method": "hybrid_jieba",
+      "queries": 23,
+      "hit@3": 0.087,
+      "mrr@10": 0.1278,
+      "ndcg@5": 0.1144,
+      "recall@20": 0.4957,
+      "context_chars_mean": 480.0
+    }
+  ],
+  "latency_ms": {
+    "bm25_bigram": {
+      "p50": 170.9,
+      "p90": 236.2
+    },
+    "bm25_jieba": {
+      "p50": 124.4,
+      "p90": 185.5
+    },
+    "dense": {
+      "p50": 66.7,
+      "p90": 103.8
+    },
+    "hybrid_bigram": {
+      "p50": 615.9,
+      "p90": 831.0
+    },
+    "hybrid_jieba": {
+      "p50": 513.0,
+      "p90": 599.3
+    }
+  }
+}

@@ -8,9 +8,9 @@
 - ``hybrid_bigram``：BM25 二元组 + 向量，RRF（k=60）融合
 - ``hybrid_jieba``：BM25 jieba + 向量，RRF（k=60）融合
 
-以及推荐流水线 ``pipeline``：hybrid + 交叉编码器重排（candidates 可配置）+ MMR（λ=0.7）。
-指标：Hit@3、MRR@10、nDCG@10（relevant=2、partial=1）、Recall@20，以及每条查询的
-检索耗时 p50/p90。只统计 answerable 的 popular_science 查询；intent 为
+两种 hybrid 在 RRF 融合后再做 MMR（λ=0.7）去冗余；不含交叉编码器重排（重排见 M5）。
+指标：Hit@3、MRR@10、nDCG@5（relevant=2、partial=1）、Recall@20、平均送入字符数
+（top3 子块换成去重父块），以及每条查询的检索耗时 p50/p90。只统计 answerable 的 popular_science 查询；intent 为
 emergency/individual_care 的排除（按路由应直接拒答，不参与检索指标）。
 
 标注读取依赖 M7 的 ``eval.v4_judgments``（load_judgments / chunk_relevance）；
@@ -21,7 +21,6 @@ emergency/individual_care 的排除（按路由应直接拒答，不参与检索
 
     python -m eval.hybrid_matrix                       # dev 全量
     python -m eval.hybrid_matrix --limit 4             # 前 4 条冒烟
-    python -m eval.hybrid_matrix --rerank-candidates 10
 """
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
 RERANK_REVISION = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
 # 无重排的方法 Recall 统计深度；Hit/MRR/nDCG 各自的 k 见 METRIC_DEPTHS
 RECALL_DEPTH = 20
-METRIC_DEPTHS = {"hit": 3, "mrr": 10, "ndcg": 10}
+METRIC_DEPTHS = {"hit": 3, "mrr": 10, "ndcg": 5}
 EXCLUDED_INTENTS = ("emergency", "individual_care", "out_of_scope")
 LABEL_GAIN = {"irrelevant": 0, "partial": 1, "relevant": 2}
 SINGLE_METHODS = ("bm25_bigram", "bm25_jieba", "dense", "hybrid_bigram", "hybrid_jieba")
@@ -105,14 +104,6 @@ def excluded_counts(queries: Sequence[dict[str, Any]]) -> dict[str, int]:
         elif query.get("answerable") is not True:
             counts["popular_science_unanswerable"] = counts.get("popular_science_unanswerable", 0) + 1
     return counts
-
-
-class _ScoredItem:
-    """mmr_select 的最小候选包装：只带 chunk_id 与 final_score。"""
-
-    def __init__(self, result: Any, final_score: float) -> None:
-        self.chunk_id = result.chunk_id
-        self.final_score = final_score
 
 
 def build_retrievers(chunks: list[Any], args: argparse.Namespace) -> dict[str, Any]:
@@ -176,7 +167,7 @@ def evaluate_method(name: str, results_by_query: dict[str, list[tuple[str, float
         "queries": n,
         "hit@3": round(hits / n, 4) if n else None,
         "mrr@10": round(rr_sum / n, 4) if n else None,
-        "ndcg@10": round(dcg_sum / n, 4) if n else None,
+        "ndcg@5": round(dcg_sum / n, 4) if n else None,
         "recall@20": round(recall_sum / n, 4) if n else None,
     }
 
@@ -226,6 +217,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if not picked:
         _fail("选中查询在 judgments.jsonl 中没有正标签子块；请检查标注与语料是否对应")
 
+    import torch
+
+    torch.set_num_threads(2)
     retrievers = build_retrievers(chunks, args)
     report: dict[str, Any] = {
         "schema_version": "hybrid-matrix-v1",
@@ -235,46 +229,53 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "excluded_dev_queries": excluded_counts(queries),
         "note": "只统计 answerable 的 popular_science 查询；emergency/individual_care/out_of_scope 排除",
         "params": {"candidates": args.candidates, "rrf_k": args.rrf_k,
-                   "mmr_lambda": args.mmr_lambda, "rerank_candidates": args.rerank_candidates},
+                   "mmr_lambda": args.mmr_lambda, "chunking": "parent_child", "split": "dev"},
         "methods": [],
         "latency_ms": {},
     }
 
+    from medidiag.rag.hybrid import mmr_select
+
+    by_id = {c["chunk_id"]: c for c in raw_chunks}
+    parents_path = CHUNKS_PATH.with_name("parents.jsonl")
+    parent_text = {c["chunk_id"]: c["text"] for c in read_jsonl(parents_path)} if parents_path.exists() else {}
+
+    def context_chars(ranked_ids: list[str]) -> int:
+        """top3 子块换成去重后的父块送入模型的字数。"""
+        seen: list[str] = []
+        for cid in ranked_ids[:METRIC_DEPTHS["hit"]]:
+            pid = by_id[cid].get("metadata", {}).get("parent_id")
+            if pid and pid not in seen:
+                seen.append(pid)
+        return sum(len(parent_text[pid]) for pid in seen if pid in parent_text)
+
+    started = time.perf_counter()
     for name in SINGLE_METHODS:
         retriever = retrievers[name]
-        retriever.build_index()
+        if name.startswith("hybrid"):  # 向量只编码一次：dense 已建索引，混合检索只补建 BM25
+            retriever.bm25.build_index()
+        else:
+            retriever.build_index()
         results_by_query: dict[str, list[tuple[str, float]]] = {}
+        chars: list[int] = []
         latencies: list[float] = []
-        for query in picked:
+        for count, query in enumerate(picked, 1):
             start = time.perf_counter()
             results = retriever.search(query["question"], top_k=RECALL_DEPTH)
+            if name.startswith("hybrid"):
+                results = mmr_select(results, vector_for=retriever.vector_for, top_k=RECALL_DEPTH,
+                                     mmr_lambda=args.mmr_lambda)
             latencies.append((time.perf_counter() - start) * 1000)
-            results_by_query[query["sample_id"]] = [(r.chunk_id, r.final_score) for r in results]
-        report["methods"].append(evaluate_method(name, results_by_query, relevance))
+            ranked = [(r.chunk_id, r.final_score) for r in results]
+            results_by_query[query["sample_id"]] = ranked
+            chars.append(context_chars([cid for cid, _ in ranked]))
+            if count % 10 == 0:
+                print(f"[{name}] {count}/{len(picked)} 已用 {time.perf_counter() - started:.0f}s", flush=True)
+        entry = evaluate_method(name, results_by_query, relevance)
+        entry["context_chars_mean"] = round(sum(chars) / len(chars), 1)
+        report["methods"].append(entry)
         report["latency_ms"][name] = {"p50": percentile(latencies, 50), "p90": percentile(latencies, 90)}
-
-    # 推荐流水线：hybrid（分词按 --tokenizer）+ 重排 + MMR
-    from medidiag.rag.hybrid import mmr_select
-    from medidiag.rag.rerank import Reranker, load_local_reranker
-
-    pipeline_retriever = retrievers[f"hybrid_{args.tokenizer}"]
-    reranker = Reranker(load_local_reranker(RERANK_MODEL, RERANK_REVISION, device=args.device),
-                        model_name=RERANK_MODEL, model_revision=RERANK_REVISION,
-                        candidates=args.rerank_candidates)
-    results_by_query = {}
-    latencies = []
-    for query in picked:
-        start = time.perf_counter()
-        candidates = pipeline_retriever.search(query["question"], top_k=args.rerank_candidates)
-        reranked = reranker.rerank(query["question"], [r for r in candidates], len(candidates))
-        # mmr_select 只需要 chunk_id 与 final_score；用轻量包装避免依赖 EvidenceItem 的完整字段
-        items = [_ScoredItem(r, score) for r, score in reranked]
-        selected = mmr_select(items, vector_for=pipeline_retriever.vector_for,
-                              top_k=RECALL_DEPTH, mmr_lambda=args.mmr_lambda)
-        latencies.append((time.perf_counter() - start) * 1000)
-        results_by_query[query["sample_id"]] = [(item.chunk_id, item.final_score) for item in selected]
-    report["methods"].append(evaluate_method("pipeline", results_by_query, relevance))
-    report["latency_ms"]["pipeline"] = {"p50": percentile(latencies, 50), "p90": percentile(latencies, 90)}
+        print(f"[{name}] 完成 {entry}", flush=True)
 
     out_dir = ROOT / "artifacts/reports/retrieval"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -286,14 +287,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--device", default="cuda")
     parser.add_argument("--limit", type=int, default=0, help="冒烟：只评前 N 条 dev 查询")
-    parser.add_argument("--tokenizer", choices=["bigram", "jieba"], default="bigram",
-                        help="推荐流水线使用的 BM25 分词；单路对比两种都会输出")
     parser.add_argument("--candidates", type=int, default=20, help="混合检索每路候选数")
     parser.add_argument("--rrf-k", type=int, default=60)
     parser.add_argument("--mmr-lambda", type=float, default=0.7)
-    parser.add_argument("--rerank-candidates", type=int, default=20, help="流水线中交给重排的候选数")
     args = parser.parse_args()
     report = run(args)
     print(json.dumps({"queries": report["queries_evaluated"], "report": report["report_path"],
