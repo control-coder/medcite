@@ -129,7 +129,7 @@ flowchart LR
 - **SSE 沿用 owner 校验**：流开始前按与轮询端点相同的规则校验归属，越权与不存在统一 404；流内每轮用独立会话重新校验。事件来自已有的事件日志，服务端 0.5 秒轮询事件表后转发，没有新增消息通道；前端连接失败时回退为轮询。不做逐 token 流式输出，因为生成式回答要整段校验后才能展示。
 - **白名单只扩展**：`workflow/application.py` 的配置校验为新字段（`vector_store`、`hybrid`、`query_router`、`agent_version`、`answer_mode`、`cache`）增加了显式的合法取值，没有放宽对浮动版本、联网下载、套用研究配置、关闭泄露检查的拒绝。
 
-未验证：真实 `mimo_grounded` 经数据库 worker 的完整端到端、pgvector 下的元数据过滤路径、PostgreSQL 与多 worker 下的 SSE、浏览器内点击引用高亮。蕴含判定是模型给出的「引用是否支持这句话」，不是医学正确性审核。评测数字见 [评测文档](evaluation.md#v4-评测汇总m15)。
+真实 `mimo_grounded` 经 HTTP、SQLite 与独立 worker 的端到端只冒烟了 3 题。未验证：pgvector 下的元数据过滤路径、PostgreSQL 与多 worker 下的 SSE、浏览器内点击引用高亮。蕴含判定是模型给出的「引用是否支持这句话」，不是医学正确性审核。评测数字见 [评测文档](evaluation.md#v4-评测汇总m15)。
 
 ## 观测
 
