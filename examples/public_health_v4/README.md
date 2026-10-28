@@ -174,3 +174,62 @@ test（53 条，只报告不调参）：
 | parent_child | 向量 | 0.566（0.623） | 0.466（0.486） | 423（447） |
 
 **基于 dev 的结论（2026-10-28，与 20261027 一致）**：向量检索明显优于 BM25。dev 上 recursive+向量与 parent_child+向量 Hit@3 相同（0.451），parent_child+向量 MRR@10 更高（0.394 vs 0.352）且送入字数明显更少（413 vs 687）；test 上 parent_child+向量 Hit@3 反超（0.566 vs 0.377）。综合 dev（选参依据）推荐仍为 **父子分块 + 向量检索**，推荐未因数据质量修复而变化。recursive+向量 dev Hit@3 较旧报告略降（0.471→0.451），在 95% 置信区间内波动；各组合新旧差异均在置信区间内。
+
+## 评测集（M7）
+
+262 条查询，句子级标注后冻结（`queries.jsonl` 写入 `answerable`、`partial_only`、`gold_evidence_ids`；后者为 parent_child 子块 ID，仅为兼容旧评测脚本，权威标注是 `judgments.jsonl`）。split：dev 60、test 202。总体 185 条可回答（dev 40、test 145）、46 条仅部分相关（partial_only，无 relevant 句子）、31 条无答案。
+
+| origin | intent | split | 条数 | answerable | partial_only | 无答案 |
+| --- | --- | --- | --- | --- | --- | --- |
+| v3 | popular_science | dev | 36 | 28 | 6 | 2 |
+| v3 | popular_science | test | 121 | 99 | 15 | 7 |
+| v3 | out_of_scope | dev | 2 | 0 | 2 | 0 |
+| v3 | out_of_scope | test | 9 | 0 | 1 | 8 |
+| authored_v4 | popular_science | dev | 10 | 7 | 3 | 0 |
+| authored_v4 | popular_science | test | 34 | 30 | 4 | 0 |
+| authored_v4 | emergency | dev | 2 | 1 | 1 | 0 |
+| authored_v4 | emergency | test | 6 | 3 | 3 | 0 |
+| authored_v4 | individual_care | dev | 2 | 1 | 1 | 0 |
+| authored_v4 | individual_care | test | 6 | 5 | 1 | 0 |
+| authored_v4 | out_of_scope | dev | 1 | 0 | 0 | 1 |
+| authored_v4 | out_of_scope | test | 3 | 0 | 1 | 2 |
+| huatuo | individual_care | dev | 7 | 3 | 2 | 2 |
+| huatuo | individual_care | test | 23 | 8 | 6 | 9 |
+
+**标注流程**（`eval/v4_judgments.py`，提示词版本 `pooled-judge-v4-sentence`，模型 `mimo-v2.6-flash`，推理开启）：
+
+- 池化（TREC 式）：每条查询取 4 种检索方法（recursive×BM25 cjk_bigram、recursive×向量、parent_child×BM25、parent_child×向量）各自前 5 名子块，按 `chunk_id` 去重；v3 查询另并入 v3 gold 映射到的子块。平均每条查询 18.31 个段落、61.02 个不重复句子。
+- 同一句子（去空白 sha256 相同）在池内只送一次、只标一次；按请求内顺序编号 `p{段序}s{句序}`。每条查询的池都在单次请求的输入预算内，共 262 次请求。模型返回 relevant / partial 的句子编号，其余记 irrelevant。共 16,140 行句子标注：relevant 789、partial 979、irrelevant 14,372。
+- `judgments.jsonl` 只存句子 sha256 与标签，不存原文（WHO 页面未获全文再分发许可）；评估时用 `chunk_relevance` 把句子标签投影到任意分块策略的子块（有重叠的已标注句子中取最高标签），原文由本机 `.cache/corpus/chunks` 重建。
+- 输出校验：编号必须属于该次请求、不重复、键只能是 relevant / partial。校验失败时重试 1 次，重试请求在原消息后追加确定性的纠错说明（列出非法编号），因此请求体不同、调用记录可区分、回放结果确定。262 次请求中 7 次首轮无效，7 次重试后均通过；没有 judge_failed 的查询。
+
+**录制与费用**（费用按 M3 口径估算：每百万输入 Token 1 元、输出 2 元，未核实实际计费）：
+
+| 录制 | 账本 | 调用数（HTTP 200） | 输入 Token | 输出 Token | 估算费用 |
+| --- | --- | --- | --- | --- | --- |
+| 第 1 次（作废） | `.cache/v4-m7-ledger.db` | 287（287） | 587,724 | 104,965 | 约 0.80 元 |
+| 第 2 次（采用） | `.cache/v4-m7-ledger-r2.db` | 273（269） | 778,480 | 126,347 | 约 1.03 元 |
+
+第 1 次录制后修改了句子编号方案、池去重方式（旧版按 doc_id 去重、每篇文档只送一个子块），旧调用记录与新请求体不一致，已作废并备份在本机 `.cache/v4-judgments-cassette-old.jsonl`，其结果未被采用。第 2 次录制中途因服务器重启中断一次，续录复用已记录的调用，不重复付费，账本合计为上表；4 次非 200 调用（含中断的在途请求）计入账本。合计约 1.83 元。采用的调用记录为 `eval/cassettes/v4-judgments.jsonl`，回放（`--mode replay`）269 次调用 100% 命中，产物字节级一致；有任何未命中时脚本报错退出，不写文件。
+
+**与 v3 标注的一致率**：只比较各 v3 查询池内实际送标的摘录（摘录映射的 parent_child 子块至少一句被送标），按摘录二分类（relevant/partial 为正）。共 341 对，一致率 0.9208，Cohen's kappa 0.8356。12 条映射失败的摘录不参与。
+
+| | LLM 判正 | LLM 判负 |
+| --- | --- | --- |
+| v3 正例 | 122 | 1 |
+| v3 负例 | 26 | 192 |
+
+1 条 v3 正例被 LLM 判负（`pv2_D_12` 的 `kb_maternal_02`，《孕产妇死亡率》）；26 条 v3 负例被 LLM 判正，多为池里同主题的其他相关片段。
+
+**v3 无证据查询的变化**：v3 的 56 条无证据查询（uncovered 24、near_miss 21、out_of_scope 11）在 v4 语料上有 16 条变为可回答，明细见 `v3_no_evidence_recheck.json`：pv2_B_28、pv2_B_29、pv2_C_30、pv2_D_27、pv2_D_30（near_miss），pv2_U_03、U_05、U_09、U_10、U_11、U_12、U_17、U_18、U_21、U_23、U_24（uncovered）；命中来源为 WHO 事实表、Wikipedia 与 1 篇国家卫健委文件。v3 文件不改，新旧拒答数字不能直接比较。
+
+**冻结 sha256**（LF 字节）：
+
+| 文件 | sha256 |
+| --- | --- |
+| queries.jsonl | `df51ba48da00145cdae77646382d22854f2a3af3c18303632ca8ff77f9e7ba23` |
+| judgments.jsonl | `533697353f51088bbe18c7069a78d50645291ef77ff27245d20c6fece094423e` |
+| pools.jsonl | `a3c9006adc0d5cf9e81f7aee0fa8a0b8d1928eff4b64f6c017ab9b5a5de88ea5` |
+| v3_no_evidence_recheck.json | `10838ddb9fb5d19d84976130899ca434df3bfd630befc55460f81e4af179433a` |
+
+**局限**：标注全部由 LLM 完成，未经人工复核，LLM 判定不等于医学正确；池只含 4 种方法的前 5 名（加 v3 gold），池外的相关片段未被标注，会低估相关片段总数；一致率只反映与 v3 标注的吻合，不代表标注准确率；huatuo 个体咨询类查询在公开语料中本就多无直接答案。

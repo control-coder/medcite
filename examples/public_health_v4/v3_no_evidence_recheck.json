@@ -1,0 +1,531 @@
+{
+  "schema_version": "v3-no-evidence-recheck-v1",
+  "note": "v3 的 56 条无证据查询在 v4 语料上的重新判定（句子级标注投影到 parent_child 子块）；v3 文件不改。",
+  "n_queries": 56,
+  "now_answerable": 16,
+  "queries": [
+    {
+      "query_id": "public_q07",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "public_q08",
+      "bucket": "out_of_scope",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "public_q15",
+      "bucket": "near_miss",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "public_q16",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_26",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_27",
+      "bucket": "near_miss",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_28",
+      "bucket": "near_miss",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_29",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_30",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_31",
+      "bucket": "out_of_scope",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_32",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_33",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_34",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_A_35",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_B_26",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_B_27",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_B_28",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_asthma",
+        "wiki_034"
+      ],
+      "hit_source_types": [
+        "who_factsheet",
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_B_29",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_cervical_cancer",
+        "who_fs_human_papilloma_virus_and_cancer",
+        "wiki_009",
+        "wiki_011",
+        "wiki_121"
+      ],
+      "hit_source_types": [
+        "who_factsheet",
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_B_30",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_B_35",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_C_26",
+      "bucket": "near_miss",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_C_27",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_C_28",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_C_29",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_C_30",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_141"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_C_33",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_D_26",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_D_27",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_147"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_D_28",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_D_29",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_D_30",
+      "bucket": "near_miss",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_074"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_D_35",
+      "bucket": "out_of_scope",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_01",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_02",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_03",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_068",
+        "wiki_162"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_U_04",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_05",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_125"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_U_06",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_07",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_08",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_09",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_menstrual_health"
+      ],
+      "hit_source_types": [
+        "who_factsheet"
+      ]
+    },
+    {
+      "query_id": "pv2_U_10",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_050"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_U_11",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_shingles_herpes_zoster",
+        "wiki_051"
+      ],
+      "hit_source_types": [
+        "who_factsheet",
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_U_12",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": true,
+      "hit_docs": [
+        "nhc_obesity_2024_attach"
+      ],
+      "hit_source_types": [
+        "nhc_document"
+      ]
+    },
+    {
+      "query_id": "pv2_U_13",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_14",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_15",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_16",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_17",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_headache_disorders"
+      ],
+      "hit_source_types": [
+        "who_factsheet"
+      ]
+    },
+    {
+      "query_id": "pv2_U_18",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_068"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    },
+    {
+      "query_id": "pv2_U_19",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_20",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_21",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_adolescent_mental_health",
+        "who_fs_mental_disorders"
+      ],
+      "hit_source_types": [
+        "who_factsheet"
+      ]
+    },
+    {
+      "query_id": "pv2_U_22",
+      "bucket": "uncovered",
+      "split": "dev",
+      "now_answerable": false,
+      "hit_docs": [],
+      "hit_source_types": []
+    },
+    {
+      "query_id": "pv2_U_23",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "who_fs_ringworm_tinea"
+      ],
+      "hit_source_types": [
+        "who_factsheet"
+      ]
+    },
+    {
+      "query_id": "pv2_U_24",
+      "bucket": "uncovered",
+      "split": "test",
+      "now_answerable": true,
+      "hit_docs": [
+        "wiki_108"
+      ],
+      "hit_source_types": [
+        "wikipedia"
+      ]
+    }
+  ]
+}
