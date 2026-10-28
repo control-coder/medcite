@@ -57,6 +57,15 @@ _DIAGNOSIS = re.compile(
 _NEGATION = re.compile(r"不|没有|无|未|非|勿|别|禁止|否")
 
 
+ENTAILMENT_MAX_TOKENS = 512
+
+
+def entailment_messages(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """蕴含判定的请求消息；生产路径与评审检查（eval/entailment_check.py）共用，保证请求构造一致。"""
+    return [{"role": "system", "content": ENTAILMENT_PROMPT},
+            {"role": "user", "content": json.dumps({"items": list(items)}, ensure_ascii=False)}]
+
+
 def _norm(text: str) -> str:
     return re.sub(r"\s+", "", text).replace("％", "%").lower()
 
@@ -188,10 +197,9 @@ class GenerativeAnswerWorkflowProvider:
         items = [{"id": i, "sentence": s.text, "evidence": "\n".join(c.quote for c in s.citations), "check_negation": flags[i]}
                  for i, s in enumerate(answer.sentences)]
         unverified = ["unverified"] * len(items)
-        messages = [{"role": "system", "content": ENTAILMENT_PROMPT},
-                    {"role": "user", "content": json.dumps({"items": items}, ensure_ascii=False)}]
+        messages = entailment_messages(items)
         try:
-            result = self._chat(messages, ENTAILMENT_VERSION, 512, calls)
+            result = self._chat(messages, ENTAILMENT_VERSION, ENTAILMENT_MAX_TOKENS, calls)
             verdicts = _Verdicts.model_validate(result.parsed_json).verdicts
         except MediDiagError as exc:
             return unverified, exc.code

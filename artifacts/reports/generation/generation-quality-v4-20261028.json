@@ -1,0 +1,3594 @@
+{
+  "schema_version": "generation-quality-v1",
+  "date": "2026-10-28",
+  "mode": "record",
+  "model": "mimo-v2.6-flash",
+  "split": "dev",
+  "intent": "popular_science",
+  "queries": 46,
+  "cost": {
+    "model_calls": {
+      "agent": 109,
+      "hyde": 18,
+      "generation": 33,
+      "entailment": 33,
+      "nli": 31,
+      "qgen": 31,
+      "extractive": 2
+    },
+    "model_calls_total": 257,
+    "call_errors": {
+      "STRUCTURED_OUTPUT_INVALID": 1
+    },
+    "input_tokens": 227622,
+    "output_tokens": 44915,
+    "est_yuan": 0.3175,
+    "note": "model_calls 含命中旧调用记录（检索 Agent 与回放）的请求；真实新增调用见 spend（账本累计，含评审检查）。",
+    "spend": {
+      "calls": 148,
+      "http_200": 148,
+      "prompt_tokens": 61297,
+      "completion_tokens": 13185
+    }
+  },
+  "params": {
+    "config": "configs/application_v4_agent.yaml",
+    "answer_mode": "generative",
+    "on_invalid": "feedback",
+    "retrieval": "hybrid + rerank + MMR，parent_child 子块，top3，检索 Agent v2（同 M11）",
+    "judge": {
+      "nli_prompt": "eval-nli-v1",
+      "question_prompt": "eval-qgen-v1",
+      "nli_prompt_sha256": "44b197029f34",
+      "reasoning": "disabled",
+      "n_generated_questions": 3,
+      "relevancy_encoder": "BAAI/bge-small-zh-v1.5"
+    }
+  },
+  "summary": {
+    "n": 46,
+    "n_answerable": 35,
+    "n_unanswerable": 11,
+    "outcomes": {
+      "generative": 31,
+      "refused": 13,
+      "degraded_extractive": 2
+    },
+    "generation_errors": 0,
+    "generative_answers": 31,
+    "sentences_shown": 71,
+    "citation_recall": {
+      "count": "61/71",
+      "rate": 0.8592
+    },
+    "citation_precision": {
+      "count": "64/77",
+      "rate": 0.8312
+    },
+    "citation_sentences_judged": 71,
+    "faithfulness": {
+      "count": "64/71",
+      "rate": 0.9014
+    },
+    "faithfulness_partial_share": {
+      "count": "4/71",
+      "rate": 0.0563
+    },
+    "faithfulness_sentences_judged": 71,
+    "answer_relevancy": {
+      "mean": 0.7647,
+      "n": 31
+    },
+    "context_precision": {
+      "mean": 0.8476,
+      "n": 35,
+      "n_zero": 3
+    },
+    "wrong_answer_unanswerable_answered": {
+      "count": "0/11",
+      "rate": 0.0
+    },
+    "over_refusal": {
+      "count": "2/35",
+      "rate": 0.0571
+    },
+    "wrong_answer_irrelevant_citation": {
+      "count": "1/35",
+      "rate": 0.0286
+    },
+    "degraded_extractive": 2,
+    "sentences_dropped": 7,
+    "sentences_partial": 15,
+    "validation_failures": 0,
+    "generation_retries": 0,
+    "entailment_errors": 2,
+    "judge_error_answers": 0
+  },
+  "extractive_baseline": {
+    "source": "artifacts/reports/retrieval/agent-v2-v4-20261028.json",
+    "wrong_answer_unanswerable_answered": {
+      "count": "0/11",
+      "rate": 0.0
+    },
+    "over_refusal": {
+      "count": "3/35",
+      "rate": 0.0857
+    },
+    "note": "抽取式回答的内容就是证据原文，忠实度不与生成式直接比较。"
+  },
+  "limitations": [
+    "评审与被评系统同源（均为 MiMo），有偏差；判定不等于医学正确，也不等于人工审核。",
+    "忠实度、引用召回率与精确率依赖模型 NLI 判定；评审检查（entailment_check）单独报告判定在程序构造样本上的检出率。",
+    "上下文精确率的相关性来自 v4 句子级 LLM 标注（relevant 与 partial 都算相关），未经人工复核。",
+    "样本量小（dev 46 条，其中展示生成式回答的更少），只作工程对照，不作显著性结论；dev 内未调参。",
+    "答案相关性只对展示了生成式回答的查询计算；降级为抽取式或拒答的查询不计入。"
+  ],
+  "rows": [
+    {
+      "sample_id": "public_q02",
+      "answerable": true,
+      "question": "接触受感染动物有哪些风险因素？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+        "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+        "who_fs_influenza_avian_and_other_zoonotic:6:pc:2"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "直接接触受感染的动物（例如在处理、扑杀、屠宰或加工过程中）或间接接触（例如通过受感染动物污染的环境）可造成人类感染的风险。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+              "quote": "直接接触受感染的动物（例如在处理、扑杀、屠宰或加工过程中）或间接接触（例如通过受感染动物污染的环境）可造成人类感染的风险。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "与受感染动物的直接或间接接触是导致人类感染的主要风险因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+              "quote": "与受感染动物的直接或间接接触是导致人类感染的主要风险因素。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "人类感染禽流感病毒的主要风险因素似乎是接触活着或死去的受感染动物或者受污染的环境，如活禽市场。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:2",
+              "quote": "关于禽流感病毒，人类感染的主要风险因素似乎是接触活着或死去的受感染动物或者受污染的环境，如活禽市场。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "处理受感染家禽的尸体，以及为食用受感染家禽做准备，尤其是在家庭环境中，也是风险因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:2",
+              "quote": "处理受感染家禽的尸体，以及为食用受感染家禽做准备，尤其是在家庭环境中，也是风险因素。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "人类感染禽流感病毒的主要风险因素有哪些？",
+        "哪些途径可能导致人类感染禽流感病毒？",
+        "日常生活中哪些行为会增加感染禽流感病毒的风险？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 7511,
+        "output_tokens": 1242,
+        "total_tokens": 8753
+      },
+      "judge_tokens": {
+        "input_tokens": 1094,
+        "output_tokens": 117,
+        "total_tokens": 1211
+      },
+      "answer_relevancy": 0.7426
+    },
+    {
+      "sample_id": "public_q09",
+      "answerable": true,
+      "question": "打喷嚏时用肘部还是纸巾遮住口鼻？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_001:16:pc:0",
+        "who_fs_coronavirus_disease_covid_19:7:pc:2",
+        "wiki_001:13:pc:8"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "各地卫生机构建议在咳嗽或打喷嚏时利用手肘或一次性卫生纸遮盖口鼻部，并将卫生纸立刻处理掉。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_001:16:pc:0",
+              "quote": "各地的卫生机构建议在咳嗽或打喷嚏时，利用手肘或一次性卫生纸遮盖口鼻部，并将卫生纸立刻处理掉。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "咳嗽或打喷嚏时应用弯曲的手肘或纸巾捂住口鼻，并立即处理用过的纸巾和清洁双手。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_coronavirus_disease_covid_19:7:pc:2",
+              "quote": "在咳嗽或打喷嚏时，用弯曲的手肘或纸巾捂住口鼻，并立即处理用过的纸巾和清洁双手；",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "咳嗽或打喷嚏时应如何正确遮盖口鼻？",
+        "各地卫生机构对咳嗽或打喷嚏时遮盖口鼻有什么建议？",
+        "使用卫生纸遮盖口鼻后应该如何处理？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2122,
+        "output_tokens": 428,
+        "total_tokens": 2550
+      },
+      "judge_tokens": {
+        "input_tokens": 823,
+        "output_tokens": 92,
+        "total_tokens": 915
+      },
+      "answer_relevancy": 0.781
+    },
+    {
+      "sample_id": "public_q10",
+      "answerable": true,
+      "question": "与动物间接接触为什么有感染风险？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+        "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+        "who_fs_rift_valley_fever:7:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "间接接触可通过受感染动物污染的环境造成人类感染的风险。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:2:pc:0",
+              "quote": "或间接接触（例如通过受感染动物污染的环境）可造成人类感染的风险。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "与受感染动物的直接或间接接触是导致人类感染人畜共患流感病毒的主要风险因素。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+              "quote": "与受感染动物的直接或间接接触是导致人类感染的主要风险因素。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "大多数人类感染是因直接或间接接触受感染动物的血液或器官所致。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_rift_valley_fever:7:pc:0",
+              "quote": "大多数人类感染是因直接或间接接触受感染动物的血液或器官所致。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "partial",
+          "alone": [
+            "partial"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "人类感染人畜共患流感病毒的主要风险因素是什么？",
+        "受感染动物污染的环境是否可能造成人类感染？",
+        "人类感染通常是因为接触了受感染动物的什么物质？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 10331,
+        "output_tokens": 1893,
+        "total_tokens": 12224
+      },
+      "judge_tokens": {
+        "input_tokens": 820,
+        "output_tokens": 105,
+        "total_tokens": 925
+      },
+      "answer_relevancy": 0.7562
+    },
+    {
+      "sample_id": "public_q13",
+      "answerable": true,
+      "question": "天黑后什么温度条件下打开窗户降温？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_climate_change_heat_and_health:8:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "天黑后，当室外温度低于室内温度时，打开窗户，利用夜间的空气给家中降温。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_climate_change_heat_and_health:8:pc:0",
+              "quote": "天黑后，当室外温度低于室内温度时，打开窗户，利用夜间的空气给家中降温。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "夏季如何利用自然通风为室内降温？",
+        "晚上开窗通风能起到什么作用？",
+        "在什么条件下打开窗户有助于降低室内温度？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1856,
+        "output_tokens": 262,
+        "total_tokens": 2118
+      },
+      "judge_tokens": {
+        "input_tokens": 488,
+        "output_tokens": 60,
+        "total_tokens": 548
+      },
+      "answer_relevancy": 0.6644
+    },
+    {
+      "sample_id": "public_q14",
+      "answerable": true,
+      "question": "孩子短时间留在停放的车辆中安全吗？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_climate_change_heat_and_health:10:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "不安全，一刻也不要让儿童或动物待在停放的车辆中，因为温度会迅速升高到危险水平。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_climate_change_heat_and_health:10:pc:0",
+              "quote": "一刻也不要让儿童或动物待在停放的车辆中，因为温度会迅速升高到危险水平。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed"
+          ],
+          "faith": "not_entailed"
+        }
+      ],
+      "generated_questions": [
+        "为什么不能把孩子或宠物留在停着的车里？",
+        "把小孩单独留在车里有危险吗？",
+        "车内温度在停放时会怎样变化？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1806,
+        "output_tokens": 283,
+        "total_tokens": 2089
+      },
+      "judge_tokens": {
+        "input_tokens": 494,
+        "output_tokens": 74,
+        "total_tokens": 568
+      },
+      "answer_relevancy": 0.6953
+    },
+    {
+      "sample_id": "public_q15",
+      "answerable": false,
+      "question": "疫苗抗体滴度的具体阈值",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 7696,
+        "output_tokens": 1204,
+        "total_tokens": 8900
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_A_08",
+      "answerable": true,
+      "question": "霍乱是由什么引起的？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_154:2:pc:2",
+        "who_fs_cholera:6:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "霍乱是由多种霍乱弧菌引起的，各个菌种的致病力不同。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_154:2:pc:2",
+              "quote": "霍乱是由多种霍乱弧菌引起，各个菌种的致病力不同：一些菌种可能会导致更为严重的病症。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "其中只有O1和O139两个血清群会引起霍乱暴发，最近所有霍乱疫情均由霍乱弧菌O1引起。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_cholera:6:pc:0",
+              "quote": "只有O1和O139两个血清群会引起霍乱暴发。最近所有霍乱疫情均由霍乱弧菌O1引起。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "霍乱弧菌最主要通过被含有该细菌的人类粪便污染的水或食物传播，未经彻底烹饪的海鲜也是一个常见的传播途径。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_154:2:pc:2",
+              "quote": "霍乱弧菌最主要通过被含有该细菌的人类粪便污染的水或食物传播，未经彻底烹饪的海鲜也是一个常见的传播途径。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "霍乱的病原体是什么？",
+        "哪些霍乱弧菌血清群会引起霍乱暴发？",
+        "霍乱是通过什么途径传播的？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4018,
+        "output_tokens": 1269,
+        "total_tokens": 5287
+      },
+      "judge_tokens": {
+        "input_tokens": 862,
+        "output_tokens": 123,
+        "total_tokens": 985
+      },
+      "answer_relevancy": 0.7748
+    },
+    {
+      "sample_id": "pv2_A_13",
+      "answerable": true,
+      "question": "全世界大概多少人身上带着肺痨菌却没症状？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_tuberculosis:3:pc:2",
+        "wiki_114:0:pc:10",
+        "wiki_114:9:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "据估计，全球约四分之一的人口感染结核杆菌，且感染的人一般不会感到不适、也不会传染。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_tuberculosis:3:pc:2",
+              "quote": "据估计，全球约四分之一的人口感染结核杆菌。一般而言，感染结核杆菌的人不会感到不适，也不会传染。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "not_entailed"
+        }
+      ],
+      "generated_questions": [
+        "全球约有多少人口感染了结核杆菌？",
+        "感染结核杆菌的人通常是否会出现不适症状？",
+        "感染结核杆菌的人一般会传染给他人吗？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3950,
+        "output_tokens": 767,
+        "total_tokens": 4717
+      },
+      "judge_tokens": {
+        "input_tokens": 646,
+        "output_tokens": 74,
+        "total_tokens": 720
+      },
+      "answer_relevancy": 0.6293
+    },
+    {
+      "sample_id": "pv2_A_21",
+      "answerable": true,
+      "question": "为什么说喝干净水、用卫生厕所能防住那种水样腹泻病？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_drinking_water:3:pc:3",
+        "who_fs_diarrhoeal_disease:3:pc:4",
+        "who_fs_diarrhoeal_disease:2:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "很大一部分腹泻病可以通过安全饮水和注重环境卫生和个人卫生加以预防。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_diarrhoeal_disease:2:pc:1",
+              "quote": "很大一部分腹泻病可以通过安全饮水和注重环境卫生和个人卫生加以预防。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "包括安全饮水、使用经过改良的卫生设施以及用肥皂洗手等预防腹泻干预措施可以降低患病危险。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_diarrhoeal_disease:3:pc:4",
+              "quote": "包括安全饮水、使用经过改良的卫生设施以及用肥皂洗手等预防腹泻干预措施可以降低患病危险。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "安全充足的供水可促进个人卫生习惯，是预防腹泻疾病的关键措施。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_drinking_water:3:pc:3",
+              "quote": "安全充足的供水可促进个人卫生习惯，这不仅是预防腹泻疾病的关键措施",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "如何预防腹泻病的发生？",
+        "安全饮水在预防腹泻疾病中起什么作用？",
+        "哪些个人和环境卫生措施可以降低腹泻的患病风险？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3805,
+        "output_tokens": 1031,
+        "total_tokens": 4836
+      },
+      "judge_tokens": {
+        "input_tokens": 774,
+        "output_tokens": 121,
+        "total_tokens": 895
+      },
+      "answer_relevancy": 0.7052
+    },
+    {
+      "sample_id": "pv2_A_27",
+      "answerable": false,
+      "question": "登革热疫苗一针要多少钱？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4866,
+        "output_tokens": 683,
+        "total_tokens": 5549
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_A_28",
+      "answerable": false,
+      "question": "中国去年新增了多少例麻疹病例？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4402,
+        "output_tokens": 603,
+        "total_tokens": 5005
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_B_02",
+      "answerable": true,
+      "question": "2型糖尿病的症状为什么很多年才被注意到？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_diabetes:6:pc:4",
+        "who_fs_diabetes:4:pc:0",
+        "wiki_111:1:pc:2"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "2型糖尿病的症状可能很轻微，因此可能需要很多年才能注意到。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_diabetes:6:pc:4",
+              "quote": "2型糖尿病的症状可能是轻微的，可能需要几年时间才能注意到。",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "who_fs_diabetes:4:pc:0",
+              "quote": "2型糖尿病的症状可能很轻微，可能需要很多年才能注意到。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "其症状往往不很明显，并且2型糖尿病可以多年无症状，约一半受影响人士没出现任何症状。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_diabetes:6:pc:4",
+              "quote": "其症状可能与1型糖尿病相似，但往往不很明显。",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "wiki_111:1:pc:2",
+              "quote": "约一半受影响人士没出现任何症状。1型糖尿病的症状出现得较突然，而2型则可以多年无症状。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed",
+            "not_entailed"
+          ],
+          "faith": "not_entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "partial",
+            "partial"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "为什么2型糖尿病常常难以被早期发现？",
+        "2型糖尿病的症状是否容易被患者察觉？",
+        "2型糖尿病从发病到出现明显症状通常需要多长时间？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1901,
+        "output_tokens": 436,
+        "total_tokens": 2337
+      },
+      "judge_tokens": {
+        "input_tokens": 901,
+        "output_tokens": 122,
+        "total_tokens": 1023
+      },
+      "answer_relevancy": 0.887
+    },
+    {
+      "sample_id": "pv2_B_06",
+      "answerable": true,
+      "question": "心脏病发作主要是什么东西堵塞造成的？",
+      "outcome": "degraded_extractive",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_cardiovascular_diseases_cvds:3:pc:7",
+        "who_fs_heart_attack:3:pc:0",
+        "who_fs_heart_attack:5:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [],
+      "extractive_claims": [
+        "向心肌供血的一条冠状动脉被阻塞时，就会发作心脏病，通常是在脂肪沉积物（动脉粥样硬化斑块）破裂处形成血栓所致。由于缺氧，受影响的心肌部位在几分钟内开始坏死，所以心脏病发作是医疗急症，必须紧急处置。",
+        "几乎所有心脏病发作的根本原因都是动脉粥样硬化，即脂肪沉积物沿动脉内壁逐渐积聚，可在数十年间悄无声息地发展，直至一斑块破裂并引发血栓。"
+      ],
+      "dropped": [
+        {
+          "text": "心脏病发作主要是血管堵塞导致血液无法流向心脏造成的。",
+          "entailment": "unverified",
+          "suspicious": false
+        },
+        {
+          "text": "具体而言，是向心肌供血的冠状动脉被阻塞，通常由脂肪沉积物（动脉粥样硬化斑块）破裂处形成的血栓所致。",
+          "entailment": "unverified",
+          "suspicious": false
+        },
+        {
+          "text": "几乎所有心脏病发作的根本原因都是动脉粥样硬化，即脂肪沉积物沿动脉内壁逐渐积聚，直至一斑块破裂并引发血栓。",
+          "entailment": "unverified",
+          "suspicious": false
+        }
+      ],
+      "invalid_reasons": [],
+      "entailment_error": "ENTAILMENT_SHAPE",
+      "degraded": "entailment_unavailable",
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1,
+        "extractive": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2524,
+        "output_tokens": 650,
+        "total_tokens": 3174
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_B_09",
+      "answerable": true,
+      "question": "哮喘发作的诱发因素有哪些？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_034:20:pc:2",
+        "wiki_034:8:pc:2",
+        "who_fs_asthma:9:pc:4"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "哮喘的诱发因素包括吸烟、宠物、阿司匹林、冷空气等。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_034:20:pc:2",
+              "quote": "对哮喘最有效的治疗是找到诱发哮喘的因素，例如吸烟、宠物、阿司匹林、冷空气等并减少对这些因素的接触。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "家庭中可导致哮喘恶化的因素包括灰尘、动物头垢皮屑（尤其是猫狗的毛发）、蟑螂变应原和霉菌。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_034:8:pc:2",
+              "quote": "可导致哮喘病恶化的家庭因素包括灰尘、动物头垢皮屑（尤其是猫狗的毛发）、蟑螂变应原和霉菌。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "香水是导致女人与孩子急性哮喘的常见因素。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_034:8:pc:2",
+              "quote": "香水是导致女人与孩子急性哮喘的常见因素。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "空气污染是哮喘的一个重要风险因素，会导致新发病例并使现有疾病恶化。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_asthma:9:pc:4",
+              "quote": "空气污染是哮喘的一个重要风险因素，会导致新发病例并使现有疾病恶化。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "哮喘常见的诱发因素有哪些？",
+        "哪些家庭环境因素可能导致哮喘恶化？",
+        "空气污染对哮喘有什么影响？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 8154,
+        "output_tokens": 1474,
+        "total_tokens": 9628
+      },
+      "judge_tokens": {
+        "input_tokens": 976,
+        "output_tokens": 139,
+        "total_tokens": 1115
+      },
+      "answer_relevancy": 0.8411
+    },
+    {
+      "sample_id": "pv2_B_11",
+      "answerable": true,
+      "question": "牙周病有什么表现？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_oral_health:5:pc:0",
+        "who_fs_oral_health:5:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "牙周病影响牙齿周围和支撑牙齿的组织，特点为出血或牙龈肿胀（牙龈炎）、疼痛，有时会出现口臭。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_oral_health:5:pc:0",
+              "quote": "该病特点为出血或牙龈肿胀（牙龈炎），疼痛，有时会出现口臭。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "较严重时牙龈会与牙齿和牙槽骨脱离，导致牙齿松动，有时会脱落。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_oral_health:5:pc:1",
+              "quote": "较严重时，牙龈会与牙齿和牙槽骨脱离，导致牙齿松动，有时会脱落。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "partial",
+          "alone": [
+            "partial"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "牙周病主要有哪些症状表现？",
+        "牙周病会对牙齿及其周围组织造成什么危害？",
+        "牙周病严重时可能导致什么后果？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1953,
+        "output_tokens": 608,
+        "total_tokens": 2561
+      },
+      "judge_tokens": {
+        "input_tokens": 691,
+        "output_tokens": 94,
+        "total_tokens": 785
+      },
+      "answer_relevancy": 0.8464
+    },
+    {
+      "sample_id": "pv2_B_16",
+      "answerable": true,
+      "question": "肺气肿和老慢支能断根吗，怎样才能缓解？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_060:9:pc:0",
+        "wiki_060:9:pc:4",
+        "wiki_060:0:pc:10"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "慢性阻塞性肺病目前仍然无法根治，只能透过改善生活环境和药物来舒缓病情。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:9:pc:0",
+              "quote": "慢性阻塞性肺病目前仍然无法根治，现时只能透过改善生活环境和药物来舒缓患者的病情。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "尽管治疗可以减缓病情恶化，但尚无治愈方法。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:0:pc:10",
+              "quote": "尽管治疗可以减缓病情恶化，但尚无治愈方法。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "药物治疗要规律用药并正确吸入药物，每次回诊时可与医师或卫教护理人员确认是否正确用到药物。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:9:pc:4",
+              "quote": "药物治疗除了要规律用药外，正确吸到药物更是治疗重点，每次回诊时可主动与医师或卫教护理人员确认是否有正确用到药物",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "非药物治疗包括戒烟及远离二手烟、拍痰帮助痰液排出、肺复原运动、疫苗注射等。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_060:9:pc:4",
+              "quote": "非药物治疗以戒烟及远离二手烟、拍痰帮助痰液排出、肺复原运动、疫苗注射等。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "慢性阻塞性肺病可以根治吗？目前的治疗目标是什么？",
+        "慢性阻塞性肺病有哪些非药物的治疗方法？",
+        "慢性阻塞性肺病的药物治疗需要注意什么？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4007,
+        "output_tokens": 953,
+        "total_tokens": 4960
+      },
+      "judge_tokens": {
+        "input_tokens": 1008,
+        "output_tokens": 159,
+        "total_tokens": 1167
+      },
+      "answer_relevancy": 0.7018
+    },
+    {
+      "sample_id": "pv2_B_17",
+      "answerable": true,
+      "question": "孩子身上最常见的长期疾病是哪个？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_148:31:pc:0",
+        "who_fs_asthma:2:pc:0"
+      ],
+      "context_precision": 0.5,
+      "sentences": [
+        {
+          "text": "哮喘是最常见的儿童慢性病。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_asthma:2:pc:0",
+              "quote": "是最常见的儿童慢性病。",
+              "entailment": "partial"
+            },
+            {
+              "chunk_id": "wiki_148:31:pc:0",
+              "quote": "哮喘是美国儿童中最常见的慢性疾病之一，受到影响的儿童有620万人。",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "not_entailed",
+            "not_entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "什么疾病在儿童群体中最为常见？",
+        "儿童最常见的慢性疾病是什么？",
+        "哮喘在儿科疾病中的地位如何？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3936,
+        "output_tokens": 708,
+        "total_tokens": 4644
+      },
+      "judge_tokens": {
+        "input_tokens": 556,
+        "output_tokens": 75,
+        "total_tokens": 631
+      },
+      "answer_relevancy": 0.7404
+    },
+    {
+      "sample_id": "pv2_B_23",
+      "answerable": true,
+      "question": "高血压和糖尿病会不会增加中风的风险？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_007:24:pc:0",
+        "wiki_007:0:pc:7"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "高血压是中风最主要的危险因子。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_007:0:pc:7",
+              "quote": "高血压是中风最主要的危险因子。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "糖尿病患者中风比一般人高2至3倍，其中65岁以下的糖尿病病患风险较年长者高。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_007:24:pc:0",
+              "quote": "糖尿病患者中风比一般人高2至3倍，其中65岁以下的糖尿病病患，风险较年长者高。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "研究显示37-42%缺血性中风的美籍非裔及美籍白人病患，中风原因受糖尿病或糖尿病与高血压影响。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_007:24:pc:0",
+              "quote": "且根据研究显示，37-42%缺血性中风的美籍非裔以及美籍白人病患，中风原因都是受糖尿病或糖尿病与高血压的影响。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "高血压和糖尿病中，哪个是导致中风最主要的危险因子？",
+        "糖尿病患者发生中风的风险是普通人的几倍？",
+        "研究显示，在缺血性中风的病患中，有多大比例的病例与糖尿病或糖尿病合并高血压有关？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2083,
+        "output_tokens": 553,
+        "total_tokens": 2636
+      },
+      "judge_tokens": {
+        "input_tokens": 839,
+        "output_tokens": 143,
+        "total_tokens": 982
+      },
+      "answer_relevancy": 0.7991
+    },
+    {
+      "sample_id": "pv2_B_24",
+      "answerable": true,
+      "question": "超重肥胖会增加哪些慢性病的风险？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_119:0:pc:5",
+        "wiki_119:5:pc:0",
+        "nhc_obesity_2024_attach:41:pc:0"
+      ],
+      "context_precision": 0.5,
+      "sentences": [
+        {
+          "text": "超重肥胖会增加心血管疾病、2型糖尿病、睡眠呼吸中止症、某些癌症、退化性关节炎及气喘等慢性病的风险。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_119:5:pc:0",
+              "quote": "体重过重与许多疾病的发生相关，包括心血管疾病、第2型糖尿病、睡眠呼吸中止症、某些癌症、退化性关节炎、以及气喘",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "wiki_119:0:pc:5",
+              "quote": "肥胖会增加心血管疾病、2型糖尿病、睡眠呼吸中止症、某些癌症、退化性关节炎及其他疾病的发生机会。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "肥胖症是心血管疾病的独立危险因素，患者常合并动脉粥样硬化、冠心病、充血性心力衰竭、心律失常、心肌病等，使心血管意外风险显著增加。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "nhc_obesity_2024_attach:41:pc:0",
+              "quote": "肥胖症是心血管疾病的独立危险因素。肥胖症患者常合并有动脉粥样硬化、冠心病、充血性心力衰竭、心律失常、心肌病等，使得心血管意外风险显著增加。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed",
+            "not_entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "超重肥胖可能引发哪些慢性疾病？",
+        "肥胖症对心血管系统会造成哪些具体的危害和影响？",
+        "为什么说肥胖症是心血管疾病的独立危险因素？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4022,
+        "output_tokens": 799,
+        "total_tokens": 4821
+      },
+      "judge_tokens": {
+        "input_tokens": 1107,
+        "output_tokens": 101,
+        "total_tokens": 1208
+      },
+      "answer_relevancy": 0.7934
+    },
+    {
+      "sample_id": "pv2_C_11",
+      "answerable": true,
+      "question": "贫血是怎么定义的？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_141:0:pc:0",
+        "who_fs_anaemia:3:pc:0",
+        "wiki_141:0:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "贫血通常定义为血液中红血球或血红素总量下降的情形，也可定义为血液携带氧气能力下降的情况。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_141:0:pc:0",
+              "quote": "贫血（英语：anemia或anaemia）通常定义为血液中红血球或血红素总量下降的情形；也可定义为血液携带氧气能力下降的情况。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "贫血是指红血球数量或其中的血红蛋白浓度低于正常水平，它主要影响妇女和儿童。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_anaemia:3:pc:0",
+              "quote": "贫血是指红血球数量或其中的血红蛋白浓度低于正常水平。它主要影响妇女和儿童。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "精确说来，贫血是外周血液中单位容积内正常且有效红细胞的红细胞计数、血红蛋白浓度及红细胞比容低于同年龄、同性别、同种族水平的情形。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_141:0:pc:1",
+              "quote": "精确说来，贫血是外周血液中单位容积内正常且有效红细胞的红细胞计数（RBC count）、血红蛋白浓度（Hb concentration）及红细胞比容（hematocrit）低于同年龄、同性别、同种族、",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "贫血在医学上是如何定义的？",
+        "血液中红细胞或血红蛋白降低到什么程度可以被称为贫血？",
+        "哪些人群更容易受到贫血的影响？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3683,
+        "output_tokens": 709,
+        "total_tokens": 4392
+      },
+      "judge_tokens": {
+        "input_tokens": 975,
+        "output_tokens": 125,
+        "total_tokens": 1100
+      },
+      "answer_relevancy": 0.7869
+    },
+    {
+      "sample_id": "pv2_C_22",
+      "answerable": true,
+      "question": "全世界有多少人患上很严重的牙龈毛病？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_oral_health:5:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "据估计，全球患有严重牙周病的病例数超过10亿例。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_oral_health:5:pc:1",
+              "quote": "据估计，全球患有严重牙周病的病例数超过10亿例",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "全球范围内严重牙周病的患病人数大约是多少？",
+        "世界范围内被诊断为重度牙周疾病的病例总数估计达到了多少？",
+        "目前估计全球超过多少人正受到严重牙周病的困扰？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1831,
+        "output_tokens": 360,
+        "total_tokens": 2191
+      },
+      "judge_tokens": {
+        "input_tokens": 462,
+        "output_tokens": 74,
+        "total_tokens": 536
+      },
+      "answer_relevancy": 0.7842
+    },
+    {
+      "sample_id": "pv2_C_26",
+      "answerable": false,
+      "question": "每瓶啤酒大概含多少克酒精？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4602,
+        "output_tokens": 636,
+        "total_tokens": 5238
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_D_02",
+      "answerable": true,
+      "question": "家庭空气污染会引起哪些疾病",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_household_air_pollution_and_health:2:pc:3",
+        "who_fs_household_air_pollution_and_health:5:pc:9"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "家庭空气污染可导致中风、缺血性心脏病、慢性阻塞性肺病和肺癌等非传染性疾病。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_household_air_pollution_and_health:2:pc:3",
+              "quote": "家庭空气污染可导致中风、缺血性心脏病、慢性阻塞性肺病和肺癌等非传染性疾病。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "还有证据表明，家庭空气污染与低出生体重、结核病、白内障、鼻咽癌和喉癌之间存在关联。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_household_air_pollution_and_health:5:pc:9",
+              "quote": "还有证据表明，家庭空气污染与低出生体重、结核病、白内障、鼻咽癌和喉癌之间存在关联。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "家庭空气污染与哪些非传染性疾病有关？",
+        "除了非传染性疾病外，家庭空气污染还与哪些其他健康问题存在关联？",
+        "家庭空气污染会导致哪些严重的健康后果？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1932,
+        "output_tokens": 415,
+        "total_tokens": 2347
+      },
+      "judge_tokens": {
+        "input_tokens": 699,
+        "output_tokens": 106,
+        "total_tokens": 805
+      },
+      "answer_relevancy": 0.8689
+    },
+    {
+      "sample_id": "pv2_D_05",
+      "answerable": true,
+      "question": "抑郁症是怎么引起的",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_147:2:pc:1",
+        "who_fs_depression:5:pc:0"
+      ],
+      "context_precision": 0.5,
+      "sentences": [
+        {
+          "text": "引起严重抑郁症的原因尚不清楚，但已提出生物心理社会模式，指出生物学、心理学和社会学因素在引起抑郁症中都起着重要作用。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_147:2:pc:1",
+              "quote": "引起严重抑郁症的原因尚不清楚。但已经提出生物心理社会模式，这指出生物学，心理学和社会学因素在引起抑郁症中都起着重要作用。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "抑郁症是社会、心理和生物因素综合作用的结果，在生活中经历过不良事件（失业、丧亲、创伤事件）的人更容易患抑郁症。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_depression:5:pc:0",
+              "quote": "抑郁症是社会、心理和生物因素综合作用的结果。在生活中经历过不良事件（失业、丧亲、创伤事件）的人更容易患抑郁症。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "导致严重抑郁症的主要原因有哪些？",
+        "生物心理社会模式如何解释抑郁症的成因？",
+        "哪些生活事件会增加患抑郁症的风险？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3474,
+        "output_tokens": 794,
+        "total_tokens": 4268
+      },
+      "judge_tokens": {
+        "input_tokens": 702,
+        "output_tokens": 93,
+        "total_tokens": 795
+      },
+      "answer_relevancy": 0.7257
+    },
+    {
+      "sample_id": "pv2_D_08",
+      "answerable": true,
+      "question": "超速为什么会让车祸更严重",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_road_traffic_injuries:10:pc:0",
+        "who_fs_road_traffic_injuries:10:pc:1",
+        "wiki_084:11:pc:9"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "平均车速增加会直接提高碰撞的可能性和后果严重性：平均车速每增加1%，致命碰撞风险增加4%，严重碰撞风险增加3%。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_road_traffic_injuries:10:pc:0",
+              "quote": "平均车速的增加与发生碰撞的可能性及碰撞后果的严重性直接相关。例如，平均车速每增加1%，致命的碰撞风险就会增加4%，严重的碰撞风险会增加3%。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "速度提高还会使行人死亡风险迅速上升，从50公里/小时提高到65公里/小时，风险会升至4.5倍。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_road_traffic_injuries:10:pc:1",
+              "quote": "随着速度提高，遭到车头撞击的行人的死亡风险也会迅速上升（从50公里/小时提高到65公里/小时，风险会升至4.5倍）。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "在车身相撞的事故中，时速65公里的汽车内乘员死亡风险为85%。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_road_traffic_injuries:10:pc:1",
+              "quote": "在车身相撞的事故中，时速65公里的汽车内的乘员死亡风险为85%。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "平均车速的增加对碰撞风险和后果严重性有什么影响？",
+        "行人的死亡风险如何随车速提高而变化？",
+        "在车身相撞的事故中，时速65公里的汽车内乘员死亡风险有多大？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2214,
+        "output_tokens": 832,
+        "total_tokens": 3046
+      },
+      "judge_tokens": {
+        "input_tokens": 954,
+        "output_tokens": 141,
+        "total_tokens": 1095
+      },
+      "answer_relevancy": 0.581
+    },
+    {
+      "sample_id": "pv2_D_11",
+      "answerable": true,
+      "question": "人乳头瘤病毒感染会引起什么疾病",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_sexually_transmitted_infections_stis:4:pc:5",
+        "who_fs_human_papilloma_virus_and_cancer:5:pc:1",
+        "who_fs_human_papilloma_virus_and_cancer:5:pc:2"
+      ],
+      "context_precision": 0.5833333333333333,
+      "sentences": [
+        {
+          "text": "人乳头状瘤病毒感染会导致宫颈癌和其他癌症。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_sexually_transmitted_infections_stis:4:pc:5",
+              "quote": "人乳头状瘤病毒感染会导致宫颈癌和其他癌症。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "一些人乳头状瘤病毒感染可能会引起阴道、阴茎或肛门出现一些小的粗糙肿块（生殖器疣），很少出现在喉咙上。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_human_papilloma_virus_and_cancer:5:pc:1",
+              "quote": "一些人乳头状瘤病毒感染可能会引起阴道、阴茎或肛门出现一些小的粗糙肿块（生殖器疣），很少出现在喉咙上。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "不会自行消失的人乳头状瘤病毒感染可能会引起宫颈细胞发生变化，从而引起癌前病变，如不及时治疗，可能会发展成宫颈癌。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_human_papilloma_virus_and_cancer:5:pc:2",
+              "quote": "不会自行消失的人乳头状瘤病毒感染可能会引起宫颈细胞发生变化，从而引起癌前病变，如不及时治疗，可能会发展成宫颈癌。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "人乳头状瘤病毒感染对身体有哪些危害？",
+        "感染人乳头状瘤病毒后会引起哪些症状？",
+        "人乳头状瘤病毒是如何导致宫颈癌发生的？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4093,
+        "output_tokens": 928,
+        "total_tokens": 5021
+      },
+      "judge_tokens": {
+        "input_tokens": 919,
+        "output_tokens": 103,
+        "total_tokens": 1022
+      },
+      "answer_relevancy": 0.8706
+    },
+    {
+      "sample_id": "pv2_D_20",
+      "answerable": true,
+      "question": "没病随便吃消炎药会带来什么长远后果",
+      "outcome": "generative",
+      "classification": "answered_irrelevant",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_125:13:pc:4",
+        "who_fs_antibiotic_resistance:2:pc:1",
+        "who_fs_food_safety:5:pc:7"
+      ],
+      "context_precision": 0.0,
+      "sentences": [
+        {
+          "text": "没病随便吃消炎药（抗生素）会加速耐药发生过程。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_antibiotic_resistance:2:pc:1",
+              "quote": "抗生素耐药性是自然发生的，但在人类和动物中间误用抗生素会加速耐药发生过程。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "长远后果包括越来越多的感染（比如肺炎、结核病、淋病和沙门氏菌病）变得更难治疗，因为抗生素有效性下降。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_antibiotic_resistance:2:pc:1",
+              "quote": "越来越多的感染（比如肺炎、结核病、淋病和沙门氏菌病）变得更难治疗，原因在于用于治疗感染的抗生素的有效性出现下降。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "过度使用和滥用抗生素还与耐药细菌的出现和传播相关，致使传染病治疗无效。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_food_safety:5:pc:7",
+              "quote": "兽医和人类医学中过度使用和滥用这类药物与耐药细菌的出现和传播相关，致使对动物和人类的传染病治疗无效。",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [
+        {
+          "text": "若服用的是非类固醇消炎止痛药，还可能产生肾功能衰竭、胃及十二指肠溃疡以及心血管疾病等副作用。",
+          "entailment": "not_entailed",
+          "suspicious": true
+        }
+      ],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "partial",
+          "alone": [
+            "partial"
+          ],
+          "faith": "partial"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "在没有生病的情况下随意服用抗生素会带来什么健康风险？",
+        "抗生素滥用会导致哪些长远的严重后果？",
+        "为什么说随意使用消炎药会使得肺炎、结核病等感染变得更难治疗？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 6120,
+        "output_tokens": 1226,
+        "total_tokens": 7346
+      },
+      "judge_tokens": {
+        "input_tokens": 916,
+        "output_tokens": 108,
+        "total_tokens": 1024
+      },
+      "answer_relevancy": 0.6782
+    },
+    {
+      "sample_id": "pv2_D_22",
+      "answerable": true,
+      "question": "家里老人看东西模糊，主要是哪两种眼病造成的",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_138:1:pc:2",
+        "who_fs_blindness_and_visual_impairment:5:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "老人看东西模糊主要由白内障和年龄相关性黄斑变性等眼病造成。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_blindness_and_visual_impairment:5:pc:1",
+              "quote": "导致远视力损害或失明的主要疾病是白内障(9400万)、屈光不正(8840万)、年龄相关性黄斑变性(800万)、青光眼(770万)和糖尿病视网膜病变(390万)。",
+              "entailment": "partial"
+            }
+          ]
+        },
+        {
+          "text": "白内障是最常见的失明原因，也可能引起视物模糊。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_138:1:pc:2",
+              "quote": "其中，白内障是最常见的失明原因。",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed"
+          ],
+          "faith": "partial"
+        },
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed"
+          ],
+          "faith": "partial"
+        }
+      ],
+      "generated_questions": [
+        "老年人看东西模糊最常见的原因是什么？",
+        "哪些眼部疾病会导致老年人视力模糊？",
+        "白内障会导致老年人看东西模糊吗？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5974,
+        "output_tokens": 2002,
+        "total_tokens": 7976
+      },
+      "judge_tokens": {
+        "input_tokens": 706,
+        "output_tokens": 77,
+        "total_tokens": 783
+      },
+      "answer_relevancy": 0.7882
+    },
+    {
+      "sample_id": "pv2_D_24",
+      "answerable": true,
+      "question": "眼睛看不清和耳朵听不清，各会给生活带来什么麻烦",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_blindness_and_visual_impairment:7:pc:1",
+        "who_fs_deafness_and_hearing_loss:11:pc:0",
+        "who_fs_deafness_and_hearing_loss:11:pc:4"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "视力损害会严重影响成年人的生活质量，可能导致就业率降低以及抑郁症和焦虑发生率升高。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_blindness_and_visual_impairment:7:pc:1",
+              "quote": "视力损害严重影响成年人的生活质量。视力受损的成年人的就业率可能较低，而抑郁症和焦虑的发生率则较高。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "听力损失若得不到解决，会影响个人生活的许多方面，并增加患痴呆症的风险、加速认知能力下降。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_deafness_and_hearing_loss:11:pc:0",
+              "quote": "听力损失如果得不到解决会影响个人生活的许多方面，包括:",
+              "entailment": "entailed"
+            },
+            {
+              "chunk_id": "who_fs_deafness_and_hearing_loss:11:pc:4",
+              "quote": "听力损失若不及时解决，会增加患痴呆症的风险，并加速认知能力下降。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "partial",
+            "partial"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "成年人视力受损会对生活质量产生哪些影响？",
+        "未得到解决的听力损失会带来哪些健康风险？",
+        "感觉功能障碍如何影响个人的社会参与和心理健康？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 6052,
+        "output_tokens": 1859,
+        "total_tokens": 7911
+      },
+      "judge_tokens": {
+        "input_tokens": 790,
+        "output_tokens": 122,
+        "total_tokens": 912
+      },
+      "answer_relevancy": 0.5785
+    },
+    {
+      "sample_id": "pv2_U_09",
+      "answerable": true,
+      "question": "痛经特别严重该怎么缓解？",
+      "outcome": "degraded_extractive",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_menstrual_health:4:pc:1",
+        "who_fs_endometriosis:6:pc:2"
+      ],
+      "context_precision": 1.0,
+      "sentences": [],
+      "extractive_claims": [
+        "虽然超过三分之二有月经的人会经历痛经，但这通常可以通过止痛药和热水袋或加热垫等其他疗法来缓解。不过，对于有些人来说，痛经可能非常严重，甚至可能在非经期出现。",
+        "通常使用非甾体类抗炎药（如布洛芬和萘普生）及其他镇痛药（止痛药）来治疗疼痛；激素类药物也可减轻部分女性的疼痛程度和/或发作频率。这些方法包括："
+      ],
+      "dropped": [
+        {
+          "text": "痛经通常可以通过止痛药和热水袋或加热垫等其他疗法来缓解。",
+          "entailment": "unverified",
+          "suspicious": false
+        },
+        {
+          "text": "对于非常严重的痛经，通常使用非甾体类抗炎药（如布洛芬和萘普生）及其他镇痛药来治疗疼痛。",
+          "entailment": "unverified",
+          "suspicious": false
+        },
+        {
+          "text": "激素类药物也可减轻部分女性的疼痛程度和/或发作频率。",
+          "entailment": "unverified",
+          "suspicious": false
+        }
+      ],
+      "invalid_reasons": [],
+      "entailment_error": "STRUCTURED_OUTPUT_INVALID",
+      "degraded": "entailment_unavailable",
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1,
+        "extractive": 1
+      },
+      "judge_calls": {},
+      "call_errors": {
+        "STRUCTURED_OUTPUT_INVALID": 1
+      },
+      "tokens": {
+        "input_tokens": 7384,
+        "output_tokens": 1371,
+        "total_tokens": 8755
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_U_12",
+      "answerable": true,
+      "question": "脂肪肝还能逆转吗？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "nhc_obesity_2024_attach:71:pc:0",
+        "nhc_obesity_2024_attach:38:pc:8",
+        "nhc_obesity_2024_attach:38:pc:7"
+      ],
+      "context_precision": 0.5833333333333333,
+      "sentences": [
+        {
+          "text": "脂肪肝（NAFLD）通过生活方式改善体重后可以得到不同程度改善。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "nhc_obesity_2024_attach:71:pc:0",
+              "quote": "通过生活方式改善体重后 NAFLD 可以得到不同程度改善。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "NAFLD 患者减重 5% 可改善肝脏脂肪含量，减重 10% 肝脏纤维化可有显著改善。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "nhc_obesity_2024_attach:38:pc:7",
+              "quote": "NAFLD 患者，减重 5%可改善肝脏脂肪含量，减重 10%肝脏纤维化可有显著改善。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "接受减重与代谢手术后，肝脏转氨酶、脂肪性肝炎和肝纤维化同样会得到显著改善，且优于强化生活方式干预联合优化药物治疗。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "nhc_obesity_2024_attach:38:pc:8",
+              "quote": "接受减重与代谢手术后，肝脏转氨酶、脂肪性肝炎和肝纤维化同样会得到显著改善，且优于强化生活方式干预联合优化药物治疗。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "非酒精性脂肪性肝病患者通过减重能带来哪些肝脏方面的改善？",
+        "减重5%和减重10%分别对非酒精性脂肪性肝病的肝脏脂肪和纤维化有什么不同影响？",
+        "与强化生活方式干预联合优化药物治疗相比，减重与代谢手术对非酒精性脂肪性肝病的疗效如何？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 6102,
+        "output_tokens": 1475,
+        "total_tokens": 7577
+      },
+      "judge_tokens": {
+        "input_tokens": 993,
+        "output_tokens": 166,
+        "total_tokens": 1159
+      },
+      "answer_relevancy": 0.6312
+    },
+    {
+      "sample_id": "pv2_U_13",
+      "answerable": false,
+      "question": "幽门螺杆菌会通过吃饭传染吗？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 4,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 7238,
+        "output_tokens": 682,
+        "total_tokens": 7920
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_U_14",
+      "answerable": false,
+      "question": "红眼病结膜炎要怎么预防传染？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4784,
+        "output_tokens": 791,
+        "total_tokens": 5575
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_U_19",
+      "answerable": false,
+      "question": "前列腺增生晚上老起夜怎么办？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4531,
+        "output_tokens": 633,
+        "total_tokens": 5164
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "pv2_U_21",
+      "answerable": true,
+      "question": "孩子注意力不集中是多动症吗？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_mental_disorders:10:pc:1",
+        "who_fs_adolescent_mental_health:6:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "注意力不集中可能是注意缺陷多动障碍（ADHD）的特征之一，但不能仅凭此就判定孩子患有多动症。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_mental_disorders:10:pc:1",
+              "quote": "注意力缺陷多动障碍的特征是，持续存在注意力不集中和/或多动冲动问题，对学习、职业或社交功能产生直接的负面影响。",
+              "entailment": "partial"
+            },
+            {
+              "chunk_id": "who_fs_adolescent_mental_health:6:pc:0",
+              "quote": "注意缺陷多动障碍的特征包括难以集中注意力和/或过度活动和不顾后果的行为",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "partial",
+          "alone": [
+            "partial",
+            "partial"
+          ],
+          "faith": "partial"
+        }
+      ],
+      "generated_questions": [
+        "孩子总是注意力不集中是不是就说明他患有多动症了？",
+        "为什么不能因为孩子注意力不集中就判断其患有注意缺陷多动障碍？",
+        "注意力不集中是否等同于多动症（ADHD）？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5790,
+        "output_tokens": 1296,
+        "total_tokens": 7086
+      },
+      "judge_tokens": {
+        "input_tokens": 778,
+        "output_tokens": 94,
+        "total_tokens": 872
+      },
+      "answer_relevancy": 0.8826
+    },
+    {
+      "sample_id": "pv2_U_22",
+      "answerable": false,
+      "question": "痤疮反复长是什么原因？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4523,
+        "output_tokens": 779,
+        "total_tokens": 5302
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "v4_a06",
+      "answerable": false,
+      "question": "新冠的密切接触者具体是怎么定义的，接触之后一般要怎么处理？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5451,
+        "output_tokens": 1054,
+        "total_tokens": 6505
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "v4_a10",
+      "answerable": true,
+      "question": "被蛇咬了之后现场应该怎么急救，全世界每年大概有多少人被蛇咬死？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_animal_bites:7:pc:0",
+        "who_fs_animal_bites:3:pc:1",
+        "who_fs_animal_bites:11:pc:2"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "全世界每年有近500万人被蛇咬伤，其中9.4万-12.5万人死于毒液引起的并发症。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_animal_bites:7:pc:0",
+              "quote": "全世界每年有近500万人被蛇咬伤，其中9.4万-12.5万人死于毒液引起的并发症",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "被毒蛇咬伤后，需要及时使用适当的抗蛇毒血清进行医疗救治。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_animal_bites:3:pc:1",
+              "quote": "被毒蛇咬伤后，需要及时使用适当的抗蛇毒血清进行医疗救治。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "现场急救应避免使用止血带，并避免切割伤口，用针对当地蛇种的适当抗蛇毒血清进行治疗。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_animal_bites:11:pc:2",
+              "quote": "避免使用止血带，并避免切割伤口；用针对当地蛇种的适当抗蛇毒血清进行治疗；",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "全球每年因蛇咬伤导致的死亡人数大约是多少？",
+        "被毒蛇咬伤后应采取哪些正确的现场急救措施？",
+        "治疗蛇咬伤最有效的医疗手段是什么？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5976,
+        "output_tokens": 822,
+        "total_tokens": 6798
+      },
+      "judge_tokens": {
+        "input_tokens": 898,
+        "output_tokens": 129,
+        "total_tokens": 1027
+      },
+      "answer_relevancy": 0.7701
+    },
+    {
+      "sample_id": "v4_a13",
+      "answerable": true,
+      "question": "人感染禽流感是怎么回事，跟普通流感一样吗，潜伏期一般有几天？",
+      "outcome": "refused",
+      "classification": "over_refusal",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": 0.0,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5436,
+        "output_tokens": 921,
+        "total_tokens": 6357
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "v4_a18",
+      "answerable": true,
+      "question": "哮喘在全球大概影响多少人，每年因为这个病死掉多少人？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "wiki_034:26:pc:3",
+        "who_fs_asthma:2:pc:1"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "截止2019年，全球约有2.62亿人受哮喘影响，当年约46万人因此失去生命。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "wiki_034:26:pc:3",
+              "quote": "截止2019年，全球约有2.62亿人受哮喘影响，当年约46万人因此失去生命。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "2023年，约有3.63亿人有哮喘问题，44.2万人死亡。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_asthma:2:pc:1",
+              "quote": "2023年，约有3.63亿人有哮喘问题，44.2万人死亡。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "截至2019年，全球有多少人受到哮喘影响，以及该年因哮喘死亡的人数是多少？",
+        "2023年全球哮喘患者的人数大约是多少？",
+        "2023年全球因哮喘导致的死亡人数是多少？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 1979,
+        "output_tokens": 468,
+        "total_tokens": 2447
+      },
+      "judge_tokens": {
+        "input_tokens": 697,
+        "output_tokens": 117,
+        "total_tokens": 814
+      },
+      "answer_relevancy": 0.8879
+    },
+    {
+      "sample_id": "v4_a20",
+      "answerable": true,
+      "question": "每年全世界疟疾大概发病多少例、死亡多少例？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_malaria:5:pc:0",
+        "who_fs_malaria:2:pc:0"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "2024年全球80个国家估计发生2.82亿例疟疾病例。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_malaria:2:pc:0",
+              "quote": "2024年，全球80个国家估计有2.82亿例疟疾病例和61万例疟疾死亡。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "2024年的疟疾死亡人数估计为61万人。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_malaria:5:pc:0",
+              "quote": "2024年的疟疾死亡人数估计为61万人，而2023年为59.8人。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "2024年全球估计发生了多少例疟疾病例？",
+        "2024年全球估计有多少人死于疟疾？",
+        "2024年全球疟疾的发病和死亡情况如何？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2026,
+        "output_tokens": 657,
+        "total_tokens": 2683
+      },
+      "judge_tokens": {
+        "input_tokens": 670,
+        "output_tokens": 93,
+        "total_tokens": 763
+      },
+      "answer_relevancy": 0.8491
+    },
+    {
+      "sample_id": "v4_a34",
+      "answerable": true,
+      "question": "抗生素耐药每年在全球造成多少人死亡？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_antimicrobial_resistance:2:pc:1",
+        "who_fs_sepsis:3:pc:6"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "据估计，2021年全球细菌性抗微生物药物耐药性造成470多万人死亡。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_antimicrobial_resistance:2:pc:1",
+              "quote": "据估计，2021年全球细菌性抗微生物药物耐药性造成470多万人死亡。",
+              "entailment": "entailed"
+            }
+          ]
+        },
+        {
+          "text": "2019年，估计有495万例死亡与抗微生物药物耐药性相关，其中127万例直接归因于抗微生物药物耐药性。",
+          "entailment": "entailed",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_sepsis:3:pc:6",
+              "quote": "2019年，估计有495万例死亡与抗微生物药物耐药性相关，其中127万例直接归因于抗微生物药物耐药性。",
+              "entailment": "entailed"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        },
+        {
+          "all": "entailed",
+          "alone": [
+            "entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "2021年全球有多少人因细菌性抗微生物药物耐药性死亡？",
+        "2019年与抗微生物药物耐药性相关的死亡例数是多少？",
+        "2019年有多少死亡直接归因于抗微生物药物耐药性？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 1,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 2032,
+        "output_tokens": 615,
+        "total_tokens": 2647
+      },
+      "judge_tokens": {
+        "input_tokens": 772,
+        "output_tokens": 121,
+        "total_tokens": 893
+      },
+      "answer_relevancy": 0.8063
+    },
+    {
+      "sample_id": "v4_a35",
+      "answerable": true,
+      "question": "季节性流感每年大概有多少病例，其中重症的有多少？",
+      "outcome": "generative",
+      "classification": "correct",
+      "generation_error": null,
+      "evidence_ids": [
+        "who_fs_influenza_seasonal:2:pc:0",
+        "wiki_080:24:pc:2"
+      ],
+      "context_precision": 1.0,
+      "sentences": [
+        {
+          "text": "世界卫生组织资料显示，每年约有10亿例季节性流感病例，包括300万至500万例重症病例。",
+          "entailment": "partial",
+          "suspicious": false,
+          "citations": [
+            {
+              "chunk_id": "who_fs_influenza_seasonal:2:pc:0",
+              "quote": "每年约有10亿例季节性流感病例，包括300万至500万例重症病例。",
+              "entailment": "partial"
+            }
+          ]
+        }
+      ],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [
+        {
+          "all": "not_entailed",
+          "alone": [
+            "not_entailed"
+          ],
+          "faith": "entailed"
+        }
+      ],
+      "generated_questions": [
+        "世界卫生组织公布的每年全球季节性流感病例数量大约是多少？",
+        "每年因季节性流感导致的重症病例有多少例？",
+        "关于全球季节性流感的疾病负担，世卫组织有哪些统计数据？"
+      ],
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 2,
+        "generation": 1,
+        "entailment": 1
+      },
+      "judge_calls": {
+        "nli": 1,
+        "qgen": 1
+      },
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 3606,
+        "output_tokens": 651,
+        "total_tokens": 4257
+      },
+      "judge_tokens": {
+        "input_tokens": 570,
+        "output_tokens": 82,
+        "total_tokens": 652
+      },
+      "answer_relevancy": 0.8568
+    },
+    {
+      "sample_id": "v4_a37",
+      "answerable": false,
+      "question": "2025年3月全国报告的流感病例数是多少？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 4833,
+        "output_tokens": 869,
+        "total_tokens": 5702
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "v4_a43",
+      "answerable": false,
+      "question": "2026年2月全国报告的肺结核发病数和死亡数分别是多少？",
+      "outcome": "refused",
+      "classification": "correct_abstain",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": null,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3,
+        "hyde": 1
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5432,
+        "output_tokens": 1449,
+        "total_tokens": 6881
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    },
+    {
+      "sample_id": "v4_a44",
+      "answerable": true,
+      "question": "最近一个月全国报告的法定传染病总共有多少例，有没有霍乱病例？",
+      "outcome": "refused",
+      "classification": "over_refusal",
+      "generation_error": null,
+      "evidence_ids": [],
+      "context_precision": 0.0,
+      "sentences": [],
+      "extractive_claims": [],
+      "dropped": [],
+      "invalid_reasons": [],
+      "entailment_error": null,
+      "degraded": null,
+      "judge": [],
+      "generated_questions": null,
+      "judge_errors": [],
+      "pipeline_calls": {
+        "agent": 3
+      },
+      "judge_calls": {},
+      "call_errors": {},
+      "tokens": {
+        "input_tokens": 5001,
+        "output_tokens": 1425,
+        "total_tokens": 6426
+      },
+      "judge_tokens": {},
+      "answer_relevancy": null
+    }
+  ],
+  "replay_check": {
+    "checked": true,
+    "consistent": true,
+    "differing": [],
+    "call_errors": 1,
+    "summary_equal": true
+  }
+}
