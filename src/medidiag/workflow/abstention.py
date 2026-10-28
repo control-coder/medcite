@@ -32,6 +32,6 @@ def abstention_payload(stage: str, case_id: str, retrieval: dict[str, Any] | Non
             limitations=[f"查询路由判定为 {intent}（来源：{routed.get('source')}），未检索、未调用生成模型。"],
             next_steps=(["请立即拨打 120 或前往就近急诊。"] if intent == "emergency"
                         else ["真实健康问题请咨询专业人员。"]),
-            provenance={"guard": "query-router-v1", "intent": intent, "source": routed.get("source"),
+            provenance={"guard": str(routed.get("version") or "query-router-v1"), "intent": intent, "source": routed.get("source"),
                         "rule": routed.get("rule")})
     return payloads[stage]

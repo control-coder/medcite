@@ -297,7 +297,7 @@ def test_mock_provider_router_refuses_without_retrieval() -> None:
     result = provider.retrieve("孩子现在喘不上气，嘴唇发紫了")
     assert result["chunks"] == [] and result["query_router"]["intent"] == "emergency"
     report = abstention_payload("report", "case-1", result)
-    assert "120" in report["summary"] and report["provenance"]["guard"] == "query-router-v1"
+    assert "120" in report["summary"] and report["provenance"]["guard"] == "query-router-v2"
     rag.retriever.build_index()
     passed = provider.retrieve("疟疾 症状")
     assert passed["chunks"] and passed["query_router"]["source"] == "rule"
