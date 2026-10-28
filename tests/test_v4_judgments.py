@@ -9,6 +9,8 @@ import json
 import types
 from pathlib import Path
 
+import pytest
+
 from eval import v4_judgments as vj
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "examples" / "public_health_v4"
@@ -254,6 +256,8 @@ def test_judgments_file_matches_frozen_queries() -> None:
         return  # 尚未冻结
     judgments = vj.load_judgments(judgments_path)
     chunks_dir = Path(__file__).resolve().parent.parent / ".cache" / "corpus" / "chunks"
+    if not all((chunks_dir / s / "chunks.jsonl").exists() for s in ("recursive", "parent_child")):
+        pytest.skip("本机未重建语料分块（.cache/corpus/chunks 不入库），CI 上跳过")
     pc_chunks = [json.loads(line)
                  for line in (chunks_dir / "parent_child" / "chunks.jsonl").read_text(encoding="utf-8").splitlines()
                  if line.strip()]
