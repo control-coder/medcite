@@ -14,6 +14,7 @@ DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
 MAX_RERANK_CANDIDATES = 50
 ON_INVALID_CHOICES = ("none", "resample", "feedback")
 BM25_TOKENIZERS = ("cjk_bigram", "jieba")
+AGENT_VERSIONS = (1, 2)
 VECTOR_STORES = ("numpy", "pgvector")
 _HYBRID_KEYS = {"candidates", "rrf_k", "mmr_lambda"}
 _ALLOWED_KEYS = {"application", "runtime", "embedding", "dataset", "retrieval", "generation", "leakage_check"}
@@ -59,6 +60,10 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         rewrite_ok = not ((dense or hybrid) and generation.get("rewrite", False))
         # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
         agent_ok = not (generation.get("agent", False) and generation.get("rewrite", False))
+        # agent_version 只在开启检索智能体时才有意义：1 是 v1（默认），2 是 M11 的多工具检索 Agent
+        agent_version = generation.get("agent_version", 1)
+        agent_ok = agent_ok and type(agent_version) is int and agent_version in AGENT_VERSIONS and (
+            agent_version == 1 or generation.get("agent", False) is True)
         # 向量存储只对用到向量的检索方案有意义，BM25 单路不接受
         store_ok = "vector_store" not in config["retrieval"] or dense or hybrid
         safe = (
@@ -172,6 +177,12 @@ def build_application_provider(mode: str = "fake_offline", *,
     # 多轮追问检索前先补全问题；只影响带上一轮的病例，单轮问题的请求不变
     context_rewrite = bool(generation.get("context_rewrite", False))
     if generation.get("agent", False):
+        if generation.get("agent_version", 1) == 2:
+            from medidiag.workflow.retrieval_agent_v2 import RetrievalAgentV2WorkflowProvider
+
+            return RetrievalAgentV2WorkflowProvider(
+                rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
+                context_rewrite=context_rewrite, query_router=query_router)
         return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
                                               context_rewrite=context_rewrite, query_router=query_router)
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
