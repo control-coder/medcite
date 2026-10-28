@@ -153,7 +153,7 @@ def over_refusal_from_routes(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def compare_with_v1(report: dict[str, Any], v1: dict[str, Any]) -> dict[str, Any]:
-    """v2 与 v1 报告并列：准确率、混淆矩阵、急症召回、科普误拒、Hit@3；v1 报告不改动。"""
+    """v2 与 v1 报告并列：准确率、混淆矩阵、急症召回、科普错误拒答、Hit@3；v1 报告不改动。"""
     def side(r: dict[str, Any]) -> dict[str, Any]:
         retrieval = r["retrieval"]["all_answerable"]
         variants = r.get("filter_variants", {}).get("all_answerable", {})
@@ -274,7 +274,7 @@ def retrieval_comparison(queries: Sequence[dict[str, Any]], decisions: dict[str,
         qid, question = query["sample_id"], query["question"]
         decision = decisions[qid]
         row: dict[str, Any] = {"none": retrieval_hit(dense, index, question, None, relevance[qid])}
-        # 路由拒答的科普查询在应用里不会检索，按未命中计；单独标出便于区分过滤与误拒
+        # 路由拒答的科普查询在应用里不会检索，按未命中计；单独标出便于区分过滤与错误拒答
         row["predicted"] = ({"hit": False, "routed_out": decision.intent, "chunk_ids": []} if decision.refused
                             else retrieval_hit(dense, index, question, decision.filters, relevance[qid]))
         if query.get("expected_filters"):

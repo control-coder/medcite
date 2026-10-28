@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test.skip(process.env.MEDIDIAG_ALLOW_LIVE !== 'mimo-v2.6-flash', '只有显式授权脚本可执行真实模型验收');
 test.setTimeout(240000);
 
-test('真实 MiMo 页面闭环、保守弃答与空检索', async ({ page }) => {
+test('真实 MiMo 页面闭环、保守拒答与空检索', async ({ page }) => {
   const records: unknown[] = [];
   const cases = [
     {id: 'ventilation', question: '公开资料如何定义通风？', outcome: 'ready'},
@@ -39,7 +39,7 @@ test('真实 MiMo 页面闭环、保守弃答与空检索', async ({ page }) => 
     expect.soft(analysis.outcome).toBe(item.outcome);
     expect(analysis.execution_mode).toBe('mimo_grounded');
     await page.getByRole('link', {name: '查看结果与证据'}).click({timeout: 10000});
-    await expect(page.getByText('真实检索 / MiMo 受约束摘录（非 NLI 审核）', {exact: true})).toBeVisible();
+    await expect(page.getByText('真实检索 / MiMo 抽取式回答（非 NLI 审核）', {exact: true})).toBeVisible();
     if (analysis.outcome === 'ready') {
       await expect(page.locator('.claim').first()).toBeVisible();
       await expect(page.locator('.evidence a').first()).toHaveAttribute('href', /^https:\/\/www.who.int\/zh\//);

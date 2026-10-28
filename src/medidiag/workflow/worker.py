@@ -640,7 +640,7 @@ class SingleMachineWorker:
         stage: str,
         operation: Callable[[], dict[str, Any] | ProviderResponse],
     ) -> StageExecution:
-        # 无证据时不调用模型猜测，仍通过原状态机保存明确的弃答产物。
+        # 无证据时不调用模型猜测，仍通过原状态机保存明确的拒答产物。
         artifacts = self._artifacts(session, case.case_id, task.task_id)
         retrieval = artifacts.get("retrieval")
         if retrieval is not None and not retrieval.payload.get("chunks"):

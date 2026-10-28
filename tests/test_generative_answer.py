@@ -328,7 +328,7 @@ def test_degraded_report_is_extractive_with_note():
     review = provider.review(generation, {}, RETRIEVAL)
     report = provider.report("case", generation, review)
     assert review["verdict"] == "APPROVED" and report["answer_mode"] == "extractive"
-    assert report["title"].startswith("公开证据短引") and "降级为抽取式" in "".join(report["limitations"])
+    assert report["title"].startswith("公开证据摘录") and "降级为抽取式" in "".join(report["limitations"])
 
 
 def test_config_whitelist(tmp_path):

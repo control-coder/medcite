@@ -27,7 +27,7 @@ LIMITATION = "真实检索、模拟生成；未调用真实模型或 NLI。词�
 
 @dataclass
 class RetrievalMockWorkflowProvider:
-    """仅展示本轮实际命中的短摘录，复用 worker 的空证据弃答分支。"""
+    """仅展示本轮实际命中的短摘录，复用 worker 的空证据拒答分支。"""
 
     rag_stage: RuntimeMedicalRAG
     version: str = "retrieval-mock-v1"
@@ -43,7 +43,7 @@ class RetrievalMockWorkflowProvider:
                            model=getattr(self, "model", ACTIVE_MIMO_MODEL), prompt_version=self.router_prompt_version)
 
     def _refusal(self, question: str, route: RouteDecision) -> dict[str, Any]:
-        """路由拒答：不检索、不进生成，沿用空证据的弃答分支，路由信息写在结果里。"""
+        """路由拒答：不检索、不进生成，沿用空证据的拒答分支，路由信息写在结果里。"""
         return {"query": question, "chunks": [], "top_k": 0, "config_hash": self.rag_stage.retrieval_config_hash,
                 "corpus_hash": self.rag_stage.corpus_hash, "execution_mode": "retrieval_mock",
                 "query_router": route.to_dict()}
@@ -131,7 +131,7 @@ class RetrievalMockWorkflowProvider:
         return {"schema_version": "assistant-report-v1", "case_id": case_id,
                 "title": "公开正文检索摘录（模拟生成）", "summary": "仅展示相关摘录，不生成医学结论。",
                 "claims": generation["claims"], "filtered_claim_count": 0,
-                "limitations": [LIMITATION, f"仅含 {self._page_count()} 篇历史网页的短引；片段可能只部分相关，不能保证答案完整或现行适用。"],
+                "limitations": [LIMITATION, f"仅含 {self._page_count()} 篇历史网页的摘录；片段可能只部分相关，不能保证答案完整或现行适用。"],
                 "risk_warnings": ["不能用于真实医疗决策。"],
                 "next_steps": ["请打开原始来源阅读上下文；真实健康问题请咨询专业人员。"],
                 "disclaimer": MANDATORY_DISCLAIMER,

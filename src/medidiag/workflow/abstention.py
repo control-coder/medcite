@@ -1,4 +1,4 @@
-"""无证据时只记录弃答，不让生成模型补造证据。"""
+"""无证据时只记录拒答，不让生成模型补造证据。"""
 
 from typing import Any
 
@@ -8,7 +8,7 @@ def abstention_payload(stage: str, case_id: str, retrieval: dict[str, Any] | Non
     route = (retrieval or {}).get("query_router")
     routed = route if isinstance(route, dict) and route.get("refused") else None
     payloads: dict[str, dict[str, Any]] = {
-        "plan": {"objective": "无证据时弃答", "evidence_ids": [], "requires_uncertainty": True},
+        "plan": {"objective": "无证据时拒答", "evidence_ids": [], "requires_uncertainty": True},
         "generation": {"agents": [], "claims": [], "risk_flags": [], "uncertainty": "未检索到证据。"},
         "arbitration": {"selected_claim_ids": [], "conflicts": [], "verdict": "NO_EVIDENCE"},
         "review": {"verdict": "APPROVED", "issues": [], "citation_verdicts": [],

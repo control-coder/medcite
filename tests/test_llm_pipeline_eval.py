@@ -38,7 +38,7 @@ QUERIES = [
 
 
 class FakeModel:
-    """改写：原问题 + “流感”；生成：只要证据里有 c1 且问题提到流感就选 c1，否则弃答。"""
+    """改写：原问题 + “流感”；生成：只要证据里有 c1 且问题提到流感就选 c1，否则拒答。"""
 
     def __init__(self) -> None:
         self.model_calls = 0
@@ -98,7 +98,7 @@ def test_metrics_match_hand_computation(tmp_path: Path):
                   for t in range(2)}
     report = ev.run(args(), transports, dataset)
     metrics = report["generation"]["bm25"]["trial_0"]
-    # 测试集：t1 可答且选中 c1；t2 可答但假模型弃答；t3 空检索弃答；t4 不可答却被作答（提到“流感”）
+    # 测试集：t1 可答且选中 c1；t2 可答但假模型拒答；t3 空检索拒答；t4 不可答却被作答（提到“流感”）
     assert metrics["useful_answer_rate"]["k"] == 1 and metrics["useful_answer_rate"]["n"] == 2
     assert metrics["over_abstention_rate"]["k"] == 1
     assert metrics["false_answer_rate"]["k"] == 1 and metrics["false_answer_rate"]["n"] == 2

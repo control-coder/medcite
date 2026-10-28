@@ -1,11 +1,11 @@
-"""真实模型接入后的端到端评测：LLM 弃答、查询改写与重复性（v2 语料）。
+"""真实模型接入后的端到端评测：LLM 拒答、查询改写与重复性（v2 语料）。
 
 回答三个问题，全部可用调用记录零费用回放：
 
 1. 现网只有“有正分命中就作答”，把 top3 证据交给应用里的抽取式回答（``MimoGroundedWorkflowProvider``）后，
-   模型自己的弃答能否降低“不可回答问题仍被作答”的比例？代价是多少可回答问题被拒？
+   模型自己的拒答能否降低“不可回答问题仍被作答”的比例？代价是多少可回答问题被拒？
 2. 预算受限的查询改写（每个问题最多 1 次额外调用，不看语料）能否补上 BM25 在口语同义改写上的漏检？
-3. 同一请求重复采样，模型的作答/弃答与选段是否稳定？
+3. 同一请求重复采样，模型的作答/拒答与选段是否稳定？
 
 带 ``_rerank`` 后缀的条件在对应方案的候选上做交叉编码器重排，模型与候选数取自 ``--rerank-report``
 （``eval.rerank_matrix`` 只在 v3 dev 上选定），这里不再调参。检索 Agent 加重排时，模型每次仍只看前 3 段，
@@ -161,7 +161,7 @@ def generation_metrics(rows: Sequence[dict[str, Any]], condition: str, trial: in
         "n_answerable": len(answerable), "n_unanswerable": len(unanswerable),
         # 不可回答却作答
         "false_answer_rate": proportion(false_answers, len(unanswerable)),
-        # 可回答却主动弃答（不含契约违规）
+        # 可回答却主动拒答（不含契约违规）
         "over_abstention_rate": proportion(refused, len(answerable)),
         # 可回答、作答且选中了金标准片段
         "useful_answer_rate": proportion(correct, len(answerable)),

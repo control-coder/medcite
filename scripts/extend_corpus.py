@@ -154,7 +154,7 @@ def build(html_dir: Path, pages_out: Path, base: Path, out: Path, max_pages: int
             continue
         excerpts = pick_excerpts(page, blocked)
         if len(excerpts) < 3:
-            skipped[slug] = "可用短引不足 3 条"
+            skipped[slug] = "可用摘录不足 3 条"
             continue
         (pages_out / f"{slug_id(slug)}.txt").write_text(text, encoding="utf-8")
         picked.append((page, excerpts))
@@ -187,7 +187,7 @@ def main() -> int:
     parser.add_argument("--base", type=Path, default=Path("examples/public_health_v2"))
     parser.add_argument("--out", type=Path, default=Path("examples/public_health_v3"))
     parser.add_argument("--max-pages", type=int, default=80)
-    parser.add_argument("--exclude-terms", nargs="*", default=[], help="页面标题或短引含这些词时丢弃")
+    parser.add_argument("--exclude-terms", nargs="*", default=[], help="页面标题或摘录含这些词时丢弃")
     args = parser.parse_args()
     summary = build(args.html_dir, args.pages_out, args.base, args.out, args.max_pages, tuple(args.exclude_terms))
     print(json.dumps(summary, ensure_ascii=False, indent=2))

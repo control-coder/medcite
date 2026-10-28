@@ -50,7 +50,13 @@ if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
 from medidiag.config import get_settings  # noqa: E402
-from medidiag.db.models import Case, CaseEventLog, CaseReport, StageArtifact, WorkflowTask  # noqa: E402
+from medidiag.db.models import (  # noqa: E402
+    Case,
+    CaseEventLog,
+    CaseReport,
+    StageArtifact,
+    WorkflowTask,
+)
 from medidiag.db.session import create_db_engine, get_session_factory, init_db  # noqa: E402
 from medidiag.workflow.executor import WorkflowExecutor  # noqa: E402
 from medidiag.workflow.provider import DeterministicWorkflowProvider  # noqa: E402

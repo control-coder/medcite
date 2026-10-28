@@ -1,4 +1,4 @@
-"""检索/弃答基准的统计与流程测试；稠密检索用确定性假编码器，不下载模型。"""
+"""检索/拒答基准的统计与流程测试；稠密检索用确定性假编码器，不下载模型。"""
 
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ def test_bigram_bm25_beats_whitespace_on_chinese(tmp_path):
     bi = rb.evaluate_system("bm25_bigram", lambda: rb.Bm25Scorer("bm25_bigram", "cjk_bigram"), dataset, ["dev", "test"])
     assert bi["dev"]["retrieval"]["hit@3"]["rate"] == 1.0
     assert ws["dev"]["retrieval"]["hit@3"]["rate"] == 0.0
-    # 无任何字面重合的范围外问题：现网规则（阈值 0）正确弃答
+    # 无任何字面重合的范围外问题：现网规则（阈值 0）正确拒答
     assert bi["dev"]["abstention_at_production_threshold_0"]["false_answer_rate"]["k"] == 0
 
 

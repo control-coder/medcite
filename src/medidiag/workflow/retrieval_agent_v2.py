@@ -6,7 +6,7 @@
   ``expand_context``（取子块所在的父块原文，只供模型判断，不作为引用）、``finish``（选定证据并给出结论）。
 - 检索评估（CRAG，Corrective RAG）：模型每次调用工具时，在参数 ``assessments`` 里给上一批新看到的片段打
   Correct / Ambiguous / Incorrect，不额外增加模型调用。代码规则：结束时只保留被选中、已观察过且不是 Incorrect 的片段；
-  全部 Incorrect 或 verdict=insufficient 时证据为空，由既有的弃答分支处理。
+  全部 Incorrect 或 verdict=insufficient 时证据为空，由既有的拒答分支处理。
 - 同一轮里的多个只读调用（检索、HyDE、扩展上下文）并行执行，按 tool_call_id 回填 tool 消息。
 - 预算：每题至多 4 次工具执行、5 次模型调用（HyDE 的调用也算）、累计 12000 token；重复检索不再执行。超限即结束，沿用已有证据。
 - 任何错误都不让问题失败：保留已有证据，并并入固定链路的检索结果（首轮按原问题检索得到的证据）补齐。

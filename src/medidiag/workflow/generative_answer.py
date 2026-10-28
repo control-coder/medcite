@@ -340,7 +340,7 @@ class GenerativeAnswerWorkflowProvider:
         return result
 
     def _report_generative(self, result: dict[str, Any], generation: dict[str, Any], page_count: int) -> dict[str, Any]:
-        limitations = [LIMITATION, f"仅 {page_count} 篇公开网页的必要短引；覆盖、相关性与现行适用性不保证。"]
+        limitations = [LIMITATION, f"仅 {page_count} 篇公开网页的必要摘录；覆盖、相关性与现行适用性不保证。"]
         if any(c["entailment"] == "partial" for c in generation["claims"]):
             limitations.append(PARTIAL_NOTE)
         result.update(title="公开证据生成式回答", summary="按句回答，每句附证据逐字引用；不提供个体诊断、剂量或停药建议。",

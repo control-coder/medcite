@@ -12,7 +12,7 @@
 - 最终证据 Hit@3：A 中，最终交给生成的证据（最多 3 段）含相关块的比例；
 - 正确回答率：A 中，作答（至少一条摘录）且至少一段被引用的块相关的比例；
 - 误答率分两类：作答但被引用的块全都不相关（分母 A）；U 被作答（分母 U）；
-- 过度拒答率：A 中弃答的比例。生成阶段报错的查询单列，不算弃答；
+- 过度拒答率：A 中拒答的比例。生成阶段报错的查询单列，不算拒答；
 - 平均模型调用数（决策、HyDE、生成分开列）、工具调用数（v1 为额外检索次数）、token；
 - 每题端到端时延 p50 / p90：record 时为实测整题耗时；replay 时为该题所有调用记录中 elapsed 之和
   （不含本地检索与重排，同一轮并行的 HyDE 按串行相加，略偏高）。record 报告同时给出同口径的 ``llm_ms``。
@@ -350,7 +350,7 @@ def run(args: argparse.Namespace, transport: Any | None = None) -> dict[str, Any
         "schema_version": SCHEMA_VERSION, "date": str(date.today()), "mode": args.mode, "model": args.model,
         "split": "dev", "intent": "popular_science", "queries": len(queries), "cost": cost,
         "params": {"config": CONFIG, "retrieval": "hybrid + rerank + MMR，parent_child 子块，top3，不开查询路由",
-                   "generation": "受约束摘录（抽取式回答），on_invalid=feedback",
+                   "generation": "抽取式回答，on_invalid=feedback",
                    "agent_v2_budget": {"tool_calls": 4, "model_calls": 5, "total_tokens": 12000}},
         "summary": {name: summarize(rows, args.mode) for name, rows in per_query.items()},
         "agent_v2": v2_extras(per_query["agent_v2"]),

@@ -208,8 +208,8 @@ def demo(
         )
     else:
         runtime_label = ("真实检索 / 模拟生成" if provider_name == "retrieval_mock"
-                         else "真实检索 / MiMo 单路受约束摘录")
-        runtime_detail = f"{provider.version}；仅完整短引与引用关联检查，未运行 NLI，不证明医学正确。"
+                         else "真实检索 / MiMo 单路抽取式回答")
+        runtime_detail = f"{provider.version}；仅完整摘录与引用关联检查，未运行 NLI，不证明医学正确。"
     app.state.demo_runtime = {
         "label": runtime_label,
         "detail": runtime_detail,

@@ -137,7 +137,7 @@ def main() -> None:
     labels: dict[str, int] = {}
     for row in rows:
         labels[row["model_label"]] = labels.get(row["model_label"], 0) + 1
-    print(f"池中 {len(rows)} 对；模型判断 {labels}；待人工复核 "
+    print(f"标注池中 {len(rows)} 对；模型判断 {labels}；待人工复核 "
           f"{sum(1 for r in rows if r['model_label'] == 'answers' and r['human_label'] is None)} 对：{out}")
     if args.mode == "record":
         print("花费：", transport.spent())
