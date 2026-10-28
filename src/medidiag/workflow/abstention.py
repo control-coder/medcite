@@ -3,7 +3,10 @@
 from typing import Any
 
 
-def abstention_payload(stage: str, case_id: str) -> dict[str, Any]:
+def abstention_payload(stage: str, case_id: str, retrieval: dict[str, Any] | None = None) -> dict[str, Any]:
+    """``retrieval`` 带查询路由的拒答决定（``query_router.refused``）时，说明改用路由给出的固定提示。"""
+    route = (retrieval or {}).get("query_router")
+    routed = route if isinstance(route, dict) and route.get("refused") else None
     payloads: dict[str, dict[str, Any]] = {
         "plan": {"objective": "无证据时弃答", "evidence_ids": [], "requires_uncertainty": True},
         "generation": {"agents": [], "claims": [], "risk_flags": [], "uncertainty": "未检索到证据。"},
@@ -20,4 +23,15 @@ def abstention_payload(stage: str, case_id: str) -> dict[str, Any]:
             "provenance": {"guard": "no-evidence-v1"},
         },
     }
+    if routed is not None:
+        message = str(routed.get("message") or "")
+        intent = str(routed.get("intent"))
+        payloads["generation"]["uncertainty"] = message
+        payloads["report"].update(
+            title="无法作答说明", summary=message,
+            limitations=[f"查询路由判定为 {intent}（来源：{routed.get('source')}），未检索、未调用生成模型。"],
+            next_steps=(["请立即拨打 120 或前往就近急诊。"] if intent == "emergency"
+                        else ["真实健康问题请咨询专业人员。"]),
+            provenance={"guard": "query-router-v1", "intent": intent, "source": routed.get("source"),
+                        "rule": routed.get("rule")})
     return payloads[stage]

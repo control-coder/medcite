@@ -117,7 +117,8 @@ class Bm25Retriever:
 
         self._bm25 = BM25Okapi([self.tokenize(chunk.text) for chunk in self.chunks])
 
-    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
+    def search(self, query: str, top_k: int = 5, allowed_ids: set[str] | None = None) -> list[SearchResult]:
+        """``allowed_ids`` 给出时只在这些块里检索（取 top_k 前屏蔽、分数在允许集合内归一化）；None 时行为不变。"""
         import numpy as np
 
         if self._bm25 is None:
@@ -125,6 +126,9 @@ class Bm25Retriever:
         bm25 = self._bm25
         assert bm25 is not None
         raw = np.asarray(bm25.get_scores(self.tokenize(query)), dtype=np.float32)
+        if allowed_ids is not None:
+            raw = raw * np.fromiter((c.chunk_id in allowed_ids for c in self.chunks), dtype=np.float32,
+                                    count=len(self.chunks))
         scores = raw / max(float(raw.max()), 1e-8)
         order = sorted(
             (i for i in range(len(scores)) if scores[i] > 0),

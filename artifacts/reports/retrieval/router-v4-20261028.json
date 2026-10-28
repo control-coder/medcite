@@ -1,0 +1,2553 @@
+{
+  "schema_version": "router-eval-v1",
+  "date": "2026-10-28",
+  "mode": "record",
+  "model": "mimo-v2.6-flash",
+  "prompt_version": "query-router-v1",
+  "split": "dev",
+  "queries": 60,
+  "intents": [
+    "popular_science",
+    "individual_care",
+    "out_of_scope",
+    "emergency"
+  ],
+  "cost": {
+    "llm_calls": 56,
+    "llm_decisions": 56,
+    "call_errors": {},
+    "input_tokens": 21761,
+    "output_tokens": 1168,
+    "est_yuan": 0.0241,
+    "spend": {
+      "calls": 56,
+      "http_200": 56,
+      "prompt_tokens": 21761,
+      "completion_tokens": 1168
+    }
+  },
+  "routing": {
+    "matrix": {
+      "popular_science": {
+        "popular_science": {
+          "llm": 37
+        },
+        "individual_care": {
+          "llm": 5
+        },
+        "out_of_scope": {
+          "llm": 3
+        },
+        "emergency": {
+          "llm": 1
+        }
+      },
+      "out_of_scope": {
+        "individual_care": {
+          "llm": 1
+        },
+        "out_of_scope": {
+          "llm": 2
+        }
+      },
+      "emergency": {
+        "emergency": {
+          "rule": 2
+        }
+      },
+      "individual_care": {
+        "individual_care": {
+          "rule": 2,
+          "llm": 5
+        },
+        "popular_science": {
+          "llm": 2
+        }
+      }
+    },
+    "accuracy": "48/60",
+    "emergency_recall": "2/2",
+    "emergency_missed": [],
+    "source_counts": {
+      "llm": 56,
+      "rule": 4
+    },
+    "rule_hits": {
+      "emergency_signal": 2,
+      "dosage": 1,
+      "treatment_decision": 1
+    },
+    "fallbacks": {}
+  },
+  "filters": {
+    "queries_with_expected_filters": 10,
+    "key_status": {
+      "missing": 6,
+      "match": 8
+    },
+    "key_match_rate": "8/14",
+    "queries_all_keys_matched": "5/10",
+    "queries_all_matched_without_extra": "4/10",
+    "spurious_filter_queries": {
+      "count": 13,
+      "of": 36,
+      "ids": [
+        "public_q02",
+        "pv2_A_08",
+        "pv2_A_13",
+        "pv2_A_21",
+        "pv2_A_28",
+        "pv2_B_02",
+        "pv2_B_06",
+        "pv2_B_09",
+        "pv2_B_23",
+        "pv2_B_24",
+        "pv2_C_11",
+        "pv2_D_02",
+        "pv2_D_05"
+      ]
+    },
+    "predicted_section_type": {
+      "public_q09": "prevention",
+      "public_q14": "key_facts",
+      "pv2_A_08": "definition",
+      "pv2_A_13": "epidemiology",
+      "pv2_A_21": "prevention",
+      "pv2_A_28": "epidemiology",
+      "pv2_B_02": "symptoms",
+      "pv2_B_06": "key_facts",
+      "pv2_B_09": "symptoms",
+      "pv2_B_11": "symptoms",
+      "pv2_B_24": "key_facts",
+      "pv2_C_11": "definition",
+      "pv2_C_22": "epidemiology",
+      "pv2_D_02": "symptoms",
+      "pv2_D_05": "definition",
+      "pv2_D_11": "symptoms",
+      "pv2_D_20": "key_facts",
+      "pv2_D_22": "key_facts",
+      "pv2_D_24": "key_facts",
+      "pv2_U_12": "treatment",
+      "pv2_U_13": "transmission",
+      "pv2_U_14": "prevention",
+      "pv2_U_21": "definition",
+      "pv2_U_22": "key_facts",
+      "v4_a06": "definition",
+      "v4_a13": "definition",
+      "v4_a18": "epidemiology",
+      "v4_a20": "epidemiology",
+      "v4_a34": "epidemiology",
+      "v4_a35": "epidemiology",
+      "v4_a37": "epidemiology",
+      "v4_a44": "epidemiology",
+      "v4_h21051015": "definition",
+      "v4_h23297678": "definition"
+    },
+    "per_query": {
+      "v4_a06": {
+        "expected": {
+          "source_type": "who_publication"
+        },
+        "predicted": {
+          "topic": "新冠肺炎",
+          "section_type": "definition"
+        },
+        "dropped": [],
+        "keys": {
+          "source_type": "missing"
+        },
+        "extra": [
+          "topic"
+        ]
+      },
+      "v4_a10": {
+        "expected": {
+          "topic": "蛇咬伤"
+        },
+        "predicted": {},
+        "dropped": [],
+        "keys": {
+          "topic": "missing"
+        },
+        "extra": []
+      },
+      "v4_a13": {
+        "expected": {
+          "topic": "禽流感",
+          "source_type": "nhc_document"
+        },
+        "predicted": {
+          "topic": "禽流感",
+          "section_type": "definition"
+        },
+        "dropped": [],
+        "keys": {
+          "topic": "match",
+          "source_type": "missing"
+        },
+        "extra": []
+      },
+      "v4_a18": {
+        "expected": {
+          "topic": "哮喘"
+        },
+        "predicted": {
+          "topic": "哮喘",
+          "section_type": "epidemiology"
+        },
+        "dropped": [],
+        "keys": {
+          "topic": "match"
+        },
+        "extra": []
+      },
+      "v4_a20": {
+        "expected": {
+          "topic": "疟疾"
+        },
+        "predicted": {
+          "topic": "疟疾",
+          "section_type": "epidemiology"
+        },
+        "dropped": [],
+        "keys": {
+          "topic": "match"
+        },
+        "extra": []
+      },
+      "v4_a34": {
+        "expected": {
+          "topic": "抗微生物药物耐药性"
+        },
+        "predicted": {
+          "topic": "抗生素耐药",
+          "section_type": "epidemiology",
+          "source_type": "who_factsheet"
+        },
+        "dropped": [],
+        "keys": {
+          "topic": "match"
+        },
+        "extra": [
+          "source_type"
+        ]
+      },
+      "v4_a35": {
+        "expected": {
+          "topic": "流感"
+        },
+        "predicted": {
+          "topic": "季节性流感",
+          "section_type": "epidemiology"
+        },
+        "dropped": [],
+        "keys": {
+          "topic": "match"
+        },
+        "extra": []
+      },
+      "v4_a37": {
+        "expected": {
+          "source_type": "epidemic_report",
+          "period": "2025-03"
+        },
+        "predicted": {
+          "topic": "流感",
+          "section_type": "epidemiology",
+          "period": "2025-03"
+        },
+        "dropped": [],
+        "keys": {
+          "source_type": "missing",
+          "period": "match"
+        },
+        "extra": [
+          "topic"
+        ]
+      },
+      "v4_a43": {
+        "expected": {
+          "source_type": "epidemic_report",
+          "period": "2026-02"
+        },
+        "predicted": {},
+        "dropped": [],
+        "keys": {
+          "source_type": "missing",
+          "period": "missing"
+        },
+        "extra": []
+      },
+      "v4_a44": {
+        "expected": {
+          "source_type": "epidemic_report",
+          "period": "latest"
+        },
+        "predicted": {
+          "section_type": "epidemiology",
+          "source_type": "epidemic_report",
+          "period": "2026-08"
+        },
+        "dropped": [
+          {
+            "key": "topic",
+            "value": "法定传染病",
+            "reason": "unknown_topic"
+          }
+        ],
+        "keys": {
+          "source_type": "match",
+          "period": "match"
+        },
+        "extra": []
+      }
+    }
+  },
+  "retrieval": {
+    "with_expected_filters": {
+      "n": 7,
+      "none": {
+        "hit@3": "7/7",
+        "rate": 1.0
+      },
+      "predicted": {
+        "hit@3": "3/7",
+        "rate": 0.4286
+      },
+      "gold": {
+        "hit@3": "6/7",
+        "rate": 0.8571
+      },
+      "gold_gained_vs_none": [],
+      "gold_lost_vs_none": [
+        "v4_a44"
+      ],
+      "queries_without_positive_chunks": []
+    },
+    "all_answerable": {
+      "n": 35,
+      "none": {
+        "hit@3": "30/35",
+        "rate": 0.8571
+      },
+      "predicted": {
+        "hit@3": "15/35",
+        "rate": 0.4286
+      },
+      "routed_out": [
+        "pv2_B_16",
+        "pv2_D_08",
+        "pv2_U_09",
+        "v4_a10"
+      ]
+    },
+    "per_query": {
+      "public_q02": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+            "who_fs_ebola_disease:9:pc:2",
+            "who_fs_influenza_avian_and_other_zoonotic:2:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_010:1:pc:4",
+            "wiki_010:1:pc:5",
+            "wiki_010:1:pc:11"
+          ],
+          "applied": {
+            "topic": "人畜共患病"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "public_q09": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_001:13:pc:8",
+            "wiki_001:16:pc:0",
+            "who_fs_coronavirus_disease_covid_19:7:pc:2"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_001:13:pc:8",
+            "wiki_001:16:pc:0",
+            "who_fs_coronavirus_disease_covid_19:7:pc:2"
+          ],
+          "applied": {
+            "section_type": "prevention"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "public_q10": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+            "who_fs_nipah_virus:9:pc:4",
+            "wiki_194:0:pc:5"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_influenza_avian_and_other_zoonotic:6:pc:0",
+            "who_fs_nipah_virus:9:pc:4",
+            "wiki_194:0:pc:5"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "public_q13": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_climate_change_heat_and_health:8:pc:0",
+            "who_fs_climate_change_heat_and_health:7:pc:0",
+            "who_fs_climate_change_heat_and_health:8:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_climate_change_heat_and_health:8:pc:0",
+            "who_fs_climate_change_heat_and_health:7:pc:0",
+            "who_fs_climate_change_heat_and_health:8:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "public_q14": {
+        "none": {
+          "hit": false,
+          "chunk_ids": [
+            "who_pub_9789240086395:20:pc:24",
+            "who_pub_9789240086395:21:pc:15",
+            "who_pub_9789240086395:20:pc:77"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_adolescent_pregnancy:2:pc:1",
+            "who_fs_natural_toxins_in_food:12:pc:2",
+            "who_fs_abortion:2:pc:1"
+          ],
+          "applied": {
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_A_08": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_cholera:0:pc:0",
+            "wiki_154:2:pc:2",
+            "who_fs_cholera:11:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_cholera:3:pc:0",
+            "who_fs_cholera:3:pc:1",
+            "who_fs_cholera:3:pc:2"
+          ],
+          "applied": {
+            "topic": "霍乱",
+            "section_type": "definition"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_A_13": {
+        "none": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_020:0:pc:8",
+            "wiki_120:17:pc:2",
+            "nhc_measles_2024_attach3:10:pc:2"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_114:9:pc:10",
+            "wiki_114:9:pc:9",
+            "wiki_114:9:pc:1"
+          ],
+          "applied": {
+            "topic": "结核病",
+            "section_type": "epidemiology"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_A_21": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_drinking_water:3:pc:3",
+            "who_fs_diarrhoeal_disease:3:pc:4",
+            "who_fs_diarrhoeal_disease:6:pc:8"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_cholera:8:pc:0",
+            "who_fs_cholera:13:pc:5",
+            "who_fs_cholera:13:pc:1"
+          ],
+          "applied": {
+            "topic": "霍乱",
+            "section_type": "prevention"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_02": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_diabetes:4:pc:0",
+            "who_fs_diabetes:6:pc:4",
+            "wiki_111:5:pc:4"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_diabetes:4:pc:0",
+            "wiki_111:1:pc:2",
+            "who_fs_diabetes:4:pc:1"
+          ],
+          "applied": {
+            "topic": "2型糖尿病",
+            "section_type": "symptoms"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_06": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_heart_attack:0:pc:0",
+            "who_fs_heart_attack:5:pc:0",
+            "who_fs_heart_attack:3:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_heart_attack:2:pc:5",
+            "who_fs_heart_attack:2:pc:1",
+            "who_fs_heart_attack:2:pc:0"
+          ],
+          "applied": {
+            "topic": "心脏病发作",
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_09": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_034:15:pc:19",
+            "wiki_034:0:pc:2",
+            "who_fs_asthma:2:pc:2"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_034:2:pc:0",
+            "who_fs_asthma:5:pc:2",
+            "wiki_034:1:pc:0"
+          ],
+          "applied": {
+            "topic": "哮喘",
+            "section_type": "symptoms"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_11": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_oral_health:5:pc:0",
+            "wiki_169:2:pc:3",
+            "wiki_169:2:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_007:7:pc:11",
+            "who_fs_dengue_and_severe_dengue:4:pc:14",
+            "nhc_measles_2024_attach1:9:pc:2"
+          ],
+          "applied": {
+            "section_type": "symptoms"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_16": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_060:9:pc:0",
+            "wiki_034:24:pc:3",
+            "wiki_060:0:pc:10"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "routed_out": "individual_care",
+          "chunk_ids": []
+        }
+      },
+      "pv2_B_17": {
+        "none": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_097:11:pc:14",
+            "who_fs_rubella:4:pc:0",
+            "who_fs_cancer_in_children:2:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_097:11:pc:14",
+            "who_fs_rubella:4:pc:0",
+            "who_fs_cancer_in_children:2:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_23": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_007:24:pc:1",
+            "wiki_007:24:pc:0",
+            "wiki_007:31:pc:8"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_007:24:pc:1",
+            "wiki_007:24:pc:0",
+            "wiki_007:31:pc:8"
+          ],
+          "applied": {
+            "topic": "中风"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_B_24": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "nhc_obesity_2024_attach:62:pc:0",
+            "nhc_obesity_2024_attach:11:pc:6",
+            "who_fs_malnutrition:4:pc:2"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_obesity_and_overweight:2:pc:1",
+            "who_fs_obesity_and_overweight:2:pc:2",
+            "who_fs_obesity_and_overweight:2:pc:0"
+          ],
+          "applied": {
+            "topic": "超重肥胖",
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_C_11": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_141:0:pc:0",
+            "who_fs_anaemia:0:pc:0",
+            "who_fs_anaemia:3:pc:3"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_anaemia:3:pc:3",
+            "who_fs_anaemia:3:pc:0",
+            "who_fs_anaemia:3:pc:1"
+          ],
+          "applied": {
+            "topic": "贫血",
+            "section_type": "definition"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_C_22": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_oral_health:5:pc:1",
+            "wiki_169:2:pc:0",
+            "who_fs_oral_health:6:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_169:1:pc:9",
+            "wiki_169:1:pc:3",
+            "wiki_169:1:pc:10"
+          ],
+          "applied": {
+            "section_type": "epidemiology"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_D_02": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_household_air_pollution_and_health:0:pc:0",
+            "who_fs_household_air_pollution_and_health:3:pc:2",
+            "who_fs_household_air_pollution_and_health:5:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_household_air_pollution_and_health:0:pc:0",
+            "who_fs_household_air_pollution_and_health:3:pc:2",
+            "who_fs_household_air_pollution_and_health:5:pc:1"
+          ],
+          "applied": {
+            "topic": "家庭空气污染"
+          },
+          "relaxed": [
+            "section_type"
+          ],
+          "dropped": []
+        }
+      },
+      "pv2_D_05": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_violence_against_women:6:pc:5",
+            "who_fs_depression:0:pc:0",
+            "who_fs_depression:5:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_depression:3:pc:1",
+            "who_fs_depression:3:pc:0",
+            "who_fs_depression:3:pc:2"
+          ],
+          "applied": {
+            "topic": "抑郁症",
+            "section_type": "definition"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_D_08": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_road_traffic_injuries:10:pc:0",
+            "who_fs_road_traffic_injuries:10:pc:1",
+            "wiki_144:2:pc:5"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "routed_out": "out_of_scope",
+          "chunk_ids": []
+        }
+      },
+      "pv2_D_11": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_human_papilloma_virus_and_cancer:3:pc:1",
+            "who_fs_human_papilloma_virus_and_cancer:3:pc:0",
+            "who_fs_human_papilloma_virus_and_cancer:2:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_human_papilloma_virus_and_cancer:5:pc:1",
+            "who_fs_human_papilloma_virus_and_cancer:5:pc:0",
+            "who_fs_human_papilloma_virus_and_cancer:5:pc:2"
+          ],
+          "applied": {
+            "section_type": "symptoms"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_D_20": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_161:0:pc:11",
+            "wiki_050:32:pc:2",
+            "who_fs_antimicrobial_resistance:4:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_natural_toxins_in_food:2:pc:1",
+            "who_fs_sanitation:2:pc:3",
+            "who_fs_salmonella_non_typhoidal:2:pc:1"
+          ],
+          "applied": {
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_D_22": {
+        "none": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_blindness_and_visual_impairment:3:pc:4",
+            "wiki_064:0:pc:2",
+            "wiki_043:2:pc:5"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_trachoma:2:pc:1",
+            "who_fs_dementia:2:pc:1",
+            "who_fs_blindness_and_visual_impairment:2:pc:0"
+          ],
+          "applied": {
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_D_24": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_deafness_and_hearing_loss:4:pc:3",
+            "who_fs_deafness_and_hearing_loss:11:pc:0",
+            "who_fs_deafness_and_hearing_loss:0:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_deafness_and_hearing_loss:2:pc:1",
+            "who_fs_trachoma:2:pc:1",
+            "who_fs_blindness_and_visual_impairment:2:pc:0"
+          ],
+          "applied": {
+            "section_type": "key_facts"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_U_09": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_menstrual_health:4:pc:1",
+            "who_fs_menstrual_health:2:pc:2",
+            "wiki_072:11:pc:13"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "routed_out": "individual_care",
+          "chunk_ids": []
+        }
+      },
+      "pv2_U_12": {
+        "none": {
+          "hit": false,
+          "chunk_ids": [
+            "wiki_029:3:pc:2",
+            "nhc_obesity_2024_attach:31:pc:7",
+            "nhc_obesity_2024_attach:31:pc:11"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "nhc_obesity_2024_attach:93:pc:2",
+            "nhc_obesity_2024_attach:75:pc:0",
+            "who_fs_hepatitis_c:8:pc:6"
+          ],
+          "applied": {
+            "section_type": "treatment"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "pv2_U_21": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_098:4:pc:5",
+            "who_fs_adolescent_mental_health:6:pc:0",
+            "who_fs_mental_disorders:10:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_autism_spectrum_disorders:3:pc:6",
+            "who_fs_rehabilitation:3:pc:3",
+            "who_fs_autism_spectrum_disorders:3:pc:5"
+          ],
+          "applied": {
+            "section_type": "definition"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a10": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_132:0:pc:12",
+            "who_fs_snakebite_envenoming:2:pc:0",
+            "who_fs_animal_bites:7:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "routed_out": "emergency",
+          "chunk_ids": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_132:0:pc:12",
+            "who_fs_snakebite_envenoming:2:pc:0",
+            "who_fs_snakebite_envenoming:3:pc:1"
+          ],
+          "applied": {
+            "topic": "蛇咬伤"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a13": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_194:2:pc:4",
+            "wiki_106:4:pc:2",
+            "nhc_measles_2024_attach3:10:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_influenza_avian_and_other_zoonotic:3:pc:3",
+            "who_fs_influenza_avian_and_other_zoonotic:3:pc:6",
+            "who_fs_influenza_avian_and_other_zoonotic:3:pc:4"
+          ],
+          "applied": {
+            "topic": "禽流感",
+            "section_type": "definition"
+          },
+          "relaxed": [],
+          "dropped": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "nhc_flu_2025_attach:7:pc:0",
+            "nhc_flu_2025_attach:1:pc:1",
+            "nhc_flu_2025_attach:25:pc:0"
+          ],
+          "applied": {
+            "topic": "禽流感",
+            "source_type": "nhc_document"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a18": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_034:26:pc:3",
+            "wiki_034:25:pc:3",
+            "wiki_034:0:pc:12"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_034:26:pc:3",
+            "wiki_034:26:pc:8",
+            "wiki_034:26:pc:2"
+          ],
+          "applied": {
+            "topic": "哮喘",
+            "section_type": "epidemiology"
+          },
+          "relaxed": [],
+          "dropped": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_034:26:pc:3",
+            "wiki_034:25:pc:3",
+            "wiki_034:0:pc:12"
+          ],
+          "applied": {
+            "topic": "哮喘"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a20": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_093:25:pc:1",
+            "who_fs_millennium_development_goals_mdgs:15:pc:0",
+            "who_fs_malaria:5:pc:0"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_093:25:pc:1",
+            "who_fs_malaria:5:pc:0",
+            "wiki_093:25:pc:5"
+          ],
+          "applied": {
+            "topic": "疟疾",
+            "section_type": "epidemiology"
+          },
+          "relaxed": [],
+          "dropped": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_093:25:pc:1",
+            "who_fs_malaria:5:pc:0",
+            "who_fs_malaria:2:pc:0"
+          ],
+          "applied": {
+            "topic": "疟疾"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a34": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_antimicrobial_resistance:2:pc:1",
+            "who_fs_antimicrobial_resistance:7:pc:0",
+            "who_fs_sepsis:3:pc:6"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "who_fs_antibiotic_resistance:3:pc:0",
+            "who_fs_antibiotic_resistance:3:pc:2",
+            "who_fs_hiv_drug_resistance:4:pc:2"
+          ],
+          "applied": {
+            "topic": "抗生素耐药",
+            "section_type": "epidemiology",
+            "source_type": "who_factsheet"
+          },
+          "relaxed": [],
+          "dropped": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_antimicrobial_resistance:2:pc:1",
+            "who_fs_antimicrobial_resistance:7:pc:0",
+            "who_fs_antimicrobial_resistance:6:pc:1"
+          ],
+          "applied": {
+            "topic": "抗微生物药物耐药性"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a35": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_influenza_seasonal:2:pc:0",
+            "wiki_080:24:pc:2",
+            "wiki_080:0:pc:11"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": true,
+          "chunk_ids": [
+            "wiki_080:24:pc:2",
+            "wiki_080:24:pc:0",
+            "wiki_080:23:pc:3"
+          ],
+          "applied": {
+            "topic": "季节性流感",
+            "section_type": "epidemiology"
+          },
+          "relaxed": [],
+          "dropped": []
+        },
+        "gold": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_influenza_seasonal:2:pc:0",
+            "wiki_080:24:pc:2",
+            "wiki_080:0:pc:11"
+          ],
+          "applied": {
+            "topic": "流感"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      },
+      "v4_a44": {
+        "none": {
+          "hit": true,
+          "chunk_ids": [
+            "who_fs_cholera:7:pc:2",
+            "cdc_report_202509:0:pc:1",
+            "cdc_report_202606:0:pc:1"
+          ],
+          "applied": {},
+          "relaxed": [],
+          "dropped": []
+        },
+        "predicted": {
+          "hit": false,
+          "chunk_ids": [
+            "cdc_report_202608:0:pc:1",
+            "cdc_report_202608:0:pc:0",
+            "cdc_report_202608:0:pc:11"
+          ],
+          "applied": {
+            "source_type": "epidemic_report",
+            "period": "2026-08"
+          },
+          "relaxed": [
+            "section_type"
+          ],
+          "dropped": []
+        },
+        "gold": {
+          "hit": false,
+          "chunk_ids": [
+            "cdc_report_202608:0:pc:1",
+            "cdc_report_202608:0:pc:0",
+            "cdc_report_202608:0:pc:11"
+          ],
+          "applied": {
+            "source_type": "epidemic_report",
+            "period": "2026-08"
+          },
+          "relaxed": [],
+          "dropped": []
+        }
+      }
+    }
+  },
+  "params": {
+    "retrieval": "dense bge-small-zh parent_child top3 无重排",
+    "top_k": 3,
+    "relax_order": [
+      "section_type",
+      "topic",
+      "source_type",
+      "period"
+    ]
+  },
+  "note": "标注由 LLM 完成、未经人工复核；Hit@3 的 relevant 与 partial 都算命中；样本量小，只作工程对照。",
+  "routes": {
+    "public_q02": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "人畜共患病"
+      },
+      "dropped_filters": [
+        {
+          "key": "section_type",
+          "value": "risk_factors",
+          "reason": "not_in_enum"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 377,
+        "output_tokens": 23,
+        "total_tokens": 400
+      }
+    },
+    "public_q08": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 14,
+        "total_tokens": 392
+      }
+    },
+    "public_q09": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "prevention"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "呼吸道卫生",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 384,
+        "output_tokens": 27,
+        "total_tokens": 411
+      }
+    },
+    "public_q10": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {},
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 14,
+        "total_tokens": 392
+      }
+    },
+    "public_q13": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {},
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 379,
+        "output_tokens": 12,
+        "total_tokens": 391
+      }
+    },
+    "public_q14": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "车内儿童安全",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 380,
+        "output_tokens": 23,
+        "total_tokens": 403
+      }
+    },
+    "public_q15": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 14,
+        "total_tokens": 390
+      }
+    },
+    "pv2_A_08": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "霍乱",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 375,
+        "output_tokens": 20,
+        "total_tokens": 395
+      }
+    },
+    "pv2_A_13": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "结核病",
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 382,
+        "output_tokens": 24,
+        "total_tokens": 406
+      }
+    },
+    "pv2_A_21": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "霍乱",
+        "section_type": "prevention"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 387,
+        "output_tokens": 21,
+        "total_tokens": 408
+      }
+    },
+    "pv2_A_27": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 28,
+        "total_tokens": 406
+      }
+    },
+    "pv2_A_28": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "麻疹",
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [
+        {
+          "key": "period",
+          "value": "last_year",
+          "reason": "not_in_corpus"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 28,
+        "total_tokens": 406
+      }
+    },
+    "pv2_A_31": {
+      "version": "query-router-v1",
+      "intent": "out_of_scope",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "该问题超出本系统的公共卫生科普资料范围，暂不作答。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 377,
+        "output_tokens": 12,
+        "total_tokens": 389
+      }
+    },
+    "pv2_B_02": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "2型糖尿病",
+        "section_type": "symptoms"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 380,
+        "output_tokens": 22,
+        "total_tokens": 402
+      }
+    },
+    "pv2_B_06": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "心脏病发作",
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 377,
+        "output_tokens": 22,
+        "total_tokens": 399
+      }
+    },
+    "pv2_B_09": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "哮喘",
+        "section_type": "symptoms"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 20,
+        "total_tokens": 396
+      }
+    },
+    "pv2_B_11": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "symptoms"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "牙周病",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 375,
+        "output_tokens": 22,
+        "total_tokens": 397
+      }
+    },
+    "pv2_B_16": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 385,
+        "output_tokens": 22,
+        "total_tokens": 407
+      }
+    },
+    "pv2_B_17": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {},
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 377,
+        "output_tokens": 12,
+        "total_tokens": 389
+      }
+    },
+    "pv2_B_23": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "中风"
+      },
+      "dropped_filters": [
+        {
+          "key": "section_type",
+          "value": "risk_factors",
+          "reason": "not_in_enum"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 21,
+        "total_tokens": 399
+      }
+    },
+    "pv2_B_24": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "超重肥胖",
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 379,
+        "output_tokens": 23,
+        "total_tokens": 402
+      }
+    },
+    "pv2_C_11": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "贫血",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 374,
+        "output_tokens": 19,
+        "total_tokens": 393
+      }
+    },
+    "pv2_C_22": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "牙周病",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 379,
+        "output_tokens": 24,
+        "total_tokens": 403
+      }
+    },
+    "pv2_C_26": {
+      "version": "query-router-v1",
+      "intent": "out_of_scope",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "该问题超出本系统的公共卫生科普资料范围，暂不作答。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 12,
+        "total_tokens": 390
+      }
+    },
+    "pv2_D_02": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "家庭空气污染",
+        "section_type": "symptoms"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 375,
+        "output_tokens": 22,
+        "total_tokens": 397
+      }
+    },
+    "pv2_D_05": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "抑郁症",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 372,
+        "output_tokens": 19,
+        "total_tokens": 391
+      }
+    },
+    "pv2_D_08": {
+      "version": "query-router-v1",
+      "intent": "out_of_scope",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "该问题超出本系统的公共卫生科普资料范围，暂不作答。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 12,
+        "total_tokens": 388
+      }
+    },
+    "pv2_D_11": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "symptoms"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "人乳头瘤病毒感染",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 377,
+        "output_tokens": 24,
+        "total_tokens": 401
+      }
+    },
+    "pv2_D_20": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "抗生素滥用",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 381,
+        "output_tokens": 22,
+        "total_tokens": 403
+      }
+    },
+    "pv2_D_22": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "老年人视力模糊",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 381,
+        "output_tokens": 23,
+        "total_tokens": 404
+      }
+    },
+    "pv2_D_24": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "视听障碍",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 383,
+        "output_tokens": 22,
+        "total_tokens": 405
+      }
+    },
+    "pv2_U_09": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 21,
+        "total_tokens": 397
+      }
+    },
+    "pv2_U_12": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "treatment"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "脂肪肝",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 375,
+        "output_tokens": 21,
+        "total_tokens": 396
+      }
+    },
+    "pv2_U_13": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "transmission"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "幽门螺杆菌",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 379,
+        "output_tokens": 23,
+        "total_tokens": 402
+      }
+    },
+    "pv2_U_14": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "prevention"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "红眼病",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 380,
+        "output_tokens": 22,
+        "total_tokens": 402
+      }
+    },
+    "pv2_U_19": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 22,
+        "total_tokens": 400
+      }
+    },
+    "pv2_U_21": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "definition"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "注意力缺陷多动障碍",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 379,
+        "output_tokens": 23,
+        "total_tokens": 402
+      }
+    },
+    "pv2_U_22": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "key_facts"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "痤疮",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 22,
+        "total_tokens": 398
+      }
+    },
+    "v4_a06": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "新冠肺炎",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 386,
+        "output_tokens": 19,
+        "total_tokens": 405
+      }
+    },
+    "v4_a10": {
+      "version": "query-router-v1",
+      "intent": "emergency",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "您描述的情况可能是急症。请立即拨打 120 或前往就近急诊，不要等待线上回复；如有人陪同，请让对方协助。本系统只提供公开科普资料检索，不能处理紧急情况。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 388,
+        "output_tokens": 21,
+        "total_tokens": 409
+      }
+    },
+    "v4_a13": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "禽流感",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 389,
+        "output_tokens": 20,
+        "total_tokens": 409
+      }
+    },
+    "v4_a18": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "哮喘",
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 385,
+        "output_tokens": 28,
+        "total_tokens": 413
+      }
+    },
+    "v4_a20": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "疟疾",
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 382,
+        "output_tokens": 23,
+        "total_tokens": 405
+      }
+    },
+    "v4_a34": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "抗生素耐药",
+        "section_type": "epidemiology",
+        "source_type": "who_factsheet"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 378,
+        "output_tokens": 32,
+        "total_tokens": 410
+      }
+    },
+    "v4_a35": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "季节性流感",
+        "section_type": "epidemiology"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 382,
+        "output_tokens": 24,
+        "total_tokens": 406
+      }
+    },
+    "v4_a37": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "流感",
+        "section_type": "epidemiology",
+        "period": "2025-03"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 384,
+        "output_tokens": 32,
+        "total_tokens": 416
+      }
+    },
+    "v4_a43": {
+      "version": "query-router-v1",
+      "intent": "out_of_scope",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "该问题超出本系统的公共卫生科普资料范围，暂不作答。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 390,
+        "output_tokens": 12,
+        "total_tokens": 402
+      }
+    },
+    "v4_a44": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "epidemiology",
+        "source_type": "epidemic_report",
+        "period": "2026-08"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "法定传染病",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 386,
+        "output_tokens": 35,
+        "total_tokens": 421
+      }
+    },
+    "v4_a47": {
+      "version": "query-router-v1",
+      "intent": "emergency",
+      "source": "rule",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "您描述的情况可能是急症。请立即拨打 120 或前往就近急诊，不要等待线上回复；如有人陪同，请让对方协助。本系统只提供公开科普资料检索，不能处理紧急情况。",
+      "rule": "emergency_signal",
+      "fallback_reason": null,
+      "usage": {}
+    },
+    "v4_a51": {
+      "version": "query-router-v1",
+      "intent": "emergency",
+      "source": "rule",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "您描述的情况可能是急症。请立即拨打 120 或前往就近急诊，不要等待线上回复；如有人陪同，请让对方协助。本系统只提供公开科普资料检索，不能处理紧急情况。",
+      "rule": "emergency_signal",
+      "fallback_reason": null,
+      "usage": {}
+    },
+    "v4_a58": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "rule",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": "dosage",
+      "fallback_reason": null,
+      "usage": {}
+    },
+    "v4_a60": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "rule",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": "treatment_decision",
+      "fallback_reason": null,
+      "usage": {}
+    },
+    "v4_a61": {
+      "version": "query-router-v1",
+      "intent": "out_of_scope",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "该问题超出本系统的公共卫生科普资料范围，暂不作答。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 376,
+        "output_tokens": 8,
+        "total_tokens": 384
+      }
+    },
+    "v4_h3708546": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 540,
+        "output_tokens": 14,
+        "total_tokens": 554
+      }
+    },
+    "v4_h5887662": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 450,
+        "output_tokens": 14,
+        "total_tokens": 464
+      }
+    },
+    "v4_h8993478": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 422,
+        "output_tokens": 22,
+        "total_tokens": 444
+      }
+    },
+    "v4_h17455232": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 456,
+        "output_tokens": 19,
+        "total_tokens": 475
+      }
+    },
+    "v4_h21051015": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "section_type": "definition"
+      },
+      "dropped_filters": [
+        {
+          "key": "topic",
+          "value": "膀胱炎",
+          "reason": "unknown_topic"
+        }
+      ],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 415,
+        "output_tokens": 27,
+        "total_tokens": 442
+      }
+    },
+    "v4_h23297678": {
+      "version": "query-router-v1",
+      "intent": "popular_science",
+      "source": "llm",
+      "refused": false,
+      "filters": {
+        "topic": "高血压",
+        "section_type": "definition"
+      },
+      "dropped_filters": [],
+      "message": null,
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 415,
+        "output_tokens": 19,
+        "total_tokens": 434
+      }
+    },
+    "v4_h25321482": {
+      "version": "query-router-v1",
+      "intent": "individual_care",
+      "source": "llm",
+      "refused": true,
+      "filters": {},
+      "dropped_filters": [],
+      "message": "这类问题涉及个人的具体病情（剂量、停药、报告解读、是否手术或确诊），本系统只检索公开科普资料，不能给出个体诊疗意见。请咨询执业医生或前往正规医疗机构就诊。",
+      "rule": null,
+      "fallback_reason": null,
+      "usage": {
+        "input_tokens": 462,
+        "output_tokens": 22,
+        "total_tokens": 484
+      }
+    }
+  },
+  "replay_check": {
+    "checked": true,
+    "consistent": true,
+    "sections": {
+      "routes": true,
+      "routing": true,
+      "filters": true,
+      "retrieval": true
+    },
+    "cassette_hit_rate": "56/56"
+  },
+  "filter_variants": {
+    "note": "同一批预测过滤的键子集对照，不新增 LLM 调用；原数字见 retrieval 字段。",
+    "variants": {
+      "all_keys": [
+        "topic",
+        "section_type",
+        "source_type",
+        "period"
+      ],
+      "no_section_type": [
+        "topic",
+        "source_type",
+        "period"
+      ],
+      "source_period_only": [
+        "source_type",
+        "period"
+      ]
+    },
+    "all_answerable": {
+      "n": 35,
+      "all_keys": {
+        "hit@3": "15/35",
+        "rate": 0.4286
+      },
+      "no_section_type": {
+        "hit@3": "24/35",
+        "rate": 0.6857
+      },
+      "source_period_only": {
+        "hit@3": "25/35",
+        "rate": 0.7143
+      }
+    },
+    "with_expected_filters": {
+      "n": 7,
+      "all_keys": {
+        "hit@3": "3/7",
+        "rate": 0.4286
+      },
+      "no_section_type": {
+        "hit@3": "5/7",
+        "rate": 0.7143
+      },
+      "source_period_only": {
+        "hit@3": "5/7",
+        "rate": 0.7143
+      }
+    }
+  }
+}

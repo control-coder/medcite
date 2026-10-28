@@ -46,6 +46,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and isinstance(generation.get("rewrite", False), bool)
             and isinstance(generation.get("agent", False), bool)
             and isinstance(generation.get("context_rewrite", False), bool)
+            and isinstance(generation.get("query_router", False), bool)
             and config["retrieval"].get("bm25_tokenizer", "cjk_bigram") in BM25_TOKENIZERS
             and config["retrieval"].get("vector_store", "numpy") in VECTOR_STORES
         )
@@ -152,8 +153,10 @@ def build_application_provider(mode: str = "fake_offline", *,
                                             reranker_factory=reranker_factory)
     else:
         rag = RuntimeMedicalRAG.from_config(config, root=root, reranker_factory=reranker_factory)
+    query_router = bool(config.get("generation", {}).get("query_router", False))
     if mode == "retrieval_mock":
-        return RetrievalMockWorkflowProvider(rag)
+        # 离线模式没有 LLM，路由只用规则级
+        return RetrievalMockWorkflowProvider(rag, query_router=query_router)
     from medidiag.llm.budget import BudgetedTransport
     from medidiag.llm.openai_compatible import OpenAICompatibleProvider
     from medidiag.llm.profiles import get_provider_profile
@@ -170,6 +173,7 @@ def build_application_provider(mode: str = "fake_offline", *,
     context_rewrite = bool(generation.get("context_rewrite", False))
     if generation.get("agent", False):
         return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                                              context_rewrite=context_rewrite)
+                                              context_rewrite=context_rewrite, query_router=query_router)
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                                        rewrite=bool(generation.get("rewrite", False)), context_rewrite=context_rewrite)
+                                        rewrite=bool(generation.get("rewrite", False)), context_rewrite=context_rewrite,
+                                        query_router=query_router)

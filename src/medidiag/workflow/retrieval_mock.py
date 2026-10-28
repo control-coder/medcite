@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING, Any
 from medidiag.compliance.guard import MANDATORY_DISCLAIMER, ComplianceGuard
 from medidiag.compliance.status import ComplianceStatus
 from medidiag.errors import MediDiagError
+from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from medidiag.rag.runtime import RuntimeMedicalRAG
+from medidiag.workflow.query_router import RouteDecision, route_query
 
 if TYPE_CHECKING:
     from medidiag.workflow.provider import StageResult
@@ -23,6 +25,21 @@ class RetrievalMockWorkflowProvider:
 
     rag_stage: RuntimeMedicalRAG
     version: str = "retrieval-mock-v1"
+    # 检索前先做查询路由（generation.query_router）：本类只用规则级，带 llm 的子类还会调用 LLM 路由
+    query_router: bool = False
+
+    def _route(self, question: str) -> RouteDecision | None:
+        """开启路由时返回路由决定；未开启返回 None。"""
+        if not self.query_router:
+            return None
+        return route_query(question, llm=getattr(self, "llm", None), metadata=self.rag_stage.metadata,
+                           model=getattr(self, "model", ACTIVE_MIMO_MODEL))
+
+    def _refusal(self, question: str, route: RouteDecision) -> dict[str, Any]:
+        """路由拒答：不检索、不进生成，沿用空证据的弃答分支，路由信息写在结果里。"""
+        return {"query": question, "chunks": [], "top_k": 0, "config_hash": self.rag_stage.retrieval_config_hash,
+                "corpus_hash": self.rag_stage.corpus_hash, "execution_mode": "retrieval_mock",
+                "query_router": route.to_dict()}
 
     def _page_count(self) -> int:
         return len({chunk.source_id for chunk in self.rag_stage.chunks})
@@ -39,14 +56,26 @@ class RetrievalMockWorkflowProvider:
         return result
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
+        route = self._route(normalized_query)
+        if route is not None and route.refused:
+            return self._refusal(normalized_query, route)
+        return self._retrieve_routed(normalized_query, route)
+
+    def _retrieve_routed(self, query: str, route: RouteDecision | None) -> dict[str, Any]:
+        """按路由给出的过滤条件检索（不再路由）；没有过滤条件时与原来完全一致。"""
         try:
-            result = self.rag_stage.retrieve(normalized_query)
+            if route is not None and route.filters:
+                result = self.rag_stage.retrieve(query, filters=route.filters)
+            else:
+                result = self.rag_stage.retrieve(query)
         except MediDiagError as exc:
             if exc.code != "RAG_NO_EVIDENCE":
                 raise
-            result = {"query": normalized_query, "chunks": [], "top_k": 0,
+            result = {"query": query, "chunks": [], "top_k": 0,
                       "config_hash": self.rag_stage.retrieval_config_hash,
                       "corpus_hash": self.rag_stage.corpus_hash}
+        if route is not None:
+            result["query_router"] = route.to_dict()
         return {**result, "execution_mode": "retrieval_mock"}
 
     def plan(self, normalized_query: str, retrieval: dict[str, Any]) -> dict[str, Any]:

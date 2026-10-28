@@ -646,8 +646,10 @@ class SingleMachineWorker:
         if retrieval is not None and not retrieval.payload.get("chunks"):
             from medidiag.workflow.abstention import abstention_payload
 
+            retrieval_payload = retrieval.payload
+
             def operation() -> dict[str, Any]:
-                return abstention_payload(stage, case.case_id)
+                return abstention_payload(stage, case.case_id, retrieval_payload)
         # 心跳在整个 provider 调用（含有界重试）期间用独立会话续期，因此单个阶段
         # 长于 lease_seconds 不再导致任务被扫描器接管。DD-020。
         heartbeat = LeaseHeartbeat(

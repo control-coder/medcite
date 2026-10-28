@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
 from medidiag.errors import MediDiagError
 from medidiag.rag.leakage import LEAKAGE_FLAG, run_leakage_check_records
+from medidiag.rag.metadata import FilterTrace, MetadataIndex, search_with_relaxation
 from medidiag.rag.rerank import Reranker
 from medidiag.rag.retrieval import Bm25Retriever, SearchResult
 from medidiag.schemas import KnowledgeChunk, load_knowledge_chunks, read_jsonl
@@ -132,6 +133,8 @@ class RuntimeMedicalRAG:
         self.leakage_gate = leakage_gate
         # 配置了重排时，固定流程先取前 reranker.candidates 段，再按交叉编码器分数取前 top_k 段
         self.reranker = reranker
+        self._metadata: MetadataIndex | None = None
+        self.last_filter_trace: FilterTrace | None = None
         self.corpus_hash = _stable_hash([asdict(chunk) for chunk in chunks])
         self.retrieval_config_hash = _stable_hash(
             {"retrieval": retrieval_config, "embedding": embedding_config}
@@ -216,30 +219,65 @@ class RuntimeMedicalRAG:
             "matched_terms": [],
         }
 
-    def retrieve(self, normalized_query: str) -> dict[str, Any]:
-        """检索证据并冻结 EvidenceBundle；空结果不会伪装为成功。"""
-        evidence = self.search_evidence(normalized_query)
+    @property
+    def metadata(self) -> MetadataIndex:
+        """元数据索引（主题、章节类型、来源类型、统计周期），首次使用时从块派生。"""
+        if self._metadata is None:
+            self._metadata = MetadataIndex(self.chunks)
+        return self._metadata
+
+    def retrieve(self, normalized_query: str, filters: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        """检索证据并冻结 EvidenceBundle；空结果不会伪装为成功。
+
+        ``filters`` 非空时带元数据过滤检索，过滤与放宽轨迹写入结果的 ``metadata_filter``。
+        """
+        evidence, trace = self.search_filtered(normalized_query, filters=filters)
         if not evidence:
             raise MediDiagError(
                 "RAG_NO_EVIDENCE",
                 detail="医学检索未返回可追溯证据，禁止进入普通报告链路",
             )
-        return self.freeze_evidence(normalized_query, evidence)
+        result = self.freeze_evidence(normalized_query, evidence)
+        if trace is not None:
+            result["metadata_filter"] = trace.to_dict()
+        return result
 
-    def search_evidence(self, query: str, top_k: int | None = None) -> tuple[EvidenceItem, ...]:
+    def search_filtered(self, query: str, top_k: int | None = None,
+                        filters: Mapping[str, Any] | None = None) -> tuple[tuple[EvidenceItem, ...], FilterTrace | None]:
+        """带元数据过滤的检索：返回证据与过滤轨迹（没有过滤条件时轨迹为 None）。
+
+        过滤值先校验（未知值丢弃）；过滤后不足最终段数（配置的 top_k）时按
+        section_type → topic → source_type → period 的顺序逐个放宽重查。
+        """
+        if not filters:
+            return self._search(query, top_k, None), None
+        min_results = int(self.retrieval_config.get("top_k", 5))
+        evidence, trace = search_with_relaxation(
+            lambda allowed: self._search(query, top_k, allowed), self.metadata, filters, min_results)
+        return tuple(evidence), trace
+
+    def search_evidence(self, query: str, top_k: int | None = None,
+                        filters: Mapping[str, Any] | None = None) -> tuple[EvidenceItem, ...]:
         """只检索、不冻结；可能返回空元组。检索智能体用它做多次检索。
 
         配置了重排时返回的是重排后的前 top_k 段；``top_k`` 只供检索智能体取更多候选，不重排。
         配置了 MMR（retrieval.hybrid.mmr_lambda）时，去冗余作用于重排之后；没有重排时直接作用于 RRF 结果。
+        ``filters`` 见 ``search_filtered``；轨迹留在 ``last_filter_trace``（非线程安全，需要轨迹时用 ``search_filtered``）。
         """
+        evidence, self.last_filter_trace = self.search_filtered(query, top_k, filters)
+        return evidence
+
+    def _search(self, query: str, top_k: int | None, allowed_ids: set[str] | None) -> tuple[EvidenceItem, ...]:
+        # 只有真正过滤时才给检索器传 allowed_ids，保持不支持该参数的检索器可用
+        extra = {} if allowed_ids is None else {"allowed_ids": allowed_ids}
         if top_k is not None:
-            results = self.retriever.search(query, top_k=top_k)
+            results = self.retriever.search(query, top_k=top_k, **extra)
             return tuple(self._evidence_item(item) for item in results if item.chunk)
         top_k = int(self.retrieval_config.get("top_k", 5))
         if self.reranker is None:
-            results = self.retriever.search(query, top_k=top_k)
+            results = self.retriever.search(query, top_k=top_k, **extra)
             return self._apply_mmr(tuple(self._evidence_item(item) for item in results if item.chunk), top_k)
-        candidates = self.search_evidence(query, top_k=self.reranker.candidates)
+        candidates = self._search(query, self.reranker.candidates, allowed_ids)
         return self.rerank_evidence(query, candidates, top_k)
 
     def rerank_evidence(self, question: str, items: Sequence[EvidenceItem], top_k: int) -> tuple[EvidenceItem, ...]:

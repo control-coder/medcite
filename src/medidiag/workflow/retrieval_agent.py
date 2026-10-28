@@ -189,9 +189,20 @@ class RetrievalAgentWorkflowProvider(MimoGroundedWorkflowProvider):
         if self.llm is None:
             raise MediDiagError("PROVIDER_REQUEST_REJECTED", detail="未显式装配真实模型")
         rag = self.rag_stage
+        route = self._route(normalized_query)
+        if route is not None and route.refused:
+            return {**self._refusal(normalized_query, route), "execution_mode": "mimo_grounded"}
+        # 只有首轮检索带过滤条件，后续换说法的检索不带（逐步放开留给检索 Agent v2）
+        filters = route.filters if route is not None else {}
+        filter_trace: dict[str, Any] | None = None
+        first_hits: Sequence[Any]
         if rag.reranker is None:
-            outcome = run_search_agent(self.llm, rag.search_evidence, normalized_query,
-                                       rag.search_evidence(normalized_query), self.model)
+            if filters:
+                first_hits, trace = rag.search_filtered(normalized_query, filters=filters)
+                filter_trace = None if trace is None else trace.to_dict()
+            else:
+                first_hits = rag.search_evidence(normalized_query)
+            outcome = run_search_agent(self.llm, rag.search_evidence, normalized_query, first_hits, self.model)
         else:
             # 每次检索多取候选，模型仍只看前 top_k 段；多次检索的并集按原问题重排，取代倒数排名融合。
             depth = rag.reranker.candidates
@@ -203,13 +214,22 @@ class RetrievalAgentWorkflowProvider(MimoGroundedWorkflowProvider):
             def rerank(result_lists: Sequence[Sequence[Any]]) -> list[Any]:
                 return list(rag.rerank_evidence(normalized_query, [hit for hits in result_lists for hit in hits], POOL_SIZE))
 
-            outcome = run_search_agent(self.llm, search, normalized_query, search(normalized_query), self.model,
+            if filters:
+                first_hits, trace = rag.search_filtered(normalized_query, top_k=depth, filters=filters)
+                filter_trace = None if trace is None else trace.to_dict()
+            else:
+                first_hits = search(normalized_query)
+            outcome = run_search_agent(self.llm, search, normalized_query, first_hits, self.model,
                                        observe=observe, merge=rerank)
         if outcome.chunks:
             result = rag.freeze_evidence(normalized_query, tuple(outcome.chunks))
         else:  # 与固定流程一致：没有证据时不进入生成，也不调用模型
             result = {"query": normalized_query, "chunks": [], "top_k": 0,
                       "config_hash": rag.retrieval_config_hash, "corpus_hash": rag.corpus_hash}
+        if route is not None:
+            result["query_router"] = route.to_dict()
+        if filter_trace is not None:
+            result["metadata_filter"] = filter_trace
         return {**result, "execution_mode": "mimo_grounded",
                 "search_agent": {"status": outcome.status, "code": outcome.code, "model_calls": outcome.model_calls,
                                  "steps": outcome.steps, "usage": outcome.usage}}

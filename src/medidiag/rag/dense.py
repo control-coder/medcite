@@ -83,7 +83,10 @@ class DenseRetriever:
             store.save(base)
         self._store = store
 
-    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
+    def search(self, query: str, top_k: int = 5, allowed_ids: set[str] | None = None) -> list[SearchResult]:
+        """``allowed_ids`` 给出时只返回这些块。内存矩阵与 NumpyStore 在取 top_k 前屏蔽；
+        外部向量存储（pgvector）只能后过滤：先取全部候选再筛，大语料下代价高，且受存储端近似检索的候选数限制，
+        可能不足 top_k，由上层的放宽重查兜底。"""
         import numpy as np
 
         if self._matrix is None and self._store is None:
@@ -91,11 +94,15 @@ class DenseRetriever:
         vector = np.asarray(self._encoder([self._query_prefix + query]), dtype=np.float64)[0]
         vector = vector / max(float(np.linalg.norm(vector)), 1e-12)
         if self._store is not None:
-            hits = [h for h in self._store.search(vector, top_k * 2) if h.chunk_id in self._by_id][:top_k]
+            fetch = top_k * 2 if allowed_ids is None else len(self._by_id)
+            hits = [h for h in self._store.search(vector, fetch)
+                    if h.chunk_id in self._by_id and (allowed_ids is None or h.chunk_id in allowed_ids)][:top_k]
             return [SearchResult(chunk_id=h.chunk_id, final_score=h.score, embedding_score=h.score,
                                  chunk=self._by_id[h.chunk_id], score_sources=("dense",)) for h in hits]
         scores = self._matrix @ vector
-        order = sorted(range(len(self.chunks)), key=lambda i: (-float(scores[i]), self.chunks[i].chunk_id))
+        candidates = (range(len(self.chunks)) if allowed_ids is None
+                      else [i for i, c in enumerate(self.chunks) if c.chunk_id in allowed_ids])
+        order = sorted(candidates, key=lambda i: (-float(scores[i]), self.chunks[i].chunk_id))
         return [SearchResult(chunk_id=self.chunks[i].chunk_id, final_score=float(scores[i]),
                              embedding_score=float(scores[i]), chunk=self.chunks[i],
                              score_sources=("dense",)) for i in order[:top_k]]

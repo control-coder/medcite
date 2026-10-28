@@ -46,9 +46,11 @@ class HybridRetriever:
         self.bm25.build_index()
         self.dense.build_index()
 
-    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
-        bm25_hits = self.bm25.search(query, top_k=self.candidates)
-        dense_hits = self.dense.search(query, top_k=self.candidates)
+    def search(self, query: str, top_k: int = 5, allowed_ids: set[str] | None = None) -> list[SearchResult]:
+        """``allowed_ids`` 给出时两路都只在这些块里召回，再融合；None 时行为不变。"""
+        extra = {} if allowed_ids is None else {"allowed_ids": allowed_ids}
+        bm25_hits = self.bm25.search(query, top_k=self.candidates, **extra)
+        dense_hits = self.dense.search(query, top_k=self.candidates, **extra)
         fused: dict[str, dict[str, Any]] = {}
         for rank, hit in enumerate(bm25_hits):
             entry = fused.setdefault(hit.chunk_id, _empty_entry(hit))

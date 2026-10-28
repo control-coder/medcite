@@ -70,8 +70,11 @@ class MimoGroundedWorkflowProvider(RetrievalMockWorkflowProvider):
         return {**self.retrieve(standalone), "context_rewrite": {**info, "original_question": normalized_query}}
 
     def retrieve(self, normalized_query: str) -> dict[str, Any]:
+        route = self._route(normalized_query)
+        if route is not None and route.refused:
+            return {**self._refusal(normalized_query, route), "execution_mode": "mimo_grounded"}
         query, rewrite_info = (self._rewritten(normalized_query) if self.rewrite else (normalized_query, None))
-        result = {**super().retrieve(query), "execution_mode": "mimo_grounded"}
+        result = {**self._retrieve_routed(query, route), "execution_mode": "mimo_grounded"}
         if rewrite_info is not None:
             result["query_rewrite"] = rewrite_info
         return result
