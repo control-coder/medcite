@@ -2,7 +2,8 @@
   "schema_version": "hybrid-matrix-v1",
   "date": "2026-10-28",
   "corpus": ".cache\\corpus\\chunks\\parent_child\\chunks.jsonl",
-  "queries_evaluated": 23,
+  "queries_evaluated": 35,
+  "queries_without_positive": [],
   "excluded_dev_queries": {
     "out_of_scope": 3,
     "popular_science_unanswerable": 11,
@@ -20,70 +21,70 @@
   "methods": [
     {
       "method": "bm25_bigram",
-      "queries": 23,
-      "hit@3": 0.1739,
-      "mrr@10": 0.1946,
-      "ndcg@5": 0.1519,
-      "recall@20": 0.3232,
-      "context_chars_mean": 322.5
+      "queries": 35,
+      "hit@3": 0.6286,
+      "mrr@10": 0.5262,
+      "ndcg@5": 0.3558,
+      "recall@20": 0.3698,
+      "context_chars_mean": 403.9
     },
     {
       "method": "bm25_jieba",
-      "queries": 23,
-      "hit@3": 0.087,
-      "mrr@10": 0.091,
-      "ndcg@5": 0.0645,
-      "recall@20": 0.2428,
-      "context_chars_mean": 424.0
+      "queries": 35,
+      "hit@3": 0.4571,
+      "mrr@10": 0.431,
+      "ndcg@5": 0.2495,
+      "recall@20": 0.2855,
+      "context_chars_mean": 445.3
     },
     {
       "method": "dense",
-      "queries": 23,
-      "hit@3": 0.4348,
-      "mrr@10": 0.3337,
-      "ndcg@5": 0.2459,
-      "recall@20": 0.5246,
-      "context_chars_mean": 389.4
+      "queries": 35,
+      "hit@3": 0.8571,
+      "mrr@10": 0.7755,
+      "ndcg@5": 0.5613,
+      "recall@20": 0.5816,
+      "context_chars_mean": 436.6
     },
     {
       "method": "hybrid_bigram",
-      "queries": 23,
-      "hit@3": 0.2174,
-      "mrr@10": 0.2103,
-      "ndcg@5": 0.1266,
-      "recall@20": 0.5949,
-      "context_chars_mean": 400.7
+      "queries": 35,
+      "hit@3": 0.6286,
+      "mrr@10": 0.6336,
+      "ndcg@5": 0.4247,
+      "recall@20": 0.6023,
+      "context_chars_mean": 441.0
     },
     {
       "method": "hybrid_jieba",
-      "queries": 23,
-      "hit@3": 0.087,
-      "mrr@10": 0.1278,
-      "ndcg@5": 0.1144,
-      "recall@20": 0.4957,
-      "context_chars_mean": 480.0
+      "queries": 35,
+      "hit@3": 0.7143,
+      "mrr@10": 0.6313,
+      "ndcg@5": 0.4006,
+      "recall@20": 0.5688,
+      "context_chars_mean": 530.1
     }
   ],
   "latency_ms": {
     "bm25_bigram": {
-      "p50": 170.9,
-      "p90": 236.2
+      "p50": 203.8,
+      "p90": 347.5
     },
     "bm25_jieba": {
-      "p50": 124.4,
-      "p90": 185.5
+      "p50": 145.5,
+      "p90": 235.1
     },
     "dense": {
-      "p50": 66.7,
-      "p90": 103.8
+      "p50": 58.4,
+      "p90": 62.9
     },
     "hybrid_bigram": {
-      "p50": 615.9,
-      "p90": 831.0
+      "p50": 520.4,
+      "p90": 635.5
     },
     "hybrid_jieba": {
-      "p50": 513.0,
-      "p90": 599.3
+      "p50": 607.7,
+      "p90": 975.8
     }
   }
 }

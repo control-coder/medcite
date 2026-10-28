@@ -13,7 +13,7 @@
 （top3 子块换成去重父块），以及每条查询的检索耗时 p50/p90。只统计 answerable 的 popular_science 查询；intent 为
 emergency/individual_care 的排除（按路由应直接拒答，不参与检索指标）。
 
-标注读取依赖 M7 的 ``eval.v4_judgments``（load_judgments / chunk_relevance）；
+标注读取依赖 M7 的 ``eval.v4_judgments``（load_judgments / chunk_labels_for_query / recover_sentence_texts）；
 该模块尚未就绪时直接报错退出，不静默跳过。报告输出到
 ``artifacts/reports/retrieval/hybrid-matrix-v4-<日期>.json``。
 
@@ -59,12 +59,12 @@ def _fail(message: str) -> None:
 
 def _load_judgments_module() -> Any:
     try:
-        from eval.v4_judgments import chunk_relevance, load_judgments
+        from eval.v4_judgments import chunk_labels_for_query, load_judgments, recover_sentence_texts
     except ImportError as exc:  # M7 标注尚未就绪：给出清楚提示，不静默跳过
         _fail(f"无法导入 eval.v4_judgments（M7 标注接口）：{exc}")
     if not JUDGMENTS_PATH.exists():
         _fail(f"缺少句子级标注文件 {JUDGMENTS_PATH}；请先完成 M7 标注（python -m eval.v4_judgments --mode record）")
-    return load_judgments, chunk_relevance
+    return load_judgments, chunk_labels_for_query, recover_sentence_texts
 
 
 def load_queries() -> list[dict[str, Any]]:
@@ -181,7 +181,7 @@ def percentile(values: Sequence[float], pct: float) -> float | None:
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
-    load_judgments, chunk_relevance = _load_judgments_module()
+    load_judgments, chunk_labels_for_query, recover_sentence_texts = _load_judgments_module()
     from medidiag.schemas import load_knowledge_chunks, read_jsonl
 
     if not CHUNKS_PATH.exists():
@@ -196,27 +196,36 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         picked = picked[: args.limit]
 
     judgments = load_judgments(JUDGMENTS_PATH)
-    # 每条查询的相关性子块：句子级标注投影到 parent_child 子块（0/1/2）
-    # chunk_relevance 逐块计算；按 doc_id 分桶后只对标注涉及的文档做投影，避免全语料 × 标注的笛卡尔积
+    # 句子级标注投影到 parent_child 子块（0/1/2）：用 recover_sentence_texts 还原句子原文，
+    # 按包含关系做完整重叠匹配（只靠哈希只能命中“整块恰好一句”的子块）
+    recursive_path = CHUNKS_PATH.parent.parent / "recursive" / "chunks.jsonl"
+    strategies = {"parent_child": raw_chunks}
+    if recursive_path.exists():
+        strategies["recursive"] = read_jsonl(recursive_path)
+    sentence_texts = recover_sentence_texts(strategies, judgments)
     chunks_by_doc: dict[str, list[dict[str, Any]]] = {}
     for chunk in raw_chunks:
         meta = chunk.get("metadata", {})
         doc_id = str(meta.get("doc_id") or chunk["source_id"])
         chunks_by_doc.setdefault(doc_id, []).append(chunk)
     relevance: dict[str, dict[str, int]] = {}
+    no_positive: list[dict[str, str]] = []
     for query in picked:
         query_id = query["sample_id"]
-        rel: dict[str, int] = {}
-        for doc_id, doc_labels in judgments.get(query_id, {}).items():
-            for chunk in chunks_by_doc.get(doc_id, []):
-                label = chunk_relevance(chunk["text"], doc_labels)
-                if label != "irrelevant":
-                    rel[chunk["chunk_id"]] = 2 if label == "relevant" else 1
+        doc_chunks = [c for doc_id in judgments.get(query_id, {}) for c in chunks_by_doc.get(doc_id, [])]
+        labels = chunk_labels_for_query(query_id, doc_chunks, judgments, sentence_texts)
+        rel = {cid: (2 if label == "relevant" else 1) for cid, label in labels.items()
+               if label != "irrelevant"}
         relevance[query_id] = rel
-    picked = [q for q in picked if relevance[q["sample_id"]]]
-    if not picked:
-        _fail("选中查询在 judgments.jsonl 中没有正标签子块；请检查标注与语料是否对应")
-
+        print(f"[标注] {query_id} 正例子块 {len(rel)}（relevant {sum(v == 2 for v in rel.values())}）", flush=True)
+        if not rel:
+            labeled = judgments.get(query_id, {})
+            n_pos_sent = sum(label != "irrelevant" for doc in labeled.values() for label in doc.values())
+            reason = ("标注中没有相关/部分相关句子" if not n_pos_sent
+                      else f"有 {n_pos_sent} 条正例句子，但无法匹配到任何子块")
+            no_positive.append({"query_id": query_id, "reason": reason})
+    if no_positive:
+        print(f"[标注] 无正例的 answerable 查询 {len(no_positive)} 条，记 0 分计入：{no_positive}", flush=True)
     import torch
 
     torch.set_num_threads(2)
@@ -226,6 +235,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "date": str(date.today()),
         "corpus": str(CHUNKS_PATH.relative_to(ROOT)),
         "queries_evaluated": len(picked),
+        "queries_without_positive": no_positive,
         "excluded_dev_queries": excluded_counts(queries),
         "note": "只统计 answerable 的 popular_science 查询；emergency/individual_care/out_of_scope 排除",
         "params": {"candidates": args.candidates, "rrf_k": args.rrf_k,
