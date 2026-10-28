@@ -11,7 +11,7 @@
 3. 人工复核：只复核模型判为“回答了”的，在 ``human_label`` 填 ``answers`` 或 ``does_not_answer``；
    模型判为否的不复核，``human_label`` 留空（池化标注的常见做法，漏标只会让指标偏低，不会偏向某个方案）。
 
-再次运行时保留已有的人工复核结果，只补新进池的条目。
+再次运行时保留已有的人工复核结果，只补新进标注池的条目。
 
 用法::
 
@@ -58,7 +58,7 @@ def pool(queries: Sequence[dict[str, Any]], reports: Sequence[dict[str, Any]],
          keep: frozenset[tuple[str, str]] = frozenset()) -> list[dict[str, Any]]:
     """（问题，片段）对，附上哪些条件检索到了它；顺序固定，便于复核与回放。
 
-    ``keep`` 是已经人工确认、因而已并入正确片段的对：它们仍留在池中，否则重跑时会丢掉复核记录。
+    ``keep`` 是已经人工确认、因而已并入正确片段的对：它们仍留在标注池中，否则重跑时会丢掉复核记录。
     """
     by_id = {q["sample_id"]: q for q in queries}
     found: dict[tuple[str, str], set[str]] = {}

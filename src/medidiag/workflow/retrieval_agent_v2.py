@@ -11,7 +11,7 @@
 - 预算：每题至多 4 次工具执行、5 次模型调用（HyDE 的调用也算）、累计 12000 token；重复检索不再执行。超限即结束，沿用已有证据。
 - 任何错误都不让问题失败：保留已有证据，并并入固定链路的检索结果（首轮按原问题检索得到的证据）补齐。
 
-它只负责准备证据；最终回答仍走 ``MimoGroundedWorkflowProvider`` 的受约束摘录（对应通用说法：抽取式回答）。
+它只负责准备证据；最终回答仍走 ``MimoGroundedWorkflowProvider`` 的抽取式回答（代码旧称 constrained excerpt）。
 """
 
 from __future__ import annotations
@@ -485,7 +485,7 @@ def _dense_of(retriever: Any) -> Any | None:
 
 @dataclass
 class RetrievalAgentV2WorkflowProvider(MimoGroundedWorkflowProvider):
-    """检索阶段由 Agent v2 完成，生成阶段沿用受约束摘录；不与问题改写同时使用。"""
+    """检索阶段由 Agent v2 完成，生成阶段沿用抽取式回答；不与问题改写同时使用。"""
 
     version: str = "retrieval-agent-v2"
     # 子块 parent_id -> 父块原文；默认从语料目录里的 parents.jsonl 懒加载，没有该文件时扩展上下文返回子块本身

@@ -1,6 +1,6 @@
 """检索 Agent v2 与 v1 的端到端对照（M11）：v4 dev 中 intent=popular_science 的全部查询。
 
-两个条件使用同一检索配置（v4 混合检索 + 重排、top3、parent_child 子块，不开查询路由），生成都是受约束摘录
+两个条件使用同一检索配置（v4 混合检索 + 重排、top3、parent_child 子块，不开查询路由），生成都是抽取式回答（代码中称 constrained excerpt）
 （``MimoGroundedWorkflowProvider.generate``，``on_invalid=feedback``）：
 
 - ``agent_v1``：``RetrievalAgentWorkflowProvider``，只会换说法再检索；

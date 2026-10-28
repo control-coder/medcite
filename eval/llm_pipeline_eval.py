@@ -2,7 +2,7 @@
 
 回答三个问题，全部可用调用记录零费用回放：
 
-1. 现网只有“有正分命中就作答”，把 top3 证据交给应用里的受约束生成（``MimoGroundedWorkflowProvider``）后，
+1. 现网只有“有正分命中就作答”，把 top3 证据交给应用里的抽取式回答（``MimoGroundedWorkflowProvider``）后，
    模型自己的弃答能否降低“不可回答问题仍被作答”的比例？代价是多少可回答问题被拒？
 2. 预算受限的查询改写（每个问题最多 1 次额外调用，不看语料）能否补上 BM25 在口语同义改写上的漏检？
 3. 同一请求重复采样，模型的作答/弃答与选段是否稳定？
@@ -243,7 +243,7 @@ class _Hit:
 
 
 def agent_effect(queries: Sequence[dict[str, Any]], runs: dict[str, SearchAgentResult]) -> dict[str, Any]:
-    """智能体的证据与它的起点（第一次按原问题检索，即同一检索方式的固定流程）相比，前 3 条里含正确片段的变化。"""
+    """检索 Agent 的证据与它的起点（第一次按原问题检索，即同一检索方式的固定流程）相比，前 3 条里含正确片段的变化。"""
     def hits(ids_of: Callable[[SearchAgentResult], list[str]]) -> dict[str, bool]:
         return {q["sample_id"]: bool(set(q["gold_evidence_ids"]) & set(ids_of(runs[q["sample_id"]])))
                 for q in queries if q["gold_evidence_ids"]}

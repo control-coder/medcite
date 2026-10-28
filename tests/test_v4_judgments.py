@@ -227,9 +227,9 @@ def test_v3_agreement_only_counts_excerpts_in_pool() -> None:
         chunks={"parent_child": chunks},
         chunk_by_id={"parent_child": {c["chunk_id"]: c for c in chunks}},
         mapping={"strategies": {"parent_child": {"excerpts": {
-            "e_gold": {"mapping": "exact", "gold": ["d1:0:pc:0"]},    # v3 正例，池内，LLM 判正
-            "e_neg": {"mapping": "exact", "gold": ["d1:1:pc:0"]},     # 池内负例，LLM 判负
-            "e_outside": {"mapping": "exact", "gold": ["d2:0:pc:0"]},  # 池外：不参与
+            "e_gold": {"mapping": "exact", "gold": ["d1:0:pc:0"]},    # v3 正例，标注池内，LLM 判正
+            "e_neg": {"mapping": "exact", "gold": ["d1:1:pc:0"]},     # 标注池内负例，LLM 判负
+            "e_outside": {"mapping": "exact", "gold": ["d2:0:pc:0"]},  # 标注池外：不参与
             "e_failed": {"mapping": "failed", "gold": []}}}}},
         query_excerpt_ids=lambda qid: ["e_gold"])
     judgments = {"q1": {"d1": {vj.sentence_hash("甲句。"): "relevant", vj.sentence_hash("乙句。"): "irrelevant"}}}

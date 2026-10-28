@@ -1,4 +1,4 @@
-"""检索智能体的离线回归：用脚本化的假模型，不联网。"""
+"""检索 Agent 的离线回归：用脚本化的假模型，不联网。"""
 import copy
 import json
 from dataclasses import dataclass

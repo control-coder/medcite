@@ -143,7 +143,7 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/rewri
 
 ### BM25 加检索 Agent
 
-`configs/application_agent.yaml`：先按原问题检索一次，再由模型查看结果，决定是否调用 `search_kb` 换用规范表述继续检索（最多再检索 2 次，模型最多调用 3 次，开启思考），合并后的前 3 段作为证据交给受约束摘录。出错时沿用已拿到的证据，步骤记录在检索结果的 `search_agent`。不能和查询改写同时开启。每个问题的模型调用最多 3 次检索判断加 1 到 2 次生成，所以 8 次请求的上限下一次只能试 1 到 2 个问题，需要换新的账本文件：
+`configs/application_agent.yaml`：先按原问题检索一次，再由模型查看结果，决定是否调用 `search_kb` 换用规范表述继续检索（最多再检索 2 次，模型最多调用 3 次，开启思考），合并后的前 3 段作为证据交给抽取式回答（代码中称 constrained excerpt）。出错时沿用已拿到的证据，步骤记录在检索结果的 `search_agent`。不能和查询改写同时开启。每个问题的模型调用最多 3 次检索判断加 1 到 2 次生成，所以 8 次请求的上限下一次只能试 1 到 2 个问题，需要换新的账本文件：
 
 ```powershell
 python -I scripts/verify_dense_application.py --allow-live --ledger .cache/agent-ledger.db --app-config configs/application_agent.yaml --cases 2

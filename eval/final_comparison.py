@@ -72,6 +72,7 @@ from medidiag.llm.cassette import (  # noqa: E402
 from medidiag.llm.models import ACTIVE_MIMO_MODEL  # noqa: E402
 from medidiag.workflow.application import load_application_config  # noqa: E402
 from medidiag.workflow.generative_answer import ENTAILMENT_VERSION, PROMPT_VERSION  # noqa: E402
+from medidiag.workflow.query_router import PROMPT_VERSIONS  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_VERSION = "final-comparison-v1"
@@ -88,7 +89,7 @@ NON_POPULAR = ("individual_care", "out_of_scope", "emergency")
 # 费用估算口径同 M11：每百万输入 Token 1 元、输出 2 元（未核实实际计费，仅供量级参考）
 YUAN_PER_M_PROMPT = 1.0
 YUAN_PER_M_COMPLETION = 2.0
-BASE_KINDS = {"query-router-v1": "router", "retrieval-agent-v1": "agent", "retrieval-agent-v2": "agent",
+BASE_KINDS = {"query-router-v1": "router", "query-router-v2": "router", "retrieval-agent-v1": "agent", "retrieval-agent-v2": "agent",
               "hyde-v1": "hyde"}
 EXTRACTIVE_KINDS = {**BASE_KINDS, "mimo-grounded-v1": "generation"}
 GENERATIVE_KINDS = {**BASE_KINDS, PROMPT_VERSION: "generation", ENTAILMENT_VERSION: "entailment",
@@ -133,6 +134,7 @@ def make_base(config: dict[str, Any], rag: Any, model: str) -> Any:
     generation = config.get("generation", {})
     common: dict[str, Any] = {"llm": None, "on_invalid": generation.get("on_invalid", "none"), "model": model,
                               "query_router": bool(generation.get("query_router", False)),
+                              "router_prompt_version": PROMPT_VERSIONS[generation.get("router_prompt", "v1")],  # M15 记录基于 v1
                               "answer_mode": generation.get("answer_mode", "extractive")}
     if not generation.get("agent", False):
         raise ValueError("最终对照的三个条件都必须开启检索 Agent")

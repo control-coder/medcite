@@ -35,7 +35,7 @@ def request_key(body: dict[str, Any], trial: int = 0) -> str:
 
 
 def _kept_tool_calls(raw: Any) -> list[dict[str, Any]]:
-    """工具调用只留 id、类型、函数名和参数字符串；检索智能体回放时要用到它们。"""
+    """工具调用只留 id、类型、函数名和参数字符串；检索 Agent 回放时要用到它们。"""
     kept = []
     for item in raw if isinstance(raw, list) else []:
         function = item.get("function") if isinstance(item, dict) else None

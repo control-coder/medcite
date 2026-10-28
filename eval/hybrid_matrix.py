@@ -9,7 +9,7 @@
 - ``hybrid_jieba``：BM25 jieba + 向量，RRF（k=60）融合
 
 两种 hybrid 在 RRF 融合后再做 MMR（λ=0.7）去冗余；不含交叉编码器重排（重排见 M5）。
-指标：Hit@3、MRR@10、nDCG@5（relevant=2、partial=1）、Recall@20、平均送入字符数
+指标：Hit@3、MRR@10、nDCG@5（relevant=2、partial=1）、Recall@20、平均输入上下文字符数
 （top3 子块换成去重父块），以及每条查询的检索耗时 p50/p90。只统计 answerable 的 popular_science 查询；intent 为
 emergency/individual_care 的排除（按路由应直接拒答，不参与检索指标）。
 
@@ -251,7 +251,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     parent_text = {c["chunk_id"]: c["text"] for c in read_jsonl(parents_path)} if parents_path.exists() else {}
 
     def context_chars(ranked_ids: list[str]) -> int:
-        """top3 子块换成去重后的父块送入模型的字数。"""
+        """top3 子块换成去重后的父块，作为输入上下文交给模型的字数。"""
         seen: list[str] = []
         for cid in ranked_ids[:METRIC_DEPTHS["hit"]]:
             pid = by_id[cid].get("metadata", {}).get("parent_id")

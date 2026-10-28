@@ -1,12 +1,12 @@
-"""在已有语料上加入更多 WHO 中文页面的短引，作为干扰项，用来测检索随语料变大的衰减。
+"""在已有语料上加入更多 WHO 中文页面的摘录，作为干扰项，用来测检索随语料变大的衰减。
 
 输入是已抓取到仓库外缓存目录的页面网页（``--html-dir``，每页一个 ``<slug>.html``），
-基础语料是 ``examples/public_health_v2``。新增的短引都是页面正文里连续 1 到 2 句的逐字原文，
+基础语料是 ``examples/public_health_v2``。新增的摘录都是页面正文里连续 1 到 2 句的逐字原文，
 选取规则固定、不看评测问题，所以同样的输入总是得到同样的输出。
 
-查询、金标准和基础语料的每一行都原样保留；只在后面追加新的短引和来源。
-用 ``--exclude-terms`` 挡掉可能让“语料没有涉及该疾病”类问题变得可回答的页面和短引，
-挡完之后仍需要人工检查新增短引是否在无意中回答了某条查询（见 docs/evaluation.md）。
+查询、金标准和基础语料的每一行都原样保留；只在后面追加新的摘录和来源。
+用 ``--exclude-terms`` 挡掉可能让“语料没有涉及该疾病”类问题变得可回答的页面和摘录，
+挡完之后仍需要人工检查新增摘录是否在无意中回答了某条查询（见 docs/evaluation.md）。
 
 用法：
     python scripts/extend_corpus.py --html-dir .cache/who_raw --pages-out .cache/who_pages \\
@@ -35,7 +35,7 @@ SCOPE = "历史公开科普片段，不保证覆盖现行指南，不用于个�
 VERIFICATION = "2026-10-10 实际 HTTP 200，解码正文逐字包含此短摘录；未将全文入库。"
 EXCERPTS_PER_PAGE = 4
 MIN_CHARS, MAX_CHARS = 30, 110
-# 带这些内容的句子要么依赖上下文、要么是参考文献或链接，不适合单独作为短引
+# 带这些内容的句子要么依赖上下文、要么是参考文献或链接，不适合单独作为摘录
 _REJECT = re.compile(r"\(\d|\d\)|（\d|http|参见|见表|见图|见上文|下列|以下|如下|本实况报道|[:：]")
 _DATE = re.compile(r"^(\d{4})年(\d{1,2})月(\d{1,2})日$")
 _STOP_HEADINGS = ("世卫组织的应对", "参考文献", "世卫组织对")
@@ -105,7 +105,7 @@ def window_candidates(paragraph: str, blocked: tuple[str, ...]) -> list[str]:
 
 
 def pick_excerpts(page: Page, blocked: tuple[str, ...]) -> list[tuple[str, str]]:
-    """在有可用短引的段落中等间隔取 EXCERPTS_PER_PAGE 个，每段只取第一个窗口。"""
+    """在有可用摘录的段落中等间隔取 EXCERPTS_PER_PAGE 个，每段只取第一个窗口。"""
     usable = []
     for section, paragraph in page.paragraphs:
         windows = window_candidates(paragraph, blocked)

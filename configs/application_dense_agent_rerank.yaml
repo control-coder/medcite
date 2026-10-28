@@ -1,7 +1,7 @@
 # 应用配置：向量检索 + 检索 Agent + 交叉编码器重排。固定版本的 bge-small-zh 与 bge-reranker-v2-m3，只读本地缓存，
 # 不自动下载；语料为 v3（131 篇页面，498 个片段）。仅供 mimo_grounded 使用：先按原问题检索一次，由模型判断是否需要
 # 换成规范术语再检索（最多再检索 2 次），模型每次只看前 3 段；各次检索的前 5 段合并后按原问题重排，取前 3 段交给
-# 带引用约束的摘录。候选数 5 只在 v3 开发集上选定（eval/rerank_matrix.py），在扩充测试集上效果最好，
+# 抽取式回答。候选数 5 只在 v3 开发集上选定（eval/rerank_matrix.py），在扩充测试集上效果最好，
 # 见 docs/evaluation.md。需要先准备两个模型的本地缓存。
 application:
   mode: retrieval_mock

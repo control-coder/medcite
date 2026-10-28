@@ -4,7 +4,7 @@
 
 ## 评测入口
 
-- `llm_pipeline_eval.py`：真实模型端到端评测（拒答、查询改写、检索 Agent、重复运行的稳定性、输出被拦截后的重试）。每次模型调用的请求和回复存成调用记录，放在 `cassettes/`，之后可以零网络、零费用回放。
+- `llm_pipeline_eval.py`：真实模型端到端评测（拒答、查询改写、检索 Agent、重复运行的稳定性、输出被拦截后的重试）。每次模型调用的请求和回复存成调用记录（cassette），放在 `cassettes/`，之后可以零网络、零费用回放。
 - `retrieval_benchmark.py`：公开中文语料上的检索基准（BM25、向量、混合权重选择、语料规模衰减）。
 - `retrieval_matrix.py`：L1 检索层矩阵，Hit/Recall/MRR/nDCG、成对比较、符号检验与自助法区间；只读报告，不调用模型。
 - `generation_matrix.py`：L2/L3 矩阵，引用校验通过率、误答、过度拒答、正确作答数、回答 F1；只读报告。

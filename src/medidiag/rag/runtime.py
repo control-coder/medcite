@@ -291,9 +291,9 @@ class RuntimeMedicalRAG:
 
     def search_evidence(self, query: str, top_k: int | None = None,
                         filters: Mapping[str, Any] | None = None) -> tuple[EvidenceItem, ...]:
-        """只检索、不冻结；可能返回空元组。检索智能体用它做多次检索。
+        """只检索、不冻结；可能返回空元组。检索 Agent 用它做多次检索。
 
-        配置了重排时返回的是重排后的前 top_k 段；``top_k`` 只供检索智能体取更多候选，不重排。
+        配置了重排时返回的是重排后的前 top_k 段；``top_k`` 只供检索 Agent 取更多候选，不重排。
         配置了 MMR（retrieval.hybrid.mmr_lambda）时，去冗余作用于重排之后；没有重排时直接作用于 RRF 结果。
         ``filters`` 见 ``search_filtered``；轨迹留在 ``last_filter_trace``（非线程安全，需要轨迹时用 ``search_filtered``）。
         """

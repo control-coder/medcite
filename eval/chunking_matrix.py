@@ -1,7 +1,7 @@
 """M6 分块策略离线对比：2 种策略 × 2 种检索（BM25 cjk_bigram、bge-small-zh 向量）。
 
 在迁移后的 v3 可回答查询上（``examples/public_health_v4/v3_gold_mapping.json``），
-对比 Hit@3、MRR（前 10 名）与平均送入模型字数（top_k=3，与
+对比 Hit@3、MRR（前 10 名）与平均输入上下文字数（top_k=3，与
 ``configs/application_dense_agent_rerank.yaml`` 一致）：
 
 - 检索语料是 v4 全部子块（不是 v3 的 498 条）；父子分块只索引子块，父块不进索引。
@@ -60,7 +60,7 @@ def _query_metrics(gold: set[str], ranked_ids: list[str]) -> dict[str, float]:
 def _context_chars(strategy: str, ranked_ids: list[str],
                    by_id: dict[str, dict[str, Any]],
                    parent_by_id: dict[str, dict[str, Any]]) -> int:
-    """top_k=3 送入模型的字数。父子分块取命中子块的父块去重，递归切分按块计。"""
+    """top_k=3 作为输入上下文交给模型的字数。父子分块取命中子块的父块去重，递归切分按块计。"""
     top = ranked_ids[:TOP_K]
     if strategy == "parent_child":
         seen: list[str] = []
@@ -79,7 +79,7 @@ def evaluate_strategy(
     queries: list[dict[str, Any]],
     cache: rb.EmbeddingCache,
 ) -> dict[str, Any]:
-    """一种策略：BM25 与向量两路，在可用可回答查询上算指标与送入字数。"""
+    """一种策略：BM25 与向量两路，在可用可回答查询上算指标与输入上下文字数。"""
     chunks = _chunk_dicts(chunks_dir / strategy / "chunks.jsonl")
     by_id = {c["chunk_id"]: c for c in chunks}
     parents_path = chunks_dir / strategy / "parents.jsonl"

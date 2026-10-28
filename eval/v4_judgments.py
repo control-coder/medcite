@@ -1,12 +1,12 @@
 """v4 评测集句子级相关性标注与冻结（M7 阶段 B）。
 
-池化（TREC 式）：对每条查询，取 4 种现有检索方法（recursive×BM25 cjk_bigram、
+池化标注（pooling，TREC 式）：对每条查询，取 4 种现有检索方法（recursive×BM25 cjk_bigram、
 recursive×向量、parent_child×BM25、parent_child×向量）各自的前 5 名子块，按
 ``chunk_id`` 去重；v3 查询另把 ``v3_gold_mapping.json`` 中两种策略的 gold 子块
 并入池（用于与 v3 标注的一致率计算）。
 
-标注：池中每个段落按 ``chunking._split_sentences`` 切成句子，同一句子（去空白
-sha256 相同）在池内只送一次、只标一次；按请求内顺序编号 ``p{段序}s{句序}``
+标注：标注池中每个段落按 ``chunking._split_sentences`` 切成句子，同一句子（去空白
+sha256 相同）在标注池内只提交一次、只标一次；按请求内顺序编号 ``p{段序}s{句序}``
 （如 p3s2），超出输入预算则拆成多次请求。由模型返回 relevant / partial 的句子
 编号，其余默认无关。输出校验失败时最多重试 1 次：在原消息后追加确定性的纠错说明
 （列出非法编号），仍无效的请求记 judge_failed，其句子按 irrelevant 处理。提示词
@@ -161,7 +161,7 @@ def sentence_id(segment_no: int, sentence_no: int) -> str:
 
 
 class PassageState:
-    """池中的一段候选（一个子块）：句子切分、本段独占的句子与请求归属。"""
+    """标注池中的一段候选（一个子块）：句子切分、本段独占的句子与请求归属。"""
 
     def __init__(self, doc_id: str, chunk_id: str, title: str, text: str) -> None:
         self.doc_id = doc_id
@@ -170,13 +170,13 @@ class PassageState:
         self.text = text
         self.sentences = _split_sentences(text)
         self.hashes = [sentence_hash(s) for s in self.sentences]
-        self.owned: list[int] = []  # 池内首次出现的句子下标（重复句子只送一次）
-        self.request_no = 0  # 第几次请求（1 起）；0 表示本段没有需要送标的新句子
+        self.owned: list[int] = []  # 标注池内首次出现的句子下标（重复句子只提交一次）
+        self.request_no = 0  # 第几次请求（1 起）；0 表示本段没有需要提交标注的新句子
         self.ids: dict[int, str] = {}  # owned 句子下标 -> 请求内编号
 
 
 class QueryPool:
-    """一条查询的候选池：按 chunk_id 去重的段落序列与检索方法来源。"""
+    """一条查询的标注池：按 chunk_id 去重的段落序列与检索方法来源。"""
 
     def __init__(self, sample_id: str) -> None:
         self.sample_id = sample_id
@@ -577,8 +577,8 @@ def v3_agreement(corpus: V4Corpus, judgments: dict[str, dict[str, dict[str, str]
                  sentence_texts: dict[str, dict[str, str]]) -> dict[str, Any]:
     """v3 查询上 LLM 标注与 v3 标注的一致率（按摘录，relevant/partial 视为正）。
 
-    只比较该查询池内实际送标的摘录（摘录映射到的 parent_child 子块中至少一句
-    被送标）：属于该查询 v3 gold 的为 v3 正例，其余为 v3 负例；池外摘录不参与。
+    只比较该查询标注池内实际提交标注的摘录（摘录映射到的 parent_child 子块中至少一句
+    被提交标注）：属于该查询 v3 gold 的为 v3 正例，其余为 v3 负例；标注池外摘录不参与。
     LLM 侧取该摘录映射到的子块的投影最高标签。
     """
     pc_chunks = corpus.chunks["parent_child"]

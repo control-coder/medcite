@@ -1,6 +1,6 @@
 # 应用向量检索 + 检索 Agent：固定版本的 bge-small-zh（只读本地缓存，不自动下载），语料为 v3（131 篇页面，498 个片段），
 # 与 docs/evaluation.md 第三节测试集评测的配置一致。仅供 mimo_grounded 使用：先按原问题检索一次，再由模型通过工具调用
-# 决定是否换用规范表述继续检索（最多再检索 2 次），多轮结果用 RRF 融合取前 3 段交给受约束摘录。需要本机准备好模型缓存。
+# 决定是否换用规范表述继续检索（最多再检索 2 次），多轮结果用 RRF 融合取前 3 段交给抽取式回答（代码中称 constrained excerpt）。需要本机准备好模型缓存。
 application:
   mode: retrieval_mock
   topology: single

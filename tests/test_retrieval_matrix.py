@@ -33,7 +33,7 @@ def test_query_metrics_use_rank_of_each_gold() -> None:
 
 def test_sign_test_is_exact_and_two_sided() -> None:
     assert rm.sign_test_p(0, 0) == 1.0
-    assert rm.sign_test_p(9, 1) == pytest.approx(0.0215, abs=1e-4)  # 与评测报告里改写/智能体的检验同一算法
+    assert rm.sign_test_p(9, 1) == pytest.approx(0.0215, abs=1e-4)  # 与评测报告里改写/检索 Agent 的检验同一算法
     assert rm.sign_test_p(5, 5) == 1.0
 
 
