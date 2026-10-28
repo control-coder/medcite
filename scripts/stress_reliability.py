@@ -43,12 +43,18 @@ from typing import Any
 
 from sqlalchemy import func, select
 
-from medidiag.config import get_settings
-from medidiag.db.models import Case, CaseEventLog, CaseReport, StageArtifact, WorkflowTask
-from medidiag.db.session import create_db_engine, get_session_factory, init_db
-from medidiag.workflow.executor import WorkflowExecutor
-from medidiag.workflow.provider import DeterministicWorkflowProvider
-from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker
+# 子进程以 `python -I` 启动，会忽略 PYTHONPATH 与当前目录；包未安装（如仅靠 pytest 的 pythonpath 配置）时
+# 子 worker 会因导入失败立即退出，因此按脚本位置显式补上 src 路径。
+_SRC = str(Path(__file__).resolve().parents[1] / "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
+
+from medidiag.config import get_settings  # noqa: E402
+from medidiag.db.models import Case, CaseEventLog, CaseReport, StageArtifact, WorkflowTask  # noqa: E402
+from medidiag.db.session import create_db_engine, get_session_factory, init_db  # noqa: E402
+from medidiag.workflow.executor import WorkflowExecutor  # noqa: E402
+from medidiag.workflow.provider import DeterministicWorkflowProvider  # noqa: E402
+from medidiag.workflow.worker import LeaseScanner, SingleMachineWorker  # noqa: E402
 
 PROVIDER_STAGES = ("normalize", "retrieve", "plan", "generate", "arbitrate", "review", "report")
 REPORT_DIR = Path("artifacts/reports/reliability")
