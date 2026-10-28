@@ -71,6 +71,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         safe = (
             common and store_ok and (bm25 or dense or hybrid) and rewrite_ok and agent_ok
             and _rerank_ok(config["retrieval"]) and _hybrid_ok(config["retrieval"], method)
+            and _cache_ok(config["retrieval"])
         )
     except (KeyError, TypeError, AttributeError) as exc:
         raise ValueError("应用配置缺少明确的安全检索参数。") from exc
@@ -94,6 +95,21 @@ def _hybrid_ok(retrieval: dict[str, Any], method: str) -> bool:
         and type(rrf_k) is int and 1 <= rrf_k <= 1000
         and isinstance(mmr_lambda, (int, float)) and not isinstance(mmr_lambda, bool)
         and 0.0 <= float(mmr_lambda) <= 1.0
+    )
+
+
+def _cache_ok(retrieval: dict[str, Any]) -> bool:
+    """检索缓存可选（M14）：键集合固定，容量与 TTL 有上限；默认不配置即关闭。"""
+    cache = retrieval.get("cache")
+    if cache is None:
+        return True
+    if not isinstance(cache, dict) or not set(cache) <= {"enabled", "max_entries", "ttl_s"}:
+        return False
+    max_entries, ttl_s = cache.get("max_entries", 256), cache.get("ttl_s", 3600)
+    return (
+        type(cache.get("enabled", False)) is bool
+        and type(max_entries) is int and 1 <= max_entries <= 10000
+        and isinstance(ttl_s, (int, float)) and not isinstance(ttl_s, bool) and 0 < ttl_s <= 86400
     )
 
 

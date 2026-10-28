@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 import uuid
-from collections.abc import Generator
+from collections.abc import AsyncIterator, Generator
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Form, Header, Query, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
@@ -54,6 +62,10 @@ _CN_ID = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
 _API_DIR = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_API_DIR / "templates"))
 _log = get_logger(__name__)
+# SSE：服务端轮询事件表的间隔、心跳间隔与单连接最长时长（到点发 end/timeout，前端回退轮询）
+_SSE_POLL_SECONDS = 0.5
+_SSE_HEARTBEAT_SECONDS = 15.0
+_SSE_MAX_SECONDS = 300.0
 
 
 def _ensure_deidentified(payload: CaseCreateRequest) -> None:
@@ -263,20 +275,69 @@ def create_app(
         has_more = len(records) > limit
         records = records[:limit]
         return EventPage(
-            items=[
-                EventResponse(
-                    event_id=item.id,
-                    event_type=item.event_type,
-                    from_status=item.from_status,
-                    to_status=item.to_status,
-                    trigger_subject=item.trigger_subject,
-                    trigger_entity=item.trigger_entity,
-                    detail=item.detail,
-                    created_at=item.created_at.isoformat(),
-                )
-                for item in records
-            ],
+            items=[_event_response(item) for item in records],
             next_cursor=records[-1].id if has_more and records else None,
+        )
+
+    @app.get("/api/v1/cases/{case_id}/events/stream")
+    async def stream_events(
+        case_id: str,
+        request: Request,
+        cursor: int = Query(default=0, ge=0),
+        last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+        session: Session = Depends(get_session),
+    ) -> StreamingResponse:
+        """SSE：转发病例事件日志，病例结束（或等待人工）后关闭。鉴权与轮询端点相同：只能订阅本人病例。"""
+        _case_or_404(session, case_id)  # 流开始前校验归属，越权与不存在统一 404
+        owner_id = session.info["owner_id"]
+        if last_event_id and last_event_id.isdigit():
+            cursor = max(cursor, int(last_event_id))
+        factory = request.app.state.session_factory
+
+        def read_batch(after: int) -> tuple[list[EventResponse], bool]:
+            # 先读状态再读事件：状态已结束时，其前的事件一定已被本批读到
+            with factory() as db:
+                db.info["owner_id"] = owner_id
+                case = _case_or_404(db, case_id)
+                finished = is_terminal(CaseState(case.status)) or case.status == CaseState.ESCALATED.value
+                rows = db.scalars(
+                    select(CaseEventLog)
+                    .where(CaseEventLog.case_id == case_id, CaseEventLog.id > after)
+                    .order_by(CaseEventLog.id).limit(200)
+                )
+                return [_event_response(row) for row in rows], finished
+
+        async def frames() -> AsyncIterator[str]:
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + _SSE_MAX_SECONDS
+            last_beat = loop.time()
+            after = cursor
+            while True:
+                try:
+                    batch, finished = await run_in_threadpool(read_batch, after)
+                except MediDiagError:
+                    return
+                for item in batch:
+                    after = item.event_id
+                    yield f"id: {item.event_id}\nevent: case_event\ndata: {item.model_dump_json()}\n\n"
+                    last_beat = loop.time()
+                if finished and len(batch) < 200:
+                    yield 'event: end\ndata: {"reason": "finished"}\n\n'
+                    return
+                if loop.time() >= deadline:
+                    yield 'event: end\ndata: {"reason": "timeout"}\n\n'
+                    return
+                if await request.is_disconnected():
+                    return
+                if loop.time() - last_beat >= _SSE_HEARTBEAT_SECONDS:
+                    yield ": keep-alive\n\n"
+                    last_beat = loop.time()
+                if not batch:
+                    await asyncio.sleep(_SSE_POLL_SECONDS)
+
+        return StreamingResponse(
+            frames(), media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
     @app.get("/api/v1/cases/{case_id}/report", response_model=ReportResponse)
@@ -690,6 +751,19 @@ def _case_or_404(session: Session, case_id: str) -> Case:
     if case is None:
         raise MediDiagError("CASE_NOT_FOUND", detail=f"case {case_id} not found")
     return case
+
+
+def _event_response(item: CaseEventLog) -> EventResponse:
+    return EventResponse(
+        event_id=item.id,
+        event_type=item.event_type,
+        from_status=item.from_status,
+        to_status=item.to_status,
+        trigger_subject=item.trigger_subject,
+        trigger_entity=item.trigger_entity,
+        detail=item.detail,
+        created_at=item.created_at.isoformat(),
+    )
 
 
 def _task_response(task: WorkflowTask) -> WorkflowStartResponse:

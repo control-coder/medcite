@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from medidiag.errors import MediDiagError
+from medidiag.rag.cache import DEFAULT_MAX_ENTRIES, DEFAULT_TTL_S, RetrievalCache, cache_key
 from medidiag.rag.leakage import LEAKAGE_FLAG, run_leakage_check_records
 from medidiag.rag.metadata import FilterTrace, MetadataIndex, search_with_relaxation
 from medidiag.rag.rerank import Reranker
@@ -136,9 +137,17 @@ class RuntimeMedicalRAG:
         self._metadata: MetadataIndex | None = None
         self.last_filter_trace: FilterTrace | None = None
         self.corpus_hash = _stable_hash([asdict(chunk) for chunk in chunks])
+        # 缓存开关不影响检索结果，不计入配置哈希，开关前后证据包标识保持一致
         self.retrieval_config_hash = _stable_hash(
-            {"retrieval": retrieval_config, "embedding": embedding_config}
+            {"retrieval": {k: v for k, v in retrieval_config.items() if k != "cache"},
+             "embedding": embedding_config}
         )
+        cache_config = retrieval_config.get("cache") or {}
+        self.cache: RetrievalCache | None = (
+            RetrievalCache(int(cache_config.get("max_entries", DEFAULT_MAX_ENTRIES)),
+                           float(cache_config.get("ttl_s", DEFAULT_TTL_S)))
+            if cache_config.get("enabled") else None)
+        self.last_cache_hit: bool | None = None  # 最近一次检索是否命中缓存；未开启缓存时为 None（非线程安全）
 
     @classmethod
     def from_config(
@@ -231,7 +240,7 @@ class RuntimeMedicalRAG:
 
         ``filters`` 非空时带元数据过滤检索，过滤与放宽轨迹写入结果的 ``metadata_filter``。
         """
-        evidence, trace = self.search_filtered(normalized_query, filters=filters)
+        evidence, trace, hit = self._search_cached(normalized_query, None, filters)
         if not evidence:
             raise MediDiagError(
                 "RAG_NO_EVIDENCE",
@@ -240,7 +249,25 @@ class RuntimeMedicalRAG:
         result = self.freeze_evidence(normalized_query, evidence)
         if trace is not None:
             result["metadata_filter"] = trace.to_dict()
+        if hit is not None:
+            result["retrieval_cache"] = {"hit": hit}
         return result
+
+    def _search_cached(self, query: str, top_k: int | None, filters: Mapping[str, Any] | None
+                       ) -> tuple[tuple[EvidenceItem, ...], FilterTrace | None, bool | None]:
+        """查缓存，未命中再检索并写回；未开启缓存时 hit 为 None。只缓存检索结果，不缓存模型回答。"""
+        if self.cache is None:
+            evidence, trace = self._search_uncached(query, top_k, filters)
+            self.last_cache_hit = None
+            return evidence, trace, None
+        key = cache_key(query, top_k=top_k, filters=filters, corpus_hash=self.corpus_hash,
+                        corpus_version=self.corpus_version, config_hash=self.retrieval_config_hash)
+        hit, value = self.cache.get(key)
+        if not hit:
+            value = self._search_uncached(query, top_k, filters)
+            self.cache.put(key, value)
+        self.last_cache_hit = hit
+        return value[0], value[1], hit
 
     def search_filtered(self, query: str, top_k: int | None = None,
                         filters: Mapping[str, Any] | None = None) -> tuple[tuple[EvidenceItem, ...], FilterTrace | None]:
@@ -248,7 +275,13 @@ class RuntimeMedicalRAG:
 
         过滤值先校验（未知值丢弃）；过滤后不足最终段数（配置的 top_k）时按
         section_type → topic → source_type → period 的顺序逐个放宽重查。
+        配置了 retrieval.cache 时先查缓存，命中与否见 ``last_cache_hit``。
         """
+        evidence, trace, _ = self._search_cached(query, top_k, filters)
+        return evidence, trace
+
+    def _search_uncached(self, query: str, top_k: int | None, filters: Mapping[str, Any] | None
+                         ) -> tuple[tuple[EvidenceItem, ...], FilterTrace | None]:
         if not filters:
             return self._search(query, top_k, None), None
         min_results = int(self.retrieval_config.get("top_k", 5))

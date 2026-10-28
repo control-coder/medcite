@@ -65,14 +65,30 @@ function Task({id, result}: {id: string; result: boolean}) {
   const [analysis, setAnalysis] = useState<Analysis | null>(null); const [error, setError] = useState('');
   const [cited, setCited] = useState<Citation | null>(null);
   const jump = (chunkId: string) => { const target = document.getElementById('evidence-' + chunkId); target?.scrollIntoView({behavior: 'smooth'}); target?.classList.add('flash'); setTimeout(() => target?.classList.remove('flash'), 1800); };
-  useEffect(() => { let stopped = false; let timer: ReturnType<typeof setTimeout>;
-    const poll = async () => { try {
+  useEffect(() => { let stopped = false; let timer: ReturnType<typeof setTimeout>; let source: EventSource | undefined;
+    // 读取一次最新状态；返回是否仍在处理中（出错时视为停止）
+    const load = async (): Promise<boolean> => { try {
       const item = await api<Case>('/cases/' + id);
       if (['CREATED', 'REVISION_REQUIRED'].includes(item.status) && !item.active_task) await api('/cases/' + id + '/workflow', {method: 'POST', headers: {'Idempotency-Key': 'web-' + id}});
       const data = await api<Analysis>('/cases/' + id + '/analysis');
-      if (!stopped) { setAnalysis(data); setError(''); if (data.outcome === 'processing') timer = setTimeout(poll, 1200); }
-    } catch (e) { if (!stopped) setError((e as Error).message); } }; void poll();
-    return () => { stopped = true; clearTimeout(timer); };
+      if (stopped) return false;
+      setAnalysis(data); setError(''); return data.outcome === 'processing';
+    } catch (e) { if (!stopped) setError((e as Error).message); return false; } };
+    const poll = async () => { if (await load() && !stopped) timer = setTimeout(poll, 1200); };
+    // 优先订阅 SSE（后端推送阶段变化）；不支持或连接出错时回退到轮询
+    const listen = async () => {
+      if (!(await load()) || stopped) return;
+      if (typeof EventSource === 'undefined') { timer = setTimeout(poll, 1200); return; }
+      const es = new EventSource('/api/v1/cases/' + id + '/events/stream'); source = es;
+      let busy = false; let again = false;
+      const refresh = async () => { if (busy) { again = true; return; } busy = true;
+        do { again = false; if (!(await load())) { es.close(); break; } } while (again && !stopped); busy = false; };
+      es.addEventListener('case_event', () => { void refresh(); });
+      es.addEventListener('end', () => { es.close(); void poll(); });
+      es.onerror = () => { es.close(); if (!stopped) timer = setTimeout(poll, 1200); };
+    };
+    void listen();
+    return () => { stopped = true; clearTimeout(timer); source?.close(); };
   }, [id]);
   return <><a className="back" href="#/history">← 咨询记录</a><p className="eyebrow">{result ? '03 / 结果与证据' : '02 / 任务进度'}</p><h1>{result ? '理解结论，也理解局限。' : '从问题到证据，逐步可见。'}</h1><p className="muted">任务 {id}</p>{error && <div role="alert" className="error">{error}<button onClick={() => location.reload()}>重新连接</button></div>}
     {!analysis ? (!error && <p role="status" className="loading">正在读取任务…</p>) : <><section className="card"><div className="section-title"><h2>{states[analysis.status] || analysis.status}</h2><span className={'badge ' + (analysis.outcome === 'processing' ? 'badge--busy' : analysis.outcome === 'ready' ? 'badge--ok' : analysis.outcome === 'failed' || analysis.outcome === 'cancelled' ? 'badge--bad' : 'badge--muted')}>{analysis.outcome === 'processing' ? '处理中' : '处理结束'}</span></div><p role="status">{analysis.message}</p><p className="notice">{analysis.answer_mode === 'generative' ? '真实检索 / MiMo 生成式回答（句子级引用，蕴含判定由模型完成，非医学审核）' : modes[analysis.execution_mode] || modes.unknown}</p>
