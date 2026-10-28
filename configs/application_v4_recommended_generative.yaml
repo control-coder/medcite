@@ -1,0 +1,42 @@
+# 应用配置：v4 推荐配置（M15），生成式回答。
+# 检索、路由与检索 Agent 同 application_v4_recommended.yaml，只把回答改为 M12 的句子级引用生成式回答；
+# 引用逐字校验与蕴含判定不通过时降级为抽取式回答，再不成立则拒答。需要真实模型（mimo_grounded），不支持离线 retrieval_mock。
+# 语料为 v4 父子分块的子块，保存在本机 .cache/corpus/chunks/parent_child/，不入库；复现方式见 examples/public_health_v4/README.md。
+application:
+  mode: retrieval_mock
+  topology: single
+runtime:
+  device: cpu
+  batch_size: 8
+embedding:
+  model: BAAI/bge-small-zh-v1.5
+  revision: 7999e1d3359715c523056ef9478215996d62a620
+  local_files_only: true
+dataset:
+  version: public-health-v4
+  knowledge_base_path: .cache/corpus/chunks/parent_child/chunks.jsonl
+  rag_eval_set_path: examples/public_health_v4/queries.jsonl
+  agent_eval_set_path: examples/public_health_v4/queries.jsonl
+retrieval:
+  method: hybrid
+  bm25_tokenizer: cjk_bigram
+  top_k: 3
+  hybrid:
+    candidates: 20
+    rrf_k: 60
+    mmr_lambda: 0.7
+  rerank:
+    model: BAAI/bge-reranker-v2-m3
+    revision: 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+    local_files_only: true
+    candidates: 20
+generation:
+  answer_mode: generative
+  on_invalid: feedback
+  agent: true
+  agent_version: 2
+  query_router: true
+leakage_check:
+  chunk_fields_to_check: [source, source_id, metadata.raw_id]
+  check_question_text: true
+  check_answer_key: true
