@@ -14,11 +14,15 @@
     python -m eval.entailment_check --mode record --limit 1   # 冒烟（1 批），不写报告
     python -m eval.entailment_check --mode record
     python -m eval.entailment_check --mode replay
+
+默认 r2：判定容错与生产路径一致（``entailed`` 字段同义，非法 JSON 或结构不合规时附纠错说明重试一次）。
+旧调用记录作为只读 base，命中即不再请求；需要重试的新请求才真实调用，写入 ``v4-entailment-check-r2.jsonl``。
 """
 
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
 import random
@@ -27,11 +31,10 @@ import sys
 import uuid
 from collections import Counter
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from typing import Any
-
-from pydantic import ValidationError
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
@@ -50,10 +53,12 @@ from medidiag.workflow.generative_answer import (  # noqa: E402
     _NEGATION,
     ENTAILMENT_MAX_TOKENS,
     ENTAILMENT_VERSION,
+    MAX_ENTAILMENT_CALLS,
     InvalidAnswer,
     _norm,
-    _Verdicts,
     entailment_messages,
+    entailment_retry_messages,
+    parse_verdicts,
     validate_sentences,
 )
 
@@ -224,9 +229,34 @@ def entailment_request(items: Sequence[dict[str, Any]], model: str) -> LLMReques
                       max_tokens=ENTAILMENT_MAX_TOKENS, reasoning_mode="disabled", prompt_version=ENTAILMENT_VERSION)
 
 
-def judge_batch(provider: Any, items: Sequence[dict[str, Any]], model: str) -> Any:
-    request = entailment_request(items, model)
-    return call_with_retry(lambda: provider.generate(request, timeout_s=45, idempotency_key="m13-ent-" + uuid.uuid4().hex))
+def judge_with_retry(provider: Any, items: Sequence[dict[str, Any]], model: str, tokens: Counter[str],
+                     errors: Counter[str], retries: Counter[str]) -> list[str] | None:
+    """与生产 ``_entail`` 同一套容错：非法 JSON 或结构不合规时附纠错说明重试一次，仍失败返回 None（该批视为未核实）。
+
+    ``entailed`` 字段名同义已在 ``parse_verdicts`` 内处理；超时等其他错误不重试，只计入 errors。
+    """
+    base = entailment_request(items, model)
+    for attempt in range(MAX_ENTAILMENT_CALLS):
+        request = base if attempt == 0 else replace(base, messages=entailment_retry_messages(base.messages, len(items)))
+        if attempt:
+            retries["retry_calls"] += 1
+        try:
+            result = call_with_retry(functools.partial(
+                provider.generate, request, timeout_s=45, idempotency_key="m13-ent-" + uuid.uuid4().hex))
+        except MediDiagError as exc:
+            errors[exc.code] += 1
+            if exc.code != "STRUCTURED_OUTPUT_INVALID":
+                return None
+            continue
+        for name in ("input_tokens", "output_tokens", "total_tokens"):
+            tokens[name] += int((result.usage or {}).get(name) or 0)
+        verdicts: list[str] | None = parse_verdicts(result.parsed_json, len(items))
+        if verdicts is not None:
+            if attempt:
+                retries["retry_recovered"] += 1
+            return verdicts
+        errors["ENTAILMENT_SHAPE"] += 1
+    return None
 
 
 def summarize(pairs: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -281,7 +311,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         pair["rules_catch"] = rules_catch(pair, chunk_texts[pair["quote_chunk_id"]])
     print(f"[build] 候选句 {len(candidates)}，构造 {len(pairs)} 对：{dict(Counter(p['category'] for p in pairs))}", flush=True)
 
-    cassette = Cassette(args.cassette)
+    cassette = Cassette(args.cassette, base=Cassette(args.base_cassette) if args.base_cassette else None)
     if args.mode == "record":
         inner: Any = RecordingTransport(cassette, args.ledger, max_calls=args.max_calls)
     else:
@@ -294,32 +324,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         batches = batches[: args.limit]
     tokens: Counter[str] = Counter()
     errors: Counter[str] = Counter()
+    retries: Counter[str] = Counter()
     for n, batch in enumerate(batches, 1):
         items = [{"id": i, "sentence": p["sentence"], "evidence": p["quote"], "check_negation": p["flag"]}
                  for i, p in enumerate(batch)]
-        try:
-            result = judge_batch(provider, items, args.model)
-        except MediDiagError as exc:
-            errors[exc.code] += 1
-            continue
-        for name in ("input_tokens", "output_tokens", "total_tokens"):
-            tokens[name] += int((result.usage or {}).get(name) or 0)
-        # 与生产 ``_entail`` 同一套校验：格式不合（字段名、id 不全）整批视为未核实，生产中这些句子会被丢弃
-        try:
-            verdicts = _Verdicts.model_validate(result.parsed_json).verdicts
-        except ValidationError:
-            verdicts = []
-        by_id = {v.id: v.entailment for v in verdicts}
-        valid = sorted(by_id) == list(range(len(batch))) and len(verdicts) == len(batch)
-        if not valid:
-            errors["ENTAILMENT_SHAPE"] += 1
+        verdicts = judge_with_retry(provider, items, args.model, tokens, errors, retries)
         for i, pair in enumerate(batch):
-            pair["verdict"] = by_id[i] if valid else None
-            pair["shape_error"] = not valid
+            pair["verdict"] = verdicts[i] if verdicts else None
+            pair["shape_error"] = verdicts is None
         print(f"[judge] {n}/{len(batches)}", flush=True)
     scored = [p for b in batches for p in b] if args.limit else pairs
     cost: dict[str, Any] = {"batches": len(batches), "batch_size": BATCH, "call_errors": dict(errors),
-                            "input_tokens": tokens["input_tokens"], "output_tokens": tokens["output_tokens"]}
+                            "input_tokens": tokens["input_tokens"], "output_tokens": tokens["output_tokens"],
+                            "entailment_retry": {"retry_calls": retries["retry_calls"],
+                                                 "retry_recovered": retries["retry_recovered"]}}
     if args.mode == "record":
         cost["spend"] = inner.spent()
     return {"schema_version": SCHEMA_VERSION, "date": str(date.today()), "mode": args.mode, "model": args.model,
@@ -331,14 +349,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode", choices=["record", "replay"], required=True)
     parser.add_argument("--model", default=ACTIVE_MIMO_MODEL)
-    parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/v4-entailment-check.jsonl")
-    parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/v4-m13-ledger.db")
-    parser.add_argument("--max-calls", type=int, default=500)
+    parser.add_argument("--revision", default="r2", help="报告后缀；r2 是加入字段同义与纠错重试后的检查，旧报告不动")
+    parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/v4-entailment-check-r2.jsonl")
+    parser.add_argument("--base-cassette", type=Path, default=ROOT / "eval/cassettes/v4-entailment-check.jsonl",
+                        help="只读的旧调用记录；命中则不再请求，新记录只写入 --cassette")
+    parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/v4-router-v2-ledger.db")
+    parser.add_argument("--max-calls", type=int, default=100)
     parser.add_argument("--limit", type=int, default=0, help="冒烟：只判前 N 批，不写报告")
     args = parser.parse_args()
 
     report = run(args)
-    path = REPORT_DIR / f"entailment-check-v4-{date.today():%Y%m%d}.json"
+    path = REPORT_DIR / f"entailment-check-v4-{date.today():%Y%m%d}-{args.revision}.json"
     brief = {k: report[k] for k in ("cost", "summary")}
     if args.limit:
         print(json.dumps(brief, ensure_ascii=False, indent=2))

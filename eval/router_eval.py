@@ -2,7 +2,7 @@
 
 只跑 v4 dev 60 条：
 
-1. 路由：规则级 + 一次 LLM 调用（``query-router-v1``），输出 gold 意图 × 预测意图的混淆矩阵（标明规则 / LLM / 降级来源）；
+1. 路由：规则级 + 一次 LLM 调用（``query-router-v2``，``--prompt-version v1`` 回放 M10 的旧记录），输出 gold 意图 × 预测意图的混淆矩阵（标明规则 / LLM / 降级来源）；
    急症必须全部召回。
 2. 过滤抽取：带 ``expected_filters`` 的查询上，预测过滤条件与期望条件逐键对照（主题按文档集合有交集算命中，
    周期的 latest 解析为语料最大月份）；另统计不该有过滤条件的科普查询上出现的多余条件。
@@ -18,6 +18,10 @@
     python -m eval.router_eval --mode record --limit 4   # 冒烟，不写报告
     python -m eval.router_eval --mode record             # 全量
     python -m eval.router_eval --mode replay             # 回放并核对
+    python -m eval.router_eval --mode replay --prompt-version v1   # 回放 v1 旧记录，只核对不写报告
+
+v2 默认使用 ``eval/cassettes/v4-router-v2.jsonl``、账本 ``.cache/v4-router-v2-ledger.db``，报告
+``router-v2-v4-<日期>.json`` 内带与 v1 报告的并列对照（``comparison``）。
 """
 
 from __future__ import annotations
@@ -57,7 +61,7 @@ from medidiag.llm.models import ACTIVE_MIMO_MODEL, ALLOWED_MIMO_MODELS  # noqa: 
 from medidiag.rag.metadata import MetadataIndex, search_with_relaxation  # noqa: E402
 from medidiag.workflow.query_router import (  # noqa: E402
     INTENTS,
-    PROMPT_VERSION,
+    PROMPT_VERSIONS,
     RouteDecision,
     route_query,
 )
@@ -94,13 +98,14 @@ class _CountingLLM:
 
 
 def route_all(queries: Sequence[dict[str, Any]], llm: _CountingLLM, index: MetadataIndex, model: str,
-              workers: int) -> dict[str, RouteDecision]:
+              workers: int, prompt_version: str) -> dict[str, RouteDecision]:
     """对每条查询路由；按 10 条或 30 秒打印进度。"""
     decisions: dict[str, RouteDecision] = {}
     started = last_print = time.time()
 
     def one(query: dict[str, Any]) -> tuple[str, RouteDecision]:
-        return query["sample_id"], route_query(query["question"], llm=cast(Any, llm), metadata=index, model=model)
+        return query["sample_id"], route_query(query["question"], llm=cast(Any, llm), metadata=index, model=model,
+                                               prompt_version=prompt_version)
 
     with ThreadPoolExecutor(workers) as pool:
         for done, (sample_id, decision) in enumerate(pool.map(one, queries), 1):
@@ -128,6 +133,39 @@ def confusion(queries: Sequence[dict[str, Any]], decisions: dict[str, RouteDecis
             "source_counts": dict(Counter(decisions[q["sample_id"]].source for q in queries)),
             "rule_hits": dict(Counter(d.rule for d in decisions.values() if d.rule)),
             "fallbacks": {sid: d.fallback_reason for sid, d in decisions.items() if d.source == "fallback"}}
+
+
+def over_refusal(queries: Sequence[dict[str, Any]], decisions: dict[str, RouteDecision]) -> dict[str, Any]:
+    """gold 为科普的查询被路由拒答（个体诊疗 / 超范围 / 急症）的数量与编号，按预测意图拆分。"""
+    ids = {q["sample_id"]: decisions[q["sample_id"]].intent for q in queries
+           if q["intent"] == "popular_science" and decisions[q["sample_id"]].refused}
+    return {"count": len(ids), "of": sum(1 for q in queries if q["intent"] == "popular_science"),
+            "by_predicted": dict(Counter(ids.values())), "ids": ids}
+
+
+def over_refusal_from_routes(report: dict[str, Any]) -> dict[str, Any]:
+    """旧报告没有 over_refusal 字段时，从逐条路由与 gold 意图还原（v1 报告用）。"""
+    gold = {q["sample_id"]: q["intent"] for q in load_queries() if q.get("split") == "dev"}
+    ids = {sid: r["intent"] for sid, r in report["routes"].items()
+           if gold.get(sid) == "popular_science" and r["refused"]}
+    return {"count": len(ids), "of": sum(1 for v in gold.values() if v == "popular_science"),
+            "by_predicted": dict(Counter(ids.values())), "ids": ids}
+
+
+def compare_with_v1(report: dict[str, Any], v1: dict[str, Any]) -> dict[str, Any]:
+    """v2 与 v1 报告并列：准确率、混淆矩阵、急症召回、科普误拒、Hit@3；v1 报告不改动。"""
+    def side(r: dict[str, Any]) -> dict[str, Any]:
+        retrieval = r["retrieval"]["all_answerable"]
+        variants = r.get("filter_variants", {}).get("all_answerable", {})
+        return {"prompt_version": r["prompt_version"], "accuracy": r["routing"]["accuracy"],
+                "matrix": r["routing"]["matrix"], "emergency_recall": r["routing"]["emergency_recall"],
+                "popular_over_refusal": r.get("over_refusal") or over_refusal_from_routes(r),
+                "hit@3_n": retrieval["n"], "hit@3_no_filter": retrieval["none"]["hit@3"],
+                "hit@3_applied_filters_source_type_period": retrieval["predicted"]["hit@3"],
+                "hit@3_variants": {k: variants[k]["hit@3"] for k in variants if k != "n"},
+                "filters_key_match_rate": r["filters"]["key_match_rate"], "cost": r["cost"]}
+    return {"v1": side(v1), "v2": side(report),
+            "note": "同一批 v4 dev 60 条；v2 只跑一次。M15 test 上的路由数字基于 v1，未用 v2 重跑。"}
 
 
 def compare_filters(expected: dict[str, Any], decision: RouteDecision, index: MetadataIndex) -> dict[str, Any]:
@@ -324,7 +362,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         os.environ["MIMO_BASE_URL"] = "https://api.xiaomimimo.com"
         transport = ReplayTransport(cassette)
     llm = _CountingLLM(make_provider(transport))
-    decisions = route_all(queries, llm, index, args.model, args.workers)
+    prompt_version = PROMPT_VERSIONS[args.prompt_version]
+    decisions = route_all(queries, llm, index, args.model, args.workers, prompt_version)
 
     routing = confusion(queries, decisions)
     filters = filter_summary(queries, decisions, index)
@@ -363,12 +402,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "filter_variants": variants,
         "schema_version": SCHEMA_VERSION, "date": str(date.today()), "mode": args.mode, "model": args.model,
-        "prompt_version": PROMPT_VERSION, "split": "dev", "queries": len(queries),
+        "prompt_version": prompt_version, "split": "dev", "queries": len(queries),
         "intents": list(INTENTS), "cost": cost, "routing": routing, "filters": filters, "retrieval": retrieval,
         "params": {"retrieval": "dense bge-small-zh parent_child top3 无重排", "top_k": TOP_K,
                    "relax_order": ["section_type", "topic", "source_type", "period"]},
         "note": "标注由 LLM 完成、未经人工复核；Hit@3 的 relevant 与 partial 都算命中；样本量小，只作工程对照。",
         "routes": {sid: d.to_dict() for sid, d in decisions.items()},
+        "over_refusal": over_refusal(queries, decisions),
+        "emergency_hints": [sid for sid, d in decisions.items() if d.emergency_hint],
     }
 
 
@@ -390,15 +431,27 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode", choices=["record", "replay"], required=True)
     parser.add_argument("--model", choices=ALLOWED_MIMO_MODELS, default=ACTIVE_MIMO_MODEL)
-    parser.add_argument("--cassette", type=Path, default=ROOT / "eval/cassettes/v4-router.jsonl")
-    parser.add_argument("--ledger", type=Path, default=ROOT / ".cache/v4-m10-ledger.db")
-    parser.add_argument("--max-calls", type=int, default=150)
+    parser.add_argument("--prompt-version", choices=sorted(PROMPT_VERSIONS), default="v2",
+                        help="路由提示词版本；v1 只用于回放 M10 的调用记录，回放时不改动旧报告")
+    parser.add_argument("--cassette", type=Path, default=None)
+    parser.add_argument("--ledger", type=Path, default=None)
+    parser.add_argument("--max-calls", type=int, default=None)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--limit", type=int, default=0, help="冒烟：只评前 N 条 dev 查询，不写报告")
     args = parser.parse_args()
+    v1 = args.prompt_version == "v1"
+    args.cassette = args.cassette or ROOT / ("eval/cassettes/v4-router.jsonl" if v1 else "eval/cassettes/v4-router-v2.jsonl")
+    args.ledger = args.ledger or ROOT / (".cache/v4-m10-ledger.db" if v1 else ".cache/v4-router-v2-ledger.db")
+    args.max_calls = args.max_calls or (150 if v1 else 100)
 
     report = run(args)
-    path = REPORT_DIR / f"router-v4-{date.today():%Y%m%d}.json"
+    path = REPORT_DIR / (f"router-v4-{date.today():%Y%m%d}.json" if v1 else f"router-v2-v4-{date.today():%Y%m%d}.json")
+    if v1 and args.mode == "replay" and not args.limit:  # v1 回放只核对，不改动旧报告
+        print(json.dumps(replay_check(report, path), ensure_ascii=False, indent=2))
+        return
+    v1_path = REPORT_DIR / "router-v4-20261028.json"
+    if not v1 and not args.limit and args.mode == "record" and v1_path.exists():
+        report["comparison"] = compare_with_v1(report, json.loads(v1_path.read_text(encoding="utf-8")))
     if args.limit:
         print(json.dumps({k: report[k] for k in ("queries", "cost", "routing")}, ensure_ascii=False, indent=2))
         return

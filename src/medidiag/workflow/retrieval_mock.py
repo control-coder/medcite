@@ -11,7 +11,13 @@ from medidiag.compliance.status import ComplianceStatus
 from medidiag.errors import MediDiagError
 from medidiag.llm.models import ACTIVE_MIMO_MODEL
 from medidiag.rag.runtime import RuntimeMedicalRAG
-from medidiag.workflow.query_router import RouteDecision, route_query
+from medidiag.workflow.query_router import PROMPT_VERSION as ROUTER_PROMPT_VERSION
+from medidiag.workflow.query_router import (
+    RouteDecision,
+    apply_emergency_hint,
+    emergency_hint_of,
+    route_query,
+)
 
 if TYPE_CHECKING:
     from medidiag.workflow.provider import StageResult
@@ -27,13 +33,14 @@ class RetrievalMockWorkflowProvider:
     version: str = "retrieval-mock-v1"
     # 检索前先做查询路由（generation.query_router）：本类只用规则级，带 llm 的子类还会调用 LLM 路由
     query_router: bool = False
+    router_prompt_version: str = ROUTER_PROMPT_VERSION  # 回放 M10–M15 旧调用记录时设为 query-router-v1
 
     def _route(self, question: str) -> RouteDecision | None:
         """开启路由时返回路由决定；未开启返回 None。"""
         if not self.query_router:
             return None
         return route_query(question, llm=getattr(self, "llm", None), metadata=self.rag_stage.metadata,
-                           model=getattr(self, "model", ACTIVE_MIMO_MODEL))
+                           model=getattr(self, "model", ACTIVE_MIMO_MODEL), prompt_version=self.router_prompt_version)
 
     def _refusal(self, question: str, route: RouteDecision) -> dict[str, Any]:
         """路由拒答：不检索、不进生成，沿用空证据的弃答分支，路由信息写在结果里。"""
@@ -46,7 +53,7 @@ class RetrievalMockWorkflowProvider:
 
     def normalize(self, question: str) -> dict[str, Any]:
         # ConsultationCreateRequest 的字段标签和缺省占位不是用户问题。
-        # 特别是“背景：未提供”中的“提供”会让任何输入误命中口罩摘录。
+        # 特别是“背景：未提供”中的“提供”会让任何输入误匹配口罩摘录。
         fields = re.fullmatch(r"症状：(.*?)\n持续时间：(.*?)\n背景：(.*)", question, re.S)
         if fields:
             symptoms, duration, background = fields.groups()
@@ -84,11 +91,15 @@ class RetrievalMockWorkflowProvider:
                 "requires_uncertainty": True}
 
     def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any]) -> StageResult:
-        return {"agents": [], "claims": [
+        result: dict[str, Any] = {"agents": [], "claims": [
             {"claim_id": f"excerpt_{i:04d}", "text": "检索摘录（不代表问题已获解答）：" + item["text"],
              "citation_chunk_ids": [item["chunk_id"]], "confidence": None}
             for i, item in enumerate(retrieval["chunks"], 1)
         ], "risk_flags": [], "uncertainty": LIMITATION}
+        hint = emergency_hint_of(retrieval)
+        if hint:
+            result["emergency_hint"] = hint
+        return result
 
     def arbitrate(self, generation: dict[str, Any], retrieval: dict[str, Any]) -> dict[str, Any]:
         return {"verdict": "SINGLE_EXCERPT_DISPLAY", "conflicts": [],
@@ -113,6 +124,10 @@ class RetrievalMockWorkflowProvider:
                     for claim in generation["claims"] for cid in claim["citation_chunk_ids"]]}
 
     def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
+        """路由给出急症提示（``emergency_hint``）时，在摘要和风险提示前附上；子类改 ``_report``。"""
+        return apply_emergency_hint(self._report(case_id, generation, review), generation.get("emergency_hint"))
+
+    def _report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
         return {"schema_version": "assistant-report-v1", "case_id": case_id,
                 "title": "公开正文检索摘录（模拟生成）", "summary": "仅展示相关摘录，不生成医学结论。",
                 "claims": generation["claims"], "filtered_claim_count": 0,

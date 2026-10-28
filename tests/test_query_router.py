@@ -18,7 +18,16 @@ from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.schemas import KnowledgeChunk
 from medidiag.workflow.abstention import abstention_payload
 from medidiag.workflow.application import load_application_config
-from medidiag.workflow.query_router import route_by_rules, route_query
+from medidiag.workflow.query_router import (
+    EMERGENCY_HINT_MESSAGE,
+    PROMPT_VERSION,
+    PROMPT_VERSION_V1,
+    ROUTER_PROMPT_V1,
+    ROUTER_PROMPT_V2,
+    build_router_request,
+    route_by_rules,
+    route_query,
+)
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,6 +148,79 @@ def test_rule_hit_skips_llm() -> None:
     llm = _FakeLLM({"intent": "popular_science", "filters": {}})
     decision = route_query("孩子现在喘不上气，嘴唇发紫", llm=llm, metadata=MetadataIndex(CHUNKS))  # type: ignore[arg-type]
     assert decision.intent == "emergency" and llm.calls == 0
+
+
+# ---- query-router-v2：提示词定义与急症降级 ----
+
+def test_v2_prompt_defines_intents_and_v1_text_is_kept() -> None:
+    assert PROMPT_VERSION == "query-router-v2"
+    request = build_router_request("什么是疟疾")
+    assert request.prompt_version == "query-router-v2" and request.messages[0]["content"] == ROUTER_PROMPT_V2
+    for phrase in ("此刻正在发生", "通用急救", "流行病统计", "与健康、医学、公共卫生完全无关", "本人或其家人具体病情"):
+        assert phrase in ROUTER_PROMPT_V2
+    v1 = build_router_request("什么是疟疾", prompt_version=PROMPT_VERSION_V1)
+    assert v1.prompt_version == "query-router-v1" and v1.messages[0]["content"] == ROUTER_PROMPT_V1
+    assert ROUTER_PROMPT_V1.startswith("你是公共卫生科普问答的查询路由助手。") and "emergency（描述正在发生的危急症状" in ROUTER_PROMPT_V1
+
+
+def test_v2_llm_emergency_without_rule_hit_continues_as_popular_science_with_hint() -> None:
+    llm = _FakeLLM({"intent": "emergency", "filters": {"topic": "疟疾"}})
+    decision = route_query("被蛇咬了现场怎么急救", llm=llm, metadata=MetadataIndex(CHUNKS))  # type: ignore[arg-type]
+    assert decision.intent == "popular_science" and decision.source == "llm" and not decision.refused
+    assert decision.emergency_hint and decision.message == EMERGENCY_HINT_MESSAGE and decision.filters == {}
+    data = decision.to_dict()
+    assert data["emergency_hint"] is True and data["version"] == "query-router-v2"
+
+
+def test_v1_keeps_old_behavior_and_report_shape() -> None:
+    llm = _FakeLLM({"intent": "emergency", "filters": {}})
+    decision = route_query("被蛇咬了现场怎么急救", llm=llm, metadata=MetadataIndex(CHUNKS),  # type: ignore[arg-type]
+                           prompt_version=PROMPT_VERSION_V1)
+    assert decision.intent == "emergency" and decision.refused and not decision.emergency_hint
+    data = decision.to_dict()
+    assert "emergency_hint" not in data and data["version"] == "query-router-v1"
+    assert route_query("孩子现在喘不上气，嘴唇发紫", prompt_version=PROMPT_VERSION_V1).to_dict()["version"] == "query-router-v1"
+    with pytest.raises(ValueError):
+        route_query("什么是疟疾", prompt_version="query-router-v0")
+
+
+def test_rule_emergency_still_refused_under_v2() -> None:
+    decision = route_query("孩子现在喘不上气，嘴唇发紫", llm=_FakeLLM({"intent": "popular_science", "filters": {}}),  # type: ignore[arg-type]
+                           metadata=MetadataIndex(CHUNKS))
+    assert decision.intent == "emergency" and decision.refused and decision.source == "rule" and not decision.emergency_hint
+
+
+def test_emergency_hint_is_shown_before_answer() -> None:
+    rag = RuntimeMedicalRAG(
+        chunks=CHUNKS, corpus_version="t", retrieval_config={"method": "bm25", "top_k": 2},
+        retriever=Bm25Retriever(CHUNKS, bm25_tokenizer="whitespace"), corpus_path="c.jsonl",
+        leakage_gate={"status": "passed"})
+    rag.retriever.build_index()
+    provider = RetrievalMockWorkflowProvider(rag, query_router=True)
+    provider.llm = _FakeLLM({"intent": "emergency", "filters": {}})  # type: ignore[attr-defined]
+    retrieval = provider.retrieve("疟疾 症状")
+    assert retrieval["chunks"] and retrieval["query_router"]["emergency_hint"] is True
+    generation = provider.generate("疟疾 症状", retrieval, provider.plan("疟疾 症状", retrieval))
+    assert isinstance(generation, dict) and generation["emergency_hint"] == EMERGENCY_HINT_MESSAGE
+    report = provider.report("case-1", generation, provider.review(generation, {}, retrieval))
+    assert report["summary"].startswith(EMERGENCY_HINT_MESSAGE) and report["risk_warnings"][0] == EMERGENCY_HINT_MESSAGE
+    # 无提示时报告与原来一致
+    plain = provider.report("case-1", {**generation, "emergency_hint": None}, {})
+    assert plain["summary"] == "仅展示相关摘录，不生成医学结论。" and plain["risk_warnings"] == ["不能用于真实医疗决策。"]
+
+
+def test_router_prompt_config_choice(tmp_path: Path) -> None:
+    config = load_application_config(ROOT / "configs/application_v4_router.yaml")
+    bad = copy.deepcopy(config)
+    bad["generation"]["router_prompt"] = "v9"
+    path = tmp_path / "bad.yaml"
+    path.write_text(yaml.safe_dump(bad), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_application_config(path)
+    good = copy.deepcopy(config)
+    good["generation"]["router_prompt"] = "v1"
+    path.write_text(yaml.safe_dump(good), encoding="utf-8")
+    assert load_application_config(path)["generation"]["router_prompt"] == "v1"
 
 
 # ---- 元数据 ----

@@ -20,6 +20,7 @@ from medidiag.workflow.generative_answer import (
     ENTAILMENT_VERSION,
     PROMPT_VERSION,
     InvalidAnswer,
+    parse_verdicts,
     validate_sentences,
 )
 from medidiag.workflow.mimo_grounded import MimoGroundedWorkflowProvider
@@ -214,6 +215,52 @@ def test_entailment_failure_is_conservative_and_degrades():
     llm = FakeLLM(**{PROMPT_VERSION: [generated(GOOD)], ENTAILMENT_VERSION: [verdicts("entailed", "entailed")],
                      "mimo-grounded-v1": [excerpt()]})
     assert run(make(llm)).payload["generative_trace"]["entailment_error"] == "ENTAILMENT_SHAPE"
+
+
+def test_entailed_alias_field_is_accepted_without_retry():
+    llm = FakeLLM(**{PROMPT_VERSION: [generated(GOOD)], ENTAILMENT_VERSION: [{"verdicts": [{"id": 0, "entailed": "entailed"}]}]})
+    response = run(make(llm))
+    assert response.payload["claims"][0]["entailment"] == "entailed"
+    assert len(llm.calls(ENTAILMENT_VERSION)) == 1
+    assert response.metadata["entailment_calls"] == 1 and response.metadata["max_entailment_calls"] == 2
+
+
+@pytest.mark.parametrize("bad", [
+    {"verdicts": [{"id": 0, "entailed": "maybe"}]},  # 同义字段的取值仍须在枚举内
+    {"verdicts": [{"id": 0, "entailment": "entailed", "entailed": "entailed"}]},  # 两个字段并存按多余字段处理
+    {"verdicts": [{"id": 0, "entailment": "entailed", "reason": "x"}]},  # 其他字段仍严格
+    {"verdicts": [{"id": "0", "entailment": "entailed"}]},
+])
+def test_alias_does_not_loosen_other_checks(bad):
+    assert parse_verdicts(bad, 1) is None
+
+
+def test_invalid_json_retries_once_with_correction_and_recovers():
+    llm = FakeLLM(**{PROMPT_VERSION: [generated(GOOD)],
+                     ENTAILMENT_VERSION: [MediDiagError("STRUCTURED_OUTPUT_INVALID"), verdicts("entailed")]})
+    response = run(make(llm))
+    first, second = llm.calls(ENTAILMENT_VERSION)
+    assert response.payload["answer_mode"] == "generative" and response.payload["claims"][0]["entailment"] == "entailed"
+    assert "previous_output_rejected" not in json.dumps(first.messages, ensure_ascii=False)
+    assert "previous_output_rejected" in second.messages[-1]["content"] and second.messages[:2] == first.messages
+    assert response.metadata["entailment_calls"] == 2
+
+
+def test_shape_error_retries_once_then_degrades_when_still_invalid():
+    llm = FakeLLM(**{PROMPT_VERSION: [generated(GOOD)], ENTAILMENT_VERSION: [MediDiagError("STRUCTURED_OUTPUT_INVALID")],
+                     "mimo-grounded-v1": [excerpt()]})
+    payload = run(make(llm)).payload
+    assert len(llm.calls(ENTAILMENT_VERSION)) == 2  # 重试至多一次
+    assert payload["answer_mode"] == "extractive" and payload["generative_trace"]["degraded"] == "entailment_unavailable"
+    assert payload["generative_trace"]["entailment_error"] == "STRUCTURED_OUTPUT_INVALID"
+
+
+def test_enum_violation_is_rejected_then_retried_not_accepted():
+    llm = FakeLLM(**{PROMPT_VERSION: [generated(GOOD)],
+                     ENTAILMENT_VERSION: [{"verdicts": [{"id": 0, "entailment": "yes"}]}, verdicts("partial")],
+                     "mimo-grounded-v1": [excerpt()]})
+    claim = run(make(llm)).payload["claims"][0]
+    assert len(llm.calls(ENTAILMENT_VERSION)) == 2 and claim["entailment"] == "partial"
 
 
 def test_empty_evidence_does_not_call_model():

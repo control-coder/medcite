@@ -9,11 +9,13 @@ from medidiag.rag.rerank import RERANK_MODEL
 from medidiag.rag.runtime import RuntimeMedicalRAG
 from medidiag.workflow.generative_answer import ANSWER_MODES
 from medidiag.workflow.provider import DeterministicWorkflowProvider, WorkflowProvider
+from medidiag.workflow.query_router import PROMPT_VERSIONS
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
 MAX_RERANK_CANDIDATES = 50
 ON_INVALID_CHOICES = ("none", "resample", "feedback")
+ROUTER_PROMPT_CHOICES = tuple(PROMPT_VERSIONS)  # 路由提示词版本，缺省 v2；v1 仅用于回放旧调用记录
 BM25_TOKENIZERS = ("cjk_bigram", "jieba")
 AGENT_VERSIONS = (1, 2)
 VECTOR_STORES = ("numpy", "pgvector")
@@ -50,6 +52,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and isinstance(generation.get("agent", False), bool)
             and isinstance(generation.get("context_rewrite", False), bool)
             and isinstance(generation.get("query_router", False), bool)
+            and generation.get("router_prompt", "v2") in ROUTER_PROMPT_CHOICES
             and config["retrieval"].get("bm25_tokenizer", "cjk_bigram") in BM25_TOKENIZERS
             and config["retrieval"].get("vector_store", "numpy") in VECTOR_STORES
         )
@@ -60,9 +63,9 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         hybrid = method == "hybrid" and _embedding_fixed(embedding)
         # 改写只对字面匹配检索有用；向量检索（含混合检索的向量一路）下几乎没有收益，却要多一次调用，所以不接受这种组合
         rewrite_ok = not ((dense or hybrid) and generation.get("rewrite", False))
-        # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
+        # 检索 Agent 自己决定要不要换说法，不能再叠加固定的问题改写
         agent_ok = not (generation.get("agent", False) and generation.get("rewrite", False))
-        # agent_version 只在开启检索智能体时才有意义：1 是 v1（默认），2 是 M11 的多工具检索 Agent
+        # agent_version 只在开启检索 Agent 时才有意义：1 是 v1（默认），2 是 M11 的多工具检索 Agent
         agent_version = generation.get("agent_version", 1)
         agent_ok = agent_ok and type(agent_version) is int and agent_version in AGENT_VERSIONS and (
             agent_version == 1 or generation.get("agent", False) is True)
@@ -179,10 +182,11 @@ def build_application_provider(mode: str = "fake_offline", *,
     else:
         rag = RuntimeMedicalRAG.from_config(config, root=root, reranker_factory=reranker_factory)
     query_router = bool(config.get("generation", {}).get("query_router", False))
+    router_version = PROMPT_VERSIONS[config.get("generation", {}).get("router_prompt", "v2")]
     answer_mode = config.get("generation", {}).get("answer_mode", "extractive")
     if mode == "retrieval_mock":
         # 离线模式没有 LLM，路由只用规则级
-        return RetrievalMockWorkflowProvider(rag, query_router=query_router)
+        return RetrievalMockWorkflowProvider(rag, query_router=query_router, router_prompt_version=router_version)
     from medidiag.llm.budget import BudgetedTransport
     from medidiag.llm.openai_compatible import OpenAICompatibleProvider
     from medidiag.llm.profiles import get_provider_profile
@@ -203,10 +207,12 @@ def build_application_provider(mode: str = "fake_offline", *,
 
             return RetrievalAgentV2WorkflowProvider(
                 rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
-                context_rewrite=context_rewrite, query_router=query_router, answer_mode=answer_mode)
+                context_rewrite=context_rewrite, query_router=query_router, answer_mode=answer_mode,
+                router_prompt_version=router_version)
         return RetrievalAgentWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
                                               context_rewrite=context_rewrite, query_router=query_router,
-                                              answer_mode=answer_mode)
+                                              answer_mode=answer_mode, router_prompt_version=router_version)
     return MimoGroundedWorkflowProvider(rag, llm=llm, on_invalid=generation.get("on_invalid", "none"),
                                         rewrite=bool(generation.get("rewrite", False)), context_rewrite=context_rewrite,
-                                        query_router=query_router, answer_mode=answer_mode)
+                                        query_router=query_router, answer_mode=answer_mode,
+                                        router_prompt_version=router_version)

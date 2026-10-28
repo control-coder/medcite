@@ -1,4 +1,4 @@
-"""应用专用真实单路生成：仅允许完整证据短引，不借用英文研究 NLI。"""
+"""应用专用真实单路生成：仅允许完整证据原文摘录，不借用英文研究 NLI。"""
 from __future__ import annotations
 
 import json
@@ -16,6 +16,7 @@ from medidiag.workflow.context_rewrite import Turn, contextualize, recent_turns
 from medidiag.workflow.generative_answer import DEGRADED_NOTE, GenerativeAnswerWorkflowProvider
 from medidiag.workflow.provider_runtime import ProviderResponse
 from medidiag.workflow.query_rewrite import build_rewrite_request, parse_rewrite
+from medidiag.workflow.query_router import emergency_hint_of
 from medidiag.workflow.retrieval_mock import RetrievalMockWorkflowProvider
 
 LIMITATION = "真实 MiMo 单路受约束摘录生成；仅核对完整原文与引用关联，未运行 NLI，不证明语义支持或医学正确。"
@@ -98,8 +99,8 @@ class MimoGroundedWorkflowProvider(GenerativeAnswerWorkflowProvider, RetrievalMo
     def plan(self, normalized_query: str, retrieval: dict[str, Any]) -> dict[str, Any]:
         return {**super().plan(normalized_query, retrieval), "objective": "真实模型选择直接答题的完整原文短引，否则弃答"}
 
-    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any], *,
-                 feedback: str | None = None) -> ProviderResponse:
+    def _generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any], *,
+                  feedback: str | None = None) -> ProviderResponse:
         """``feedback`` 只供评测单独复现“带原因的第二次请求”；应用路径由 ``on_invalid`` 控制。"""
         chunks = {item["chunk_id"]: item["text"] for item in retrieval["chunks"]}
         generative = self.answer_mode == "generative" and feedback is None
@@ -113,6 +114,14 @@ class MimoGroundedWorkflowProvider(GenerativeAnswerWorkflowProvider, RetrievalMo
         if generative:
             return self._generate_answer(question, chunks, lambda: self._generate_extractive(question, chunks, None))
         return self._generate_extractive(question, chunks, feedback)
+
+    def generate(self, question: str, retrieval: dict[str, Any], plan: dict[str, Any], *,
+                 feedback: str | None = None) -> ProviderResponse:
+        response = self._generate(question, retrieval, plan, feedback=feedback)
+        hint = emergency_hint_of(retrieval)
+        if hint:  # 路由的急症提示随生成结果带到报告阶段，不影响其他字段
+            response.payload["emergency_hint"] = hint
+        return response
 
     def _generate_extractive(self, question: str, chunks: dict[str, str], feedback: str | None) -> ProviderResponse:
         try:
@@ -181,8 +190,8 @@ class MimoGroundedWorkflowProvider(GenerativeAnswerWorkflowProvider, RetrievalMo
                 item["method"] = "exact_full_excerpt_binding_not_nli"
         return result
 
-    def report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
-        result = super().report(case_id, generation, review)
+    def _report(self, case_id: str, generation: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
+        result = super()._report(case_id, generation, review)
         if generation.get("answer_mode") == "generative":
             return self._report_generative(result, generation, self._page_count())
         result.update(title="公开证据短引（真实 MiMo 受约束生成）", summary="仅展示模型选择的完整原文，不生成诊疗结论。",

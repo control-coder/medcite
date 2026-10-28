@@ -14,7 +14,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from medidiag.errors import MediDiagError
 from medidiag.llm.contracts import LLMProvider, LLMRequest
@@ -58,6 +58,7 @@ _NEGATION = re.compile(r"不|没有|无|未|非|勿|别|禁止|否")
 
 
 ENTAILMENT_MAX_TOKENS = 512
+MAX_ENTAILMENT_CALLS = 2  # 蕴含判定最多 2 次调用：首次，加输出格式不合规时的一次纠错重试
 
 
 def entailment_messages(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -126,10 +127,38 @@ class _Verdict(BaseModel):
     id: int
     entailment: Literal["entailed", "partial", "not_entailed"]
 
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_entailed_alias(cls, data: Any) -> Any:
+        """模型偶发把字段名写成 ``entailed``：仅在没有 ``entailment`` 时视作同义，取值仍须在枚举内，其他字段照旧严格。"""
+        if isinstance(data, dict) and "entailment" not in data and "entailed" in data:
+            data = {("entailment" if key == "entailed" else key): value for key, value in data.items()}
+        return data
+
 
 class _Verdicts(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     verdicts: list[_Verdict]
+
+
+def parse_verdicts(parsed: Any, count: int) -> list[str] | None:
+    """解析蕴含判定输出：每个 id（0..count-1）恰好一条且格式合规时返回按 id 排序的结果，否则 None。"""
+    try:
+        verdicts = _Verdicts.model_validate(parsed).verdicts
+    except ValidationError:
+        return None
+    if sorted(v.id for v in verdicts) != list(range(count)):
+        return None
+    by_id = {v.id: v.entailment for v in verdicts}
+    return [by_id[i] for i in range(count)]
+
+
+def entailment_retry_messages(messages: Sequence[Mapping[str, Any]], count: int) -> list[dict[str, Any]]:
+    """蕴含判定重试的请求消息：同一提示词后附一句纠错说明，请求体因此不同，调用记录可区分。"""
+    return [*(dict(m) for m in messages), {"role": "user", "content": json.dumps(
+        {"previous_output_rejected": "输出不是合法 JSON，或字段名、id 不符合要求",
+         "instruction": f'请重新输出：只返回 {{"verdicts":[{{"id":整数,"entailment":"entailed 或 partial 或 not_entailed"}}]}}，'
+                        f"字段名必须是 entailment，id 取 0 到 {count - 1} 且各出现一次，不输出其他字段。"}, ensure_ascii=False)}]
 
 
 @dataclass
@@ -137,6 +166,7 @@ class _Calls:
     """一次生成阶段内所有模型调用的合计。"""
 
     count: int = 0
+    entailment_calls: int = 0
     usage: dict[str, int] = field(default_factory=dict)
     request_id: str | None = None
 
@@ -198,17 +228,23 @@ class GenerativeAnswerWorkflowProvider:
                  for i, s in enumerate(answer.sentences)]
         unverified = ["unverified"] * len(items)
         messages = entailment_messages(items)
-        try:
-            result = self._chat(messages, ENTAILMENT_VERSION, ENTAILMENT_MAX_TOKENS, calls)
-            verdicts = _Verdicts.model_validate(result.parsed_json).verdicts
-        except MediDiagError as exc:
-            return unverified, exc.code
-        except ValidationError:
-            return unverified, "ENTAILMENT_SHAPE"
-        if sorted(v.id for v in verdicts) != list(range(len(items))):
-            return unverified, "ENTAILMENT_SHAPE"
-        by_id = {v.id: v.entailment for v in verdicts}
-        return [by_id[i] for i in range(len(items))], None
+        error = "ENTAILMENT_SHAPE"
+        for attempt in range(MAX_ENTAILMENT_CALLS):
+            # 第二次请求在同一提示词后附纠错说明；只有非法 JSON 或结构不合规才重试，超时等错误照旧视为不可用
+            request_messages = messages if attempt == 0 else entailment_retry_messages(messages, len(items))
+            calls.entailment_calls += 1
+            try:
+                result = self._chat(request_messages, ENTAILMENT_VERSION, ENTAILMENT_MAX_TOKENS, calls)
+            except MediDiagError as exc:
+                error = exc.code
+                if exc.code != "STRUCTURED_OUTPUT_INVALID":
+                    return unverified, error
+                continue
+            parsed = parse_verdicts(result.parsed_json, len(items))
+            if parsed is not None:
+                return parsed, None
+            error = "ENTAILMENT_SHAPE"
+        return unverified, error
 
     def _generate_answer(self, question: str, chunks: dict[str, str],
                          extractive: Callable[[], ProviderResponse]) -> ProviderResponse:
@@ -271,7 +307,8 @@ class GenerativeAnswerWorkflowProvider:
 
     def _metadata(self, calls: _Calls) -> dict[str, Any]:
         return {"usage": dict(calls.usage), "model": self.model, "retry_count": 0, "prompt_version": PROMPT_VERSION,
-                "finish_reason": "stop", "model_calls": calls.count}
+                "finish_reason": "stop", "model_calls": calls.count, "entailment_calls": calls.entailment_calls,
+                "max_entailment_calls": MAX_ENTAILMENT_CALLS}
 
     def _response(self, claims: list[dict[str, Any]], trace: dict[str, Any], calls: _Calls, outcome: str) -> ProviderResponse:
         trace["outcome"] = outcome
