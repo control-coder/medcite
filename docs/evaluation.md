@@ -184,6 +184,22 @@ v4 语料父子分块（子块检索，送入时换成去重父块），统计 d
 - jieba 分词的 BM25 明显不如字符二元组（Hit@3 0.457 对 0.629）。混合时 jieba 的 Hit@3 较高（0.714 对 0.629），但 MRR 持平、nDCG@5 与 Recall@20 更低、送入字数更多，不作为推荐。自定义词典由标题和章节路径按规则生成，覆盖有限。
 - 推荐组合：最终取前 3 用向量检索；需要重排时用混合（二元组）召回 20 个候选，再交给交叉编码器重排（`configs/application_v4_hybrid.yaml` 即此组合，分词保持 `cjk_bigram`）。
 - 局限：n = 35，指标差异的置信区间较宽；混合检索的 MMR 与 RRF 未单独拆分；重排后的效果未在 v4 上评测。
+
+### 向量存储启动耗时（M9）
+
+v4 父子分块的 39,752 个子块，`bge-small-zh-v1.5` 在 GPU 上编码（batch 32），各测一次；机器上同时有其他项目的负载，数值只说明量级。脚本不入库，耗时只含 `build_index`，不含模型加载（约 14 秒）。
+
+| 路径 | `build_index` 耗时 |
+| --- | --- |
+| 原有路径（不配 `vector_store`，每次重新编码） | 18.0 秒 |
+| `vector_store: numpy`，无缓存（编码并写 `.cache/index/`，npy 81 MB） | 21.5 秒 |
+| `vector_store: numpy`，有缓存（同语料、同模型版本的第二次启动） | 1.0 秒 |
+| PostgreSQL pgvector 首次同步（编码并写入含 HNSW 索引的表） | 89.2 秒 |
+| PostgreSQL pgvector 无变化时再次同步 | 0.04 秒 |
+
+- 缓存命中时不再编码语料；未命中时因为多了保存文件，比原有路径略慢。缓存与原路径的前 5 名在 3 条查询中有 2 条完全一致，另一条的差异来自两次 GPU 编码的 1e-8 量级浮点噪声，单独复测时前 5 名一致。
+- PostgreSQL 上的向量检索与精确检索（NumPy 全量矩阵）在 5 条查询上前 5 名全部一致，只是小样本检查，不是召回率评测。
+- 增量更新的一致性由合成语料的自动化测试保证（改 1 篇、删 1 篇、加 1 篇后，增量结果与全量重建的前 5 名一致，NumpyStore 与真实 PostgreSQL 上均通过），不是 v4 语料上的实测。
 ## 四、L2 生成层矩阵
 
 v3 语料，测试集（可回答 56 条，不可回答 28 条），模型 `mimo-v2.6-flash`。证据为各条件的前 3 个片段，输出被拦截时带反馈重试一次。代码为 `eval/generation_matrix.py`，原始数据见 [generation-matrix-v3-20261011.json](../artifacts/reports/llm/generation-matrix-v3-20261011.json)，评测报告为 [llm-pipeline-v3-flash-20261010.json](../artifacts/reports/llm/llm-pipeline-v3-flash-20261010.json)。

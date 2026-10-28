@@ -14,6 +14,7 @@ DENSE_MODEL = "BAAI/bge-small-zh-v1.5"
 MAX_RERANK_CANDIDATES = 50
 ON_INVALID_CHOICES = ("none", "resample", "feedback")
 BM25_TOKENIZERS = ("cjk_bigram", "jieba")
+VECTOR_STORES = ("numpy", "pgvector")
 _HYBRID_KEYS = {"candidates", "rrf_k", "mmr_lambda"}
 _ALLOWED_KEYS = {"application", "runtime", "embedding", "dataset", "retrieval", "generation", "leakage_check"}
 
@@ -46,6 +47,7 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
             and isinstance(generation.get("agent", False), bool)
             and isinstance(generation.get("context_rewrite", False), bool)
             and config["retrieval"].get("bm25_tokenizer", "cjk_bigram") in BM25_TOKENIZERS
+            and config["retrieval"].get("vector_store", "numpy") in VECTOR_STORES
         )
         method = config["retrieval"]["method"]
         bm25 = method == "bm25" and "embedding" not in config
@@ -56,8 +58,10 @@ def load_application_config(path: str | Path) -> dict[str, Any]:
         rewrite_ok = not ((dense or hybrid) and generation.get("rewrite", False))
         # 检索智能体自己决定要不要换说法，不能再叠加固定的问题改写
         agent_ok = not (generation.get("agent", False) and generation.get("rewrite", False))
+        # 向量存储只对用到向量的检索方案有意义，BM25 单路不接受
+        store_ok = "vector_store" not in config["retrieval"] or dense or hybrid
         safe = (
-            common and (bm25 or dense or hybrid) and rewrite_ok and agent_ok
+            common and store_ok and (bm25 or dense or hybrid) and rewrite_ok and agent_ok
             and _rerank_ok(config["retrieval"]) and _hybrid_ok(config["retrieval"], method)
         )
     except (KeyError, TypeError, AttributeError) as exc:
@@ -104,13 +108,14 @@ def retrieval_profile(config: dict[str, Any]) -> str:
 
 
 def _dense_factory(chunks: Any, config: dict[str, Any]) -> Any:
-    from medidiag.rag.dense import DenseRetriever, load_local_encoder
+    from medidiag.rag.dense import DenseRetriever, load_local_encoder, store_options
 
     name, revision = config["embedding"]["model"], config["embedding"]["revision"]
     runtime = config.get("runtime", {})
     encoder = load_local_encoder(name, revision, device=str(runtime.get("device", "cpu")),
                                  batch_size=int(runtime.get("batch_size", 8)))
-    return DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision)
+    return DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision,
+                          **store_options(chunks, config))
 
 
 def _rerank_factory(config: dict[str, Any]) -> Any:

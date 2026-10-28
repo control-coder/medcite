@@ -35,7 +35,7 @@ def _bm25_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> Retri
 
 def _hybrid_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> RetrieverContract:
     """混合检索工厂：按配置建 BM25（可选 jieba 自定义词典）与向量检索器，再融合。"""
-    from medidiag.rag.dense import DenseRetriever, load_local_encoder
+    from medidiag.rag.dense import DenseRetriever, load_local_encoder, store_options
     from medidiag.rag.hybrid import DEFAULT_CANDIDATES, DEFAULT_RRF_K, HybridRetriever
     from medidiag.rag.lexicon import build_lexicon
 
@@ -47,7 +47,8 @@ def _hybrid_factory(chunks: list[KnowledgeChunk], config: dict[str, Any]) -> Ret
     runtime = config.get("runtime", {})
     encoder = load_local_encoder(name, revision, device=str(runtime.get("device", "cpu")),
                                  batch_size=int(runtime.get("batch_size", 8)))
-    dense = DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision)
+    dense = DenseRetriever(chunks, encoder=encoder, model_name=name, model_revision=revision,
+                           **store_options(chunks, config))
     hybrid = retrieval.get("hybrid", {})
     return HybridRetriever(
         chunks, bm25=bm25, dense=dense,

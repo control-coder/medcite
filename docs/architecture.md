@@ -72,6 +72,16 @@ flowchart LR
 
 按得分阈值拒答的实验，以及用逻辑回归预测是否作答的尝试，保留在 git 历史的早期评测文档中，没有进入应用。v3 上对推荐配置重新做了取舍曲线（重排分数门槛，见评测文档第五节）：模型拒答已经没有观测到误答，门槛只增加过度拒答，结论不变。结论的适用范围见评测文档第九节。
 
+### 向量存储与增量同步
+
+向量检索与混合检索的配置可加 `retrieval.vector_store`，取值 `numpy` 或 `pgvector`；不写则保持原有行为（每次启动重新编码，BM25 仍每次在内存重建，不做序列化）。代码在 `src/medidiag/rag/store/`。
+
+- `numpy`：向量与元数据按 `{corpus_hash}_{model_revision}` 存到 `.cache/index/`（`.npy` 加 `.json`）。同一语料与模型版本第二次启动直接读文件，不重新编码；语料或模型版本变化则换一个文件重新编码。适合 SQLite 演示和测试。
+- `pgvector`：表 `kb_documents`、`kb_chunks`（含 `embedding vector(512)`，HNSW 索引 m=16、ef_construction=64，余弦距离），由 Alembic 迁移 `f5b8d3a1c6e2` 创建，仅 PostgreSQL 执行，SQLite 跳过；`compose.yaml` 的数据库镜像为 `pgvector/pgvector:pg17`。连接串从环境变量 `MEDIDIAG_PGVECTOR_DSN` 读取。启动时不会自动写库，须先同步，缺块时报错。元数据过滤用参数化 SQL（`metadata ->> key = ANY(values)`）。
+- `medidiag corpus sync [--app-config ...] [--store numpy|pgvector]`：按文档 `content_hash` 判断新增、变更、删除，只为新增和变更的文档重新编码。变更文档的旧块和被删除文档的块标记为 `retired`，不物理删除，历史证据包里的 `chunk_hash` 仍可回查；有变更时 `corpus_version`（整数）加 1，无变化不编码也不升版本。检索只返回 `active` 块。
+
+局限：`embedding vector(512)` 固定对应 `bge-small-zh-v1.5`，换更高维度的模型要新增迁移；块只在文档级别增量，文档内未变的块也会随文档整体重算。
+
 ### 多轮追问
 
 追问是一个带 `parent_case_id` 的新病例，状态机和阶段不变。worker 在检索阶段沿上一轮取最近 3 轮历史，只接受同一归属的病例。provider 提供 `retrieve_in_context` 且配置开启 `generation.context_rewrite` 时，先调用一次模型（提示词 `context-rewrite-v1`），输出 `{"standalone_question": ...}`：只用历史中的名称补全代词和省略，不回答、不添加事实；格式不符、超长、出现历史与问题里都没有的数字或模型出错时回退到原问题。补全后的问题同时用于检索（检索 Agent 与按原问题重排里的“原问题”即补全后的问题）和生成。

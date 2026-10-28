@@ -427,5 +427,49 @@ def corpus_chunk(parsed_path: Path, strategy: str, out_dir: Path) -> None:
     )
 
 
+@corpus.command("sync")
+@click.option("--app-config", default="configs/application_v4_hybrid.yaml", show_default=True,
+              help="取检索块路径（dataset.knowledge_base_path）与向量模型配置。")
+@click.option("--store", "store_kind", type=click.Choice(["numpy", "pgvector"]), default="numpy",
+              show_default=True, help="numpy 写 .cache/index/；pgvector 读环境变量 MEDIDIAG_PGVECTOR_DSN。")
+def corpus_sync(app_config: str, store_kind: str) -> None:
+    """增量同步向量存储：只为新增和内容哈希变化的文档重新编码，被删除的文档标 retired。"""
+    import os
+
+    from medidiag.rag.dense import INDEX_DIR, PGVECTOR_DSN_ENV, load_local_encoder
+    from medidiag.rag.store import NumpyStore, sync_corpus
+    from medidiag.schemas import load_knowledge_chunks
+    from medidiag.workflow.application import load_application_config
+
+    config = load_application_config(app_config)
+    if "embedding" not in config:
+        raise click.UsageError("配置里没有 embedding，BM25 单路不需要向量存储。")
+    chunks = load_knowledge_chunks(config["dataset"]["knowledge_base_path"])
+    name, revision = config["embedding"]["model"], config["embedding"]["revision"]
+    runtime = config.get("runtime", {})
+    encoder = load_local_encoder(name, revision, device=str(runtime.get("device", "cpu")),
+                                 batch_size=int(runtime.get("batch_size", 8)))
+    if store_kind == "numpy":
+        base = Path(INDEX_DIR) / f"sync_{revision[:12]}"
+        store = NumpyStore.load(base) if NumpyStore.exists(base) else NumpyStore()
+        report = sync_corpus(store, chunks, encoder)
+        store.save(base)
+    else:
+        dsn = os.environ.get(PGVECTOR_DSN_ENV)
+        if not dsn:
+            raise click.UsageError(f"请设置环境变量 {PGVECTOR_DSN_ENV}。")
+        from medidiag.rag.store.pg_store import PgVectorStore
+
+        pg_store = PgVectorStore(dsn)
+        try:
+            report = sync_corpus(pg_store, chunks, encoder)
+        finally:
+            pg_store.close()
+    click.echo(
+        f"同步完成：新增 {len(report.added)} 篇，变更 {len(report.changed)} 篇，删除 {len(report.removed)} 篇，"
+        f"未变 {report.unchanged} 篇；重新编码 {report.encoded_chunks} 块；corpus_version={report.corpus_version}"
+    )
+
+
 if __name__ == "__main__":
     main()
