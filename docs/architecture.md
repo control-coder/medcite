@@ -51,7 +51,7 @@ flowchart LR
 | `retrieval_mock` | 默认纯 BM25、中文按相邻两字切分；也可选向量检索方案（见下）；固定规则摘录原文 | 引用结构关联与 ComplianceGuard；非 NLI 语义审核 |
 | `mimo_grounded` | 同一检索；`mimo-v2.6-flash` 以 JSON 选择完整原文，没有直接答案时拒答 | 二次原文校验与 ComplianceGuard；非医学语义审核 |
 
-应用配置在加载时校验，只接受两种明确的检索方案：默认的单路 BM25（`configs/application.yaml`，不需要下载模型），或单路向量检索（`configs/application_dense.yaml`：固定模型 `BAAI/bge-small-zh-v1.5` 的固定版本，只读本地缓存，缓存不存在就报错而不是自动下载，语料为 51 篇页面、178 个片段的 v2）。混合检索、重排、浮动版本、允许联网下载、套用研究配置或关闭泄露检查都会被拒绝，也不会因为 `.env` 中存在密钥就切换到在线模式。选型依据见下文。检索为空时在生成前拒答；字面命中但片段里没有答案的情况仍会出现，这类问题依赖模型或摘录层拒答，系统不保证识别所有证据不足的问题。
+应用配置在加载时校验，只接受两种明确的检索方案：默认的单路 BM25（`configs/application.yaml`，不需要下载模型），或单路向量检索（`configs/application_dense.yaml`：固定模型 `BAAI/bge-small-zh-v1.5` 的固定版本，只读本地缓存，缓存不存在就报错而不是自动下载，语料为 51 篇页面、178 个片段的 v2）。混合检索（v4 配置除外，见下文「v4 RAG 链路」）、重排、浮动版本、允许联网下载、套用研究配置或关闭泄露检查都会被拒绝，也不会因为 `.env` 中存在密钥就切换到在线模式。选型依据见下文。检索为空时在生成前拒答；字面命中但片段里没有答案的情况仍会出现，这类问题依赖模型或摘录层拒答，系统不保证识别所有证据不足的问题。
 
 真实模型模式最多接受三条 claim，每条必须逐字复制本次某个 chunk 的完整原文并绑定该 chunk。改写、拼接、重复、未知引用、状态矛盾、格式错误、返回模型不符、缺少响应 ID 或输出被截断均会被拒绝。预算账本使用持久化 SQLite：先占额度后发请求，失败不退额，重启不重置，不跟随重定向，也不保存思维链。
 
@@ -87,6 +87,49 @@ flowchart LR
 追问是一个带 `parent_case_id` 的新病例，状态机和阶段不变。worker 在检索阶段沿上一轮取最近 3 轮历史，只接受同一归属的病例。provider 提供 `retrieve_in_context` 且配置开启 `generation.context_rewrite` 时，先调用一次模型（提示词 `context-rewrite-v1`），输出 `{"standalone_question": ...}`：只用历史中的名称补全代词和省略，不回答、不添加事实；格式不符、超长、出现历史与问题里都没有的数字或模型出错时回退到原问题。补全后的问题同时用于检索（检索 Agent 与按原问题重排里的“原问题”即补全后的问题）和生成。
 
 **取舍**：生成步骤只看补全后的问题，不看历史。上一轮的回答不是本轮证据，交给生成会让模型有机会引用历史而不是本轮原文；补全只改变“问的是什么”，摘录必须等于本轮片段全文、证据不足时拒答的规则不变。单轮问题不经过补全，请求与原来逐字相同，已有调用记录照常回放。配置为 `configs/application_dense_agent_rerank_multiturn.yaml`，代码见 `src/medidiag/workflow/context_rewrite.py`。
+
+## v4 RAG 链路
+
+v4 链路通过新配置开启（`configs/application_v4_*.yaml`，推荐组合为 `application_v4_recommended.yaml` 与 `application_v4_recommended_generative.yaml`），不改变现有 7 个配置的行为。三种运行模式仍互不静默切换。
+
+```mermaid
+flowchart LR
+    S[多来源快照] --> I[解析 / 清洗 / 去重]
+    I --> C[父子分块]
+    C --> E[向量化]
+    E --> ST[(NumPy 缓存 / pgvector)]
+    Q[问题] --> RT[查询路由与过滤]
+    RT --> H[BM25 + 向量 RRF]
+    ST --> H
+    H --> RR[重排 + MMR]
+    RR --> AG[检索 Agent v2]
+    AG --> GEN[抽取式 / 生成式回答]
+    GEN --> VAL[确定性校验 + 蕴含判定]
+    VAL --> SSE[报告与 SSE 进度]
+```
+
+| 环节 | 模块 |
+| --- | --- |
+| 解析、清洗、去重、分块 | `rag/ingest/`（`document.py`、`html.py`、`pdf.py`、`docx.py`、`table.py`、`clean.py`、`dedup.py`、`chunking.py`） |
+| 向量存储与增量同步 | `rag/store/`（`VectorStore` 协议、`NumpyStore`、`PgVectorStore`、sync） |
+| 元数据与过滤值校验 | `rag/metadata.py` |
+| 混合检索（RRF、MMR） | `rag/hybrid.py` |
+| 检索结果缓存 | `rag/cache.py` |
+| 查询路由 | `workflow/query_router.py` |
+| 检索 Agent v2 | `workflow/retrieval_agent_v2.py` |
+| 生成式回答 | `workflow/generative_answer.py` |
+| 进度推送（SSE） | `api/app.py` 的 `GET /api/v1/cases/{id}/events/stream` |
+
+关键取舍：
+
+- **过滤只应用 `source_type` 与 `period`**：路由抽取的 `section_type` 与 `topic` 只记录、不应用。M10 在 v4 dev 上的对比中，预测的全部过滤使可回答科普的 Hit@3 从 30 降到 15，只用 `source_type` + `period` 为 25，仍低于不过滤的 30。评测标注池来自不过滤检索，过滤侧被低估，所以结论是「保守应用」，不是「过滤无效」。过滤值必须属于已知枚举，候选不足时按固定顺序放宽重查并记录。
+- **生成式回答的校验与降级顺序**：模型输出先经确定性规则（chunk_id 属于本轮证据、quote 是证据逐字子串、句中数值出现在引用中、剂量指令与诊断断言句拒绝；否定词不一致标记为可疑），失败时按 `on_invalid` 至多重试一次；通过后由一次批量蕴含判定（提示词不含用户问题）。不蕴含的句子不展示，部分蕴含的句子带标记展示；全部句子被删时降级为抽取式回答，抽取式也不成立则拒答。空证据不调用模型。
+- **蕴含失败视同不展示**：蕴含调用出错、返回非法 JSON 或字段名不合契约时，整批句子按未核实处理并走降级，而不是放行。代价是偶发的可用回答被降级（M13 的 33 次评审中有 2 次不可用）。
+- **缓存存快照且默认关闭**：`retrieval.cache` 是进程内 LRU（TTL 1 小时），键含规范化问题、过滤条件、`corpus_hash`、`corpus_version` 与 `config_hash`，值是证据快照而不只是 chunk_id 与分数，保证命中与未命中的证据逐字一致。不缓存模型回答，因为多轮上下文和用户背景各不相同。该开关不计入 `config_hash`，默认关闭。
+- **SSE 沿用 owner 校验**：流开始前按与轮询端点相同的规则校验归属，越权与不存在统一 404；流内每轮用独立会话重新校验。事件来自已有的事件日志，服务端 0.5 秒轮询事件表后转发，没有新增消息通道；前端连接失败时回退为轮询。不做逐 token 流式输出，因为生成式回答要整段校验后才能展示。
+- **白名单只扩展**：`workflow/application.py` 的配置校验为新字段（`vector_store`、`hybrid`、`query_router`、`agent_version`、`answer_mode`、`cache`）增加了显式的合法取值，没有放宽对浮动版本、联网下载、套用研究配置、关闭泄露检查的拒绝。
+
+未验证：真实 `mimo_grounded` 经数据库 worker 的完整端到端、pgvector 下的元数据过滤路径、PostgreSQL 与多 worker 下的 SSE、浏览器内点击引用高亮。蕴含判定是模型给出的「引用是否支持这句话」，不是医学正确性审核。评测数字见 [评测文档](evaluation.md#v4-评测汇总m15)。
 
 ## 观测
 
