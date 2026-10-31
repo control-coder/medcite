@@ -71,8 +71,11 @@ def build_analysis(session: Session, case: Case) -> AnalysisResponse:
         if not evidence or not result.claims:
             result.outcome = "insufficient_evidence"
             result.message = "证据不足：没有可追踪的支持引用，不输出确定性分析。"
-            # 查询路由拒答时报告局限已写明路由原因，不再附加“检索为空”的通用说明
-            if not (data.get("provenance") or {}).get("intent"):
+            # 查询路由拒答时报告局限已写明路由原因，不再附加“检索为空”的通用说明；
+            # 提示语改用路由给出的固定提示（如急症的 120 提示），否则用户只看到“证据不足”
+            if (data.get("provenance") or {}).get("intent"):
+                result.message = str(data.get("summary") or result.message)
+            else:
                 result.limitations.append("检索为空、模型未选择直接答题的摘录，或引用无法关联到本任务证据。")
         else:
             result.outcome, result.message = "ready", "辅助分析已完成；引用关联不等于医学正确性核验。"

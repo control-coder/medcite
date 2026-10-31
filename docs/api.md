@@ -36,6 +36,7 @@
 - `input_kind`：`public_dataset` 或 `deidentified_simulation`；`source_ref` 可空、最多 128 字符。
 - `non_sensitive_confirmed` 必须为 `true`。这些字段不意味着允许输入真实患者隐私。
 - 旧 `cases` 入口沿用 `question`、`input_kind`、`source_ref`，不为兼容而绕过归属控制。
+- 病例响应带 `question`：提交时的原始问题，咨询入口为“症状：…\n持续时间：…\n背景：…”拼接文本；与其他字段一样只返回给归属者，前端从中取出问题用于标题与历史列表。
 - 多轮追问：`cases` 入口可选 `parent_case_id`，指向当前会话自己的、已结束的上一轮病例。不存在或不属于当前会话时返回 404，上一轮未结束时返回 400 `CASE_INVALID_INPUT`。带 `parent_case_id` 时 `question` 下限放宽到 2 个字符，不带时仍为 10 个字符。病例响应多一个 `parent_case_id` 字段，单轮为 `null`。咨询入口和前端暂不提供追问。
 - 追问的处理：worker 沿 `parent_case_id` 取最近 3 轮历史（每轮是当时的问题和成功关闭时交付的摘录，或拒答；未成功结束的记为没有回答）。配置开启 `generation.context_rewrite` 时，检索前先由模型把追问补全成可以单独理解的问题，检索与生成都用补全后的问题，失败时回退到原问题，结果记在检索产物的 `context_rewrite`。没有开启或 provider 不支持时，追问按单轮问题处理。历史不交给生成步骤，摘录与拒答规则不变。
 
@@ -74,7 +75,7 @@
 - `next_steps`：急症为“请立即拨打 120 或前往就近急诊。”，其他为“真实健康问题请咨询专业人员。”
 - `provenance`：`{guard: "query-router-v1", intent, source, rule}`；`intent` 取 `emergency`、`individual_care` 或 `out_of_scope`，`source` 为 `rule` 或模型来源，`rule` 为命中的规则名（模型判定时可能为空）。
 
-路由的 LLM 调用失败时按“科普可答”继续，由证据门槛决定是否拒答，不会因此失败。`analysis` 目前不单独暴露 `intent` 字段；前端只显示通用的“证据不足”说明，原报告用于排障。
+路由的 LLM 调用失败时按“科普可答”继续，由证据门槛决定是否拒答，不会因此失败。`analysis` 不单独暴露 `intent` 字段，`message` 为路由给出的固定提示（与报告 `summary` 相同），前端据此显示急症或无法作答说明；原报告用于排障。
 
 ### 进度推送（SSE）
 
@@ -98,7 +99,7 @@
 
 ## 前端约束
 
-四页为咨询提交、任务进度、结果与证据、历史列表，入口 `/app/`。Hash 路由保存任务 ID，刷新向后端恢复；不在浏览器持久保存症状/背景，历史从服务端查询，不依赖旧 localStorage 病例列表。
+四个视图为提问、任务进度、回答与来源、历史记录，入口 `/app/`。任务进度与回答共用 `#/cases/{id}`（旧链接 `#/cases/{id}/result` 仍可用），任务结束后原地显示回答。Hash 路由保存任务 ID，刷新向后端恢复；不在浏览器持久保存问题/背景，历史从服务端查询，不依赖旧 localStorage 病例列表。提问页的持续时间留空时提交“不适用”。
 
 提交中按钮禁用以防重复点击，服务端仍必须幂等。终态停止误导性的“持续执行”提示；会话丢失显示统一归属说明，不无限加载。引用可定位证据和安全的 HTTP/HTTPS 来源链接；失败时不静默切换 Provider 或替换旧结果。
 

@@ -797,6 +797,7 @@ def _case_response(session: Session, case: Case) -> CaseResponse:
         source_ref=case.source_ref,
         normalized_query=case.normalized_query,
         active_task=_task_response(active) if active else None,
+        question=case.question,
         available_human_actions=actions,
         parent_case_id=case.parent_case_id,
     )

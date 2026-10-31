@@ -49,6 +49,9 @@ class CaseResponse(BaseModel):
     source_ref: str | None
     normalized_query: str | None
     active_task: WorkflowStartResponse | None
+    # 提交时的原始问题（咨询入口为“症状：…\n持续时间：…\n背景：…”拼接文本），供前端展示；
+    # 与其他字段一样只返回给病例归属者
+    question: str | None = None
     available_human_actions: list[str]
     parent_case_id: str | None = None
 
