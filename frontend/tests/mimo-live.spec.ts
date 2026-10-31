@@ -15,12 +15,11 @@ test('真实 MiMo 页面闭环、保守拒答与空检索', async ({ page }) => 
   await mkdir('../artifacts/visual', {recursive: true});
   for (const item of cases) {
     await page.goto('/app/');
-    await page.getByLabel('症状与问题').fill(item.question);
-    await page.getByLabel('持续时间').fill('公开科普模拟，不适用');
+    await page.getByLabel('你的问题').fill(item.question);
     await page.getByRole('checkbox').check();
     const workflowResponse = page.waitForResponse(r => r.url().endsWith('/workflow') && r.request().method() === 'POST');
     const started = Date.now();
-    await page.getByRole('button', {name: '提交并检索证据'}).click();
+    await page.getByRole('button', {name: '提交问题'}).click();
     await expect(page).toHaveURL(/#\/cases\/case_/);
     const caseId = page.url().match(/case_[a-z0-9]+/)![0];
     const prefix = '/api/v1/cases/' + caseId;
@@ -38,9 +37,9 @@ test('真实 MiMo 页面闭环、保守拒答与空检索', async ({ page }) => 
     await writeFile(process.env.MEDIDIAG_LIVE_CASES!, JSON.stringify(records, null, 2));
     expect.soft(analysis.outcome).toBe(item.outcome);
     expect(analysis.execution_mode).toBe('mimo_grounded');
-    await page.getByRole('link', {name: '查看结果与证据'}).click({timeout: 10000});
-    await expect(page.getByText('真实检索 / MiMo 抽取式回答（非 NLI 审核）', {exact: true})).toBeVisible();
+    await expect(page.getByRole('heading', {name: '回答', exact: true})).toBeVisible({timeout: 10000});
     if (analysis.outcome === 'ready') {
+      await expect(page.locator('.run-meta')).toContainText('抽取式回答 · 由模型选择原文摘录');
       await expect(page.locator('.claim').first()).toBeVisible();
       await expect(page.locator('.evidence a').first()).toHaveAttribute('href', /^https:\/\/www.who.int\/zh\//);
       expect(analysis.observation.recorded_input_tokens).toBeGreaterThan(0);
@@ -59,6 +58,6 @@ test('真实 MiMo 页面闭环、保守拒答与空检索', async ({ page }) => 
     }
     await page.screenshot({path: '../artifacts/visual/mimo-live-' + item.id + '.png', fullPage: true});
   }
-  await page.getByRole('link', {name: '咨询记录', exact: true}).click();
+  await page.getByRole('link', {name: '历史记录', exact: true}).click();
   await expect(page.locator('.history-item')).toHaveCount(4);
 });

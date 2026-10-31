@@ -31,7 +31,7 @@ python -m alembic upgrade head
 python -m medidiag.cli demo --provider retrieval_mock --app-config configs/application.yaml --port 8400
 ```
 
-打开 <http://127.0.0.1:8400/app/>，点击“填入公开检索示例”。该命令在 API 进程内附带一个本地 worker 线程，仅监听回环地址。需要固定 fixture 时改用 `--provider fake_offline`。
+打开 <http://127.0.0.1:8400/app/>，点击示例问题“通风如何改善室内空气质量？”。该命令在 API 进程内附带一个本地 worker 线程，仅监听回环地址。需要固定 fixture 时改用 `--provider fake_offline`。
 
 ### 独立 API 与 worker
 
@@ -107,7 +107,14 @@ python scripts/verify_public_rag.py
 
 服务已在 8400 端口运行时，可单独执行 `npm run test:e2e --prefix frontend`；其他端口设置 `MEDIDIAG_WEB_URL`。真实模型的浏览器用例需显式授权变量，日常测试不会触发付费请求。
 
-**重新生成 README 里的截图**：运行上面带 `--provider retrieval_mock --browser` 的命令，截图会写到 `artifacts/visual/`（该目录不提交）。README 用到的三张是 `public-rag-form-desktop.png`、`public-rag-desktop.png`、`public-rag-empty-mobile.png`，复制到 `docs/images/` 并改成对应的文件名后提交。界面改动后需要重新生成。
+**重新生成 README 里的截图**：截图来自完整链路与真实模型（会产生付费调用）。按“独立 API 与 worker”启动 API，worker 使用 `--provider mimo_grounded --app-config configs/application_v4_recommended_generative.yaml --live-budget <账本>`，然后运行：
+
+```powershell
+$env:MEDIDIAG_README_SHOTS = "1"; $env:MEDIDIAG_WEB_URL = "http://127.0.0.1:<端口>"
+cd frontend; npx playwright test readme-shots.spec.ts
+```
+
+截图写到 `artifacts/visual/readme-*.png`（该目录不提交），README 用到 `ask`、`progress`、`answer`、`emergency`、`history` 五张，去掉 `readme-` 前缀后复制到 `docs/images/`。一个科普问题约用 5 次调用，接近单个账本 8 次的上限；可以用 `--grep` 分步运行，每步之间换新账本重启 worker，各步通过 `.cache/implementation/readme-shots/state.json` 共用同一个匿名会话。界面改动后需要重新生成。
 
 ## 真实模型模式
 
@@ -170,9 +177,9 @@ python -I scripts/verify_dense_application.py --allow-live --ledger .cache/dense
 
 | 时间 | 操作 |
 | --- | --- |
-| 0:00–0:40 | 填入公开检索示例，确认非敏感数据并提交 |
+| 0:00–0:40 | 点击示例问题“通风如何改善室内空气质量？”，确认不含个人信息并提交 |
 | 0:40–1:20 | 刷新任务页：URL 保留任务 ID，从后端恢复，不会新建任务 |
-| 1:20–2:20 | 查看摘录、证据与 WHO 来源链接；说明引用关联不等于语义审核 |
+| 1:20–2:20 | 查看摘录，点击引用编号定位来源与 WHO 原文链接；说明引用关联不等于语义审核 |
 | 2:20–2:50 | 查看历史记录并返回同一任务 |
 | 2:50–3:40 | 提交“模拟提问：量子纠缠计算芯片”，展示空证据拒答 |
 | 3:40–4:20 | 演示取消任务与会话丢失后的提示 |

@@ -52,15 +52,27 @@
 
 ## 截图
 
-截图由浏览器自动测试生成，使用离线演示模式，重新生成的方法见 [开发与运行](docs/development.md)。
+截图使用完整链路（v4 语料、`configs/application_v4_recommended_generative.yaml`）与真实模型 `mimo-v2.6-flash`，由浏览器自动测试生成，重新生成的方法见 [开发与运行](docs/development.md)。
 
-结果与证据页：每条摘录都标明出处，右侧列出原始来源，可打开原文。
+提问页：输入问题，或点击示例问题。
 
-![结果与证据页](docs/images/result-with-evidence-desktop.png)
+![提问页](docs/images/ask.png)
 
-手机宽度下的拒答：问题与语料无关时检索不到证据，页面显示“证据不足”。
+处理进度：后台 worker 执行，前端通过 SSE 实时更新步骤。
 
-<img src="docs/images/abstain-mobile.png" alt="手机宽度下检索不到证据时的结果页" width="320">
+![处理进度](docs/images/progress.png)
+
+生成式回答：每句末尾的编号是句子级引用，点击后右侧对应来源高亮被引用的原文；来源可打开原文链接。
+
+![生成式回答与来源](docs/images/answer.png)
+
+急症问题：查询路由在检索前拦截，不检索、不调用生成模型，直接提示拨打 120。
+
+![急症提示](docs/images/emergency.png)
+
+历史记录：只显示当前匿名会话自己的问题，可返回查看任一任务。
+
+![历史记录](docs/images/history.png)
 
 ## 架构
 
@@ -115,7 +127,7 @@ python -m alembic upgrade head
 python -m medidiag.cli demo --provider retrieval_mock --app-config configs/application.yaml --port 8400
 ```
 
-打开 <http://127.0.0.1:8400/app/>，点击“填入公开检索示例”并提交。Windows PowerShell 下用 `$env:DATABASE_URL = "..."` 设置环境变量。
+打开 <http://127.0.0.1:8400/app/>，点击示例问题“通风如何改善室内空气质量？”并提交。Windows PowerShell 下用 `$env:DATABASE_URL = "..."` 设置环境变量。
 
 ### 运行完整链路
 
@@ -183,7 +195,7 @@ tests/            自动化测试
 - 相关性标注由 LLM 完成，未经人工复核；每个条件只运行一次，样本量小，不做显著性结论。无答案被作答只有 2–4 条，条件之间的差别不可靠。
 - 2 份 .doc 格式的国家文件因本机缺少转换工具未入库；维基百科内容未经专业审核，只作为低权威来源。
 - 离线演示默认使用 BM25 与内置的小规模摘录；完整链路需要本机重建语料并准备模型缓存，每个问题需要多次模型调用，时延在 30 秒左右。
-- 真实模型经数据库 worker 的端到端只验证了 3 题；pgvector 下的元数据过滤、PostgreSQL 与多 worker 下的 SSE、浏览器内点击引用高亮尚未验证。
+- 真实模型经数据库 worker 的端到端只验证了 3 题；pgvector 下的元数据过滤、PostgreSQL 与多 worker 下的 SSE 尚未验证。
 - 匿名会话不支持账号找回和跨设备迁移；公网部署、多机容量和临床效果都没有验证。
 
 ## 许可证
